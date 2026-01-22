@@ -30,7 +30,7 @@ If you are asked within the Console if you want to proceed, type "Y".
 
 1) In the Console, type:
 ```
-init_odk_connection(url = "https://rblf.tccodk.org/", user = "[FIRST NAME].[LAST NAME]@cartercenter.org", pass = "[PASS]")
+init_odk_connection(url = "https://rblf.tccodk.org/", user = "[FIRST NAME].[LAST NAME]@cartercenter.org", pass = "[YOUR PASSWORD]")
 ``` 
 Replace the items in brackets with your first name, last name, and ODK password. This will create an active ODK token. After your token expires in 24 hours, you can just type this code again to create a new token.
 
@@ -47,7 +47,7 @@ Replace the items in brackets with your first name, last name, and ODK password.
 * `list_odk_forms()`: Lists out all existing ODK forms within each project. This requires a project ID to run, which you are able to obtain from the previous function. 
     - Example: `list_odk_forms(project_id = 2)` will provide all forms for Nigeria. If there are no existing forms for a country (e.g., if no active data collection or project is archived), you will receive an error that the subscript is out of bounds.
 * `download_odk_form()`: Allows a user to download all data from a particular ODK form into a zipped CSV file. This requires a project ID and form ID to run, which you are able to obtain from the previous two functions. 
-    - Example: `download_odk_form(project_ID = 2, form_id = 3)` will provide all data from the Nigeria PTS Results Form.
+    - Example: `download_odk_form(project_id = 2, form_id = 3)` will provide all data from the Nigeria PTS Results Form.
 * `list_all_odk_app_users(project_id = 1)`: Lists all users with access to an ODK project. The required parameter for this is a project ID.
     - Example: `list_all_odk_app_users(project_id = 1)` will provide all users who have access to the Ethiopia forms.
 * `list_odk_form_users()`: Lists all users with access to a specific ODK form. The required parameters for this are a project ID and form ID.
@@ -58,3 +58,29 @@ An actor name is necessary to create a new user, while an actor ID is needed to 
     - Example 2: `update_odk_app_user_role(action = "delete", project_id = 2, actor_id = 960)` will delete the user "amehtaTEST" in the Nigeria project.
 
 # Coding Example with Data
+
+- Use the code below to follow along with some of the key functions included in this repository. In this example, we will be initializing an ODK token, downloading data from the River Prospection Form in the Ethiopia Training & Development ODK project,
+ and adding a user to (and subsequently deleting them from) this project.
+
+```
+install.packages("devtools")
+devtools::load_all()
+
+init_odk_connection(url = "https://rblf.tccodk.org/", user = "Aditya.Mehta@cartercenter.org", pass = "[YOUR PASSWORD]") 
+#not providing actual password for security reasons
+
+list_odk_projects()
+form_tbbl <- list_odk_forms(project_id = 7) #created an object in your environment so you can view all forms in a tbbl format
+download_odk_form(project_id = 7, form_id = 15)
+
+list_all_odk_app_users(project_id = 7)
+list_odk_form_users(project_id = 7, form_id = 15)
+update_odk_app_user_role(action = "create", project_id = 7, actor_name = "TrainingTest1")
+
+list_all_odk_app_users(project_id = 7) #Doing this step again reflects the addition of user "TrainingTest1" to this project
+
+update_odk_app_user_role(action = "delete", project_id = 7, actor_id = 979)
+list_all_odk_app_users(project_id = 7) #Doing this step again reflects the deletion of user "TrainingTest1" from this project
+```
+
+Congratulations! You have successfully used the erifunctions repository. Check back in periodically to see what new functions have been added.
