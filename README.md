@@ -46,12 +46,12 @@ Replace the items in brackets with your first name, last name, and ODK password.
 - `list_odk_projects()`: Simply produces all country projects that exist in ODK for the RBLFSCHMAL team. No additional parameters are needed to use this function.
 * `list_odk_forms()`: Lists out all existing ODK forms within each project. This requires a project ID to run, which you are able to obtain from the previous function. 
     - Example: `list_odk_forms(project_id = 2)` will provide all forms for Nigeria. If there are no existing forms for a country (e.g., if no active data collection or project is archived), you will receive an error that the subscript is out of bounds.
-* `download_odk_form()`: Allows a user to download all data from a particular ODK form into a zipped CSV file. This requires a project ID and form ID to run, which you are able to obtain from the previous two functions. 
-    - Example: `download_odk_form(project_id = 2, form_id = 3)` will provide all data from the Nigeria PTS Results Form.
+* `download_odk_form()`: Allows a user to download all data from a particular ODK form into a tbbl format. This requires a project ID and form ID to run, which you are able to obtain from the previous two functions. Note that the form ID must be written out explicitly in quotes, due to forms being identified by name in ODK.
+    - Example: `download_odk_form(project_id = 2, form_id = "NigeriaPTSVillageForm")` will provide all data from the Nigeria PTS Village Form.
 * `list_all_odk_app_users(project_id = 1)`: Lists all users with access to an ODK project. The required parameter for this is a project ID.
     - Example: `list_all_odk_app_users(project_id = 1)` will provide all users who have access to the Ethiopia forms.
 * `list_odk_form_users()`: Lists all users with access to a specific ODK form. The required parameters for this are a project ID and form ID.
-    - Example: `list_odk_form_users(project_id = 1, form_id = 3)` will provide all users who have access to the Ethiopia EMS Results Form.
+    - Example: `list_odk_form_users(project_id = 1, form_id = "EthEMSResults2025")` will provide all users who have access to the Ethiopia EMS Results Form.
 * `update_odk_app_user_role()`: Allows you to create, delete, assign, or un-assign app users. You will need an action ("create", "delete", "assign", or "revoke") and a project ID. A form ID is necessary to change permissions on any specific form. 
 An actor name is necessary to create a new user, while an actor ID is needed to delete an existing user or assign certain permissions. A role ID indicates the type of role that someone should be assigned to (typically 2).
     - Example 1: `update_odk_app_user_role(action = "create", project_id = 2, actor_name = "amehtaTEST")` will create a new user called "amehtaTEST" in the Nigeria project.
@@ -71,15 +71,15 @@ init_odk_connection(url = "https://rblf.tccodk.org/", user = "Aditya.Mehta@carte
 
 list_odk_projects()
 form_tbbl <- list_odk_forms(project_id = 7) #created an object in your environment so you can view all forms in a tbbl format
-download_odk_form(project_id = 7, form_id = 15)
+form_data <- download_odk_form(project_id = 7, form_id = "RiverProspection")
 
 list_all_odk_app_users(project_id = 7)
-list_odk_form_users(project_id = 7, form_id = 15)
+list_odk_form_users(project_id = 7, form_id = "RiverProspection")
 update_odk_app_user_role(action = "create", project_id = 7, actor_name = "TrainingTest1")
 
 list_all_odk_app_users(project_id = 7) #Doing this step again reflects the addition of user "TrainingTest1" to this project
 
-update_odk_app_user_role(action = "delete", project_id = 7, actor_id = 979)
+update_odk_app_user_role(action = "delete", project_id = 7, actor_id = 980) #make sure to update the actor_id parameter with the appropriate number - the result should display as "TRUE" if completed correctly.
 list_all_odk_app_users(project_id = 7) #Doing this step again reflects the deletion of user "TrainingTest1" from this project
 ```
 
