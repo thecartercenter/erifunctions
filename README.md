@@ -48,7 +48,7 @@ Replace the items in brackets with your first name, last name, and ODK password.
     - Example: `list_odk_forms(project_id = 2)` will provide all forms for Nigeria. If there are no existing forms for a country (e.g., if no active data collection or project is archived), you will receive an error that the subscript is out of bounds.
 * `download_odk_form()`: Allows a user to download all data from a particular ODK form into a tbbl format. This requires a project ID and form ID to run, which you are able to obtain from the previous two functions. Note that the form ID must be written out explicitly in quotes, due to forms being identified by name in ODK.
     - Example: `download_odk_form(project_id = 2, form_id = "NigeriaPTSVillageForm")` will provide all data from the Nigeria PTS Village Form.
-* `list_all_odk_app_users(project_id = 1)`: Lists all users with access to an ODK project. The required parameter for this is a project ID.
+* `list_all_odk_app_users()`: Lists all users with access to an ODK project. The required parameter for this is a project ID.
     - Example: `list_all_odk_app_users(project_id = 1)` will provide all users who have access to the Ethiopia forms.
 * `list_odk_form_users()`: Lists all users with access to a specific ODK form. The required parameters for this are a project ID and form ID.
     - Example: `list_odk_form_users(project_id = 1, form_id = "EthEMSResults2025")` will provide all users who have access to the Ethiopia EMS Results Form.
@@ -59,7 +59,7 @@ An actor name is necessary to create a new user, while an actor ID is needed to 
 
 # Coding Example with Data
 
-- Use the code below to follow along with some of the key functions included in this repository. In this example, we will be initializing an ODK token, downloading data from the River Prospection Form in the Ethiopia Training & Development ODK project,
+- Use the code below in a new RStudio script to follow along with some of the key functions included in this repository. In this example, we will be initializing an ODK token, downloading data from the River Prospection Form in the Ethiopia Training & Development ODK project,
  and adding a user to (and subsequently deleting them from) this project.
 
 ```
