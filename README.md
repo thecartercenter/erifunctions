@@ -11,6 +11,7 @@ Additional functions used by the ERI unit will be added continuously to this rep
 
 # How to Download
 
+#How to Contribute/Edit Functions
 1) Ensure you have the latest versions of [R and R Studio](https://posit.co/download/rstudio-desktop/) downloaded.
 2) Create a GitHub account [here](https://github.com/) (if not done already).
 3) Download [GitHub Desktop](https://desktop.github.com/download/) and sign in with your credentials.
@@ -25,6 +26,8 @@ If you are asked within the Console if you want to proceed, type "Y".
 10) Next, type `devtools::load_all()` into the Console. If you are asked to install required packages (e.g., "dplyr", "here", "httr", etc.), select "Yes".
       
       + This will load the "erifunctions" repository as if it were a package.
+
+11) You should now be able to create new branches on GitHub on your local device to add or edit functions in the erifunctions package. Any edits you make should always be saved, committeed, and pushed to the origin  
 
 # How to Set Up the Initial Interaction
 
