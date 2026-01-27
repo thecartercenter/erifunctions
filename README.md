@@ -16,7 +16,7 @@ Additional functions used by the ERI unit will be added continuously to this rep
 3) Within the Console (bottom panel) in RStudio, type `install.packages("devtools")`. This installs the "devtools" package, which will be necessary to run certain features of the code found in the repository. 
 If you are asked within the Console if you want to proceed, type "Y".
 4) Next, type `devtools::load_all()` into the Console. If you are asked to install required packages (e.g., "dplyr", "here", "httr", etc.), select "Yes".
-5) To access the erifunctions repository, type `devtools::install_github("nish-kishore/erifunctions")` into the Console.
+5) To access the "erifunctions" repository, type `devtools::install_github("nish-kishore/erifunctions")` into the Console.
 
 # How to Set Up the Initial Interaction
 
@@ -76,7 +76,7 @@ update_odk_app_user_role(action = "delete", project_id = 7, actor_id = 980) #mak
 list_all_odk_app_users(project_id = 7) #Doing this step again reflects the deletion of user "TrainingTest1" from this project
 ```
 
-Congratulations! You have successfully used the erifunctions repository. Check back in periodically to see what new functions have been added.
+Congratulations! You have successfully used the "erifunctions" repository. Check back in periodically to see what new functions have been added.
 
 # How to Contribute/Edit Functions
 
@@ -94,5 +94,5 @@ If you are asked within the Console if you want to proceed, type "Y".
       
       + This will load the "erifunctions" repository as if it were a package.
 
-11) You should now be able to create new branches on GitHub on your local device to add or edit functions in the erifunctions package. Any edits you make should always be saved, committed, and pushed to the origin on GitHub Desktop.
+11) You should now be able to create new branches on GitHub on your local device to add or edit functions in the "erifunctions" package. Any edits you make should always be saved, committed, and pushed to the origin on GitHub Desktop.
  Once you have finalized your edits, you should submit a pull request on GitHub Desktop so the creator of the repository can review the changes in your branch, make any suggestions, and ultimately merge them into the main branch for the repository.
