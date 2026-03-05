@@ -398,3 +398,94 @@ update_odk_app_user_role <- function(
 
 }
 
+#' See all users who have access to a form
+#' @description
+#' Pull all media attachments from a form
+#' @param url `chr` Target URL for the ODK Central API
+#' @param auth `chr` Authorization token to access URL
+#' @param project_id `int` The project id for which you want to identify attachments
+#' @param form_id `chr` The form id for which we want to identify attachments
+#' @param folder_loc `chr` The folder in which all images should be dumped out
+#' @returns `tibble` Output of all attachment names and their links to the forms
+#' @export
+download_form_attachments <- function(
+    url = Sys.getenv("ODK_URL"),
+    auth = Sys.getenv("ODK_TOKEN"),
+    project_id,
+    form_id,
+    folder_loc
+){
+
+  if(!dir.exists(folder_loc)){
+    cli::cli_alert("Folder not found, creating folder.")
+    dir.create(folder_loc)
+  }
+
+  cli::cli_process_start("Downloading ODK form data")
+  form_data <- download_odk_form(project_id = project_id, form_id = form_id) |>
+    dplyr::filter(AttachmentsExpected != 0) |>
+    dplyr::select(`Filter_Paper-fpbarcode`, `meta-instanceID`,
+                  AttachmentsExpected, AttachmentsPresent)
+  cli::cli_process_done()
+
+  cli::cli_process_start("Downloading form attachments list")
+  attachments <- lapply(
+    1:nrow(form_data), function(i){
+      instance_id <- form_data |> dplyr::slice(i) |> dplyr::pull(`meta-instanceID`)
+
+      list_of_attachments <- httr::GET(
+        url = paste0(url, "v1/projects/",project_id,
+                     "/forms/",form_id,"/submissions/", instance_id, "/attachments"),
+        config = httr::add_headers(
+          "Authorization" = paste0("Bearer ", auth))) |>
+        httr::content()
+
+      lapply(1:length(list_of_attachments), function(x){
+        list_of_attachments[[x]] |>
+          unlist() |>
+          t() |>
+          tibble::as_tibble() |>
+          dplyr::mutate(instance_id)
+      }
+      ) |>
+        dplyr::bind_rows()
+    }
+
+  ) |>
+    dplyr::bind_rows()
+  cli::cli_process_done()
+
+  download_dataset <- dplyr::left_join(
+    attachments,
+    form_data,
+    by = c("instance_id" = "meta-instanceID")
+  )
+
+  lapply(
+    cli::cli_progress_along(1:nrow(download_dataset), "Downloading"), function(i){
+
+      instance_id <- download_dataset |> dplyr::slice(i) |> dplyr::pull(instance_id)
+      filename <- download_dataset |> dplyr::slice(i) |> dplyr::pull(name)
+
+      x <- httr::GET(
+        url = paste0(url, "v1/projects/",project_id,
+                     "/forms/",form_id,"/submissions/", instance_id, "/attachments/", filename),
+        config = httr::add_headers(
+          "Authorization" = paste0("Bearer ", auth)))
+
+      # Open a file connection in write-binary mode ('wb')
+      out_name <- paste0(folder_loc, "/",
+                         dplyr::slice(download_dataset, i) |> dplyr::pull("Filter_Paper-fpbarcode"),
+                         ".jpeg")
+      fid <- file(out_name, "wb")
+      # Write the data
+      writeBin(x$content, fid)
+      # Close the connection
+      close(fid)
+    }
+  )
+
+  return(download_dataset)
+
+}
+
