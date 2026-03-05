@@ -159,6 +159,8 @@ download_odk_form <- function(
     testing = FALSE
 ){
 
+  form_id <- URLencode(form_id)
+
   if(testing){
     (httr::GET(
       url = httr::modify_url(url, path = glue::glue("v1/example2"))
@@ -241,6 +243,8 @@ list_odk_form_users <- function(
     testing = FALSE
 ){
 
+  form_id <- URLencode(form_id)
+
   if(testing){
     (httr::GET(
       url = httr::modify_url(url, path = glue::glue("v1/example2"))
@@ -293,6 +297,8 @@ update_odk_app_user_role <- function(
     url = Sys.getenv("ODK_URL"),
     auth = Sys.getenv("ODK_TOKEN")
 ){
+
+  form_id <- URLencode(form_id)
 
   if(!action %in% c("create", "delete", "assign", "revoke")){
     stop("Action must be 'create', 'delete', 'assign' or 'revoke'")
@@ -406,15 +412,20 @@ update_odk_app_user_role <- function(
 #' @param project_id `int` The project id for which you want to identify attachments
 #' @param form_id `chr` The form id for which we want to identify attachments
 #' @param folder_loc `chr` The folder in which all images should be dumped out
+#' @param condition `chr` The dplyr::filter() command to filter the downloaded data
 #' @returns `tibble` Output of all attachment names and their links to the forms
+#' @importFrom rlang .data
 #' @export
 download_form_attachments <- function(
     url = Sys.getenv("ODK_URL"),
     auth = Sys.getenv("ODK_TOKEN"),
     project_id,
     form_id,
-    folder_loc
+    folder_loc,
+    condition = NULL
 ){
+
+  form_id <- URLencode(form_id)
 
   if(!dir.exists(folder_loc)){
     cli::cli_alert("Folder not found, creating folder.")
@@ -423,15 +434,20 @@ download_form_attachments <- function(
 
   cli::cli_process_start("Downloading ODK form data")
   form_data <- download_odk_form(project_id = project_id, form_id = form_id) |>
-    dplyr::filter(AttachmentsExpected != 0) |>
-    dplyr::select(`Filter_Paper-fpbarcode`, `meta-instanceID`,
-                  AttachmentsExpected, AttachmentsPresent)
+    dplyr::filter(.data$AttachmentsExpected != 0) |>
+    dplyr::select("Filter_Paper-fpbarcode", "meta-instanceID",
+                  "AttachmentsExpected", "AttachmentsPresent")
   cli::cli_process_done()
+
+  if(!is.null(condition)){
+    form_data <- form_data |>
+      dplyr::filter({{ condition }})
+  }
 
   cli::cli_process_start("Downloading form attachments list")
   attachments <- lapply(
     1:nrow(form_data), function(i){
-      instance_id <- form_data |> dplyr::slice(i) |> dplyr::pull(`meta-instanceID`)
+      instance_id <- form_data |> dplyr::slice(i) |> dplyr::pull("meta-instanceID")
 
       list_of_attachments <- httr::GET(
         url = paste0(url, "v1/projects/",project_id,
@@ -464,8 +480,8 @@ download_form_attachments <- function(
   lapply(
     cli::cli_progress_along(1:nrow(download_dataset), "Downloading"), function(i){
 
-      instance_id <- download_dataset |> dplyr::slice(i) |> dplyr::pull(instance_id)
-      filename <- download_dataset |> dplyr::slice(i) |> dplyr::pull(name)
+      instance_id <- download_dataset |> dplyr::slice(i) |> dplyr::pull("instance_id")
+      filename <- download_dataset |> dplyr::slice(i) |> dplyr::pull("name")
 
       x <- httr::GET(
         url = paste0(url, "v1/projects/",project_id,
