@@ -148,6 +148,7 @@ list_odk_forms <- function(
 #' @param project_id `int` Project id from `list_odk_projects()`
 #' @param form_id `chr` From id from `list_odk_forms()`
 #' @param testing `bool` T/F if you want to just verify that the API if working
+#' @param attachments `bool` T/F if you want to include attachments from the form
 #' @returns `tibble` Download of all data from an ODK form
 #' @importFrom utils unzip
 #' @export
@@ -156,7 +157,8 @@ download_odk_form <- function(
     auth = Sys.getenv("ODK_TOKEN"),
     project_id,
     form_id,
-    testing = FALSE
+    testing = FALSE,
+    attachments = FALSE
 ){
 
   form_id <- URLencode(form_id)
@@ -169,9 +171,16 @@ download_odk_form <- function(
   }else{
     tmp_file <- tempfile(fileext = ".csv.zip")
 
+    if(attachments){
+      send_url <- paste0(url, "v1/projects/",project_id,
+                         "/forms/",form_id,"/submissions.csv.zip")
+    }else{
+      send_url <- paste0(url, "v1/projects/",project_id,
+             "/forms/",form_id,"/submissions.csv.zip?attachments=false")
+    }
+
     x <- httr::GET(
-      url = paste0(url, "v1/projects/",project_id,
-                   "/forms/",form_id,"/submissions.csv.zip"),
+      url = send_url,
       config = httr::add_headers(
         "Authorization" = paste0("Bearer ", auth)
       ),
@@ -180,7 +189,7 @@ download_odk_form <- function(
 
     unzip(tmp_file, exdir = tempdir())
 
-    out <- readr::read_csv(paste0(tempdir(),"/",form_id,".csv"))
+    out <- readr::read_csv(paste0(tempdir(),"/",URLdecode(form_id),".csv"))
 
     return(out)
   }
