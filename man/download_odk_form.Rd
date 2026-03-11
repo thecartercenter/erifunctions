@@ -9,7 +9,8 @@ download_odk_form(
   auth = Sys.getenv("ODK_TOKEN"),
   project_id,
   form_id,
-  testing = FALSE
+  testing = FALSE,
+  attachments = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ download_odk_form(
 \item{form_id}{\code{chr} From id from \code{list_odk_forms()}}
 
 \item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+
+\item{attachments}{\code{bool} T/F if you want to include attachments from the form}
 }
 \value{
 \code{tibble} Download of all data from an ODK form

@@ -9,7 +9,11 @@ download_form_attachments(
   auth = Sys.getenv("ODK_TOKEN"),
   project_id,
   form_id,
-  folder_loc
+  folder_loc,
+  image_label,
+  other_vars,
+  add_condition = FALSE,
+  condition = NULL
 )
 }
 \arguments{
@@ -22,6 +26,14 @@ download_form_attachments(
 \item{form_id}{\code{chr} The form id for which we want to identify attachments}
 
 \item{folder_loc}{\code{chr} The folder in which all images should be dumped out}
+
+\item{image_label}{\code{chr} The variable name that will be used for the image label}
+
+\item{other_vars}{\code{chr} A concatenated character vector of other variables to include}
+
+\item{add_condition}{\code{bool} Determine if a condition should be used}
+
+\item{condition}{\code{chr} The dplyr::filter() command to filter the downloaded data}
 }
 \value{
 \code{tibble} Output of all attachment names and their links to the forms
