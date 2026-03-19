@@ -148,15 +148,17 @@ list_odk_forms <- function(
 #' @param project_id `int` Project id from `list_odk_projects()`
 #' @param form_id `chr` From id from `list_odk_forms()`
 #' @param testing `bool` T/F if you want to just verify that the API if working
+#' @param attachments `bool` T/F if you want to include attachments from the form
 #' @returns `tibble` Download of all data from an ODK form
-#' @importFrom utils unzip
+#' @importFrom utils unzip URLencode URLdecode
 #' @export
 download_odk_form <- function(
     url = Sys.getenv("ODK_URL"),
     auth = Sys.getenv("ODK_TOKEN"),
     project_id,
     form_id,
-    testing = FALSE
+    testing = FALSE,
+    attachments = FALSE
 ){
 
   if(testing){
@@ -165,11 +167,20 @@ download_odk_form <- function(
     ) |>
       httr::content())$code
   }else{
+    form_id <- URLencode(form_id)
+
     tmp_file <- tempfile(fileext = ".csv.zip")
 
+    if(attachments){
+      send_url <- paste0(url, "v1/projects/",project_id,
+                         "/forms/",form_id,"/submissions.csv.zip")
+    }else{
+      send_url <- paste0(url, "v1/projects/",project_id,
+             "/forms/",form_id,"/submissions.csv.zip?attachments=false")
+    }
+
     x <- httr::GET(
-      url = paste0(url, "v1/projects/",project_id,
-                   "/forms/",form_id,"/submissions.csv.zip"),
+      url = send_url,
       config = httr::add_headers(
         "Authorization" = paste0("Bearer ", auth)
       ),
@@ -178,7 +189,10 @@ download_odk_form <- function(
 
     unzip(tmp_file, exdir = tempdir())
 
-    out <- readr::read_csv(paste0(tempdir(),"/",form_id,".csv"))
+    out <- suppressWarnings(readr::read_csv(paste0(tempdir(),"/", URLdecode(form_id),".csv"),
+                           show_col_types = FALSE))
+
+    cli::cli_alert_info(paste0("Downloaded ", nrow(out), " records from: ", URLdecode(form_id)))
 
     return(out)
   }
@@ -232,6 +246,7 @@ list_all_odk_app_users <- function(
 #' @param form_id `chr` The form id for which we want to identify users
 #' @param testing `bool` T/F if you want to just verify that the API if working
 #' @returns `tibble` Output of all form users and roles within a given form
+#' @importFrom utils URLencode URLdecode
 #' @export
 list_odk_form_users <- function(
     url = Sys.getenv("ODK_URL"),
@@ -240,6 +255,8 @@ list_odk_form_users <- function(
     form_id,
     testing = FALSE
 ){
+
+  form_id <- URLencode(form_id)
 
   if(testing){
     (httr::GET(
@@ -281,6 +298,7 @@ list_odk_form_users <- function(
 #' @param testing `bool` T/F if you want to just verify that the API if working
 #' @param url `chr` Target URL for the ODK Central API
 #' @param auth `chr` Authorization token to access URL
+#' @importFrom utils URLencode URLdecode
 #' @export
 update_odk_app_user_role <- function(
     action,
@@ -293,6 +311,8 @@ update_odk_app_user_role <- function(
     url = Sys.getenv("ODK_URL"),
     auth = Sys.getenv("ODK_TOKEN")
 ){
+
+  form_id <- URLencode(form_id)
 
   if(!action %in% c("create", "delete", "assign", "revoke")){
     stop("Action must be 'create', 'delete', 'assign' or 'revoke'")
@@ -395,6 +415,121 @@ update_odk_app_user_role <- function(
       return(F)
     }
   }
+
+}
+
+#' See all users who have access to a form
+#' @description
+#' Pull all media attachments from a form
+#' @param url `chr` Target URL for the ODK Central API
+#' @param auth `chr` Authorization token to access URL
+#' @param project_id `int` The project id for which you want to identify attachments
+#' @param form_id `chr` The form id for which we want to identify attachments
+#' @param folder_loc `chr` The folder in which all images should be dumped out
+#' @param image_label `chr` The variable name that will be used for the image label
+#' @param other_vars `chr` A concatenated character vector of other variables to include
+#' @param add_condition `bool` Determine if a condition should be used
+#' @param condition `chr` The dplyr::filter() command to filter the downloaded data
+#' @returns `tibble` Output of all attachment names and their links to the forms
+#' @importFrom rlang .data
+#' @importFrom utils URLencode URLdecode
+#' @export
+download_form_attachments <- function(
+    url = Sys.getenv("ODK_URL"),
+    auth = Sys.getenv("ODK_TOKEN"),
+    project_id,
+    form_id,
+    folder_loc,
+    image_label,
+    other_vars,
+    add_condition = FALSE,
+    condition = NULL
+){
+
+  form_id <- URLencode(form_id)
+
+  if(!dir.exists(folder_loc)){
+    cli::cli_process_start("Folder not found, creating folder.")
+    dir.create(folder_loc)
+    cli::cli_process_done(msg_done = paste0("Folder: '", folder_loc, "' - created!"))
+  }
+
+  cli::cli_process_start("Downloading ODK form data")
+  form_data <- download_odk_form(project_id = project_id, form_id = form_id) |>
+    dplyr::filter(.data$AttachmentsExpected != 0) |>
+    dplyr::select(dplyr::all_of(image_label), dplyr::all_of(other_vars), "meta-instanceID",
+                  "AttachmentsExpected", "AttachmentsPresent")
+  cli::cli_process_done()
+
+  if(add_condition){
+    form_data <- form_data |>
+      dplyr::filter({{condition}})
+  }
+
+  cli::cli_alert_info(paste0("Identified ", nrow(form_data), " forms with attachments."))
+
+  cli::cli_process_start("Downloading form attachments list")
+  attachments <- lapply(
+    cli::cli_progress_along(1:nrow(form_data), "Downloading attachment list"), function(i){
+      instance_id <- form_data |> dplyr::slice(i) |> dplyr::pull("meta-instanceID")
+
+      list_of_attachments <- httr::GET(
+        url = paste0(url, "v1/projects/",project_id,
+                     "/forms/",form_id,"/submissions/", instance_id, "/attachments"),
+        config = httr::add_headers(
+          "Authorization" = paste0("Bearer ", auth))) |>
+        httr::content()
+
+      lapply(1:length(list_of_attachments), function(x){
+        list_of_attachments[[x]] |>
+          unlist() |>
+          t() |>
+          tibble::as_tibble() |>
+          dplyr::mutate(instance_id)
+      }
+      ) |>
+        dplyr::bind_rows()
+    }
+
+  ) |>
+    dplyr::bind_rows()
+  cli::cli_process_done()
+
+  download_dataset <- dplyr::left_join(
+    attachments,
+    form_data,
+    by = c("instance_id" = "meta-instanceID")
+  )
+
+  cli::cli_alert_info(paste0("Identified ", nrow(download_dataset), " attachments to download."))
+
+  lapply(
+    cli::cli_progress_along(1:nrow(download_dataset), "Downloading attachments"), function(i){
+
+      instance_id <- download_dataset |> dplyr::slice(i) |> dplyr::pull("instance_id")
+      filename <- download_dataset |> dplyr::slice(i) |> dplyr::pull("name")
+
+      x <- httr::GET(
+        url = paste0(url, "v1/projects/",project_id,
+                     "/forms/",form_id,"/submissions/", instance_id, "/attachments/", filename),
+        config = httr::add_headers(
+          "Authorization" = paste0("Bearer ", auth)))
+
+      # Open a file connection in write-binary mode ('wb')
+      out_name <- paste0(folder_loc, "/",
+                         dplyr::slice(download_dataset, i) |> dplyr::pull(image_label),
+                         ".jpeg")
+      fid <- file(out_name, "wb")
+      # Write the data
+      writeBin(x$content, fid)
+      # Close the connection
+      close(fid)
+    }
+  )
+
+  cli::cli_alert_success("Attachments downloaded successfully into: ", folder_loc)
+
+  return(download_dataset)
 
 }
 
