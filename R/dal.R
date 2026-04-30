@@ -2,7 +2,7 @@
 
 #### 1) Utility functions ####
 
-#' Validate connection to EDAV
+#' Validate connection to Azure
 #'
 #' Generate token which connects to TCC Azure resources and
 #' validates that the individual still has access. The current tenant ID
@@ -11,8 +11,8 @@
 #' @param app_id `str` Application ID defaults to `"04b07795-8ddb-461a-bbee-02f9e1bf7b46"`,
 #' this can be changed if you have a service principal.
 #' @param tenant_id `str` ID of the Azure tenant
-#' @param storage_endpoint `str` the URL used to connect to the Azure resource
-#' @param storage_container `str` the name of the storage blob
+#' @param resource_endpoint `str` the URL used to connect to the Azure resource
+#' @param storage_name `str` the name of the storage blob
 #' @param auth `str` Authorization type defaults to `"authorization_code"`,
 #' this can be changed if you have a service principal.
 #'
@@ -65,3 +65,653 @@ get_azure_storage_connection <- function(
 
   return(azcontainer)
 }
+
+#' erifunctions i/o handler
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Manages read/write/list/create/delete functions for erifunctions. This function
+#' is adapted from [tidypolis_io](https://github.com/nish-kishore/tidypolis/blob/4e2f75e5ee3205b84c5b78f4b1776e2270e1f9ec/R/dal.R#L15).
+#'
+#' @param obj `str` Object to be loaded into Azure
+#' @param io `str` The type of operation to use. Valid values include:
+#' - `"read"`: reads data from the specified `file_path`.
+#' - `"write"`: writes data to the specified `file_path`.
+#' - `"list"`: lists the files in the specified `file_path`.
+#' - `"exists.dir"`: determines whether a directory is present.
+#' - `"exists.file"`: determines whether a file is present.
+#' - `"create.dir"`: creates a directory to the specified `file_path`.
+#' - `"delete"`: deletes a file in the specified `file_path`.
+#' - `"delete.dir"`: deletes a folder in the specified `file_path.`
+#' @param file_loc `str` Path of file.
+#' @param azure `logical` Whether the function should interact with the TCC Azure environment.
+#' Defaults to `TRUE`, otherwise, interacts with files locally.
+#' @param azcontainer `Azure container` A container object returned by
+#' [get_azure_storage_connection()].
+#' @param full_names `logical` If `io="list"`, include the full reference path. Default `TRUE`.
+#' @param ... Optional parameters that work with [readr::read_delim()] or [readxl::read_excel()].
+#' @returns Conditional on `io`. If `io` is `"read"`, then it will return a tibble. If `io` is `"list"`, it will return a
+#' list of file names. Otherwise, the function will return `NULL`. `exists.dir` and `exists.file` will return a `logical`.
+#'
+#' @examples
+#' \dontrun{
+#' df <- erifunctions_io("read", file_loc = "df1.csv") # read file from Azure
+#' # Passing parameters that work with read_csv or read_excel, like sheet or skip.
+#' df2 <- erifunctions_io("read", file_loc = "df2.xlsx", sheet = 1, skip = 2)
+#' list_of_df <- list(df_1 = df, df_2 = df)
+#' # Saves df to the test folder in Azure
+#' erifunctions_io("write", file_loc = "Data/test/df.csv", obj = df)
+#' # Saves list_of_df as an Excel file with multiple sheets.
+#' erifunctions_io("write", file_loc = "Data/test/df.xlsx", obj = list_of_df)
+#' erifunctions_io("exists.dir", "Data/nonexistentfolder") # returns FALSE
+#' erifunctions_io("exists.file", file_loc = "Data/test/df1.csv") # returns TRUE
+#' erifunctions_io("create", "Data/nonexistentfolder") # creates a folder called nonexistentfolder
+#' erifunctions_io("list") # list all files from the default directory
+#' }
+#'
+#' @export
+erifunctions_io <- function(
+    io,
+    file_loc = "",
+    obj = NULL,
+    azure = TRUE,
+    azcontainer = suppressMessages(get_azure_storage_connection()),
+    full_names = T,
+    ...) {
+
+  opts <- c("read", "write", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
+
+  if (!io %in% opts) {
+    stop("io: must be 'read', 'write', 'delete', 'delete.dir', 'create.dir', 'exists.dir', 'exists.file' or 'list'")
+  }
+
+  if (io == "write" & is.null(obj)) {
+    stop("Need to supply an object to be written")
+  }
+
+  if (io == "list") {
+    if (azure) {
+      out <- azure_io(
+        io = "list",
+        file_loc,
+        azcontainer = azcontainer
+      )
+
+      if (full_names) {
+
+        return(out)
+
+      } else {
+        return(out |> dplyr::mutate(name = basename(name)))
+      }
+    } else {
+      files <- list.files(file_loc, full.names = TRUE)
+
+      get_file_info <- function(file) {
+        info <- file.info(file) |>
+          dplyr::as_tibble() |>
+          dplyr::select(size, isdir, lastModified = mtime) |>
+          dplyr::mutate(
+            name = file,
+            lastModified = lubridate::as_datetime(lastModified)
+          ) |>
+          dplyr::select(name, size, isdir, lastModified)
+
+        return(info)
+
+      }
+
+      files <- lapply(files, \(x) get_file_info(x)) |>
+        dplyr::bind_rows()
+
+      if (full_names) {
+
+        return(files)
+
+      } else {
+        files <- files |>
+          dplyr::mutate(name = basename(name))
+
+        return(files)
+
+      }
+    }
+  }
+
+  if (io == "exists.dir") {
+    if (azure) {
+      return(azure_io("exists.dir",
+                     file_loc,
+                     azcontainer = azcontainer
+      ))
+    } else {
+      return(dir.exists(file_loc))
+    }
+  }
+
+  if (io == "exists.file") {
+    if (azure) {
+      return(azure_io(
+        io = "exists.file",
+        file_loc,
+        azcontainer = azcontainer
+      ))
+    } else {
+      return(file.exists(file_loc))
+    }
+  }
+
+  if (io == "read") {
+    if (azure) {
+      return(azure_io(
+        io = "read",
+        file_loc, azcontainer = azcontainer, ...
+      ))
+    } else {
+      if (!grepl(".rds$|.rda$|.csv$|.xlsx$|.xls$|.parquet$|.qs2$|.tif$", file_loc)) {
+        stop("At the moment only 'rds' 'rda' 'csv' 'xlsx' 'xls' 'parquet', 'qs2', and 'tif' are supported for reading.")
+      }
+
+      if (endsWith(file_loc, ".rds")) {
+        return(readr::read_rds(file_loc))
+      } else if (endsWith(file_loc, ".rda")) {
+        obj_names <- load(file_loc, envir = globalenv())
+        cli::cli_alert_success("RDA object loaded to the global environment:")
+        cli::cli_li(obj_names)
+        return(invisible())
+      } else if (endsWith(file_loc, ".csv")) {
+        return(readr::read_csv(file_loc))
+      } else if (endsWith(file_loc, ".qs2")) {
+        return(qs2::qs_read(file_loc))
+      } else if (endsWith(file_loc, ".xlsx") | endsWith(file_loc, ".xls")) {
+        return(read_excel_from_azure(src = file_loc, ...))
+      } else if (endsWith(file_loc, ".parquet")) {
+        return(arrow::read_parquet(file_loc))
+      } else if(endsWith(file_loc, ".tif")) {
+        return(terra::rast(file_loc))
+      }
+    }
+  }
+
+  if (io == "write") {
+    if (is.null(obj)) {
+      stop("You need to include an object to be written.")
+    }
+
+    if (azure) {
+      azure_io(io = "write", file_loc = file_loc, obj = obj, azcontainer = azcontainer)
+    } else {
+      if (!grepl(".rds$|.rda$|.csv$|.xlsx$|.xls$|.parquet$|.qs2$", file_loc)) {
+        stop("At the moment only 'rds' 'rda' 'csv' 'xlsx', 'xls' 'parquet' and 'qs2' are supported for reading.")
+      } else if (endsWith(file_loc, ".rds")) {
+        readr::write_rds(x = obj, file = file_loc)
+      } else if (endsWith(file_loc, ".rda")) {
+        save(list = obj, file = file_loc)
+      } else if (endsWith(file_loc, ".csv")) {
+        readr::write_csv(x = obj, file = file_loc)
+      } else if (endsWith(file_loc, ".qs2")) {
+        qs2::qs_save(obj, file_loc)
+      } else if (endsWith(file_loc, ".xlsx") | endsWith(file_loc, ".xls")) {
+        writexl::write_xlsx(obj, path = file_loc)
+      } else if (endsWith(file_loc, ".parquet")) {
+        gc()
+        arrow::write_parquet(obj, sink = file_loc)
+      }
+    }
+  }
+
+  if (io == "delete") {
+    if (azure) {
+      azure_io("delete", file_loc = file_loc, force_delete = T,
+              azcontainer = azcontainer)
+    } else {
+      file.remove(file_loc)
+    }
+  }
+
+  if (io == "create.dir") {
+    if (azure) {
+      azure_io(io = "create", file_loc = file_loc)
+    } else {
+      if (dir.exists(file_loc)) {
+        file.remove(list.files(file_loc, full.names = TRUE))
+      } else {
+        dir.create(file_loc)
+      }
+    }
+  }
+
+  if (io == "delete.dir") {
+    if (azure) {
+      azure_io(io = "delete.dir", force_delete = T, azcontainer = azcontainer,
+              file_loc = file_loc)
+    } else {
+      unlink(file_loc, recursive = TRUE, force = TRUE)
+    }
+  }
+
+  return(NULL)
+}
+
+#' Helper function to read and write key data to the Azure environment
+#'
+#' The function serves as the primary way to interact with the Azure system from R. It can
+#' read, write, create folders, check whether a file or a folder exists, upload files, and list
+#' all files in a folder.
+#'
+#' @param io `str` The type of operation to perform in Azure
+#' - `"read"` Read a file from Azure, must be an rds, csv, rda, or xls/xlsx file.
+#' - `"write"` Write a file to Azure, must be an rds, csv, rda, or xls/xlsx file. To
+#' write an Excel file with multiple sheets, pass a named list containing the tibbles
+#' of interest. See examples.
+#' - `"exists.dir"` Returns a boolean after checking to see if a folder exists.
+#' - `"exists.file"`Returns a boolean after checking to see if a file exists.
+#' - `"create"` Creates a folder and all preceding folders.
+#' - `"list"` Returns a tibble with all objects in a folder.
+#' - `"upload"` Moves a file of any type to Azure
+#' - `"delete"` Deletes a file.
+#' - `"delete.dir"` Deletes a folder.
+#' @param file_loc `str` Location to "read", "write", "exists.dir", "exists.file", "create" or "list", can include
+#' the information in `default_dir` if you set that parameter to `NULL`.
+#' @param obj `robj` Object to be saved, needed for `"write"`. Defaults to `NULL`.
+#' @param azcontainer Azure container object returned from [get_azure_storage_connection()].
+#' @param force_delete `logical` Use delete io without verification in the command line.
+#' @param local_path `str` Local file pathway to upload a file to EDAV. Default is `NULL`.
+#' This parameter is only required when passing `"upload"` in the `io` parameter.
+#' @param ... Optional parameters that work with [readr::read_delim()], [readxl::read_excel()], or [ggplot2::ggsave()].
+#' @returns Output dependent on argument passed in the `io` parameter.
+#' @examples
+#' \dontrun{
+#' df <- azure_io("read", file_loc = "df1.csv") # read file from EDAV
+#' # Passing parameters that work with read_csv or read_excel, like sheet or skip.
+#' df2 <- azure_io("read", file_loc = "df2.xlsx", sheet = 1, skip = 2)
+#' list_of_df <- list(df_1 = df, df_2 = df)
+#' # Saves df to the test folder in EDAV
+#' azure_io("write", file_loc = "Data/test/df.csv", obj = df)
+#' # Saves list_of_df as an Excel file with multiple sheets.
+#' azure_io("write", file_loc = "Data/test/df.xlsx", obj = list_of_df)
+#' azure_io("exists.dir", "Data/nonexistentfolder") # returns FALSE
+#' azure_io("exists.file", file_loc = "Data/test/df1.csv") # returns TRUE
+#' azure_io("create", "Data/nonexistentfolder") # creates a folder called nonexistentfolder
+#' azure_io("list") # list all files from the default directory
+#' azure_io("upload", file_loc = "Data/test", local_path = "C:/Users/ABC1/Desktop/df2.csv")
+#' }
+#' @export
+azure_io <- function(
+    io,
+    file_loc = NULL,
+    obj = NULL,
+    azcontainer = suppressMessages(get_azure_storage_connection()),
+    force_delete = F,
+    local_path = NULL,
+    ...) {
+
+  opts <- c("read", "write", "delete", "delete.dir",
+            "list", "exists.dir", "exists.file", "create", "upload")
+
+  if (!io %in% opts) {
+    stop("io: must be 'read', 'write', 'exists.dir', 'exists.file','create', 'delete' 'delete.dir' 'list' or 'upload'")
+  }
+
+  if (io == "write" & is.null(obj)) {
+    stop("Need to supply an object to be written")
+  }
+
+  if (io == "upload" & is.null(local_path)) {
+    stop("Need to supply file pathway of file to be uploaded")
+  }
+
+  if (io == "list") {
+    if (!AzureStor::storage_dir_exists(azcontainer, file_loc) & file_loc != "") {
+      stop("Directory does not exist")
+    }
+
+    return(AzureStor::list_storage_files(azcontainer, file_loc) |>
+             dplyr::as_tibble())
+  }
+
+  if (io == "exists.dir") {
+    return(AzureStor::storage_dir_exists(azcontainer, file_loc))
+  }
+
+  if (io == "exists.file") {
+    return(AzureStor::storage_file_exists(azcontainer, file_loc))
+  }
+
+  if (io == "create") {
+    tryCatch(
+      {
+        AzureStor::create_storage_dir(azcontainer, file_loc)
+        print("Directory created!")
+      },
+      error = function(e) {
+        stop("Directory creation failed")
+      }
+    )
+  }
+
+  if (io == "read") {
+    if (!AzureStor::storage_file_exists(azcontainer, file_loc)) {
+      stop("File does not exist")
+    }
+
+    if (!grepl(".rds$|.rda$|.csv$|.xlsx$|.xls$|.parquet$|.qs2$|.tif$", file_loc)) {
+      stop("At the moment only 'rds' 'rda', 'csv', 'xls', 'xlsx' 'parquet', 'qs2', '.tif' are supported for reading.")
+    }
+
+    if (endsWith(file_loc, ".rds")) {
+      corrupted.rds <- NULL
+
+      tryCatch(
+        {
+
+          return(suppressWarnings(AzureStor::storage_load_rds(azcontainer, file_loc)))
+          corrupted.rds <<- FALSE
+
+        },
+        error = function(e) {
+          cli::cli_alert_warning("RDS download from EDAV was corrupted, downloading directly...")
+          corrupted.rds <<- TRUE
+        }
+      )
+
+      if (corrupted.rds) {
+
+        return(
+          withr::with_tempfile("dest", {
+            AzureStor::storage_download(container = azcontainer, file_loc, dest)
+            readRDS(dest)
+          }, fileext = ".rds")
+        )
+
+      }
+
+    }
+
+    if (endsWith(file_loc, ".csv")) {
+
+      return(suppressWarnings(AzureStor::storage_read_csv(azcontainer, file_loc, ...)))
+
+    } else if (endsWith(file_loc, ".rda")) {
+
+      obj_names <- suppressWarnings(AzureStor::storage_load_rdata(azcontainer, file_loc, envir = globalenv()))
+      cli::cli_alert_success("RDA object loaded to the global environment:")
+      cli::cli_li(obj_names)
+      return(invisible())
+
+    } else if (endsWith(file_loc, ".xlsx") | endsWith(file_loc, ".xls")) {
+
+      file_ext <- NA_character_
+      if (endsWith(file_loc, ".xlsx")) {
+        file_ext <- ".xlsx"
+      } else {
+        file_ext <- ".xls"
+      }
+
+      return(
+        withr::with_tempfile("excel_file", {
+          AzureStor::storage_download(azcontainer,
+                                      file_loc,
+                                      excel_file,
+                                      overwrite = TRUE
+          )
+          read_excel_from_edav(src = excel_file, ...)
+        }, fileext = file_ext)
+      )
+
+    } else if (endsWith(file_loc, ".parquet")) {
+
+      return(
+        withr::with_tempfile("parquet_file", {
+          AzureStor::storage_download(azcontainer,
+                                      file_loc,
+                                      parquet_file,
+                                      overwrite = TRUE
+          )
+
+          arrow::read_parquet(parquet_file)
+        }, fileext = ".parquet")
+      )
+
+    } else if (endsWith(file_loc, ".qs2")) {
+
+      return(
+        withr::with_tempfile("qs2_file", {
+          AzureStor::storage_download(azcontainer,
+                                      file_loc,
+                                      qs2_file,
+                                      overwrite = TRUE
+          )
+          qs2::qs_read(qs2_file)
+        }, fileext = ".qs2"
+        )
+      )
+
+    } else if (endsWith(file_loc, ".tif")) {
+
+      return(
+        withr::with_tempfile("tif_file", {
+          AzureStor::storage_download(azcontainer,
+                                      file_loc,
+                                      tif_file,
+                                      overwrite = TRUE
+          )
+          terra::rast(tif_file)
+        }, fileext = ".tif")
+      )
+
+    }
+  }
+
+  if (io == "write") {
+    if (!grepl(".rds$|.rda$|.csv$|.xlsx$|.xls$|.png$|.jpg$|.jpeg$|.parquet$|.qs2$", file_loc)) {
+      cli::cli_abort(paste0("Please pass a path including the file name in file_loc.",
+                            " (i.e., folder/data.csv)"))
+    }
+
+    if (endsWith(file_loc, ".rds")) {
+      AzureStor::storage_save_rds(object = obj, container = azcontainer, file = file_loc)
+    }
+
+    if (endsWith(file_loc, ".rda")) {
+      AzureStor::storage_save_rdata(object = obj, container = azcontainer, file = file_loc)
+    }
+
+    if (endsWith(file_loc, ".csv")) {
+      AzureStor::storage_write_csv(object = obj, container = azcontainer, file = file_loc)
+    }
+
+    if (endsWith(file_loc, ".xlsx") | endsWith(file_loc, ".xls")) {
+
+      file_ext <- NA_character_
+      if (endsWith(file_loc, ".xlsx")) {
+        file_ext <- ".xlsx"
+      } else {
+        file_ext <- ".xls"
+      }
+
+      withr::with_tempfile("excel_file", {
+        writexl::write_xlsx(obj,
+                            path = excel_file)
+
+        AzureStor::storage_upload(
+          container = azcontainer,
+          dest = file_loc,
+          src = excel_file
+        )
+
+      }, fileext = file_ext)
+
+    }
+
+    if (endsWith(file_loc, ".parquet")) {
+
+      withr::with_tempfile("parquet_file", {
+
+        arrow::write_parquet(obj, parquet_file)
+
+        AzureStor::storage_upload(
+          container = azcontainer,
+          dest = file_loc,
+          src = parquet_file
+        )
+
+      }, fileext = ".parquet"
+      )
+
+    }
+
+    if (endsWith(file_loc, ".qs2")) {
+
+      withr::with_tempfile("qs2_file", {
+        qs2::qs_save(obj, qs2_file)
+
+        AzureStor::storage_upload(
+          container = azcontainer,
+          dest = file_loc,
+          src = qs2_file
+        )
+      }, fileext = ".qs2")
+
+    }
+
+    if ("gg" %in% class(obj)) {
+
+      withr::with_tempfile("gg_file", {
+        ggplot2::ggsave(filename = gg_file, plot = obj, ...)
+
+        AzureStor::storage_upload(
+          container = azcontainer,
+          src       = gg_file,
+          dest      = file_loc
+        )
+
+      }, fileext = paste0(".", tools::file_ext(file_loc)))
+
+    }
+
+    if ("flextable" %in% class(obj)) {
+
+      if (!requireNamespace("flextable", quietly = TRUE)) {
+        stop('Package "flextable" must be installed to write flextable objects.',
+             .call = FALSE
+        )
+      }
+
+      withr::with_tempfile("ft_file", {
+
+        flextable::save_as_image(obj, path = ft_file)
+
+        # Upload the temp file to Azure Blob
+        AzureStor::storage_upload(
+          container = azcontainer,
+          src       = ft_file,
+          dest      = file_loc,
+          overwrite = TRUE
+        )
+      }, fileext = paste0(".", tools::file_ext(basename(file_loc))))
+
+    }
+
+  }
+
+  if (io == "upload") {
+    AzureStor::storage_upload(container = azcontainer, dest = file_loc, src = local_path)
+  }
+
+  if (io == "delete") {
+    if (!AzureStor::storage_file_exists(azcontainer, file_loc)) {
+      stop("File does not exist")
+    }
+
+    if (force_delete) {
+      AzureStor::delete_storage_file(azcontainer, file_loc, confirm = F)
+    } else {
+      x <- readline(prompt = "Are you sure you want to delete this folder? It can only be recovered by an administrator. [Y/N]")
+      x <- tolower(x)
+
+
+      if (grepl("y|n", x)) {
+        if (x == "y") {
+          AzureStor::delete_storage_file(azcontainer, file_loc, confirm = F)
+          cli::cli_alert_info("File deleted!")
+        } else {
+          cli::cli_alert_info("Deletion canceled.")
+        }
+      } else {
+        stop("Response must be 'Y' or 'N'")
+      }
+    }
+  }
+
+  if (io == "delete.dir") {
+    if (!AzureStor::storage_file_exists(azcontainer, file_loc)) {
+      stop("Folder does not exist")
+    }
+
+    if (force_delete) {
+      AzureStor::delete_adls_dir(azcontainer, file_loc, recursive = TRUE, confirm = FALSE)
+    } else {
+      x <- readline(prompt = "Are you sure you want to delete this folder? It can only be recovered by an administrator. [Y/N]")
+      x <- tolower(x)
+
+      if (grepl("y|n", x)) {
+        if (x == "y") {
+          AzureStor::delete_adls_dir(azcontainer, file_loc, recursive = TRUE, confirm = FALSE)
+          cli::cli_alert_info("Folder deleted!")
+        } else {
+          cli::cli_alert_info("Deletion canceled.")
+        }
+      } else {
+        stop("Response must be 'Y' or 'N'")
+      }
+    }
+
+    invisible()
+  }
+
+}
+
+# Private functions ----
+
+#' Reads an Excel file from Azure to the R environment
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' This function is an extension of the readxl() that adapts to files with
+#' multiple tabs. If there are multiple tabs, each sheet are downloaded into a
+#' named list with the corresponding tab name.
+#'
+#' @details
+#' Actually, this function doesn't need to be used on Azure files. It can work
+#' with local files as well.
+#'
+#'
+#' @param src `str` Path to the Excel file.
+#' @param sheet `int` or `str` Sheet to read. Either a string (the name of a sheet),
+#' or an integer (the position of the sheet).
+#' Ignored if the sheet is specified via range. If neither argument specifies the sheet,
+#' defaults to the first sheet.
+#' @param ... Additional parameters of [readxl::read_excel()].
+#'
+#' @returns `tibble` or `list` A tibble or a list of tibbles containing data from
+#' the Excel file.
+#' @keywords internal
+#'
+read_excel_from_azure <- function(src, sheet = NULL, ...) {
+
+  if (!is.null(sheet)) {
+    # Read the specified sheet
+    output <- readxl::read_excel(path = src, sheet = sheet, ...)
+  } else {
+    # Read all sheets
+    sheets <- readxl::excel_sheets(src)
+    output <- purrr::map(sheets, \(x) readxl::read_excel(path = src, sheet = x, ...))
+
+    names(output) <- sheets
+  }
+
+  return(output)
+}
+
