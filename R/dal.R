@@ -456,7 +456,7 @@ azure_io <- function(
                                       excel_file,
                                       overwrite = TRUE
           )
-          read_excel_from_edav(src = excel_file, ...)
+          read_excel_from_azure(src = excel_file, ...)
         }, fileext = file_ext)
       )
 
