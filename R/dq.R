@@ -389,22 +389,31 @@
 #' falls back to the schema bundled with the package.
 #'
 #' Schema files are YAML documents stored at `schemas/<country>_<disease>.yaml`
-#' in the `projects` Azure container (or in `inst/schemas/` locally).
+#' in the `data` Azure container (or in `inst/schemas/` locally).
+#' The container name is read from `ERIFUNCTIONS_DATA_STORAGE_NAME` (default `"data"`).
 #'
 #' @param country `str` Country identifier matching the schema filename prefix
 #'   (e.g., `"dominican_republic"`, `"haiti"`).
 #' @param disease `str` Disease name matching the schema filename suffix
 #'   (e.g., `"malaria"`).
 #' @param azcontainer Azure container object from [get_azure_storage_connection()].
-#'   If `NULL`, the function uses the locally bundled schema file.
+#'   Defaults to the `data` container via `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'   Pass `NULL` to use only the locally bundled schema files.
 #' @returns A named list representing the parsed YAML schema.
 #' @examples
 #' \dontrun{
 #' schema <- load_dq_schema("dominican_republic", "malaria")
-#' schema <- load_dq_schema("haiti", "malaria", azcontainer = get_azure_storage_connection())
+#' schema <- load_dq_schema("haiti", "malaria")
 #' }
 #' @export
-load_dq_schema <- function(country, disease, azcontainer = NULL) {
+load_dq_schema <- function(
+    country,
+    disease,
+    azcontainer = suppressMessages(
+      get_azure_storage_connection(
+        storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+      )
+    )) {
   schema_path <- paste0("schemas/", country, "_", disease, ".yaml")
 
   if (!is.null(azcontainer)) {

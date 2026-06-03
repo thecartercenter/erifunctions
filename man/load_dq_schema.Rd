@@ -4,7 +4,12 @@
 \alias{load_dq_schema}
 \title{Load a DQ schema}
 \usage{
-load_dq_schema(country, disease, azcontainer = NULL)
+load_dq_schema(
+  country,
+  disease,
+  azcontainer = suppressMessages(get_azure_storage_connection(storage_name =
+    Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")))
+)
 }
 \arguments{
 \item{country}{\code{str} Country identifier matching the schema filename prefix
@@ -14,7 +19,8 @@ load_dq_schema(country, disease, azcontainer = NULL)
 (e.g., \code{"malaria"}).}
 
 \item{azcontainer}{Azure container object from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.
-If \code{NULL}, the function uses the locally bundled schema file.}
+Defaults to the \code{data} container via \code{ERIFUNCTIONS_DATA_STORAGE_NAME}.
+Pass \code{NULL} to use only the locally bundled schema files.}
 }
 \value{
 A named list representing the parsed YAML schema.
@@ -25,11 +31,12 @@ falls back to the schema bundled with the package.
 }
 \details{
 Schema files are YAML documents stored at \verb{schemas/<country>_<disease>.yaml}
-in the \code{projects} Azure container (or in \verb{inst/schemas/} locally).
+in the \code{data} Azure container (or in \verb{inst/schemas/} locally).
+The container name is read from \code{ERIFUNCTIONS_DATA_STORAGE_NAME} (default \code{"data"}).
 }
 \examples{
 \dontrun{
 schema <- load_dq_schema("dominican_republic", "malaria")
-schema <- load_dq_schema("haiti", "malaria", azcontainer = get_azure_storage_connection())
+schema <- load_dq_schema("haiti", "malaria")
 }
 }
