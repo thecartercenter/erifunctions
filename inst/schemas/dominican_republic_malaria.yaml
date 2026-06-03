@@ -19,6 +19,10 @@ temporal:
   cross_check_year_col: EpiWeekYear
   max_gap: 2
 
+preprocessing:
+  - remove_smart_quotes
+  - drop_rows_missing_year
+
 columns:
   Year:
     required: true

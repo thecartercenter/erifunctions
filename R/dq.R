@@ -93,19 +93,24 @@
     colnames(data) <- gsub("[ ()]", "", colnames(data))
   }
 
-  if ("drop_rows_missing_year" %in% steps) {
-    year_col <- schema$temporal$year_col %||% NULL
-    if (!is.null(year_col) && year_col %in% names(data)) {
-      n_before <- nrow(data)
-      data <- data[!is.na(data[[year_col]]), , drop = FALSE]
-      n_dropped <- n_before - nrow(data)
-      if (n_dropped > 0) {
-        cli::cli_alert_warning("Dropped {n_dropped} row{?s} with missing {.val {year_col}}.")
-      }
-    }
-  }
-
   state$data <- data
+  state
+}
+
+# Runs after alias resolution so the canonical year column name is present
+.dq_drop_missing_year <- function(state, schema) {
+  steps    <- schema$preprocessing %||% character(0)
+  year_col <- schema$temporal$year_col %||% NULL
+
+  if (!"drop_rows_missing_year" %in% steps) return(state)
+  if (is.null(year_col) || !year_col %in% names(state$data)) return(state)
+
+  n_before <- nrow(state$data)
+  state$data <- state$data[!is.na(state$data[[year_col]]), , drop = FALSE]
+  n_dropped  <- n_before - nrow(state$data)
+  if (n_dropped > 0) {
+    cli::cli_alert_warning("Dropped {n_dropped} row{?s} with missing {.val {year_col}}.")
+  }
   state
 }
 
@@ -469,8 +474,9 @@ load_dq_schema <- function(
 run_dq_checks <- function(data, schema, custom_checks = list()) {
   state <- .dq_state(data)
 
-  state <- .dq_preprocess(state, schema)
-  state <- .dq_resolve_aliases(state, schema)
+  state <- .dq_preprocess(state, schema)       # smart-quote removal, column name stripping
+  state <- .dq_resolve_aliases(state, schema)  # rename aliases to canonical names
+  state <- .dq_drop_missing_year(state, schema) # drop empty rows (needs canonical year column)
   state <- .dq_check_required(state, schema)
   state <- .dq_coerce_types(state, schema)
   state <- .dq_check_ranges(state, schema)
