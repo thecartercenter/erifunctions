@@ -537,7 +537,7 @@ azure_io <- function(
 #' @inheritParams erifunctions_io
 #' @export
 eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
 
@@ -551,7 +551,7 @@ eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("write", obj = obj, file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
 
@@ -565,7 +565,7 @@ eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("list", file_loc = file_loc, full_names = full_names, azure = azure, azcontainer = azcontainer)
 }
 
@@ -579,7 +579,7 @@ eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer
 #' @inheritParams erifunctions_io
 #' @export
 eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("exists.file", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -593,7 +593,7 @@ eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("exists.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -607,7 +607,7 @@ eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("create.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -621,7 +621,7 @@ eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -635,7 +635,7 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
