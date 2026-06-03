@@ -7,19 +7,20 @@
 dq_report(result)
 }
 \arguments{
-\item{result}{Named list returned by \code{\link[=run_dq_checks]{run_dq_checks()}}.}
+\item{result}{A \code{dq_result} object returned by \code{\link[=run_dq_checks]{run_dq_checks()}}.}
 }
 \value{
 Invisibly returns \code{result}.
 }
 \description{
-Prints an analyst-readable summary of \code{\link[=run_dq_checks]{run_dq_checks()}} output, including
+Prints an analyst-readable summary of a \code{dq_result} object, including
 data shape, corrections applied by column, and flagged issues grouped by
-type.
+type. Called automatically when a \code{dq_result} is printed.
 }
 \examples{
 \dontrun{
 result <- run_dq_checks(raw_data, schema)
+result          # print method calls dq_report automatically
 dq_report(result)
 }
 }

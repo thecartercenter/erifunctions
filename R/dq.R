@@ -502,20 +502,24 @@ run_dq_checks <- function(data, schema, custom_checks = list()) {
     "DQ checks complete: {n_corrections} correction{?s}, {n_flags} flag{?s} for review."
   )
 
-  list(data = state$data, log = state$log, flags = state$flags)
+  structure(
+    list(data = state$data, log = state$log, flags = state$flags),
+    class = "dq_result"
+  )
 }
 
 #' Print a formatted DQ summary report
 #'
-#' Prints an analyst-readable summary of [run_dq_checks()] output, including
+#' Prints an analyst-readable summary of a `dq_result` object, including
 #' data shape, corrections applied by column, and flagged issues grouped by
-#' type.
+#' type. Called automatically when a `dq_result` is printed.
 #'
-#' @param result Named list returned by [run_dq_checks()].
+#' @param result A `dq_result` object returned by [run_dq_checks()].
 #' @returns Invisibly returns `result`.
 #' @examples
 #' \dontrun{
 #' result <- run_dq_checks(raw_data, schema)
+#' result          # print method calls dq_report automatically
 #' dq_report(result)
 #' }
 #' @export
@@ -563,4 +567,26 @@ dq_report <- function(result) {
   }
 
   invisible(result)
+}
+
+#' S3 methods for dq_result objects
+#'
+#' @param x,object A `dq_result` object returned by `run_dq_checks()`.
+#' @param ... Unused; included for S3 method compatibility.
+#' @name dq_result-methods
+NULL
+
+#' @export
+#' @rdname dq_result-methods
+print.dq_result <- function(x, ...) {
+  dq_report(x)
+}
+
+#' @export
+#' @rdname dq_result-methods
+summary.dq_result <- function(object, ...) {
+  cli::cli_text(
+    "{nrow(object$data)} rows | {nrow(object$log)} correction{?s} | {nrow(object$flags)} flag{?s}"
+  )
+  invisible(object)
 }
