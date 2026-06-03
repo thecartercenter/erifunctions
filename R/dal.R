@@ -21,7 +21,9 @@
 #'
 #' See **Details** of [AzureAuth::get_azure_token()] for further details.
 #' @param creds_yaml_path `str` Path to a YAML credentials file containing service principal
-#' credentials. If `NULL` (default), interactive authentication is used via `auth`.
+#' credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). If `NULL` (default) and
+#' the environment variables `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
+#' are set, those are used automatically. Otherwise falls back to interactive auth via `auth`.
 #' @param ... additional parameters passed to [AzureAuth::get_azure_token()].
 #' @returns Azure container object
 #' @examples
@@ -39,20 +41,31 @@ get_azure_storage_connection <- function(
     creds_yaml_path = NULL,
     ...) {
 
-  if (!is.null(creds_yaml_path)) {
+  sp_client_id     <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_ID")
+  sp_client_secret <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_SECRET")
+
+  if (nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0) {
+    mytoken <- AzureAuth::get_azure_token(
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = sp_client_id,
+      auth_type = "client_credentials",
+      password  = sp_client_secret
+    )
+  } else if (!is.null(creds_yaml_path)) {
     creds <- yaml::read_yaml(creds_yaml_path)
     mytoken <- AzureAuth::get_azure_token(
-      resource = "https://storage.azure.com/",
-      tenant = tenant_id,
-      app = creds$tcc_azure$client_id,
-      auth_type = NULL,
-      password = creds$tcc_azure$client_secret
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = creds$tcc_azure$client_id,
+      auth_type = "client_credentials",
+      password  = creds$tcc_azure$client_secret
     )
   } else {
     mytoken <- AzureAuth::get_azure_token(
-      resource = "https://storage.azure.com/",
-      tenant = tenant_id,
-      app = app_id,
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = app_id,
       auth_type = auth
     )
   }
