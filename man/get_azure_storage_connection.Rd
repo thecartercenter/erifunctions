@@ -34,7 +34,9 @@ Valid values are:\code{"authorization_code"}, \code{"device_code"},
 See \strong{Details} of \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}} for further details.}
 
 \item{creds_yaml_path}{\code{str} Path to a YAML credentials file containing service principal
-credentials. If \code{NULL} (default), interactive authentication is used via \code{auth}.}
+credentials (\code{tcc_azure$client_id}, \code{tcc_azure$client_secret}). If \code{NULL} (default) and
+the environment variables \code{ERIFUNCTIONS_SP_CLIENT_ID} / \code{ERIFUNCTIONS_SP_CLIENT_SECRET}
+are set, those are used automatically. Otherwise falls back to interactive auth via \code{auth}.}
 
 \item{...}{additional parameters passed to \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}}.}
 }

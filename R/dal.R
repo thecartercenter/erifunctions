@@ -21,7 +21,9 @@
 #'
 #' See **Details** of [AzureAuth::get_azure_token()] for further details.
 #' @param creds_yaml_path `str` Path to a YAML credentials file containing service principal
-#' credentials. If `NULL` (default), interactive authentication is used via `auth`.
+#' credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). If `NULL` (default) and
+#' the environment variables `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
+#' are set, those are used automatically. Otherwise falls back to interactive auth via `auth`.
 #' @param ... additional parameters passed to [AzureAuth::get_azure_token()].
 #' @returns Azure container object
 #' @examples
@@ -39,20 +41,31 @@ get_azure_storage_connection <- function(
     creds_yaml_path = NULL,
     ...) {
 
-  if (!is.null(creds_yaml_path)) {
+  sp_client_id     <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_ID")
+  sp_client_secret <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_SECRET")
+
+  if (nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0) {
+    mytoken <- AzureAuth::get_azure_token(
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = sp_client_id,
+      auth_type = "client_credentials",
+      password  = sp_client_secret
+    )
+  } else if (!is.null(creds_yaml_path)) {
     creds <- yaml::read_yaml(creds_yaml_path)
     mytoken <- AzureAuth::get_azure_token(
-      resource = "https://storage.azure.com/",
-      tenant = tenant_id,
-      app = creds$tcc_azure$client_id,
-      auth_type = NULL,
-      password = creds$tcc_azure$client_secret
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = creds$tcc_azure$client_id,
+      auth_type = "client_credentials",
+      password  = creds$tcc_azure$client_secret
     )
   } else {
     mytoken <- AzureAuth::get_azure_token(
-      resource = "https://storage.azure.com/",
-      tenant = tenant_id,
-      app = app_id,
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = app_id,
       auth_type = auth
     )
   }
@@ -122,10 +135,10 @@ erifunctions_io <- function(
     full_names = TRUE,
     ...) {
 
-  opts <- c("read", "write", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
+  opts <- c("read", "write", "upload", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
 
   if (!io %in% opts) {
-    stop("io: must be 'read', 'write', 'delete', 'delete.dir', 'create.dir', 'exists.dir', 'exists.file' or 'list'")
+    stop("io: must be 'read', 'write', 'upload', 'delete', 'delete.dir', 'create.dir', 'exists.dir', 'exists.file' or 'list'")
   }
 
   if (io == "write" && is.null(obj)) {
@@ -236,6 +249,14 @@ erifunctions_io <- function(
       } else if (grepl("\\.png$|\\.jpg$|\\.jpeg$|\\.pdf$|\\.svg$", file_loc)) {
         ggplot2::ggsave(filename = file_loc, plot = obj, ...)
       }
+    }
+  }
+
+  if (io == "upload") {
+    if (azure) {
+      azure_io(io = "upload", file_loc = file_loc, local_path = obj, azcontainer = azcontainer)
+    } else {
+      stop("'upload' io is only valid when azure = TRUE.")
     }
   }
 
@@ -637,6 +658,23 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
+}
+
+#' Upload any local file to Azure
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Thin wrapper around [azure_io()] for uploading arbitrary local files to Azure,
+#' including binary formats (shapefiles, images, etc.) not handled by [eri_write()].
+#'
+#' @param local_path `str` Local path to the file to upload.
+#' @param file_loc `str` Destination path in Azure (including filename).
+#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#' @export
+eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
+  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
 
 # Private functions ----

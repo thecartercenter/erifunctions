@@ -1,0 +1,193 @@
+country: haiti
+disease: malaria
+language: fr
+time_grain: monthly
+aggregation: count
+expected_sheet: Sheet1
+
+admin:
+  admin1_col: Department
+  admin2_col: Commune
+  admin1_spatial: spatial/ht/hti_admin1.shp
+  admin2_spatial: spatial/ht/hti_admin2.shp
+  admin1_name_field: adm1_name
+
+temporal:
+  year_col: Year
+  period_col: Month
+  max_gap: 2
+
+columns:
+  Year:
+    required: true
+    type: numeric
+    aliases: [année, annee, Année, Annee, year, YEAR]
+    range: [2000, 2035]
+
+  Month:
+    required: true
+    type: categorical
+    aliases: [Mois, mois, month, MONTH]
+    allowed_values:
+      - January
+      - February
+      - March
+      - April
+      - May
+      - June
+      - July
+      - August
+      - September
+      - October
+      - November
+      - December
+    translations:
+      Janvier: January
+      "Janvier ": January
+      Fevrier: February
+      Février: February
+      Mars: March
+      Avril: April
+      Mai: May
+      Juin: June
+      Juillet: July
+      Aout: August
+      Août: August
+      Septembre: September
+      Octobre: October
+      Novembre: November
+      Decembre: December
+      Décembre: December
+
+  Department:
+    required: true
+    type: categorical
+    aliases: [Departement, Département, departement, département]
+    allowed_values:
+      - Artibonite
+      - Centre
+      - Grand-Anse
+      - Nippes
+      - Nord
+      - Nord-Est
+      - Nord-Ouest
+      - Ouest
+      - Sud
+      - Sud-Est
+    corrections:
+      "Grand'Anse": Grand-Anse
+      "Grand Anse": Grand-Anse
+      "Nord'Est": Nord-Est
+      "Nord Est": Nord-Est
+      "Nord'Ouest": Nord-Ouest
+      "Nord Ouest": Nord-Ouest
+      "Sud'Est": Sud-Est
+      "Sud Est": Sud-Est
+      "ARTIBONITE": Artibonite
+      "CENTRE": Centre
+      "GRAND-ANSE": Grand-Anse
+      "NIPPES": Nippes
+      "NORD": Nord
+      "NORD-EST": Nord-Est
+      "NORD-OUEST": Nord-Ouest
+      "OUEST": Ouest
+      "SUD": Sud
+      "SUD-EST": Sud-Est
+
+  Commune:
+    required: true
+    type: character
+    aliases: [commune, COMMUNE]
+    corrections:
+      "Abricotss": Abricots
+      "Cap Haitien": Cap-Haïtien
+      "Cap-Haitien": Cap-Haïtien
+      "Cap Haïtien": Cap-Haïtien
+      "Cite-Soleil": Cité Soleil
+      "Cite Soleil": Cité Soleil
+      "Leogane": Léogâne
+      "Léogane": Léogâne
+      "Petion-Ville": Pétion-Ville
+      "Petionville": Pétion-Ville
+      "Pétion Ville": Pétion-Ville
+
+  NumTestedMicro:
+    required: false
+    type: numeric
+    aliases: [TestMicroscopie, testmicroscopie, test_microscopie]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumMicroPos:
+    required: false
+    type: numeric
+    aliases: [Microcopiepositif, microscopiepositif, microscopie_positif]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumTestedTDRInstit:
+    required: false
+    type: numeric
+    aliases: [TDRinstitutionnel, tdrinstitutionnel, tdr_institutionnel]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumRDTPosInstit:
+    required: false
+    type: numeric
+    aliases: [TDRpositifinstitutionnel, tdrpositifinstitutionnel, tdr_positif_institutionnel]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumTestedInstit:
+    required: false
+    type: numeric
+    aliases: [Nbrepersonnetestée, Nbrepersonnetestee, nbrepersonnetestee, nbre_personne_testee]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumPosInstit:
+    required: false
+    type: numeric
+    aliases: [Nbrepersonnepos, nbrepersonnepos, nbre_personne_pos]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumTestedComm:
+    required: false
+    type: numeric
+    aliases: [TDRcommunautaire, tdrcommunautaire, tdr_communautaire]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumRDTPosComm:
+    required: false
+    type: numeric
+    aliases: [TDRpositifcommunautaire, tdrpositifcommunautaire, tdr_positif_communautaire]
+    range: [0, 1000000]
+    na_fill: 0
+
+  NumDeaths:
+    required: false
+    type: numeric
+    aliases: [Persdecedee, persdecedee, pers_decedee]
+    range: [0, 10000]
+    na_fill: 0
+
+derived:
+  totaltested:
+    formula: NumTestedInstit + NumTestedComm
+    type: numeric
+
+  totalcases:
+    formula: NumPosInstit + NumRDTPosComm
+    type: numeric
+
+  totaltestedRDT:
+    formula: NumTestedTDRInstit + NumTestedComm
+    type: numeric
+
+preprocessing:
+  - remove_smart_quotes
+  - strip_column_name_spaces
+  - drop_rows_missing_year
