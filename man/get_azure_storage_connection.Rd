@@ -5,24 +5,25 @@
 \title{Validate connection to Azure}
 \usage{
 get_azure_storage_connection(
-  tenant_id = "16decddb-28ac-4bea-8fc9-5844aadea669",
-  app_id = "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
-  resource_endpoint = "https://eridev.dfs.core.windows.net/",
-  storage_name = "projects",
+  tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
+  app_id = Sys.getenv("ERIFUNCTIONS_APP_ID"),
+  resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"),
+  storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
   auth = "authorization_code",
   creds_yaml_path = NULL,
   ...
 )
 }
 \arguments{
-\item{tenant_id}{\code{str} ID of the Azure tenant}
+\item{tenant_id}{\code{str} ID of the Azure tenant. Defaults to \code{Sys.getenv("ERIFUNCTIONS_TENANT_ID")}.}
 
-\item{app_id}{\code{str} Application ID defaults to \code{"04b07795-8ddb-461a-bbee-02f9e1bf7b46"},
-this can be changed if you have a service principal.}
+\item{app_id}{\code{str} Application ID. Defaults to \code{Sys.getenv("ERIFUNCTIONS_APP_ID")}.}
 
-\item{resource_endpoint}{\code{str} the URL used to connect to the Azure resource}
+\item{resource_endpoint}{\code{str} URL used to connect to the Azure resource.
+Defaults to \code{Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT")}.}
 
-\item{storage_name}{\code{str} the name of the storage blob}
+\item{storage_name}{\code{str} Name of the storage blob.
+Defaults to \code{Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")}.}
 
 \item{auth}{\code{str} Authorization type defaults to \code{"authorization_code"},
 this can be changed if you have a service principal.
@@ -32,18 +33,17 @@ Valid values are:\code{"authorization_code"}, \code{"device_code"},
 
 See \strong{Details} of \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}} for further details.}
 
-\item{creds_yaml_path}{\code{str} Path to the YAML file in Posit workbench.
-If \code{NULL}, the path will be in \code{"~/credentials/posit_workbench_creds.yaml"}.}
+\item{creds_yaml_path}{\code{str} Path to a YAML credentials file containing service principal
+credentials. If \code{NULL} (default), interactive authentication is used via \code{auth}.}
 
 \item{...}{additional parameters passed to \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}}.}
 }
 \value{
-Azure container verification
+Azure container object
 }
 \description{
 Generate token which connects to TCC Azure resources and
-validates that the individual still has access. The current tenant ID
-is hard coded for TCC RBLF resources.
+validates that the individual still has access.
 }
 \examples{
 \dontrun{

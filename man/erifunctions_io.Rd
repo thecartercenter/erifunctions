@@ -10,7 +10,7 @@ erifunctions_io(
   obj = NULL,
   azure = TRUE,
   azcontainer = suppressMessages(get_azure_storage_connection()),
-  full_names = T,
+  full_names = TRUE,
   ...
 )
 }
@@ -42,29 +42,32 @@ Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 \item{...}{Optional parameters that work with \code{\link[readr:read_delim]{readr::read_delim()}} or \code{\link[readxl:read_excel]{readxl::read_excel()}}.}
 }
 \value{
-Conditional on \code{io}. If \code{io} is \code{"read"}, then it will return a tibble. If \code{io} is \code{"list"}, it will return a
-list of file names. Otherwise, the function will return \code{NULL}. \code{exists.dir} and \code{exists.file} will return a \code{logical}.
+Conditional on \code{io}. If \code{io} is \code{"read"}, then it will return a tibble. If \code{io} is
+\code{"list"}, it will return a list of file names. Otherwise, the function will return \code{NULL}.
+\code{exists.dir} and \code{exists.file} will return a \code{logical}.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 Manages read/write/list/create/delete functions for erifunctions. This function
 is adapted from \href{https://github.com/nish-kishore/tidypolis/blob/4e2f75e5ee3205b84c5b78f4b1776e2270e1f9ec/R/dal.R#L15}{tidypolis_io}.
+
+For a more ergonomic interface with tab-completion and per-operation help pages,
+consider the verb-named wrappers: \code{\link[=eri_read]{eri_read()}}, \code{\link[=eri_write]{eri_write()}}, \code{\link[=eri_list]{eri_list()}},
+\code{\link[=eri_file_exists]{eri_file_exists()}}, \code{\link[=eri_dir_exists]{eri_dir_exists()}}, \code{\link[=eri_dir_create]{eri_dir_create()}}, \code{\link[=eri_delete]{eri_delete()}},
+\code{\link[=eri_dir_delete]{eri_dir_delete()}}.
 }
 \examples{
 \dontrun{
-df <- erifunctions_io("read", file_loc = "df1.csv") # read file from Azure
-# Passing parameters that work with read_csv or read_excel, like sheet or skip.
+df <- erifunctions_io("read", file_loc = "df1.csv")
 df2 <- erifunctions_io("read", file_loc = "df2.xlsx", sheet = 1, skip = 2)
 list_of_df <- list(df_1 = df, df_2 = df)
-# Saves df to the test folder in Azure
 erifunctions_io("write", file_loc = "Data/test/df.csv", obj = df)
-# Saves list_of_df as an Excel file with multiple sheets.
 erifunctions_io("write", file_loc = "Data/test/df.xlsx", obj = list_of_df)
-erifunctions_io("exists.dir", "Data/nonexistentfolder") # returns FALSE
-erifunctions_io("exists.file", file_loc = "Data/test/df1.csv") # returns TRUE
-erifunctions_io("create", "Data/nonexistentfolder") # creates a folder called nonexistentfolder
-erifunctions_io("list") # list all files from the default directory
+erifunctions_io("exists.dir", "Data/nonexistentfolder")
+erifunctions_io("exists.file", file_loc = "Data/test/df1.csv")
+erifunctions_io("create.dir", "Data/nonexistentfolder")
+erifunctions_io("list")
 }
 
 }

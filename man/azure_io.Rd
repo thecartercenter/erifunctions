@@ -9,7 +9,7 @@ azure_io(
   file_loc = NULL,
   obj = NULL,
   azcontainer = suppressMessages(get_azure_storage_connection()),
-  force_delete = F,
+  force_delete = FALSE,
   local_path = NULL,
   ...
 )
@@ -30,16 +30,15 @@ of interest. See examples.
 \item \code{"delete.dir"} Deletes a folder.
 }}
 
-\item{file_loc}{\code{str} Location to "read", "write", "exists.dir", "exists.file", "create" or "list", can include
-the information in \code{default_dir} if you set that parameter to \code{NULL}.}
+\item{file_loc}{\code{str} Location to "read", "write", "exists.dir", "exists.file", "create" or "list".}
 
 \item{obj}{\code{robj} Object to be saved, needed for \code{"write"}. Defaults to \code{NULL}.}
 
 \item{azcontainer}{Azure container object returned from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
 
-\item{force_delete}{\code{logical} Use delete io without verification in the command line.}
+\item{force_delete}{\code{logical} Use delete io without confirmation prompt. Default \code{FALSE}.}
 
-\item{local_path}{\code{str} Local file pathway to upload a file to EDAV. Default is \code{NULL}.
+\item{local_path}{\code{str} Local file pathway to upload a file to Azure. Default is \code{NULL}.
 This parameter is only required when passing \code{"upload"} in the \code{io} parameter.}
 
 \item{...}{Optional parameters that work with \code{\link[readr:read_delim]{readr::read_delim()}}, \code{\link[readxl:read_excel]{readxl::read_excel()}}, or \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}}.}
@@ -54,18 +53,15 @@ all files in a folder.
 }
 \examples{
 \dontrun{
-df <- azure_io("read", file_loc = "df1.csv") # read file from EDAV
-# Passing parameters that work with read_csv or read_excel, like sheet or skip.
+df <- azure_io("read", file_loc = "df1.csv")
 df2 <- azure_io("read", file_loc = "df2.xlsx", sheet = 1, skip = 2)
 list_of_df <- list(df_1 = df, df_2 = df)
-# Saves df to the test folder in EDAV
 azure_io("write", file_loc = "Data/test/df.csv", obj = df)
-# Saves list_of_df as an Excel file with multiple sheets.
 azure_io("write", file_loc = "Data/test/df.xlsx", obj = list_of_df)
-azure_io("exists.dir", "Data/nonexistentfolder") # returns FALSE
-azure_io("exists.file", file_loc = "Data/test/df1.csv") # returns TRUE
-azure_io("create", "Data/nonexistentfolder") # creates a folder called nonexistentfolder
-azure_io("list") # list all files from the default directory
+azure_io("exists.dir", "Data/nonexistentfolder")
+azure_io("exists.file", file_loc = "Data/test/df1.csv")
+azure_io("create", "Data/nonexistentfolder")
+azure_io("list")
 azure_io("upload", file_loc = "Data/test", local_path = "C:/Users/ABC1/Desktop/df2.csv")
 }
 }
