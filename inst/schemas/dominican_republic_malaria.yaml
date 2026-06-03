@@ -1,0 +1,201 @@
+country: dominican_republic
+disease: malaria
+language: es
+time_grain: weekly
+aggregation: case
+expected_sheet: Hoja1
+
+admin:
+  admin1_col: Province_Residence
+  admin2_col: Municipality_Residence
+  admin1_spatial: spatial/dr/dom_admin1.shp
+  admin2_spatial: spatial/dr/dom_admin2.shp
+  admin1_name_field: adm1_name
+
+temporal:
+  year_col: Year
+  period_col: EpiWeek
+  date_col: SampleDate
+  cross_check_year_col: EpiWeekYear
+  max_gap: 2
+
+columns:
+  Year:
+    required: true
+    type: numeric
+    aliases: [Año, ano, Ano, year, YEAR]
+    range: [2000, 2035]
+
+  EpiWeek:
+    required: true
+    type: numeric
+    aliases: [Sem, semana, Semana, epi_week, EpiWeek, week, Week]
+    range: [1, 53]
+
+  Age:
+    required: true
+    type: numeric
+    aliases: [Edad, edad, age, AGE]
+    range: [0, 120]
+
+  Sex:
+    required: true
+    type: categorical
+    aliases: [Sexo, sexo, sex, SEX]
+    allowed_values: [Masculino, Femenino, Male, Female, M, F]
+    translations:
+      Masculino: Male
+      Femenino: Female
+
+  Nationality:
+    required: false
+    type: character
+    aliases: [Nacionalidad, nacionalidad, nationality]
+
+  Province_Residence:
+    required: true
+    type: categorical
+    aliases: [Provincia residencia, "Provincia_residencia", "provincia residencia"]
+    allowed_values:
+      - Distrito Nacional
+      - Santo Domingo
+      - San Cristobal
+      - Peravia
+      - Azua
+      - San Juan
+      - Baoruco
+      - Barahona
+      - Pedernales
+      - Independencia
+      - La Romana
+      - San Pedro de Macoris
+      - El Seibo
+      - La Altagracia
+      - Hato Mayor
+      - Santiago
+      - Espaillat
+      - La Vega
+      - Monseñor Nouel
+      - Sanchez Ramirez
+      - Salcedo
+      - Maria Trinidad Sanchez
+      - Samana
+      - Puerto Plata
+      - Santiago Rodriguez
+      - Valverde
+      - Montecristi
+      - Dajabon
+      - Elias Pina
+      - San Jose de Ocoa
+      - Monte Plata
+      - Haiti
+    corrections:
+      "01 Distrito Nacional": Distrito Nacional
+      "01 DISTRITO NACIONAL": Distrito Nacional
+      "DISTRITO NACIONAL": Distrito Nacional
+      "02 Santo Domingo": Santo Domingo
+      "SANTO DOMINGO": Santo Domingo
+      "03 San Cristobal": San Cristobal
+      "SAN CRISTOBAL": San Cristobal
+      "04 Peravia": Peravia
+      "05 Azua": Azua
+      "AZUA 1": Azua
+      "06 San Juan": San Juan
+      "22 San Juan": San Juan
+      "SAN JUAN": San Juan
+      "07 Baoruco": Baoruco
+      "08 Barahona": Barahona
+      "BARAHONA": Barahona
+      "09 Pedernales": Pedernales
+      "10 Independencia": Independencia
+      "11 La Romana": La Romana
+      "12 San Pedro de Macoris": San Pedro de Macoris
+      "13 El Seibo": El Seibo
+      "14 La Altagracia": La Altagracia
+      "15 Hato Mayor": Hato Mayor
+      "16 Santiago": Santiago
+      "SANTIAGO": Santiago
+      "17 Espaillat": Espaillat
+      "18 La Vega": La Vega
+      "19 Monseñor Nouel": Monseñor Nouel
+      "20 Sanchez Ramirez": Sanchez Ramirez
+      "21 Salcedo": Salcedo
+      "22 Maria Trinidad Sanchez": Maria Trinidad Sanchez
+      "23 Samana": Samana
+      "24 Puerto Plata": Puerto Plata
+      "25 Santiago Rodriguez": Santiago Rodriguez
+      "26 Valverde": Valverde
+      "27 Montecristi": Montecristi
+      "28 Dajabon": Dajabon
+      "29 Elias Pina": Elias Pina
+      "30 San Jose de Ocoa": San Jose de Ocoa
+      "31 Monte Plata": Monte Plata
+      "Bahoruco": Baoruco
+
+  Municipality_Residence:
+    required: true
+    type: character
+    aliases: [Municipio residencia, "Municipio_residencia", "municipio residencia"]
+
+  Barrio_Residence:
+    required: false
+    type: character
+    aliases: [Barrio residencia, "Barrio_residencia"]
+
+  Search_Type:
+    required: false
+    type: categorical
+    aliases: [Tipo de Búsqueda, "Tipo_de_Busqueda", search_type]
+    allowed_values: [Pasiva, Activa, Passive, Active]
+    translations:
+      Pasiva: Passive
+      Activa: Active
+
+  SampleDate:
+    required: true
+    type: date
+    aliases: [Fecha Toma Muestra, "Fecha_Toma_Muestra", sample_date, SampleDate]
+
+  Condition:
+    required: false
+    type: categorical
+    aliases: [Condición, Condicion, condition]
+    allowed_values: [Vivo, Fallecido, Muerto, Alive, Deceased]
+    translations:
+      Vivo: Alive
+      Fallecido: Deceased
+      Muerto: Deceased
+
+  Province_Infection:
+    required: false
+    type: character
+    aliases: [Provincia de Infeccion, "Provincia_de_Infeccion"]
+
+  Municipality_Infection:
+    required: false
+    type: character
+    aliases: [Municipio de Infeccion, "Municipio_de_Infeccion"]
+
+  Location_Type:
+    required: false
+    type: categorical
+    aliases: [Tipo Localidad, "Tipo_Localidad", location_type]
+    allowed_values: [Urbana, Rural, Urban]
+    translations:
+      Urbana: Urban
+
+  Classification:
+    required: false
+    type: categorical
+    aliases: [Clasificacion_Procedencia, "Clasificacion Procedencia", classification]
+    allowed_values: [Autóctono, Autoctono, Importado, Autochthonous, Imported]
+    translations:
+      Autóctono: Autochthonous
+      Autoctono: Autochthonous
+      Importado: Imported
+
+  EpiWeekYear:
+    required: false
+    type: numeric
+    aliases: [epi_week_year, EpiWeekYear]
+    range: [2000, 2035]

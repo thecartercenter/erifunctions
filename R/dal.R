@@ -135,10 +135,10 @@ erifunctions_io <- function(
     full_names = TRUE,
     ...) {
 
-  opts <- c("read", "write", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
+  opts <- c("read", "write", "upload", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
 
   if (!io %in% opts) {
-    stop("io: must be 'read', 'write', 'delete', 'delete.dir', 'create.dir', 'exists.dir', 'exists.file' or 'list'")
+    stop("io: must be 'read', 'write', 'upload', 'delete', 'delete.dir', 'create.dir', 'exists.dir', 'exists.file' or 'list'")
   }
 
   if (io == "write" && is.null(obj)) {
@@ -249,6 +249,14 @@ erifunctions_io <- function(
       } else if (grepl("\\.png$|\\.jpg$|\\.jpeg$|\\.pdf$|\\.svg$", file_loc)) {
         ggplot2::ggsave(filename = file_loc, plot = obj, ...)
       }
+    }
+  }
+
+  if (io == "upload") {
+    if (azure) {
+      azure_io(io = "upload", file_loc = file_loc, local_path = obj, azcontainer = azcontainer)
+    } else {
+      stop("'upload' io is only valid when azure = TRUE.")
     }
   }
 
@@ -650,6 +658,23 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
+}
+
+#' Upload any local file to Azure
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Thin wrapper around [azure_io()] for uploading arbitrary local files to Azure,
+#' including binary formats (shapefiles, images, etc.) not handled by [eri_write()].
+#'
+#' @param local_path `str` Local path to the file to upload.
+#' @param file_loc `str` Destination path in Azure (including filename).
+#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#' @export
+eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
+  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
 
 # Private functions ----
