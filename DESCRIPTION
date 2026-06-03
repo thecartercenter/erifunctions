@@ -1,23 +1,38 @@
 Package: erifunctions
-Title: What the Package Does (One Line, Title Case)
+Title: ERI team functions
 Version: 0.1.1
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Nishant", "Kishore", , "ynm2@cdc.gov", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-0408-2747"))
+Description: Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.
+Depends: R (>= 4.1.0)
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Suggests: 
-    testthat (>= 3.0.0)
 Config/testthat/edition: 3
-Imports: 
+Imports:
+    AzureAuth,
+    AzureStor,
+    arrow,
     cli,
     dplyr,
+    ggplot2,
     glue,
     here,
     httr,
+    lubridate,
+    purrr,
+    qs2,
     readr,
+    readxl,
     rlang,
     tibble,
+    withr,
+    writexl,
     yaml
+Suggests:
+    flextable,
+    lifecycle,
+    terra,
+    testthat (>= 3.0.0)
