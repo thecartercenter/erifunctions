@@ -2,27 +2,27 @@
 % Please edit documentation in R/odk.R
 \name{list_all_odk_app_users}
 \alias{list_all_odk_app_users}
-\title{List all users in ODK}
+\title{List all app users in an ODK project}
 \usage{
 list_all_odk_app_users(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
-  project_id,
-  testing = FALSE
+  project_id
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{project_id}{\code{int} The project id for which you want to identify users}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 }
 \value{
-\code{tibble} Output of all app-users in the project
+\code{tibble} of app users
 }
 \description{
-Given verified access list all users
+List all app users in an ODK project
 }

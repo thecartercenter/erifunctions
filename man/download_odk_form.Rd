@@ -2,34 +2,36 @@
 % Please edit documentation in R/odk.R
 \name{download_odk_form}
 \alias{download_odk_form}
-\title{Download ODK form data}
+\title{Download all submissions from an ODK form}
 \usage{
 download_odk_form(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
   project_id,
   form_id,
-  testing = FALSE,
-  attachments = FALSE
+  attachments = FALSE,
+  data_con = NULL
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{project_id}{\code{int} Project id from \code{list_odk_projects()}}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{form_id}{\code{chr} From id from \code{list_odk_forms()}}
+\item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{form_id}{\code{chr} Form ID from \code{\link[=list_odk_forms]{list_odk_forms()}}}
 
-\item{attachments}{\code{bool} T/F if you want to include attachments from the form}
+\item{attachments}{\code{lgl} Include attachment metadata columns}
+
+\item{data_con}{Azure container for operation logging; \code{NULL} skips logging}
 }
 \value{
-\code{tibble} Download of all data from an ODK form
+\code{tibble} of all submissions
 }
 \description{
-Given verified access, project id and form ID, download all data from an
-ODK form
+Download all submissions from an ODK form
 }

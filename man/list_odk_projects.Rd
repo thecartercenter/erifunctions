@@ -5,21 +5,21 @@
 \title{List ODK projects}
 \usage{
 list_odk_projects(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
-  auth = Sys.getenv("ODK_TOKEN"),
-  testing = FALSE
+  auth = Sys.getenv("ODK_TOKEN")
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 }
 \value{
-\code{tibble} Output of all projects from API call
+\code{tibble} with columns \code{project_id}, \code{project}, \code{description}
 }
 \description{
-Given verified access, list all projects the user can access
+List ODK projects
 }
