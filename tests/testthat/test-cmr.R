@@ -151,6 +151,87 @@ test_that("load_cmr_schema Ethiopia has Fly Collection and River Prospection", {
   expect_true("River Prospection" %in% sheet_names)
 })
 
+#### Tests for French CMR schemas (issue #29) ####
+
+test_that("load_cmr_schema tcd has correct metadata", {
+  schema <- load_cmr_schema("tcd")
+  expect_equal(schema$country_code, "tcd")
+  expect_equal(schema$language, "fr")
+  expect_equal(schema$template, "french_cmr")
+})
+
+test_that("load_cmr_schema tcd has sheet_aliases block", {
+  schema <- load_cmr_schema("tcd")
+  expect_true("sheet_aliases" %in% names(schema))
+  expect_equal(schema$sheet_aliases[["rb_treatment"]], "Oncho Traitement")
+  expect_equal(schema$sheet_aliases[["lf_treatment"]], "Traitement FL")
+})
+
+test_that("load_cmr_schema mad has no rb_treatment alias (LF-only country)", {
+  schema <- load_cmr_schema("mad")
+  expect_false("rb_treatment" %in% names(schema$sheet_aliases))
+  expect_true("lf_treatment" %in% names(schema$sheet_aliases))
+  expect_equal(schema$sheet_aliases[["lf_treatment"]], "Traitement FL")
+})
+
+test_that("load_cmr_schema mad uses PCMPI FL as lf_mmdp alias", {
+  schema <- load_cmr_schema("mad")
+  expect_equal(schema$sheet_aliases[["lf_mmdp"]], "PCMPI FL")
+})
+
+test_that("load_cmr_schema French schemas: each sheet has field_code_prefix and required_fields", {
+  for (country in c("mad", "tcd")) {
+    schema <- load_cmr_schema(country)
+    for (sheet in names(schema$sheets)) {
+      sheet_def <- schema$sheets[[sheet]]
+      expect_true("field_code_prefix" %in% names(sheet_def),
+                  info = paste(country, sheet, "missing field_code_prefix"))
+      expect_true("required_fields" %in% names(sheet_def),
+                  info = paste(country, sheet, "missing required_fields"))
+      expect_gt(length(sheet_def$required_fields), 0L,
+                label = paste(country, sheet, "required_fields empty"))
+    }
+  }
+})
+
+test_that("eri_ingest_cmr resolves slug alias to French sheet name", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    sheet_name  = "Oncho Traitement",
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows   = list(c("2024", "Logone", "500"))
+  )
+  out <- eri_ingest_cmr(tmp, sheet = "rb_treatment", country = "tcd")
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 1L)
+  expect_equal(out[["#rbtrt_year"]], "2024")
+  expect_equal(out$country, "tcd")
+})
+
+test_that("eri_ingest_cmr passes through unrecognised slug unchanged (direct sheet name)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    sheet_name  = "Traitement FL",
+    field_codes = c("#lftrt_year", "#lftrt_adm1"),
+    data_rows   = list(c("2024", "Antananarivo"))
+  )
+  out <- eri_ingest_cmr(tmp, sheet = "Traitement FL", country = "mad")
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 1L)
+})
+
+test_that("eri_ingest_cmr alias resolution works without country (no alias lookup)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    sheet_name  = "Oncho Traitement",
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1"),
+    data_rows   = list(c("2024", "North"))
+  )
+  out <- eri_ingest_cmr(tmp, sheet = "Oncho Traitement")
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 1L)
+})
+
 test_that("load_cmr_schema each sheet has field_code_prefix and required_fields", {
   for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
     schema <- load_cmr_schema(country)
@@ -167,7 +248,7 @@ test_that("load_cmr_schema each sheet has field_code_prefix and required_fields"
 })
 
 test_that("load_cmr_schema required_fields all start with #", {
-  for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       fields <- schema$sheets[[sheet]]$required_fields
