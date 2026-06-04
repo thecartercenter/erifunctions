@@ -615,6 +615,128 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
   gaps
 }
 
+#' Flag cross-field consistency violations defined in a schema
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Evaluates named consistency rules from the schema's `consistency` block and
+#' flags rows where a rule is violated. Each rule specifies a `lhs` column, a
+#' comparison `op`, and either a `rhs` column or a `rhs_value` constant.
+#'
+#' Schema format (add a `consistency:` block to any YAML schema):
+#' ```yaml
+#' consistency:
+#'   positives_le_tested:
+#'     lhs: NumMicroPos
+#'     op: "<="
+#'     rhs: NumTestedMicro
+#'     message: "Positive cases exceed tested"
+#'   age_non_negative:
+#'     lhs: Age
+#'     op: ">="
+#'     rhs_value: 0
+#'     message: "Age is negative"
+#' ```
+#' Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`.
+#' Missing values (`NA`) in either operand skip the check for that row.
+#'
+#' Works on a plain tibble (returns a tibble of violations) or a `dq_result`
+#' (appends violations to `$flags`).
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param schema Named list from [load_dq_schema()].
+#'
+#' @returns A tibble of violations with columns `row`, `column`, `value`, and
+#'   `issue` (includes the rule name and message). If the input is a `dq_result`,
+#'   violations are appended to `$flags` and the updated `dq_result` is returned.
+#'   Returns an empty tibble when all rules pass.
+#' @examples
+#' \dontrun{
+#' schema <- load_dq_schema("haiti", "malaria")
+#' run_dq_checks(data, schema) |> add_anomaly_consistency(schema)
+#' }
+#' @export
+add_anomaly_consistency <- function(data, schema) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  rules <- schema$consistency %||% list()
+  if (length(rules) == 0) {
+    cli::cli_alert_info("No consistency rules defined in schema.")
+    if (is_dq) return(invisible(data))
+    return(tibble::tibble(row    = integer(), column = character(),
+                          value  = character(), issue  = character()))
+  }
+
+  all_flags <- tibble::tibble(row    = integer(), column = character(),
+                               value  = character(), issue  = character())
+
+  for (rule_name in names(rules)) {
+    rule <- rules[[rule_name]]
+    lhs  <- rule$lhs
+    op   <- rule$op %||% "=="
+
+    if (is.null(lhs) || !lhs %in% names(df)) {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: column {.val {lhs}} not found, skipping."
+      )
+      next
+    }
+
+    rhs_vals <- if (!is.null(rule$rhs) && rule$rhs %in% names(df)) {
+      df[[rule$rhs]]
+    } else if (!is.null(rule$rhs_value)) {
+      rule$rhs_value
+    } else {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: no valid {.arg rhs} or {.arg rhs_value}, skipping."
+      )
+      next
+    }
+
+    lhs_vals   <- df[[lhs]]
+    applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
+
+    ok <- switch(op,
+      "<=" = lhs_vals <= rhs_vals,
+      ">=" = lhs_vals >= rhs_vals,
+      "==" = lhs_vals == rhs_vals,
+      "<"  = lhs_vals <  rhs_vals,
+      ">"  = lhs_vals >  rhs_vals,
+      "!=" = lhs_vals != rhs_vals,
+      rep(TRUE, nrow(df))
+    )
+
+    violated <- which(applicable & !ok)
+    if (length(violated) > 0) {
+      rhs_desc <- rule$rhs %||% as.character(rule$rhs_value)
+      msg      <- rule$message %||% paste0(lhs, " ", op, " ", rhs_desc)
+      all_flags <- dplyr::bind_rows(
+        all_flags,
+        tibble::tibble(
+          row    = violated,
+          column = lhs,
+          value  = as.character(lhs_vals[violated]),
+          issue  = paste0("consistency [", rule_name, "]: ", msg)
+        )
+      )
+      cli::cli_alert_warning(
+        "{length(violated)} row{?s} violate consistency rule {.val {rule_name}}."
+      )
+    }
+  }
+
+  n_flags <- nrow(all_flags)
+  if (n_flags == 0) cli::cli_alert_success("All consistency checks passed.")
+
+  if (is_dq) {
+    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    return(invisible(data))
+  }
+  all_flags
+}
+
 #### 4) Public API ####
 
 #' Load a DQ schema
