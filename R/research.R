@@ -82,7 +82,7 @@ eri_research_init <- function(
 
   if (dry_run) {
     cli::cli_inform(c(
-      "i" = "Dry run — nothing written.",
+      "i" = "Dry run -- nothing written.",
       " " = "Would create local dirs: {.path {local_dirs}}",
       " " = "Would write: {.path {yaml_path}}",
       " " = "Would create Azure dir: {.path {azure_path}}"
@@ -187,7 +187,7 @@ eri_research_resume <- function(path = getwd(), data_con = NULL) {
 #' @returns `NULL` invisibly.
 #' @examples
 #' \dontrun{
-#' eri_research_log("Ran ITS model — negative binomial converged. Saving output.")
+#' eri_research_log("Ran ITS model -- negative binomial converged. Saving output.")
 #' }
 #' @export
 eri_research_log <- function(note, path = getwd()) {
@@ -382,7 +382,7 @@ eri_research_pull <- function(
 #' @returns Azure path the figure was uploaded to (invisibly).
 #' @examples
 #' \dontrun{
-#' eri_research_upload_figure("figs/its_model.png", caption = "ITS model — DR malaria 2024")
+#' eri_research_upload_figure("figs/its_model.png", caption = "ITS model -- DR malaria 2024")
 #' }
 #' @export
 eri_research_upload_figure <- function(
@@ -500,7 +500,6 @@ eri_research_upload_output <- function(
 #' @export
 eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL) {
   manifest <- .eri_research_read_manifest(path)
-  data_con <- .eri_research_con(data_con)
   analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
 
   data_dir <- file.path(path, "data")
@@ -510,9 +509,11 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
 
   local_files <- list.files(data_dir, recursive = TRUE, full.names = TRUE)
   if (length(local_files) == 0L) {
-    cli::cli_warn("The {.path data/} directory is empty — snapshot skipped.")
+    cli::cli_warn("The {.path data/} directory is empty -- snapshot skipped.")
     return(invisible(NULL))
   }
+
+  data_con <- .eri_research_con(data_con)
 
   timestamp    <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
   snap_path    <- paste0(manifest$azure_path, "snapshots/", timestamp, "/")
