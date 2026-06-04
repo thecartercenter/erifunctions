@@ -368,3 +368,192 @@ eri_research_pull <- function(
   })
 }
 
+#### eri_research_upload_figure ####
+
+#' Upload a figure to the research project outputs in Azure
+#'
+#' Uploads a local figure file to `research/{project_name}/outputs/figs/` in the
+#' `data/` Azure blob and records the upload in `research.yaml`.
+#'
+#' @param local_path `chr` Path to the local figure file (e.g. `"figs/its_model.png"`).
+#' @param caption `chr` or `NULL` Optional caption describing the figure.
+#' @param path `chr` Local project root (must contain `research.yaml`). Defaults to `getwd()`.
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Azure path the figure was uploaded to (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_upload_figure("figs/its_model.png", caption = "ITS model — DR malaria 2024")
+#' }
+#' @export
+eri_research_upload_figure <- function(
+    local_path,
+    caption  = NULL,
+    path     = getwd(),
+    data_con = NULL
+) {
+  if (!file.exists(local_path)) {
+    cli::cli_abort("File not found: {.path {local_path}}")
+  }
+  manifest  <- .eri_research_read_manifest(path)
+  data_con  <- .eri_research_con(data_con)
+  analyst   <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+
+  filename   <- basename(local_path)
+  azure_path <- paste0(manifest$azure_path, "outputs/figs/", filename)
+
+  dir_path <- paste0(manifest$azure_path, "outputs/figs")
+  if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
+    AzureStor::create_storage_dir(data_con, dir_path)
+  }
+  AzureStor::storage_upload(data_con, local_path, azure_path)
+
+  entry <- list(
+    type        = "figure",
+    filename    = filename,
+    azure_path  = azure_path,
+    caption     = if (is.null(caption)) NA_character_ else caption,
+    uploaded_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    uploaded_by = analyst
+  )
+  if (is.null(manifest$outputs)) manifest$outputs <- list()
+  manifest$outputs <- c(manifest$outputs, list(entry))
+  .eri_research_write_manifest(manifest, path)
+
+  cli::cli_alert_success("Figure {.file {filename}} uploaded to {.path {azure_path}}.")
+  invisible(azure_path)
+}
+
+#### eri_research_upload_output ####
+
+#' Upload an R object to the research project outputs in Azure
+#'
+#' Serializes an R object to a `.qs2` file and uploads it to
+#' `research/{project_name}/outputs/` in the `data/` Azure blob. Records the upload
+#' in `research.yaml`.
+#'
+#' @param obj R object to serialize and upload.
+#' @param filename `chr` Name for the output file (include `.qs2` extension, e.g. `"its_model.qs2"`).
+#' @param path `chr` Local project root (must contain `research.yaml`). Defaults to `getwd()`.
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Azure path the object was uploaded to (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_upload_output(model_fit, "its_model.qs2")
+#' }
+#' @export
+eri_research_upload_output <- function(
+    obj,
+    filename,
+    path     = getwd(),
+    data_con = NULL
+) {
+  manifest  <- .eri_research_read_manifest(path)
+  data_con  <- .eri_research_con(data_con)
+  analyst   <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+
+  tmp <- tempfile(fileext = ".qs2")
+  withr::defer(unlink(tmp))
+  qs2::qs_save(obj, tmp)
+
+  azure_path <- paste0(manifest$azure_path, "outputs/", filename)
+  dir_path   <- paste0(manifest$azure_path, "outputs")
+  if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
+    AzureStor::create_storage_dir(data_con, dir_path)
+  }
+  AzureStor::storage_upload(data_con, tmp, azure_path)
+
+  entry <- list(
+    type        = "object",
+    filename    = filename,
+    azure_path  = azure_path,
+    uploaded_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    uploaded_by = analyst
+  )
+  if (is.null(manifest$outputs)) manifest$outputs <- list()
+  manifest$outputs <- c(manifest$outputs, list(entry))
+  .eri_research_write_manifest(manifest, path)
+
+  cli::cli_alert_success("Output {.file {filename}} uploaded to {.path {azure_path}}.")
+  invisible(azure_path)
+}
+
+#### eri_research_snapshot ####
+
+#' Snapshot the full research project data directory to Azure
+#'
+#' Uploads every file in the local `data/` directory to
+#' `research/{project_name}/snapshots/{timestamp}/` in the `data/` Azure blob,
+#' writes a `_manifest.yaml` alongside listing what was included, and records
+#' the snapshot in `research.yaml`.
+#'
+#' Use this to freeze a reproducible checkpoint of all input data before a major
+#' analysis run or before sharing results.
+#'
+#' @param label `chr` or `NULL` Optional short label for this snapshot (e.g. `"pre-ITS-run"`).
+#' @param path `chr` Local project root (must contain `research.yaml` and `data/`). Defaults to `getwd()`.
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Azure snapshot path (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_snapshot(label = "pre-ITS-run")
+#' }
+#' @export
+eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL) {
+  manifest <- .eri_research_read_manifest(path)
+  data_con <- .eri_research_con(data_con)
+  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+
+  data_dir <- file.path(path, "data")
+  if (!dir.exists(data_dir)) {
+    cli::cli_abort("No {.path data/} directory found in {.path {path}}. Nothing to snapshot.")
+  }
+
+  local_files <- list.files(data_dir, recursive = TRUE, full.names = TRUE)
+  if (length(local_files) == 0L) {
+    cli::cli_warn("The {.path data/} directory is empty — snapshot skipped.")
+    return(invisible(NULL))
+  }
+
+  timestamp    <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+  snap_path    <- paste0(manifest$azure_path, "snapshots/", timestamp, "/")
+
+  # Upload each file preserving relative path under data/
+  rel_paths <- character(length(local_files))
+  for (i in seq_along(local_files)) {
+    rel      <- sub(paste0("^", normalizePath(data_dir, winslash = "/"), "/?"), "",
+                    normalizePath(local_files[[i]], winslash = "/"))
+    az_dest  <- paste0(snap_path, rel)
+    AzureStor::storage_upload(data_con, local_files[[i]], az_dest)
+    rel_paths[[i]] <- rel
+  }
+
+  # Write snapshot manifest to Azure
+  snap_manifest <- list(
+    project_name  = manifest$project_name,
+    snapshot_at   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    created_by    = analyst,
+    label         = if (is.null(label)) NA_character_ else label,
+    files         = as.list(rel_paths)
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  withr::defer(unlink(tmp))
+  yaml::write_yaml(snap_manifest, tmp)
+  AzureStor::storage_upload(data_con, tmp, paste0(snap_path, "_manifest.yaml"))
+
+  # Record in research.yaml
+  snap_entry <- list(
+    timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    label      = if (is.null(label)) NA_character_ else label,
+    azure_path = snap_path,
+    file_count = length(local_files)
+  )
+  if (is.null(manifest$snapshots)) manifest$snapshots <- list()
+  manifest$snapshots <- c(manifest$snapshots, list(snap_entry))
+  .eri_research_write_manifest(manifest, path)
+
+  cli::cli_alert_success(
+    "Snapshot of {length(local_files)} file{?s} saved to {.path {snap_path}}."
+  )
+  invisible(snap_path)
+}
+
