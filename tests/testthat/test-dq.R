@@ -1,3 +1,109 @@
+#### Tests for add_anomaly_consistency ####
+
+test_that("add_anomaly_consistency flags field-to-field violation", {
+  schema <- list(
+    consistency = list(
+      pos_le_tested = list(lhs = "pos", op = "<=", rhs = "tested",
+                           message = "Positives exceed tested")
+    )
+  )
+  df <- tibble::tibble(tested = c(100L, 50L, 80L),
+                       pos    = c(10L,  60L, 20L))  # row 2 violates
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$row, 2L)
+  expect_equal(out$column, "pos")
+  expect_true(grepl("pos_le_tested", out$issue))
+})
+
+test_that("add_anomaly_consistency flags field-to-value violation", {
+  schema <- list(
+    consistency = list(
+      age_nonneg = list(lhs = "age", op = ">=", rhs_value = 0,
+                        message = "Age is negative")
+    )
+  )
+  df  <- tibble::tibble(age = c(10L, -1L, 5L))
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$row, 2L)
+})
+
+test_that("add_anomaly_consistency returns empty tibble when all pass", {
+  schema <- list(
+    consistency = list(
+      pos_le_tested = list(lhs = "pos", op = "<=", rhs = "tested",
+                           message = "Positives exceed tested")
+    )
+  )
+  df  <- tibble::tibble(tested = c(100L, 50L), pos = c(10L, 20L))
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_consistency returns empty tibble when no rules defined", {
+  schema <- list()
+  df     <- tibble::tibble(x = 1:3)
+  out    <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_consistency skips NA values without error", {
+  schema <- list(
+    consistency = list(
+      pos_le_tested = list(lhs = "pos", op = "<=", rhs = "tested",
+                           message = "test")
+    )
+  )
+  df  <- tibble::tibble(tested = c(100L, NA_integer_, 80L),
+                        pos    = c(10L,  60L,         90L))  # row 3 violates; row 2 is NA
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$row, 3L)
+})
+
+test_that("add_anomaly_consistency works on dq_result and appends flags", {
+  schema <- list(
+    consistency = list(
+      pos_le_tested = list(lhs = "pos", op = "<=", rhs = "tested",
+                           message = "test")
+    )
+  )
+  df <- tibble::tibble(tested = c(100L, 50L), pos = c(10L, 60L))
+  dqr <- structure(
+    list(
+      data  = df,
+      log   = tibble::tibble(row = integer(), column = character(),
+                             original_value = character(), corrected_value = character(),
+                             rule = character(), action = character()),
+      flags = tibble::tibble(row = integer(), column = character(),
+                             value = character(), issue = character())
+    ),
+    class = "dq_result"
+  )
+  out <- add_anomaly_consistency(dqr, schema)
+  expect_s3_class(out, "dq_result")
+  expect_equal(nrow(out$flags), 1L)
+  expect_true(grepl("consistency", out$flags$issue))
+})
+
+test_that("add_anomaly_consistency uses Haiti schema rules correctly", {
+  schema <- load_dq_schema("haiti", "malaria", azcontainer = NULL)
+  df <- tibble::tibble(
+    NumTestedMicro     = c(100L, 50L),
+    NumMicroPos        = c(10L,  60L),   # row 2: 60 > 50, violation
+    NumTestedTDRInstit = c(200L, 200L),
+    NumRDTPosInstit    = c(20L,  20L),
+    NumTestedComm      = c(300L, 300L),
+    NumRDTPosComm      = c(30L,  30L),
+    NumPosInstit       = c(15L,  15L),
+    NumDeaths          = c(1L,   1L)
+  )
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$column, "NumMicroPos")
+})
+
 #### Shared helpers ####
 
 make_surveillance <- function() {

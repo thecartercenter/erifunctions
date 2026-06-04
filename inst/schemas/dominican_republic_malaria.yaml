@@ -203,3 +203,15 @@ columns:
     type: numeric
     aliases: [epi_week_year, EpiWeekYear]
     range: [2000, 2035]
+
+consistency:
+  epiweek_year_matches_year:
+    lhs: EpiWeekYear
+    op: "=="
+    rhs: Year
+    message: "EpiWeekYear does not match Year"
+  age_non_negative:
+    lhs: Age
+    op: ">="
+    rhs_value: 0
+    message: "Age is negative"
