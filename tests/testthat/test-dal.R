@@ -55,6 +55,197 @@ test_that(".eri_log_session is a no-op when flag is already set", {
   })
 })
 
+#### Tests for eri_trigger error paths (no Azure needed) ####
+
+test_that("eri_trigger errors clearly when GITHUB_PAT is missing", {
+  withr::with_envvar(list(GITHUB_PAT = ""), {
+    expect_error(
+      eri_trigger("hsp-mal", "dr", "malaria"),
+      "GITHUB_PAT"
+    )
+  })
+})
+
+test_that("eri_trigger errors clearly for unknown pipeline", {
+  withr::with_envvar(list(GITHUB_PAT = "fake-token"), {
+    expect_error(
+      eri_trigger("nonexistent-pipeline", "dr", "malaria"),
+      "Unknown pipeline"
+    )
+  })
+})
+
+#### Tests for eri_stage error paths (no Azure needed) ####
+
+test_that("eri_stage errors clearly for unknown pipeline", {
+  expect_error(
+    eri_stage("nonexistent-pipeline", "dr", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock")),
+    "Unknown pipeline"
+  )
+})
+
+test_that("eri_stage errors clearly for unregistered country", {
+  expect_error(
+    eri_stage("hsp-mal", "zz", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock")),
+    "not registered"
+  )
+})
+
+test_that("hsp-mal pipeline registry has required fields", {
+  reg <- .eri_pipeline_registry[["hsp-mal"]]
+  expect_false(is.null(reg))
+  expect_true(all(c("owner", "repo", "workflow", "project_folder", "country_map") %in% names(reg)))
+  expect_equal(reg$country_map[["dr"]], "dom")
+  expect_equal(reg$country_map[["ht"]], "hti")
+})
+
+test_that("rb-expansion registry has correct project_folder and all CMR countries", {
+  reg <- .eri_pipeline_registry[["rb-expansion"]]
+  expect_false(is.null(reg))
+  expect_equal(reg$project_folder, "health-rb-country-expansion-dev")
+  expect_true(all(c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd") %in% names(reg$country_map)))
+})
+
+#### Tests for eri_stage_cmr error paths (no Azure needed) ####
+
+test_that("eri_stage_cmr errors for unregistered country", {
+  expect_error(
+    eri_stage_cmr("zz",
+                  projects_con = structure(list(), class = "mock"),
+                  data_con     = structure(list(), class = "mock")),
+    "not registered"
+  )
+})
+
+test_that("eri_stage_cmr errors when source directory not found", {
+  with_mocked_bindings(
+    storage_dir_exists = function(...) FALSE,
+    list_storage_files = function(...) tibble::tibble(
+      name  = c("health-rb-country-expansion-dev/raw/filled_templates/uga/202603"),
+      size  = 0L,
+      isdir = TRUE
+    ),
+    .package = "AzureStor",
+    {
+      expect_error(
+        eri_stage_cmr("uga", period = "202603",
+                      projects_con = structure(list(), class = "mock"),
+                      data_con     = structure(list(), class = "mock")),
+        "Source directory not found"
+      )
+    }
+  )
+})
+
+test_that("eri_stage_cmr errors when no period dirs exist (period = NULL)", {
+  with_mocked_bindings(
+    list_storage_files = function(...) tibble::tibble(
+      name  = character(0),
+      size  = integer(0),
+      isdir = logical(0)
+    ),
+    .package = "AzureStor",
+    {
+      expect_error(
+        eri_stage_cmr("uga",
+                      projects_con = structure(list(), class = "mock"),
+                      data_con     = structure(list(), class = "mock")),
+        "No period directories"
+      )
+    }
+  )
+})
+
+test_that("eri_stage_cmr selects most recent period when period = NULL", {
+  mock_con <- structure(list(), class = "mock")
+
+  period_listing <- tibble::tibble(
+    name  = c(
+      "health-rb-country-expansion-dev/raw/filled_templates/uga/202601",
+      "health-rb-country-expansion-dev/raw/filled_templates/uga/202603",
+      "health-rb-country-expansion-dev/raw/filled_templates/uga/202512"
+    ),
+    size  = c(0L, 0L, 0L),
+    isdir = c(TRUE, TRUE, TRUE)
+  )
+
+  call_log <- character(0)
+
+  with_mocked_bindings(
+    list_storage_files = function(con, path, ...) {
+      call_log <<- c(call_log, path)
+      if (grepl("202603$", path)) {
+        return(tibble::tibble(
+          name  = paste0(path, "/uga_202603_report.xlsx"),
+          size  = 1000L,
+          isdir = FALSE
+        ))
+      }
+      period_listing
+    },
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    storage_download    = function(con, src, dest, ...) invisible(NULL),
+    storage_upload      = function(...) invisible(NULL),
+    create_storage_dir  = function(...) invisible(NULL),
+    .package = "AzureStor",
+    {
+      with_mocked_bindings(
+        .eri_write_log = function(...) invisible(NULL),
+        {
+          suppressMessages(
+            eri_stage_cmr("uga", projects_con = mock_con, data_con = mock_con)
+          )
+        }
+      )
+    }
+  )
+  expect_true(any(grepl("202603", call_log)))
+})
+
+#### Tests for eri_ingest error paths (no Azure needed) ####
+
+test_that("eri_ingest errors when file does not exist", {
+  expect_error(
+    eri_ingest("nonexistent/path/file.xlsx", "dr", "malaria",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "File not found"
+  )
+})
+
+test_that("eri_ingest errors clearly for unknown pipeline", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  expect_error(
+    eri_ingest(tmp, "dr", "malaria",
+               pipeline     = "nonexistent-pipeline",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "Unknown pipeline"
+  )
+})
+
+test_that("eri_ingest errors clearly for unregistered country", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  expect_error(
+    eri_ingest(tmp, "zz", "malaria",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "not registered"
+  )
+})
+
+test_that(".eri_schema_country_map maps dr and ht correctly", {
+  expect_equal(.eri_schema_country_map[["dr"]], "dominican_republic")
+  expect_equal(.eri_schema_country_map[["ht"]], "haiti")
+})
+
 #### Tests for eri_approve error paths (no Azure needed) ####
 
 test_that("eri_approve errors informatively when staged dir does not exist", {

@@ -187,6 +187,28 @@ derived:
     formula: NumTestedTDRInstit + NumTestedComm
     type: numeric
 
+consistency:
+  micro_pos_le_tested:
+    lhs: NumMicroPos
+    op: "<="
+    rhs: NumTestedMicro
+    message: "Microscopy positives exceed tested"
+  rdt_pos_instit_le_tested:
+    lhs: NumRDTPosInstit
+    op: "<="
+    rhs: NumTestedTDRInstit
+    message: "Institutional RDT positives exceed tested"
+  rdt_pos_comm_le_tested:
+    lhs: NumRDTPosComm
+    op: "<="
+    rhs: NumTestedComm
+    message: "Community RDT positives exceed tested"
+  deaths_le_cases:
+    lhs: NumDeaths
+    op: "<="
+    rhs: NumPosInstit
+    message: "Deaths exceed institutional positive cases"
+
 preprocessing:
   - remove_smart_quotes
   - strip_column_name_spaces

@@ -14,9 +14,9 @@
 #' @return `chr`/`bool` Verbose response or a T/F
 #' @export
 init_odk_connection <- function(
-    url = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$url,
-    user = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$name,
-    pass = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$pass,
+    url  = Sys.getenv("ODK_URL",  unset = "https://rblf.tccodk.org/"),
+    user = Sys.getenv("ODK_USER", unset = ""),
+    pass = Sys.getenv("ODK_PASS", unset = ""),
     testing = FALSE,
     verbose = TRUE
 ){
@@ -256,14 +256,13 @@ list_odk_form_users <- function(
     testing = FALSE
 ){
 
-  form_id <- URLencode(form_id)
-
   if(testing){
     (httr::GET(
       url = httr::modify_url(url, path = glue::glue("v1/example2"))
     ) |>
       httr::content())$code
   }else{
+    form_id <- URLencode(form_id)
     x <- httr::GET(
       url = paste0(url, "v1/projects/",project_id,"/forms/",form_id,"/assignments"),
       config = httr::add_headers(
@@ -311,8 +310,6 @@ update_odk_app_user_role <- function(
     url = Sys.getenv("ODK_URL"),
     auth = Sys.getenv("ODK_TOKEN")
 ){
-
-  form_id <- URLencode(form_id)
 
   if(!action %in% c("create", "delete", "assign", "revoke")){
     stop("Action must be 'create', 'delete', 'assign' or 'revoke'")
@@ -383,6 +380,7 @@ update_odk_app_user_role <- function(
   }
 
   if(action == "assign"){
+    form_id <- URLencode(form_id)
     x <- httr::POST(
       url = paste0(url,"v1/projects/",project_id,"/forms/", form_id,
                    "/assignments/",role_id,"/",actor_id),
@@ -400,6 +398,7 @@ update_odk_app_user_role <- function(
   }
 
   if(action == "revoke"){
+    form_id <- URLencode(form_id)
     x <- httr::DELETE(
       url = paste0(url,"v1/projects/",project_id,"/forms/", form_id,
                    "/assignments/",role_id,"/",actor_id),

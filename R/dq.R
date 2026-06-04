@@ -386,7 +386,493 @@
   state
 }
 
-#### 3) Public API ####
+#### 3) Anomaly detection ####
+
+#' Flag rows with unusual period-over-period percent change
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Computes period-over-period percent change for a numeric column and flags
+#' rows whose absolute change exceeds `threshold`. Works on a plain tibble or a
+#' `dq_result` object returned by [run_dq_checks()], enabling chaining:
+#'
+#' ```r
+#' run_dq_checks(data, schema) |>
+#'   add_anomaly_pct_change("n_cases", "EpiWeek", group_cols = "Province_Residence")
+#' ```
+#'
+#' When passed a `dq_result`, anomaly rows are appended to `$flags` and the
+#' percent-change columns are added to `$data`.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param value_col `str` Name of the numeric column to check.
+#' @param period_col `str` Name of the column that defines time order within
+#'   each group (e.g. `"EpiWeek"`, `"month"`).
+#' @param threshold `num` Absolute percent change threshold (as a proportion).
+#'   Default `0.5` flags changes greater than 50%.
+#' @param group_cols `chr` vector of column names to group by before computing
+#'   change (e.g. `c("Province_Residence", "disease")`). Default `NULL` treats
+#'   the whole dataset as one group.
+#' @param year_col `str` or `NULL` When `period_col` resets each year
+#'   (e.g. `"EpiWeek"` 1–53), supply the year column so ordering is correct
+#'   across year boundaries. Default `NULL`.
+#'
+#' @returns The input object with two columns added to the data:
+#'   `pct_change_{value_col}` (numeric) and `anomaly_pct_change_{value_col}`
+#'   (logical). If the input is a `dq_result`, flagged rows are also appended
+#'   to `$flags`.
+#' @examples
+#' \dontrun{
+#' agg <- dplyr::count(raw_dr, Year, EpiWeek, Province_Residence, name = "n_cases")
+#' agg_flagged <- add_anomaly_pct_change(agg, "n_cases", "EpiWeek",
+#'                                        group_cols = "Province_Residence",
+#'                                        year_col   = "Year")
+#' }
+#' @export
+add_anomaly_pct_change <- function(data, value_col, period_col,
+                                    threshold  = 0.5,
+                                    group_cols = NULL,
+                                    year_col   = NULL) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  if (!value_col %in% names(df)) {
+    cli::cli_abort("{.arg value_col} {.val {value_col}} not found in data.")
+  }
+  if (!period_col %in% names(df)) {
+    cli::cli_abort("{.arg period_col} {.val {period_col}} not found in data.")
+  }
+
+  # Build ordering key: combine year + period when year_col supplied
+  if (!is.null(year_col) && year_col %in% names(df)) {
+    df$.eri_order <- df[[year_col]] * 1000 + df[[period_col]]
+  } else {
+    df$.eri_order <- df[[period_col]]
+  }
+
+  sort_cols <- c(group_cols, ".eri_order")
+
+  df <- df |>
+    dplyr::arrange(dplyr::across(dplyr::all_of(sort_cols))) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols %||% character(0)))) |>
+    dplyr::mutate(
+      .eri_lag = dplyr::lag(.data[[value_col]]),
+      .eri_pct = dplyr::if_else(
+        is.na(.eri_lag) | .eri_lag == 0,
+        NA_real_,
+        (.data[[value_col]] - .eri_lag) / .eri_lag
+      )
+    ) |>
+    dplyr::ungroup()
+
+  pct_col  <- paste0("pct_change_",         value_col)
+  flag_col <- paste0("anomaly_pct_change_", value_col)
+
+  df[[pct_col]]  <- df$.eri_pct
+  df[[flag_col]] <- !is.na(df$.eri_pct) & abs(df$.eri_pct) > threshold
+  df$.eri_order  <- NULL
+  df$.eri_lag    <- NULL
+  df$.eri_pct    <- NULL
+
+  n_flagged <- sum(df[[flag_col]], na.rm = TRUE)
+  if (n_flagged > 0) {
+    cli::cli_alert_warning(
+      "{n_flagged} row{?s} flagged for % change anomaly in {.val {value_col}} (threshold: {threshold * 100}%)."
+    )
+  } else {
+    cli::cli_alert_success("No % change anomalies detected in {.val {value_col}}.")
+  }
+
+  if (is_dq) {
+    flagged_idx <- which(df[[flag_col]])
+    if (length(flagged_idx) > 0) {
+      pct_vals <- round(df[[pct_col]][flagged_idx] * 100, 1)
+      data$flags <- dplyr::bind_rows(
+        data$flags,
+        tibble::tibble(
+          row    = flagged_idx,
+          column = value_col,
+          value  = as.character(df[[value_col]][flagged_idx]),
+          issue  = paste0("% change anomaly (", pct_vals, "%): exceeds threshold ", threshold * 100, "%")
+        )
+      )
+    }
+    data$data <- df
+    return(invisible(data))
+  }
+
+  df
+}
+
+#' Flag missing time periods in surveillance data
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Identifies gaps in a time series by inferring the full expected sequence of
+#' periods between the observed minimum and maximum, then returning rows for any
+#' missing periods. Works on a plain tibble or a `dq_result` object.
+#'
+#' Supports two period types:
+#' - `"week"` — expects contiguous integers 1–53 within each year. A gap at the
+#'   year boundary (week 52/53 → week 1 of the next year) is handled correctly.
+#' - `"month"` — expects contiguous integers 1–12 within each year.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param period_col `str` Column containing the period value (integer week 1–53
+#'   or month 1–12).
+#' @param period_type `str` One of `"week"` or `"month"`.
+#' @param group_cols `chr` vector of columns to check for gaps within each group
+#'   (e.g. `c("Province_Residence")`). Default `NULL` checks the full dataset.
+#' @param year_col `str` or `NULL` Column containing the year. Required when
+#'   `period_type = "week"` or `"month"` to detect cross-year gaps.
+#'
+#' @returns A tibble of missing periods with columns `year` (if `year_col`
+#'   supplied), `period`, any `group_cols`, and `issue = "structural_gap"`. If
+#'   the input is a `dq_result`, missing-period rows are also appended to
+#'   `$flags` (with `row = NA`). Returns an empty tibble when no gaps are found.
+#' @examples
+#' \dontrun{
+#' gaps <- add_anomaly_gaps(agg_data, "EpiWeek", "week",
+#'                           group_cols = "Province_Residence", year_col = "Year")
+#' }
+#' @export
+add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
+                              group_cols = NULL, year_col = NULL) {
+  period_type <- match.arg(period_type)
+  is_dq       <- inherits(data, "dq_result")
+  df          <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  if (!period_col %in% names(df)) {
+    cli::cli_abort("{.arg period_col} {.val {period_col}} not found in data.")
+  }
+
+  max_period <- if (period_type == "week") 53L else 12L
+  all_cols   <- c(group_cols %||% character(0), year_col %||% character(0), period_col)
+  grp_cols   <- c(group_cols %||% character(0), year_col %||% character(0))
+
+  # Get distinct observed combinations
+  observed <- df |>
+    dplyr::select(dplyr::all_of(all_cols)) |>
+    dplyr::distinct()
+
+  if (length(grp_cols) == 0) {
+    # No grouping — just check overall range
+    all_periods <- seq(min(observed[[period_col]], na.rm = TRUE),
+                       max(observed[[period_col]], na.rm = TRUE))
+    missing_periods <- setdiff(all_periods, observed[[period_col]])
+    gaps <- tibble::tibble(period = missing_periods, issue = "structural_gap")
+    names(gaps)[1] <- period_col
+  } else {
+    # Group-wise gap detection
+    gaps <- observed |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(grp_cols))) |>
+      dplyr::summarise(
+        .present = list(sort(unique(.data[[period_col]]))),
+        .groups  = "drop"
+      ) |>
+      dplyr::mutate(
+        .expected = purrr::map(.present, function(p) {
+          if (!is.null(year_col)) {
+            seq(min(p), max(p))
+          } else {
+            seq(min(p), max(p))
+          }
+        }),
+        .missing  = purrr::map2(.expected, .present, setdiff)
+      ) |>
+      dplyr::filter(purrr::map_int(.missing, length) > 0) |>
+      tidyr::unnest(cols = ".missing") |>
+      dplyr::rename_with(~ period_col, ".missing") |>
+      dplyr::select(dplyr::all_of(c(grp_cols, period_col))) |>
+      dplyr::mutate(issue = "structural_gap")
+    gaps$.expected <- NULL
+    gaps$.present  <- NULL
+  }
+
+  n_gaps <- nrow(gaps)
+  if (n_gaps > 0) {
+    cli::cli_alert_warning(
+      "{n_gaps} missing period{?s} detected in {.val {period_col}}."
+    )
+  } else {
+    cli::cli_alert_success("No structural gaps detected in {.val {period_col}}.")
+  }
+
+  if (is_dq && n_gaps > 0) {
+    flag_rows <- tibble::tibble(
+      row    = NA_integer_,
+      column = period_col,
+      value  = as.character(gaps[[period_col]]),
+      issue  = paste0("structural_gap: missing period ", gaps[[period_col]])
+    )
+    data$flags <- dplyr::bind_rows(data$flags, flag_rows)
+    return(invisible(data))
+  }
+  if (is_dq) return(invisible(data))
+
+  gaps
+}
+
+#' Flag cross-field consistency violations defined in a schema
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Evaluates named consistency rules from the schema's `consistency` block and
+#' flags rows where a rule is violated. Each rule specifies a `lhs` column, a
+#' comparison `op`, and either a `rhs` column or a `rhs_value` constant.
+#'
+#' Schema format (add a `consistency:` block to any YAML schema):
+#' ```yaml
+#' consistency:
+#'   positives_le_tested:
+#'     lhs: NumMicroPos
+#'     op: "<="
+#'     rhs: NumTestedMicro
+#'     message: "Positive cases exceed tested"
+#'   age_non_negative:
+#'     lhs: Age
+#'     op: ">="
+#'     rhs_value: 0
+#'     message: "Age is negative"
+#' ```
+#' Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`.
+#' Missing values (`NA`) in either operand skip the check for that row.
+#'
+#' Works on a plain tibble (returns a tibble of violations) or a `dq_result`
+#' (appends violations to `$flags`).
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param schema Named list from [load_dq_schema()].
+#'
+#' @returns A tibble of violations with columns `row`, `column`, `value`, and
+#'   `issue` (includes the rule name and message). If the input is a `dq_result`,
+#'   violations are appended to `$flags` and the updated `dq_result` is returned.
+#'   Returns an empty tibble when all rules pass.
+#' @examples
+#' \dontrun{
+#' schema <- load_dq_schema("haiti", "malaria")
+#' run_dq_checks(data, schema) |> add_anomaly_consistency(schema)
+#' }
+#' @export
+add_anomaly_consistency <- function(data, schema) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  rules <- schema$consistency %||% list()
+  if (length(rules) == 0) {
+    cli::cli_alert_info("No consistency rules defined in schema.")
+    if (is_dq) return(invisible(data))
+    return(tibble::tibble(row    = integer(), column = character(),
+                          value  = character(), issue  = character()))
+  }
+
+  all_flags <- tibble::tibble(row    = integer(), column = character(),
+                               value  = character(), issue  = character())
+
+  for (rule_name in names(rules)) {
+    rule <- rules[[rule_name]]
+    lhs  <- rule$lhs
+    op   <- rule$op %||% "=="
+
+    if (is.null(lhs) || !lhs %in% names(df)) {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: column {.val {lhs}} not found, skipping."
+      )
+      next
+    }
+
+    rhs_vals <- if (!is.null(rule$rhs) && rule$rhs %in% names(df)) {
+      df[[rule$rhs]]
+    } else if (!is.null(rule$rhs_value)) {
+      rule$rhs_value
+    } else {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: no valid {.arg rhs} or {.arg rhs_value}, skipping."
+      )
+      next
+    }
+
+    lhs_vals   <- df[[lhs]]
+    applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
+
+    ok <- switch(op,
+      "<=" = lhs_vals <= rhs_vals,
+      ">=" = lhs_vals >= rhs_vals,
+      "==" = lhs_vals == rhs_vals,
+      "<"  = lhs_vals <  rhs_vals,
+      ">"  = lhs_vals >  rhs_vals,
+      "!=" = lhs_vals != rhs_vals,
+      rep(TRUE, nrow(df))
+    )
+
+    violated <- which(applicable & !ok)
+    if (length(violated) > 0) {
+      rhs_desc <- rule$rhs %||% as.character(rule$rhs_value)
+      msg      <- rule$message %||% paste0(lhs, " ", op, " ", rhs_desc)
+      all_flags <- dplyr::bind_rows(
+        all_flags,
+        tibble::tibble(
+          row    = violated,
+          column = lhs,
+          value  = as.character(lhs_vals[violated]),
+          issue  = paste0("consistency [", rule_name, "]: ", msg)
+        )
+      )
+      cli::cli_alert_warning(
+        "{length(violated)} row{?s} violate consistency rule {.val {rule_name}}."
+      )
+    }
+  }
+
+  n_flags <- nrow(all_flags)
+  if (n_flags == 0) cli::cli_alert_success("All consistency checks passed.")
+
+  if (is_dq) {
+    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    return(invisible(data))
+  }
+  all_flags
+}
+
+#' Validate admin unit names against a spatial reference
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Flags rows where admin unit names in the data do not appear in the canonical
+#' list extracted from a reference shapefile. Checks admin1 and, optionally,
+#' admin2 when a `admin2_name_field` is defined in the schema.
+#'
+#' The shapefile is downloaded from the Azure `data` blob at the path stored in
+#' `schema$admin$admin1_spatial` (and `admin2_spatial`). If the shapefile is
+#' unavailable or the `admin` block is absent from the schema, the check is
+#' skipped with a warning — it never aborts the pipeline.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param schema Named list returned by [load_dq_schema()].
+#' @param azcontainer Azure container object for the `data` blob. If `NULL`
+#'   (default), connects automatically using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'   Pass `NULL` to skip the Azure download and use only locally cached files.
+#'
+#' @returns For a plain tibble: a flags tibble with columns `row`, `column`,
+#'   `value`, `issue` (same structure as `$flags` in a `dq_result`). For a
+#'   `dq_result`: the same object with mismatches appended to `$flags`.
+#' @examples
+#' \dontrun{
+#' schema <- load_dq_schema("dominican_republic", "malaria")
+#' result <- run_dq_checks(raw_data, schema) |> add_anomaly_spatial(schema)
+#' }
+#' @export
+add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  admin <- schema$admin
+  if (is.null(admin)) {
+    cli::cli_alert_info("No admin block in schema; skipping spatial name check.")
+    if (is_dq) return(invisible(data))
+    return(.dq_empty_flags())
+  }
+
+  all_flags <- .dq_empty_flags()
+
+  .check_level <- function(data_col, spatial_path, name_field, label) {
+    if (is.null(data_col) || is.null(spatial_path) || is.null(name_field)) return()
+    if (!data_col %in% names(df)) return()
+
+    canonical <- .eri_load_spatial_names(spatial_path, name_field, azcontainer)
+    if (is.null(canonical)) {
+      cli::cli_warn(
+        "Spatial reference unavailable for {.val {label}}; skipping admin name check."
+      )
+      return()
+    }
+
+    bad_rows <- which(!df[[data_col]] %in% canonical & !is.na(df[[data_col]]))
+    if (length(bad_rows) == 0) {
+      cli::cli_alert_success("All {label} names match spatial reference.")
+      return()
+    }
+
+    cli::cli_warn("! {length(bad_rows)} row{?s} with unrecognized {label} name{?s}.")
+    all_flags <<- dplyr::bind_rows(
+      all_flags,
+      tibble::tibble(
+        row    = bad_rows,
+        column = data_col,
+        value  = as.character(df[[data_col]][bad_rows]),
+        issue  = "unrecognized admin name"
+      )
+    )
+  }
+
+  .check_level(admin$admin1_col, admin$admin1_spatial, admin$admin1_name_field, "admin1")
+  .check_level(admin$admin2_col, admin$admin2_spatial, admin$admin2_name_field, "admin2")
+
+  if (is_dq) {
+    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    return(invisible(data))
+  }
+  all_flags
+}
+
+.dq_empty_flags <- function() {
+  tibble::tibble(
+    row    = integer(),
+    column = character(),
+    value  = character(),
+    issue  = character()
+  )
+}
+
+#' Download shapefile components from Azure and return canonical name vector
+#'
+#' Downloads the `.shp`, `.dbf`, `.shx`, and (optionally) `.prj` components
+#' to a temp directory, reads with `terra::vect()`, and returns the unique
+#' values of `name_field`. Returns `NULL` on any failure.
+#' @keywords internal
+.eri_load_spatial_names <- function(spatial_path, name_field, azcontainer) {
+  if (!requireNamespace("terra", quietly = TRUE)) {
+    cli::cli_warn(
+      "Package {.pkg terra} is required for spatial admin checks. Install it to enable this check."
+    )
+    return(NULL)
+  }
+
+  stem  <- tools::file_path_sans_ext(spatial_path)
+  exts  <- c(".shp", ".dbf", ".shx", ".prj", ".cpg")
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  if (!is.null(azcontainer)) {
+    tryCatch({
+      for (ext in exts) {
+        blob_path  <- paste0(stem, ext)
+        local_path <- file.path(tmp_dir, paste0("ref", ext))
+        tryCatch(
+          AzureStor::storage_download(azcontainer, blob_path, local_path, overwrite = TRUE),
+          error = function(e) NULL
+        )
+      }
+    }, error = function(e) NULL)
+  }
+
+  shp_tmp <- file.path(tmp_dir, "ref.shp")
+  if (!file.exists(shp_tmp)) return(NULL)
+
+  tryCatch({
+    v <- terra::vect(shp_tmp)
+    vals <- terra::values(v)[[name_field]]
+    if (is.null(vals)) return(NULL)
+    unique(as.character(vals[!is.na(vals)]))
+  }, error = function(e) NULL)
+}
+
+#### 4) Public API ####
 
 #' Load a DQ schema
 #'
