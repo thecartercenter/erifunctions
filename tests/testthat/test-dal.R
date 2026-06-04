@@ -55,6 +55,54 @@ test_that(".eri_log_session is a no-op when flag is already set", {
   })
 })
 
+#### Tests for eri_trigger error paths (no Azure needed) ####
+
+test_that("eri_trigger errors clearly when GITHUB_PAT is missing", {
+  withr::with_envvar(list(GITHUB_PAT = ""), {
+    expect_error(
+      eri_trigger("hsp-mal", "dr", "malaria"),
+      "GITHUB_PAT"
+    )
+  })
+})
+
+test_that("eri_trigger errors clearly for unknown pipeline", {
+  withr::with_envvar(list(GITHUB_PAT = "fake-token"), {
+    expect_error(
+      eri_trigger("nonexistent-pipeline", "dr", "malaria"),
+      "Unknown pipeline"
+    )
+  })
+})
+
+#### Tests for eri_stage error paths (no Azure needed) ####
+
+test_that("eri_stage errors clearly for unknown pipeline", {
+  expect_error(
+    eri_stage("nonexistent-pipeline", "dr", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock")),
+    "Unknown pipeline"
+  )
+})
+
+test_that("eri_stage errors clearly for unregistered country", {
+  expect_error(
+    eri_stage("hsp-mal", "zz", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock")),
+    "not registered"
+  )
+})
+
+test_that("hsp-mal pipeline registry has required fields", {
+  reg <- .eri_pipeline_registry[["hsp-mal"]]
+  expect_false(is.null(reg))
+  expect_true(all(c("owner", "repo", "workflow", "project_folder", "country_map") %in% names(reg)))
+  expect_equal(reg$country_map[["dr"]], "dom")
+  expect_equal(reg$country_map[["ht"]], "hti")
+})
+
 #### Tests for eri_approve error paths (no Azure needed) ####
 
 test_that("eri_approve errors informatively when staged dir does not exist", {
