@@ -49,3 +49,4 @@ po/*~
 rsconnect/
 .Rproj.user
 /sandbox
+sandbox/.az_container_cache.rds
