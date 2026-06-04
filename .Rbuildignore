@@ -12,3 +12,4 @@
 ^\.github$          # GitHub Actions workflows
 ^LICENSE\.md$
 ^sandbox$
+^\.claude$
