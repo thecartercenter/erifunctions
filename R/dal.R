@@ -1119,6 +1119,161 @@ eri_stage <- function(pipeline, country, disease,
   invisible(staged)
 }
 
+#' Ingest a local surveillance file and write cleaned output to both blob targets
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' The primary analyst entry point for surveillance ingestion. Reads a raw local
+#' Excel file, runs all DQ checks via [run_dq_checks()], then dual-writes the
+#' cleaned parquet output to:
+#' 1. `projects/{project_folder}/intermediate/{country_subfolder}/` — mirrors the
+#'    GHA pipeline output for side-by-side comparison.
+#' 2. `data/{country}/{disease}/surveillance/staged/` — feeds [eri_approve()].
+#'
+#' DQ flags are printed to the console immediately after checks complete so the
+#' analyst can review issues before calling [eri_approve()].
+#'
+#' @param path `str` Local path to the raw Excel file to ingest.
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
+#' @param disease `str` Disease name (e.g. `"malaria"`).
+#' @param pipeline `str` Registry entry that controls which `project_folder` and
+#'   `country_map` are used for the projects blob write. Default `"hsp-mal"`.
+#' @param schema Named list returned by [load_dq_schema()]. If `NULL` (default),
+#'   auto-loaded for the given country and disease.
+#' @param projects_con Azure container object for the `projects` blob. If `NULL`
+#'   (default), connects automatically using [get_azure_storage_connection()].
+#' @param data_con Azure container object for the `data` blob. If `NULL`
+#'   (default), connects using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'
+#' @returns Invisibly, the `dq_result` object so the analyst can inspect
+#'   `$data`, `$log`, and `$flags`.
+#' @examples
+#' \dontrun{
+#' result <- eri_ingest("data/raw/dr_malaria_2024W01.xlsx", "dr", "malaria")
+#' result$flags  # review before approving
+#' eri_approve("dr", "malaria", "surveillance", "2024W01")
+#' }
+#' @export
+eri_ingest <- function(path, country, disease,
+                       pipeline     = "hsp-mal",
+                       schema       = NULL,
+                       projects_con = NULL,
+                       data_con     = NULL) {
+  .eri_log_session()
+
+  if (!file.exists(path)) {
+    cli::cli_abort("File not found: {.path {path}}")
+  }
+
+  reg <- .eri_pipeline_registry[[pipeline]]
+  if (is.null(reg)) {
+    known <- paste(names(.eri_pipeline_registry), collapse = ", ")
+    cli::cli_abort(c(
+      "Unknown pipeline {.val {pipeline}}.",
+      "i" = "Registered pipelines: {known}."
+    ))
+  }
+
+  subfolder <- reg$country_map[[country]]
+  if (is.null(subfolder)) {
+    known_countries <- paste(names(reg$country_map), collapse = ", ")
+    cli::cli_abort(c(
+      "Country {.val {country}} is not registered for pipeline {.val {pipeline}}.",
+      "i" = "Registered countries: {known_countries}."
+    ))
+  }
+
+  if (is.null(data_con)) {
+    data_con <- suppressMessages(
+      get_azure_storage_connection(
+        storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+      )
+    )
+  }
+  if (is.null(projects_con)) {
+    projects_con <- suppressMessages(get_azure_storage_connection())
+  }
+
+  if (is.null(schema)) {
+    schema_country <- .eri_schema_country_map[[country]] %||% country
+    schema <- load_dq_schema(schema_country, disease, azcontainer = data_con)
+  }
+
+  raw_data <- eri_read(path, azure = FALSE)
+  if (is.list(raw_data) && !is.data.frame(raw_data)) {
+    raw_data <- raw_data[[1]]
+    cli::cli_alert_info("Multi-sheet Excel detected: using first sheet for DQ.")
+  }
+
+  result <- run_dq_checks(raw_data, schema)
+  dq_report(result)
+
+  fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
+  staged_dir    <- eri_data_path(country, disease, "surveillance", "staged")
+  projects_dir  <- paste0(reg$project_folder, "/intermediate/", subfolder)
+  log_dir       <- paste(c(country, disease, "surveillance", "logs"), collapse = "/")
+
+  op_log <- list(
+    operation  = "eri_ingest",
+    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(path = path, country = country,
+                      disease = disease, pipeline = pipeline),
+    status     = "in_progress",
+    steps      = list(),
+    error      = NULL,
+    files      = NULL
+  )
+
+  written   <- character(0)
+  had_error <- FALSE
+  err_msg   <- NULL
+
+  tryCatch({
+    if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
+      AzureStor::create_storage_dir(data_con, staged_dir)
+      op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir", path = staged_dir)
+    }
+
+    data_dest <- paste0(staged_dir, "/", fname_parquet)
+    withr::with_tempfile("parquet_file", fileext = ".parquet", {
+      arrow::write_parquet(result$data, parquet_file)
+      AzureStor::storage_upload(data_con, parquet_file, data_dest)
+    })
+    written      <- c(written, data_dest)
+    op_log$steps <- .eri_log_step(op_log$steps, "write_data_blob", dest = data_dest)
+    cli::cli_alert_success("Staged to data blob: {.path {data_dest}}")
+
+    proj_dest <- paste0(projects_dir, "/", fname_parquet)
+    withr::with_tempfile("parquet_file", fileext = ".parquet", {
+      arrow::write_parquet(result$data, parquet_file)
+      AzureStor::storage_upload(projects_con, parquet_file, proj_dest)
+    })
+    written      <- c(written, proj_dest)
+    op_log$steps <- .eri_log_step(op_log$steps, "write_projects_blob", dest = proj_dest)
+    cli::cli_alert_success("Written to projects blob: {.path {proj_dest}}")
+
+    op_log$status <- "success"
+    op_log$files  <- as.list(written)
+
+  }, error = function(e) {
+    had_error <<- TRUE
+    err_msg   <<- conditionMessage(e)
+  })
+
+  op_log$completed_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (had_error) {
+    op_log$status <- "error"
+    op_log$error  <- err_msg
+    op_log$steps  <- .eri_log_step(op_log$steps, "error_caught",
+                                    status = "error", message = err_msg)
+  }
+  .eri_write_log(op_log, data_con, log_dir)
+  if (had_error) cli::cli_abort(err_msg, call = NULL)
+  invisible(result)
+}
+
 # Private functions ----
 
 # Internal registry: pipeline name -> owner/repo/workflow_id/project_folder/country_map
@@ -1133,6 +1288,12 @@ eri_stage <- function(pipeline, country, disease,
       "ht" = "hti"
     )
   )
+)
+
+# Maps short country codes to bundled schema country names
+.eri_schema_country_map <- list(
+  "dr" = "dominican_republic",
+  "ht" = "haiti"
 )
 
 #' Write a one-time session access entry to the data/ container
