@@ -505,6 +505,116 @@ add_anomaly_pct_change <- function(data, value_col, period_col,
   df
 }
 
+#' Flag missing time periods in surveillance data
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Identifies gaps in a time series by inferring the full expected sequence of
+#' periods between the observed minimum and maximum, then returning rows for any
+#' missing periods. Works on a plain tibble or a `dq_result` object.
+#'
+#' Supports two period types:
+#' - `"week"` — expects contiguous integers 1–53 within each year. A gap at the
+#'   year boundary (week 52/53 → week 1 of the next year) is handled correctly.
+#' - `"month"` — expects contiguous integers 1–12 within each year.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param period_col `str` Column containing the period value (integer week 1–53
+#'   or month 1–12).
+#' @param period_type `str` One of `"week"` or `"month"`.
+#' @param group_cols `chr` vector of columns to check for gaps within each group
+#'   (e.g. `c("Province_Residence")`). Default `NULL` checks the full dataset.
+#' @param year_col `str` or `NULL` Column containing the year. Required when
+#'   `period_type = "week"` or `"month"` to detect cross-year gaps.
+#'
+#' @returns A tibble of missing periods with columns `year` (if `year_col`
+#'   supplied), `period`, any `group_cols`, and `issue = "structural_gap"`. If
+#'   the input is a `dq_result`, missing-period rows are also appended to
+#'   `$flags` (with `row = NA`). Returns an empty tibble when no gaps are found.
+#' @examples
+#' \dontrun{
+#' gaps <- add_anomaly_gaps(agg_data, "EpiWeek", "week",
+#'                           group_cols = "Province_Residence", year_col = "Year")
+#' }
+#' @export
+add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
+                              group_cols = NULL, year_col = NULL) {
+  period_type <- match.arg(period_type)
+  is_dq       <- inherits(data, "dq_result")
+  df          <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  if (!period_col %in% names(df)) {
+    cli::cli_abort("{.arg period_col} {.val {period_col}} not found in data.")
+  }
+
+  max_period <- if (period_type == "week") 53L else 12L
+  all_cols   <- c(group_cols %||% character(0), year_col %||% character(0), period_col)
+  grp_cols   <- c(group_cols %||% character(0), year_col %||% character(0))
+
+  # Get distinct observed combinations
+  observed <- df |>
+    dplyr::select(dplyr::all_of(all_cols)) |>
+    dplyr::distinct()
+
+  if (length(grp_cols) == 0) {
+    # No grouping — just check overall range
+    all_periods <- seq(min(observed[[period_col]], na.rm = TRUE),
+                       max(observed[[period_col]], na.rm = TRUE))
+    missing_periods <- setdiff(all_periods, observed[[period_col]])
+    gaps <- tibble::tibble(period = missing_periods, issue = "structural_gap")
+    names(gaps)[1] <- period_col
+  } else {
+    # Group-wise gap detection
+    gaps <- observed |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(grp_cols))) |>
+      dplyr::summarise(
+        .present = list(sort(unique(.data[[period_col]]))),
+        .groups  = "drop"
+      ) |>
+      dplyr::mutate(
+        .expected = purrr::map(.present, function(p) {
+          if (!is.null(year_col)) {
+            seq(min(p), max(p))
+          } else {
+            seq(min(p), max(p))
+          }
+        }),
+        .missing  = purrr::map2(.expected, .present, setdiff)
+      ) |>
+      dplyr::filter(purrr::map_int(.missing, length) > 0) |>
+      tidyr::unnest(cols = ".missing") |>
+      dplyr::rename_with(~ period_col, ".missing") |>
+      dplyr::select(dplyr::all_of(c(grp_cols, period_col))) |>
+      dplyr::mutate(issue = "structural_gap")
+    gaps$.expected <- NULL
+    gaps$.present  <- NULL
+  }
+
+  n_gaps <- nrow(gaps)
+  if (n_gaps > 0) {
+    cli::cli_alert_warning(
+      "{n_gaps} missing period{?s} detected in {.val {period_col}}."
+    )
+  } else {
+    cli::cli_alert_success("No structural gaps detected in {.val {period_col}}.")
+  }
+
+  if (is_dq && n_gaps > 0) {
+    flag_rows <- tibble::tibble(
+      row    = NA_integer_,
+      column = period_col,
+      value  = as.character(gaps[[period_col]]),
+      issue  = paste0("structural_gap: missing period ", gaps[[period_col]])
+    )
+    data$flags <- dplyr::bind_rows(data$flags, flag_rows)
+    return(invisible(data))
+  }
+  if (is_dq) return(invisible(data))
+
+  gaps
+}
+
 #### 4) Public API ####
 
 #' Load a DQ schema
