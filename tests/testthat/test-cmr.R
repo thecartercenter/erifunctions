@@ -115,6 +115,73 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   expect_true(all(startsWith(names(out), "#")))
 })
 
+#### Tests for load_cmr_schema ####
+
+test_that("load_cmr_schema returns a list with expected top-level keys", {
+  schema <- load_cmr_schema("uga")
+  expect_type(schema, "list")
+  expect_true(all(c("country", "country_code", "language", "template", "sheets") %in% names(schema)))
+})
+
+test_that("load_cmr_schema returns correct metadata for Uganda", {
+  schema <- load_cmr_schema("uga")
+  expect_equal(schema$country_code, "uga")
+  expect_equal(schema$language, "en")
+  expect_equal(schema$template, "english_cmr")
+})
+
+test_that("load_cmr_schema Uganda has SCH Treatment but not LF Treatment", {
+  schema <- load_cmr_schema("uga")
+  sheet_names <- names(schema$sheets)
+  expect_true("SCH Treatment" %in% sheet_names)
+  expect_false("LF Treatment" %in% sheet_names)
+})
+
+test_that("load_cmr_schema Nigeria has both SCH and STH Treatment", {
+  schema <- load_cmr_schema("nga")
+  sheet_names <- names(schema$sheets)
+  expect_true("SCH Treatment" %in% sheet_names)
+  expect_true("STH Treatment" %in% sheet_names)
+})
+
+test_that("load_cmr_schema Ethiopia has Fly Collection and River Prospection", {
+  schema <- load_cmr_schema("eth")
+  sheet_names <- names(schema$sheets)
+  expect_true("Fly Collection" %in% sheet_names)
+  expect_true("River Prospection" %in% sheet_names)
+})
+
+test_that("load_cmr_schema each sheet has field_code_prefix and required_fields", {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
+    schema <- load_cmr_schema(country)
+    for (sheet in names(schema$sheets)) {
+      sheet_def <- schema$sheets[[sheet]]
+      expect_true("field_code_prefix" %in% names(sheet_def),
+                  info = paste(country, sheet, "missing field_code_prefix"))
+      expect_true("required_fields" %in% names(sheet_def),
+                  info = paste(country, sheet, "missing required_fields"))
+      expect_gt(length(sheet_def$required_fields), 0L,
+                label = paste(country, sheet, "required_fields empty"))
+    }
+  }
+})
+
+test_that("load_cmr_schema required_fields all start with #", {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
+    schema <- load_cmr_schema(country)
+    for (sheet in names(schema$sheets)) {
+      fields <- schema$sheets[[sheet]]$required_fields
+      expect_true(all(startsWith(fields, "#")),
+                  info = paste(country, sheet, "has field codes not starting with #"))
+    }
+  }
+})
+
+test_that("load_cmr_schema errors informatively for unknown country", {
+  expect_error(load_cmr_schema("xyz"), "No CMR schema found")
+  expect_error(load_cmr_schema("xyz"), "Available")
+})
+
 test_that("eri_ingest_cmr parses French template identically (same field codes)", {
   tmp_en <- withr::local_tempfile(fileext = ".xlsx")
   tmp_fr <- withr::local_tempfile(fileext = ".xlsx")
