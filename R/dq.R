@@ -737,6 +737,141 @@ add_anomaly_consistency <- function(data, schema) {
   all_flags
 }
 
+#' Validate admin unit names against a spatial reference
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Flags rows where admin unit names in the data do not appear in the canonical
+#' list extracted from a reference shapefile. Checks admin1 and, optionally,
+#' admin2 when a `admin2_name_field` is defined in the schema.
+#'
+#' The shapefile is downloaded from the Azure `data` blob at the path stored in
+#' `schema$admin$admin1_spatial` (and `admin2_spatial`). If the shapefile is
+#' unavailable or the `admin` block is absent from the schema, the check is
+#' skipped with a warning — it never aborts the pipeline.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param schema Named list returned by [load_dq_schema()].
+#' @param azcontainer Azure container object for the `data` blob. If `NULL`
+#'   (default), connects automatically using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'   Pass `NULL` to skip the Azure download and use only locally cached files.
+#'
+#' @returns For a plain tibble: a flags tibble with columns `row`, `column`,
+#'   `value`, `issue` (same structure as `$flags` in a `dq_result`). For a
+#'   `dq_result`: the same object with mismatches appended to `$flags`.
+#' @examples
+#' \dontrun{
+#' schema <- load_dq_schema("dominican_republic", "malaria")
+#' result <- run_dq_checks(raw_data, schema) |> add_anomaly_spatial(schema)
+#' }
+#' @export
+add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  admin <- schema$admin
+  if (is.null(admin)) {
+    cli::cli_alert_info("No admin block in schema; skipping spatial name check.")
+    if (is_dq) return(invisible(data))
+    return(.dq_empty_flags())
+  }
+
+  all_flags <- .dq_empty_flags()
+
+  .check_level <- function(data_col, spatial_path, name_field, label) {
+    if (is.null(data_col) || is.null(spatial_path) || is.null(name_field)) return()
+    if (!data_col %in% names(df)) return()
+
+    canonical <- .eri_load_spatial_names(spatial_path, name_field, azcontainer)
+    if (is.null(canonical)) {
+      cli::cli_warn(
+        "Spatial reference unavailable for {.val {label}}; skipping admin name check."
+      )
+      return()
+    }
+
+    bad_rows <- which(!df[[data_col]] %in% canonical & !is.na(df[[data_col]]))
+    if (length(bad_rows) == 0) {
+      cli::cli_alert_success("All {label} names match spatial reference.")
+      return()
+    }
+
+    cli::cli_warn("! {length(bad_rows)} row{?s} with unrecognized {label} name{?s}.")
+    all_flags <<- dplyr::bind_rows(
+      all_flags,
+      tibble::tibble(
+        row    = bad_rows,
+        column = data_col,
+        value  = as.character(df[[data_col]][bad_rows]),
+        issue  = "unrecognized admin name"
+      )
+    )
+  }
+
+  .check_level(admin$admin1_col, admin$admin1_spatial, admin$admin1_name_field, "admin1")
+  .check_level(admin$admin2_col, admin$admin2_spatial, admin$admin2_name_field, "admin2")
+
+  if (is_dq) {
+    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    return(invisible(data))
+  }
+  all_flags
+}
+
+.dq_empty_flags <- function() {
+  tibble::tibble(
+    row    = integer(),
+    column = character(),
+    value  = character(),
+    issue  = character()
+  )
+}
+
+#' Download shapefile components from Azure and return canonical name vector
+#'
+#' Downloads the `.shp`, `.dbf`, `.shx`, and (optionally) `.prj` components
+#' to a temp directory, reads with `terra::vect()`, and returns the unique
+#' values of `name_field`. Returns `NULL` on any failure.
+#' @keywords internal
+.eri_load_spatial_names <- function(spatial_path, name_field, azcontainer) {
+  if (!requireNamespace("terra", quietly = TRUE)) {
+    cli::cli_warn(
+      "Package {.pkg terra} is required for spatial admin checks. Install it to enable this check."
+    )
+    return(NULL)
+  }
+
+  stem  <- tools::file_path_sans_ext(spatial_path)
+  exts  <- c(".shp", ".dbf", ".shx", ".prj", ".cpg")
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  if (!is.null(azcontainer)) {
+    tryCatch({
+      for (ext in exts) {
+        blob_path  <- paste0(stem, ext)
+        local_path <- file.path(tmp_dir, paste0("ref", ext))
+        tryCatch(
+          AzureStor::storage_download(azcontainer, blob_path, local_path, overwrite = TRUE),
+          error = function(e) NULL
+        )
+      }
+    }, error = function(e) NULL)
+  }
+
+  shp_tmp <- file.path(tmp_dir, "ref.shp")
+  if (!file.exists(shp_tmp)) return(NULL)
+
+  tryCatch({
+    v <- terra::vect(shp_tmp)
+    vals <- terra::values(v)[[name_field]]
+    if (is.null(vals)) return(NULL)
+    unique(as.character(vals[!is.na(vals)]))
+  }, error = function(e) NULL)
+}
+
 #### 4) Public API ####
 
 #' Load a DQ schema
