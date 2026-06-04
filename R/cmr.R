@@ -118,3 +118,167 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 
   df
 }
+
+#' Stage CMR monthly report files into the data/ blob
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Pulls CMR Excel files from the `projects` blob's
+#' `raw/filled_templates/{country}/{period}/` folder and copies them into
+#' `data/{country}/rblf/cmr/staged/`, ready for analyst review via
+#' [eri_approve()].
+#'
+#' If `period` is `NULL`, the most recent period folder (by `YYYYMM` name) is
+#' selected automatically and reported to the console. If any destination file
+#' already exists in `staged/`, a warning is issued and the file is overwritten.
+#'
+#' @param country `str` Three-letter country code (e.g. `"uga"`, `"eth"`).
+#'   Must be registered in the `"rb-expansion"` pipeline.
+#' @param period `str` or `NULL` Six-digit period string matching the source
+#'   folder name (e.g. `"202603"`). Default `NULL` uses the most recent period.
+#' @param overwrite `logical` If `FALSE` (default), warns before overwriting an
+#'   existing staged file. If `TRUE`, overwrites silently (for scripted runs).
+#' @param projects_con Azure container for the `projects` blob. `NULL` connects
+#'   automatically via [get_azure_storage_connection()].
+#' @param data_con Azure container for the `data` blob. `NULL` connects using
+#'   `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'
+#' @returns Invisibly, a character vector of the staged file paths in the `data` blob.
+#' @examples
+#' \dontrun{
+#' eri_stage_cmr("uga", "202603")
+#' eri_stage_cmr("nga")  # auto-selects most recent period
+#' }
+#' @export
+eri_stage_cmr <- function(country,
+                           period       = NULL,
+                           overwrite    = FALSE,
+                           projects_con = NULL,
+                           data_con     = NULL) {
+  .eri_log_session()
+
+  reg <- .eri_pipeline_registry[["rb-expansion"]]
+
+  if (!country %in% names(reg$country_map)) {
+    known <- paste(names(reg$country_map), collapse = ", ")
+    cli::cli_abort(c(
+      "Country {.val {country}} is not registered for CMR staging.",
+      "i" = "Registered countries: {known}."
+    ))
+  }
+
+  if (is.null(projects_con)) {
+    projects_con <- suppressMessages(get_azure_storage_connection())
+  }
+  if (is.null(data_con)) {
+    data_con <- suppressMessages(
+      get_azure_storage_connection(
+        storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+      )
+    )
+  }
+
+  src_base <- paste0(reg$project_folder, "/raw/filled_templates/", country)
+
+  if (is.null(period)) {
+    period_listing <- AzureStor::list_storage_files(projects_con, src_base) |>
+      dplyr::as_tibble()
+    period_dirs <- period_listing[period_listing$isdir, ]
+    period_dirs$period_name <- basename(period_dirs$name)
+
+    if (nrow(period_dirs) == 0) {
+      cli::cli_abort(
+        "No period directories found under {.path {src_base}} in the projects blob."
+      )
+    }
+
+    period <- period_dirs$period_name[which.max(period_dirs$period_name)]
+    cli::cli_alert_info("No period specified; staging most recent: {.val {period}}")
+  }
+
+  src_dir    <- paste0(src_base, "/", period)
+  staged_dir <- eri_data_path(country, "rblf", "cmr", "staged")
+  log_dir    <- paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+
+  op_log <- list(
+    operation  = "eri_stage_cmr",
+    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(country = country, period = period),
+    status     = "in_progress",
+    steps      = list(),
+    error      = NULL,
+    files      = NULL
+  )
+
+  staged    <- character(0)
+  had_error <- FALSE
+  err_msg   <- NULL
+
+  tryCatch({
+    if (!AzureStor::storage_dir_exists(projects_con, src_dir)) {
+      cli::cli_abort(
+        "Source directory not found in projects blob: {.path {src_dir}}"
+      )
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "check_src_dir", path = src_dir)
+
+    all_files <- AzureStor::list_storage_files(projects_con, src_dir) |>
+      dplyr::as_tibble()
+    src_files <- all_files[!all_files$isdir, ]
+
+    if (nrow(src_files) == 0) {
+      cli::cli_abort("No files found in {.path {src_dir}}.")
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "list_src_files",
+                                   files_found = nrow(src_files),
+                                   filenames   = as.list(basename(src_files$name)))
+
+    if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
+      AzureStor::create_storage_dir(data_con, staged_dir)
+      op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir",
+                                     path = staged_dir)
+    }
+
+    for (src_path in src_files$name) {
+      fname     <- basename(src_path)
+      dest_path <- paste0(staged_dir, "/", fname)
+
+      if (AzureStor::storage_file_exists(data_con, dest_path)) {
+        if (!overwrite) {
+          cli::cli_warn("Overwriting existing staged file: {.path {fname}}")
+        }
+        op_log$steps <- .eri_log_step(op_log$steps, "overwrite",
+                                       status = "warning", file = dest_path)
+      }
+
+      tmp <- tempfile()
+      AzureStor::storage_download(projects_con, src_path, tmp, overwrite = TRUE)
+      AzureStor::storage_upload(data_con, tmp, dest_path)
+      unlink(tmp)
+      staged       <- c(staged, dest_path)
+      op_log$steps <- .eri_log_step(op_log$steps, "stage_file",
+                                     src = src_path, dest = dest_path)
+      cli::cli_alert_success("Staged: {.path {fname}}")
+    }
+
+    op_log$status <- "success"
+    op_log$files  <- as.list(staged)
+
+  }, error = function(e) {
+    had_error <<- TRUE
+    err_msg   <<- conditionMessage(e)
+  })
+
+  op_log$completed_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (had_error) {
+    op_log$status <- "error"
+    op_log$error  <- err_msg
+    op_log$steps  <- .eri_log_step(op_log$steps, "error_caught",
+                                    status = "error", message = err_msg)
+  }
+  .eri_write_log(op_log, data_con, log_dir)
+  if (had_error) cli::cli_abort(err_msg, call = NULL)
+  invisible(staged)
+}
