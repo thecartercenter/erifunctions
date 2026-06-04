@@ -2,32 +2,27 @@
 % Please edit documentation in R/odk.R
 \name{init_odk_connection}
 \alias{init_odk_connection}
-\title{Initialize/test ODK connection}
+\title{Initialize an ODK Central connection}
 \usage{
 init_odk_connection(
   url = Sys.getenv("ODK_URL", unset = "https://rblf.tccodk.org/"),
   user = Sys.getenv("ODK_USER", unset = ""),
-  pass = Sys.getenv("ODK_PASS", unset = ""),
-  testing = FALSE,
-  verbose = TRUE
+  pass = Sys.getenv("ODK_PASS", unset = "")
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{url}{\code{chr} ODK Central server URL}
 
-\item{user}{\code{chr} Username}
+\item{user}{\code{chr} Email address used to authenticate}
 
 \item{pass}{\code{chr} Password}
-
-\item{testing}{\code{bool} Should results be evaluated for testing}
-
-\item{verbose}{\code{bool} Should the function return character with information
-or a boolean vector verifying connection}
 }
 \value{
-\code{chr}/\code{bool} Verbose response or a T/F
+An \code{odk_connection} object (returned invisibly)
 }
 \description{
-Have a user prompt to enter username and password and then
-save the resulting token to be used for this session
+Authenticates with ODK Central and returns a connection object that can be
+passed to other ODK functions via the \code{con} argument.  As a fallback for
+backward compatibility, all ODK functions also accept credentials via the
+\code{ODK_URL}, \code{ODK_USER}, and \code{ODK_PASS} environment variables.
 }

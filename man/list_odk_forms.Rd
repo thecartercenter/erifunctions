@@ -2,27 +2,27 @@
 % Please edit documentation in R/odk.R
 \name{list_odk_forms}
 \alias{list_odk_forms}
-\title{List ODK forms}
+\title{List ODK forms within a project}
 \usage{
 list_odk_forms(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
-  project_id,
-  testing = FALSE
+  project_id
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{project_id}{\code{int} Project id from \code{list_odk_projects()}}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 }
 \value{
-\code{tibble} Output of all forms within a project from API call
+\code{tibble} with columns \code{xmlFormId}, \code{name}
 }
 \description{
-Given verified access and a project id, list all forms under a project
+List ODK forms within a project
 }
