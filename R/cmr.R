@@ -1,4 +1,40 @@
-# CMR - Monthly Report ingestion
+# CMR - Monthly Report ingestion and schema loading
+
+#' Load a CMR country schema
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Reads the bundled CMR YAML schema for a given country code. Schemas live in
+#' `inst/schemas/cmr/` and define which sheets are present for that country and
+#' the required field codes expected in each sheet.
+#'
+#' @param country `str` Three-letter country code (e.g. `"uga"`, `"eth"`).
+#'
+#' @returns A named list with keys `country`, `country_code`, `language`,
+#'   `template`, and `sheets`. Each element of `sheets` is itself a named list
+#'   with `field_code_prefix` and `required_fields`.
+#' @examples
+#' schema <- load_cmr_schema("uga")
+#' names(schema$sheets)  # sheet names present for Uganda
+#' @export
+load_cmr_schema <- function(country) {
+  schema_dir <- system.file("schemas", "cmr", package = "erifunctions")
+  if (!nzchar(schema_dir)) {
+    cli::cli_abort("CMR schema directory not found in package installation.")
+  }
+  path <- file.path(schema_dir, paste0(country, ".yaml"))
+  if (!file.exists(path)) {
+    available <- tools::file_path_sans_ext(
+      list.files(schema_dir, pattern = "\\.yaml$")
+    )
+    cli::cli_abort(c(
+      "No CMR schema found for country {.val {country}}.",
+      "i" = "Available: {.val {available}}"
+    ))
+  }
+  yaml::read_yaml(path)
+}
 
 #' Read and parse a CMR monthly report Excel file
 #'

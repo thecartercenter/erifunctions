@@ -1,0 +1,118 @@
+country: ethiopia
+country_code: eth
+language: en
+template: english_cmr
+
+sheets:
+  RB Treatment:
+    field_code_prefix: "#rbtrt_"
+    required_fields:
+      - "#rbtrt_year"
+      - "#rbtrt_month"
+      - "#rbtrt_adm1"
+      - "#rbtrt_adm2"
+      - "#rbtrt_target"
+      - "#rbtrt_treated"
+
+  LF Treatment:
+    field_code_prefix: "#lftrt_"
+    required_fields:
+      - "#lftrt_year"
+      - "#lftrt_month"
+      - "#lftrt_adm1"
+      - "#lftrt_adm2"
+      - "#lftrt_target"
+      - "#lftrt_treated"
+
+  LF MMDP:
+    field_code_prefix: "#lfmmdp_"
+    required_fields:
+      - "#lfmmdp_year"
+      - "#lfmmdp_month"
+      - "#lfmmdp_adm1"
+      - "#lfmmdp_adm2"
+      - "#lfmmdp_hydro_screened"
+      - "#lfmmdp_lymph_screened"
+      - "#lfmmdp_hydro_treated"
+      - "#lfmmdp_lymph_treated"
+
+  CDD Training:
+    field_code_prefix: "#cddtrn_"
+    required_fields:
+      - "#cddtrn_year"
+      - "#cddtrn_month"
+      - "#cddtrn_adm1"
+      - "#cddtrn_adm2"
+      - "#cddtrn_target"
+      - "#cddtrn_trained"
+
+  CS Training:
+    field_code_prefix: "#cstrn_"
+    required_fields:
+      - "#cstrn_year"
+      - "#cstrn_month"
+      - "#cstrn_adm1"
+      - "#cstrn_adm2"
+      - "#cstrn_target"
+      - "#cstrn_trained"
+
+  MMDP Training:
+    field_code_prefix: "#mmdptrn_"
+    required_fields:
+      - "#mmdptrn_year"
+      - "#mmdptrn_month"
+      - "#mmdptrn_adm1"
+      - "#mmdptrn_adm2"
+      - "#mmdptrn_target"
+      - "#mmdptrn_trained"
+
+  Surveys:
+    field_code_prefix: "#svy_"
+    required_fields:
+      - "#svy_year"
+      - "#svy_adm1"
+      - "#svy_adm2"
+      - "#svy_type"
+      - "#svy_examined"
+      - "#svy_positive"
+
+  Drug Inventory:
+    field_code_prefix: "#inv_"
+    required_fields:
+      - "#inv_year"
+      - "#inv_month"
+      - "#inv_adm1"
+      - "#inv_drug"
+      - "#inv_opening_balance"
+      - "#inv_received"
+      - "#inv_distributed"
+      - "#inv_closing_balance"
+
+  SBCC:
+    field_code_prefix: "#sbcc_"
+    required_fields:
+      - "#sbcc_year"
+      - "#sbcc_month"
+      - "#sbcc_adm1"
+      - "#sbcc_adm2"
+      - "#sbcc_type"
+      - "#sbcc_people_reached"
+
+  River Prospection:
+    field_code_prefix: "#rivpro_"
+    required_fields:
+      - "#rivpro_year"
+      - "#rivpro_month"
+      - "#rivpro_adm1"
+      - "#rivpro_site"
+      - "#rivpro_blackfly_positive"
+
+  Fly Collection:
+    field_code_prefix: "#flycol_"
+    required_fields:
+      - "#flycol_year"
+      - "#flycol_month"
+      - "#flycol_adm1"
+      - "#flycol_site"
+      - "#flycol_flies_dissected"
+      - "#flycol_parous_rate"
