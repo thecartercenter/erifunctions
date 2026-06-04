@@ -28,6 +28,7 @@ Imports:
     readxl,
     rlang,
     tibble,
+    tidyr,
     withr,
     writexl,
     yaml
