@@ -873,7 +873,98 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
   invisible(moved)
 }
 
+#' Trigger a registered GitHub Actions pipeline
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Dispatches a `workflow_dispatch` event to a registered GitHub Actions
+#' pipeline from R.  Authenticates with a GitHub Personal Access Token stored
+#' in the `GITHUB_PAT` environment variable (needs `workflow` scope).
+#'
+#' ## Registered pipelines
+#' | Name | Repository | Workflow |
+#' |------|------------|---------|
+#' | `hsp-mal` | thecartercenter/health-hsp-malaria | data_ingestion.yml |
+#'
+#' @param pipeline `str` Registered pipeline name. Currently `"hsp-mal"`.
+#' @param country `str` Country code passed as a workflow input (e.g. `"dr"`).
+#' @param disease `str` Disease name passed as a workflow input (e.g. `"malaria"`).
+#' @param year `int` or `NULL` Optional year passed as a workflow input. Default `NULL`.
+#' @param phase `str` Pipeline phase. Default `"prod"`; use `"testing"` for dry runs.
+#' @param ref `str` Branch or tag to run the workflow against. Default `"main"`.
+#'
+#' @returns Invisibly, the URL to the workflow's runs page on GitHub.
+#' @examples
+#' \dontrun{
+#' eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
+#' }
+#' @export
+eri_trigger <- function(pipeline, country, disease,
+                        year = NULL, phase = "prod", ref = "main") {
+  pat <- Sys.getenv("GITHUB_PAT")
+  if (!nzchar(pat)) {
+    cli::cli_abort(c(
+      "Missing GitHub Personal Access Token.",
+      "i" = "Set {.envvar GITHUB_PAT} to a token with {.val workflow} scope."
+    ))
+  }
+
+  reg <- .eri_pipeline_registry[[pipeline]]
+  if (is.null(reg)) {
+    known <- paste(names(.eri_pipeline_registry), collapse = ", ")
+    cli::cli_abort(c(
+      "Unknown pipeline {.val {pipeline}}.",
+      "i" = "Registered pipelines: {known}."
+    ))
+  }
+
+  inputs <- list(country = country, disease = disease, phase = phase)
+  if (!is.null(year)) inputs$year <- as.character(year)
+
+  dispatch_url <- sprintf(
+    "https://api.github.com/repos/%s/%s/actions/workflows/%s/dispatches",
+    reg$owner, reg$repo, reg$workflow
+  )
+
+  resp <- httr::POST(
+    dispatch_url,
+    httr::add_headers(
+      Authorization          = paste("token", pat),
+      Accept                 = "application/vnd.github+json",
+      `X-GitHub-Api-Version` = "2022-11-28"
+    ),
+    body   = list(ref = ref, inputs = inputs),
+    encode = "json"
+  )
+
+  if (httr::status_code(resp) != 204L) {
+    httr::stop_for_status(resp, task = paste("trigger pipeline", pipeline))
+  }
+
+  run_url <- sprintf(
+    "https://github.com/%s/%s/actions/workflows/%s",
+    reg$owner, reg$repo, reg$workflow
+  )
+
+  cli::cli_alert_success(
+    "Pipeline {.val {pipeline}} triggered ({country} / {disease} / phase={phase})."
+  )
+  cli::cli_alert_info("Runs: {.url {run_url}}")
+
+  invisible(run_url)
+}
+
 # Private functions ----
+
+# Internal registry: pipeline name -> owner/repo/workflow_id
+.eri_pipeline_registry <- list(
+  "hsp-mal" = list(
+    owner    = "thecartercenter",
+    repo     = "health-hsp-malaria",
+    workflow = "data_ingestion.yml"
+  )
+)
 
 #' Write a one-time session access entry to the data/ container
 #'
