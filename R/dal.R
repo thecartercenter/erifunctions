@@ -677,7 +677,233 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
   erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
 
+#### 4) Data pipeline helpers ####
+
+#' Build a canonical blob path in the data/ container
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Constructs a canonical blob storage path following the erifunctions
+#' three-layer data model: `{country}/{disease}/{data_type}/{layer}/`.
+#' Use this instead of hard-coding path strings to ensure consistency
+#' across all pipeline steps.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"ug"`).
+#' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
+#' @param data_type `str` Data input type: `"surveillance"`, `"cmr"`, or `"odk"`.
+#' @param layer `str` Pipeline layer: `"raw"`, `"staged"`, or `"processed"`.
+#' @param filename `str` Optional filename to append. If `NULL` (default), returns
+#'   the directory path only.
+#' @returns A character string with the canonical blob path.
+#' @examples
+#' eri_data_path("dr", "malaria", "surveillance", "staged")
+#' #> "dr/malaria/surveillance/staged"
+#'
+#' eri_data_path("dr", "malaria", "surveillance", "raw", "2024_dr_malaria.parquet")
+#' #> "dr/malaria/surveillance/raw/2024_dr_malaria.parquet"
+#' @export
+eri_data_path <- function(country, disease, data_type, layer, filename = NULL) {
+  valid_types  <- c("surveillance", "cmr", "odk")
+  valid_layers <- c("raw", "staged", "processed")
+
+  if (!data_type %in% valid_types) {
+    cli::cli_abort(
+      "{.arg data_type} must be one of {.val {valid_types}}, not {.val {data_type}}."
+    )
+  }
+  if (!layer %in% valid_layers) {
+    cli::cli_abort(
+      "{.arg layer} must be one of {.val {valid_layers}}, not {.val {layer}}."
+    )
+  }
+
+  parts <- c(country, disease, data_type, layer)
+  if (!is.null(filename)) parts <- c(parts, filename)
+  paste(parts, collapse = "/")
+}
+
+#' Approve staged data and promote it to processed
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' The human approval gate in the three-layer pipeline. Finds all files in the
+#' `staged/` directory whose names contain `period`, moves them to `processed/`,
+#' and writes a YAML approval log alongside them.
+#'
+#' Analyst identity is read from the `ERI_ANALYST_ID` environment variable,
+#' falling back to `Sys.info()[["user"]]` if unset.
+#'
+#' An operation log capturing every step (including errors) is always written to
+#' `{country}/{disease}/{data_type}/logs/` in the data container, regardless of
+#' whether the approval succeeds or fails. This log is the primary debugging
+#' artifact for pipeline issues.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
+#' @param disease `str` Disease name (e.g. `"malaria"`).
+#' @param data_type `str` Data input type: `"surveillance"`, `"cmr"`, or `"odk"`.
+#' @param period `str` Period string matched against staged filenames (e.g.
+#'   `"2024-W01"`, `"2024-01"`). Any staged file whose name contains this string
+#'   is promoted.
+#' @param azcontainer Azure container object for the `data/` blob, returned by
+#'   [get_azure_storage_connection()]. If `NULL` (default), connects automatically
+#'   using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#' @returns Invisibly, a character vector of the promoted file paths in `processed/`.
+#' @examples
+#' \dontrun{
+#' eri_approve("dr", "malaria", "surveillance", "2024-W01")
+#' }
+#' @export
+eri_approve <- function(country, disease, data_type, period, azcontainer = NULL) {
+  if (is.null(azcontainer)) {
+    azcontainer <- suppressMessages(
+      get_azure_storage_connection(
+        storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+      )
+    )
+  }
+
+  analyst_id    <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  staged_dir    <- eri_data_path(country, disease, data_type, "staged")
+  processed_dir <- eri_data_path(country, disease, data_type, "processed")
+  log_dir       <- paste(c(country, disease, data_type, "logs"), collapse = "/")
+
+  op_log <- list(
+    operation  = "eri_approve",
+    analyst    = analyst_id,
+    started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(country = country, disease = disease,
+                      data_type = data_type, period = period),
+    status     = "in_progress",
+    steps      = list(),
+    error      = NULL,
+    files      = NULL
+  )
+
+  moved     <- character(0)
+  had_error <- FALSE
+  err_msg   <- NULL
+
+  tryCatch({
+    if (!AzureStor::storage_dir_exists(azcontainer, staged_dir)) {
+      cli::cli_abort("Staged directory does not exist: {.path {staged_dir}}")
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "check_staged_dir",
+                                   path = staged_dir)
+
+    all_staged <- AzureStor::list_storage_files(azcontainer, staged_dir) |>
+      dplyr::as_tibble()
+    matching <- all_staged[grepl(period, all_staged$name, fixed = TRUE), ]
+
+    if (nrow(matching) == 0) {
+      cli::cli_abort(
+        "No staged files found matching {.val {period}} in {.path {staged_dir}}."
+      )
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "list_staged_files",
+                                   files_found = nrow(matching),
+                                   filenames   = as.list(basename(matching$name)))
+
+    if (!AzureStor::storage_dir_exists(azcontainer, processed_dir)) {
+      AzureStor::create_storage_dir(azcontainer, processed_dir)
+      op_log$steps <- .eri_log_step(op_log$steps, "create_processed_dir",
+                                     path = processed_dir)
+    }
+
+    for (src_path in matching$name) {
+      dest_path <- paste0(processed_dir, "/", basename(src_path))
+      tmp_file  <- tempfile()
+      AzureStor::storage_download(azcontainer, src_path, tmp_file, overwrite = TRUE)
+      AzureStor::storage_upload(azcontainer, tmp_file, dest_path)
+      unlink(tmp_file)
+      AzureStor::delete_storage_file(azcontainer, src_path, confirm = FALSE)
+      moved <- c(moved, dest_path)
+      op_log$steps <- .eri_log_step(op_log$steps, "move_file",
+                                     src = src_path, dest = dest_path)
+      cli::cli_alert_success("Approved: {.path {basename(src_path)}}")
+    }
+
+    # Human-readable approval record stored alongside the data
+    approval <- list(
+      analyst   = analyst_id,
+      timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      period    = period,
+      country   = country,
+      disease   = disease,
+      data_type = data_type,
+      files     = as.list(moved)
+    )
+    approval_path <- paste0(processed_dir, "/", period, "_approval_log.yaml")
+    approval_file <- tempfile(fileext = ".yaml")
+    yaml::write_yaml(approval, approval_file)
+    AzureStor::storage_upload(azcontainer, approval_file, approval_path)
+    unlink(approval_file)
+    op_log$steps <- .eri_log_step(op_log$steps, "write_approval_log",
+                                   path = approval_path)
+    cli::cli_alert_success("Approval log: {.path {approval_path}}")
+
+    op_log$status <- "success"
+    op_log$files  <- as.list(moved)
+
+  }, error = function(e) {
+    had_error <<- TRUE
+    err_msg   <<- conditionMessage(e)
+  })
+
+  op_log$completed_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (had_error) {
+    op_log$status <- "error"
+    op_log$error  <- err_msg
+    op_log$steps  <- .eri_log_step(op_log$steps, "error_caught",
+                                    status = "error", message = err_msg)
+  }
+  .eri_write_log(op_log, azcontainer, log_dir)
+  if (had_error) cli::cli_abort(err_msg, call = NULL)
+  invisible(moved)
+}
+
 # Private functions ----
+
+#' Append a timestamped step entry to an operation log's steps list
+#' @keywords internal
+.eri_log_step <- function(steps, step, status = "success", ...) {
+  entry <- c(
+    list(step      = step,
+         status    = status,
+         timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
+    list(...)
+  )
+  c(steps, list(entry))
+}
+
+#' Write a structured operation log YAML to the Azure logs/ directory
+#'
+#' Wraps in its own tryCatch so a logging failure never masks the original error.
+#' @keywords internal
+.eri_write_log <- function(log_list, azcontainer, log_dir) {
+  tryCatch({
+    if (!AzureStor::storage_dir_exists(azcontainer, log_dir)) {
+      AzureStor::create_storage_dir(azcontainer, log_dir)
+    }
+    ts       <- format(Sys.time(), "%Y%m%d_%H%M%S", tz = "UTC")
+    op       <- if (is.null(log_list$operation)) "op" else log_list$operation
+    period   <- log_list$parameters$period
+    per_slug <- if (!is.null(period)) gsub("[^A-Za-z0-9_-]", "", period) else ""
+    fname    <- paste0(ts, "_", op,
+                       if (nchar(per_slug) > 0) paste0("_", per_slug) else "",
+                       ".yaml")
+    log_path <- paste0(log_dir, "/", fname)
+    log_file <- tempfile(fileext = ".yaml")
+    yaml::write_yaml(log_list, log_file)
+    AzureStor::storage_upload(azcontainer, log_file, log_path)
+    unlink(log_file)
+    cli::cli_alert_info("Operation log: {.path {log_path}}")
+  }, error = function(e) {
+    cli::cli_alert_warning("Could not write operation log to Azure: {conditionMessage(e)}")
+  })
+  invisible(NULL)
+}
 
 #' Reads an Excel file from Azure to the R environment
 #' @description
