@@ -558,6 +558,7 @@ azure_io <- function(
 #' @inheritParams erifunctions_io
 #' @export
 eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
@@ -572,6 +573,7 @@ eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("write", obj = obj, file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
@@ -586,6 +588,7 @@ eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("list", file_loc = file_loc, full_names = full_names, azure = azure, azcontainer = azcontainer)
 }
@@ -600,6 +603,7 @@ eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer
 #' @inheritParams erifunctions_io
 #' @export
 eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("exists.file", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
@@ -614,6 +618,7 @@ eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("exists.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
@@ -628,6 +633,7 @@ eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("create.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
@@ -642,6 +648,7 @@ eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
@@ -656,6 +663,7 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @inheritParams erifunctions_io
 #' @export
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+  if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("delete.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
@@ -673,6 +681,7 @@ eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @param azcontainer Azure container object from [get_azure_storage_connection()].
 #' @export
 eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
+  .eri_log_session()
   if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
   erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
@@ -756,6 +765,7 @@ eri_data_path <- function(country, disease, data_type, layer, filename = NULL) {
 #' }
 #' @export
 eri_approve <- function(country, disease, data_type, period, azcontainer = NULL) {
+  .eri_log_session()
   if (is.null(azcontainer)) {
     azcontainer <- suppressMessages(
       get_azure_storage_connection(
@@ -864,6 +874,64 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
 }
 
 # Private functions ----
+
+#' Write a one-time session access entry to the data/ container
+#'
+#' Fires at most once per R session via `options(erifunctions.session_logged)`.
+#' Uses SP credentials directly to avoid a recursive call through
+#' `get_azure_storage_connection()`. Fails silently on any error so it never
+#' blocks analyst workflow.
+#' @keywords internal
+.eri_log_session <- function() {
+  if (isTRUE(getOption("erifunctions.session_logged"))) return(invisible(NULL))
+  options(erifunctions.session_logged = TRUE)
+
+  tryCatch({
+    sp_id  <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_ID")
+    sp_sec <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_SECRET")
+    if (nchar(sp_id) == 0 || nchar(sp_sec) == 0) return(invisible(NULL))
+
+    token <- AzureAuth::get_azure_token(
+      resource  = "https://storage.azure.com/",
+      tenant    = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
+      app       = sp_id,
+      auth_type = "client_credentials",
+      password  = sp_sec
+    )
+    data_con <- AzureStor::storage_container(
+      AzureStor::storage_endpoint(
+        Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"), token = token
+      ),
+      Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+    )
+
+    analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+    ts_file  <- format(Sys.time(), "%Y%m%d_%H%M%S", tz = "UTC")
+    slug     <- gsub("[^A-Za-z0-9]", "_", analyst)
+    log_dir  <- "logs/_access"
+    log_path <- paste0(log_dir, "/", ts_file, "_", slug, ".yaml")
+
+    entry <- list(
+      timestamp   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      analyst     = analyst,
+      r_version   = as.character(getRversion()),
+      pkg_version = as.character(utils::packageVersion("erifunctions")),
+      os          = Sys.info()[["sysname"]]
+    )
+
+    if (!AzureStor::storage_dir_exists(data_con, log_dir)) {
+      AzureStor::create_storage_dir(data_con, log_dir)
+    }
+
+    log_file <- tempfile(fileext = ".yaml")
+    yaml::write_yaml(entry, log_file)
+    AzureStor::storage_upload(data_con, log_file, log_path)
+    unlink(log_file)
+  }, error = function(e) {
+    # Fail silently — session logging must never block analyst workflow
+  })
+  invisible(NULL)
+}
 
 #' Append a timestamped step entry to an operation log's steps list
 #' @keywords internal

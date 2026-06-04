@@ -36,6 +36,25 @@ test_that("eri_data_path rejects invalid layer", {
   )
 })
 
+#### Tests for .eri_log_session ####
+
+test_that(".eri_log_session sets the session_logged option", {
+  withr::with_options(list(erifunctions.session_logged = NULL), {
+    # SP credentials absent → skips Azure write but still sets the flag
+    withr::with_envvar(list(ERIFUNCTIONS_SP_CLIENT_ID = "", ERIFUNCTIONS_SP_CLIENT_SECRET = ""), {
+      .eri_log_session()
+      expect_true(isTRUE(getOption("erifunctions.session_logged")))
+    })
+  })
+})
+
+test_that(".eri_log_session is a no-op when flag is already set", {
+  withr::with_options(list(erifunctions.session_logged = TRUE), {
+    # Should return immediately without touching anything
+    expect_invisible(.eri_log_session())
+  })
+})
+
 #### Tests for eri_approve error paths (no Azure needed) ####
 
 test_that("eri_approve errors informatively when staged dir does not exist", {
