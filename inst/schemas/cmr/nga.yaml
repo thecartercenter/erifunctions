@@ -1,0 +1,97 @@
+country: nigeria
+country_code: nga
+language: en
+template: english_cmr
+
+sheets:
+  RB Treatment:
+    field_code_prefix: "#rbtrt_"
+    required_fields:
+      - "#rbtrt_year"
+      - "#rbtrt_month"
+      - "#rbtrt_adm1"
+      - "#rbtrt_adm2"
+      - "#rbtrt_target"
+      - "#rbtrt_treated"
+
+  LF Treatment:
+    field_code_prefix: "#lftrt_"
+    required_fields:
+      - "#lftrt_year"
+      - "#lftrt_month"
+      - "#lftrt_adm1"
+      - "#lftrt_adm2"
+      - "#lftrt_target"
+      - "#lftrt_treated"
+
+  SCH Treatment:
+    field_code_prefix: "#schtrt_"
+    required_fields:
+      - "#schtrt_year"
+      - "#schtrt_month"
+      - "#schtrt_adm1"
+      - "#schtrt_adm2"
+      - "#schtrt_target"
+      - "#schtrt_treated"
+
+  STH Treatment:
+    field_code_prefix: "#sthtrt_"
+    required_fields:
+      - "#sthtrt_year"
+      - "#sthtrt_month"
+      - "#sthtrt_adm1"
+      - "#sthtrt_adm2"
+      - "#sthtrt_target"
+      - "#sthtrt_treated"
+
+  LF MMDP:
+    field_code_prefix: "#lfmmdp_"
+    required_fields:
+      - "#lfmmdp_year"
+      - "#lfmmdp_month"
+      - "#lfmmdp_adm1"
+      - "#lfmmdp_adm2"
+      - "#lfmmdp_hydro_screened"
+      - "#lfmmdp_lymph_screened"
+      - "#lfmmdp_hydro_treated"
+      - "#lfmmdp_lymph_treated"
+
+  CDD Training:
+    field_code_prefix: "#cddtrn_"
+    required_fields:
+      - "#cddtrn_year"
+      - "#cddtrn_month"
+      - "#cddtrn_adm1"
+      - "#cddtrn_adm2"
+      - "#cddtrn_target"
+      - "#cddtrn_trained"
+
+  CS Training:
+    field_code_prefix: "#cstrn_"
+    required_fields:
+      - "#cstrn_year"
+      - "#cstrn_month"
+      - "#cstrn_adm1"
+      - "#cstrn_adm2"
+      - "#cstrn_target"
+      - "#cstrn_trained"
+
+  MMDP Training:
+    field_code_prefix: "#mmdptrn_"
+    required_fields:
+      - "#mmdptrn_year"
+      - "#mmdptrn_month"
+      - "#mmdptrn_adm1"
+      - "#mmdptrn_adm2"
+      - "#mmdptrn_target"
+      - "#mmdptrn_trained"
+
+  Surveys:
+    field_code_prefix: "#svy_"
+    required_fields:
+      - "#svy_year"
+      - "#svy_adm1"
+      - "#svy_adm2"
+      - "#svy_type"
+      - "#svy_examined"
+      - "#svy_positive"
