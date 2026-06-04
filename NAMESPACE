@@ -2,6 +2,7 @@
 
 S3method(print,dq_result)
 S3method(summary,dq_result)
+export(add_anomaly_pct_change)
 export(azure_io)
 export(download_form_attachments)
 export(download_odk_form)
