@@ -2,9 +2,10 @@
 % Please edit documentation in R/odk.R
 \name{download_form_attachments}
 \alias{download_form_attachments}
-\title{See all users who have access to a form}
+\title{Download all media attachments from an ODK form}
 \usage{
 download_form_attachments(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
   project_id,
@@ -17,27 +18,29 @@ download_form_attachments(
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{project_id}{\code{int} The project id for which you want to identify attachments}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{form_id}{\code{chr} The form id for which we want to identify attachments}
+\item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 
-\item{folder_loc}{\code{chr} The folder in which all images should be dumped out}
+\item{form_id}{\code{chr} Form ID from \code{\link[=list_odk_forms]{list_odk_forms()}}}
 
-\item{image_label}{\code{chr} The variable name that will be used for the image label}
+\item{folder_loc}{\code{chr} Local directory to write downloaded attachments}
 
-\item{other_vars}{\code{chr} A concatenated character vector of other variables to include}
+\item{image_label}{\code{chr} Column name used as the output file stem}
 
-\item{add_condition}{\code{bool} Determine if a condition should be used}
+\item{other_vars}{\code{chr} Additional columns to include in the returned tibble}
 
-\item{condition}{\code{chr} The dplyr::filter() command to filter the downloaded data}
+\item{add_condition}{\code{lgl} Apply a row filter before downloading}
+
+\item{condition}{Unquoted \code{dplyr::filter()} expression; used when \code{add_condition = TRUE}}
 }
 \value{
-\code{tibble} Output of all attachment names and their links to the forms
+\code{tibble} of attachment metadata
 }
 \description{
-Pull all media attachments from a form
+Download all media attachments from an ODK form
 }

@@ -1,0 +1,228 @@
+#### Tests for ODK form registry ####
+
+# --- helpers ------------------------------------------------------------------
+
+make_reg <- function(...) {
+  entries <- list(...)
+  list(forms = entries)
+}
+
+make_entry <- function(
+    server_url = "https://odk.example.org",
+    project_id = 7L,
+    form_id    = "RiverProspection",
+    country    = "uga",
+    disease    = "oncho",
+    active     = TRUE
+) {
+  list(
+    server_url        = server_url,
+    project_id        = project_id,
+    form_id           = form_id,
+    form_display_name = form_id,
+    country           = country,
+    disease           = disease,
+    active            = active,
+    added_by          = "test.user",
+    added_at          = "2026-06-04",
+    last_synced       = NULL,
+    last_cursor       = NULL
+  )
+}
+
+# Minimal mock data_con that records uploads and serves staged registry content
+mock_data_con <- function(initial_reg = list(forms = list())) {
+  env <- new.env(parent = emptyenv())
+  env$registry <- initial_reg
+  env$log_written <- FALSE
+
+  # Return list mimicking the AzureStor container interface via mock functions
+  # (tests use local_mocked_bindings to intercept AzureStor calls)
+  env
+}
+
+# --- input validation ---------------------------------------------------------
+
+test_that("eri_odk_register errors on unknown country", {
+  expect_error(
+    eri_odk_register(
+      project_id = 1, form_id = "F", country = "xyz",
+      disease = "oncho", server_url = "https://x.org",
+      data_con = mock_data_con()
+    ),
+    "not a known ERI country"
+  )
+})
+
+test_that("eri_odk_register errors on duplicate active entry", {
+  entry   <- make_entry()
+  reg     <- make_reg(entry)
+  written <- NULL
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(reg, dest)
+    },
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      written <<- yaml::read_yaml(src)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  expect_error(
+    eri_odk_register(
+      project_id = 7L, form_id = "RiverProspection",
+      country = "uga", disease = "oncho",
+      server_url = "https://odk.example.org",
+      data_con = "mock"
+    ),
+    "already registered"
+  )
+})
+
+test_that("eri_odk_deregister errors when entry not found", {
+  reg <- list(forms = list())
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(reg, dest)
+    },
+    .package = "AzureStor"
+  )
+
+  expect_error(
+    eri_odk_deregister(
+      project_id = 99L, form_id = "NoSuchForm",
+      data_con = "mock"
+    ),
+    "No active registered form"
+  )
+})
+
+test_that("eri_odk_deregister errors when multiple entries match without server_url", {
+  e1 <- make_entry(server_url = "https://server1.org")
+  e2 <- make_entry(server_url = "https://server2.org")
+  reg <- make_reg(e1, e2)
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(reg, dest)
+    },
+    .package = "AzureStor"
+  )
+
+  expect_error(
+    eri_odk_deregister(
+      project_id = 7L, form_id = "RiverProspection",
+      data_con = "mock"
+    ),
+    "disambiguate"
+  )
+})
+
+# --- round-trip ---------------------------------------------------------------
+
+test_that("register / deregister / list round-trip works", {
+  stored_reg <- list(forms = list())
+  uploaded_yaml <- NULL
+
+  local_mocked_bindings(
+    storage_file_exists = function(container, path, ...) {
+      path == erifunctions:::.ODK_REGISTRY_PATH && length(stored_reg$forms) > 0
+    },
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(stored_reg, dest)
+    },
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      if (grepl("registry\\.yaml$", dest)) {
+        stored_reg <<- yaml::read_yaml(src)
+      }
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  # Register
+  e <- eri_odk_register(
+    project_id = 7L, form_id = "RiverProspection",
+    country = "uga", disease = "oncho",
+    server_url = "https://odk.example.org",
+    data_con = "mock"
+  )
+  expect_equal(e$form_id, "RiverProspection")
+  expect_true(e$active)
+
+  # List — should have 1 entry
+  lst <- eri_odk_list_registered(data_con = "mock")
+  expect_equal(nrow(lst), 1L)
+  expect_equal(lst$form_id, "RiverProspection")
+  expect_equal(lst$country, "uga")
+
+  # Deregister
+  eri_odk_deregister(
+    project_id = 7L, form_id = "RiverProspection",
+    server_url = "https://odk.example.org",
+    data_con = "mock"
+  )
+
+  # List — should now be empty
+  lst2 <- eri_odk_list_registered(data_con = "mock")
+  expect_equal(nrow(lst2), 0L)
+})
+
+test_that("eri_odk_list_registered returns typed empty tibble when no forms", {
+  reg <- list(forms = list())
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+
+  out <- eri_odk_list_registered(data_con = "mock")
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 0L)
+  expect_named(out, c(
+    "server_url", "project_id", "form_id", "form_display_name",
+    "country", "disease", "added_by", "added_at", "last_synced"
+  ))
+})
+
+test_that("form_display_name defaults to form_id when not supplied", {
+  stored_reg <- list(forms = list())
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    storage_dir_exists  = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      if (grepl("registry\\.yaml$", dest)) {
+        stored_reg <<- yaml::read_yaml(src)
+      }
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  eri_odk_register(
+    project_id = 3L, form_id = "MyForm",
+    country = "nga", disease = "lf",
+    server_url = "https://odk2.example.org",
+    data_con = "mock"
+  )
+
+  expect_equal(stored_reg$forms[[1]]$form_display_name, "MyForm")
+})
