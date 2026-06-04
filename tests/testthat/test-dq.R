@@ -253,3 +253,116 @@ test_that("add_anomaly_pct_change works on dq_result and appends flags", {
   expect_true(all(out$flags$column == "n_cases"))
   expect_true(all(grepl("% change anomaly", out$flags$issue)))
 })
+
+#### Tests for add_anomaly_spatial ####
+
+test_that("add_anomaly_spatial returns empty flags tibble when admin block absent", {
+  df     <- tibble::tibble(Province = c("Santo Domingo", "Santiago"))
+  schema <- list()
+  out    <- suppressMessages(add_anomaly_spatial(df, schema, azcontainer = NULL))
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 0L)
+  expect_true(all(c("row", "column", "value", "issue") %in% names(out)))
+})
+
+test_that("add_anomaly_spatial returns empty flags when all names match", {
+  df     <- tibble::tibble(Province = c("Santo Domingo", "Santiago"))
+  schema <- list(
+    admin = list(admin1_col = "Province", admin1_spatial = "fake.shp",
+                 admin1_name_field = "adm1_name")
+  )
+  with_mocked_bindings(
+    .eri_load_spatial_names = function(...) c("Santo Domingo", "Santiago", "La Vega"),
+    {
+      out <- add_anomaly_spatial(df, schema, azcontainer = NULL)
+    }
+  )
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_spatial flags unrecognized admin name", {
+  df     <- tibble::tibble(Province = c("Santo Domingo", "Typo Province"))
+  schema <- list(
+    admin = list(admin1_col = "Province", admin1_spatial = "fake.shp",
+                 admin1_name_field = "adm1_name")
+  )
+  with_mocked_bindings(
+    .eri_load_spatial_names = function(...) c("Santo Domingo", "Santiago"),
+    {
+      out <- suppressWarnings(add_anomaly_spatial(df, schema, azcontainer = NULL))
+    }
+  )
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$row, 2L)
+  expect_equal(out$column, "Province")
+  expect_equal(out$value, "Typo Province")
+  expect_equal(out$issue, "unrecognized admin name")
+})
+
+test_that("add_anomaly_spatial warns and skips when spatial ref unavailable", {
+  df     <- tibble::tibble(Province = c("Santo Domingo"))
+  schema <- list(
+    admin = list(admin1_col = "Province", admin1_spatial = "fake.shp",
+                 admin1_name_field = "adm1_name")
+  )
+  with_mocked_bindings(
+    .eri_load_spatial_names = function(...) NULL,
+    {
+      expect_warning(
+        out <- add_anomaly_spatial(df, schema, azcontainer = NULL),
+        "Spatial reference unavailable"
+      )
+    }
+  )
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_spatial appends to dq_result flags", {
+  df <- tibble::tibble(Province = c("Santo Domingo", "BADNAME"))
+  dqr <- structure(
+    list(
+      data  = df,
+      log   = tibble::tibble(row = integer(), column = character(),
+                             original_value = character(), corrected_value = character(),
+                             rule = character(), action = character()),
+      flags = tibble::tibble(row = integer(), column = character(),
+                             value = character(), issue = character())
+    ),
+    class = "dq_result"
+  )
+  schema <- list(
+    admin = list(admin1_col = "Province", admin1_spatial = "fake.shp",
+                 admin1_name_field = "adm1_name")
+  )
+  with_mocked_bindings(
+    .eri_load_spatial_names = function(...) c("Santo Domingo"),
+    {
+      out <- suppressWarnings(add_anomaly_spatial(dqr, schema, azcontainer = NULL))
+    }
+  )
+  expect_s3_class(out, "dq_result")
+  expect_equal(nrow(out$flags), 1L)
+  expect_equal(out$flags$row, 2L)
+  expect_equal(out$flags$issue, "unrecognized admin name")
+})
+
+test_that("add_anomaly_spatial skips admin2 when name_field not in schema", {
+  df     <- tibble::tibble(Province = c("Santo Domingo"), Commune = c("Bad Commune"))
+  schema <- list(
+    admin = list(
+      admin1_col = "Province", admin1_spatial = "fake.shp", admin1_name_field = "adm1_name",
+      admin2_col = "Commune",  admin2_spatial = "fake2.shp"
+      # admin2_name_field intentionally absent
+    )
+  )
+  call_count <- 0L
+  with_mocked_bindings(
+    .eri_load_spatial_names = function(...) { call_count <<- call_count + 1L; c("Santo Domingo") },
+    {
+      out <- add_anomaly_spatial(df, schema, azcontainer = NULL)
+    }
+  )
+  # Only admin1 check fires
+  expect_equal(call_count, 1L)
+  expect_equal(nrow(out), 0L)
+})
