@@ -5,9 +5,9 @@
 \title{Initialize/test ODK connection}
 \usage{
 init_odk_connection(
-  url = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$url,
-  user = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$name,
-  pass = yaml::read_yaml(here::here("sandbox/keys.yaml"))$odk$pass,
+  url = Sys.getenv("ODK_URL", unset = "https://rblf.tccodk.org/"),
+  user = Sys.getenv("ODK_USER", unset = ""),
+  pass = Sys.getenv("ODK_PASS", unset = ""),
   testing = FALSE,
   verbose = TRUE
 )

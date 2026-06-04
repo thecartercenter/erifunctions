@@ -103,6 +103,45 @@ test_that("hsp-mal pipeline registry has required fields", {
   expect_equal(reg$country_map[["ht"]], "hti")
 })
 
+#### Tests for eri_ingest error paths (no Azure needed) ####
+
+test_that("eri_ingest errors when file does not exist", {
+  expect_error(
+    eri_ingest("nonexistent/path/file.xlsx", "dr", "malaria",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "File not found"
+  )
+})
+
+test_that("eri_ingest errors clearly for unknown pipeline", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  expect_error(
+    eri_ingest(tmp, "dr", "malaria",
+               pipeline     = "nonexistent-pipeline",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "Unknown pipeline"
+  )
+})
+
+test_that("eri_ingest errors clearly for unregistered country", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  expect_error(
+    eri_ingest(tmp, "zz", "malaria",
+               projects_con = structure(list(), class = "mock"),
+               data_con     = structure(list(), class = "mock")),
+    "not registered"
+  )
+})
+
+test_that(".eri_schema_country_map maps dr and ht correctly", {
+  expect_equal(.eri_schema_country_map[["dr"]], "dominican_republic")
+  expect_equal(.eri_schema_country_map[["ht"]], "haiti")
+})
+
 #### Tests for eri_approve error paths (no Azure needed) ####
 
 test_that("eri_approve errors informatively when staged dir does not exist", {
