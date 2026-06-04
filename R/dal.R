@@ -1287,6 +1287,18 @@ eri_ingest <- function(path, country, disease,
       "dr" = "dom",
       "ht" = "hti"
     )
+  ),
+  "rb-expansion" = list(
+    project_folder = "health-rb-country-expansion-dev",
+    country_map    = list(
+      "eth" = "eth",
+      "nga" = "nga",
+      "sdn" = "sdn",
+      "ssd" = "ssd",
+      "uga" = "uga",
+      "mad" = "mad",
+      "tcd" = "tcd"
+    )
   )
 )
 
