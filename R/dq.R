@@ -386,7 +386,126 @@
   state
 }
 
-#### 3) Public API ####
+#### 3) Anomaly detection ####
+
+#' Flag rows with unusual period-over-period percent change
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Computes period-over-period percent change for a numeric column and flags
+#' rows whose absolute change exceeds `threshold`. Works on a plain tibble or a
+#' `dq_result` object returned by [run_dq_checks()], enabling chaining:
+#'
+#' ```r
+#' run_dq_checks(data, schema) |>
+#'   add_anomaly_pct_change("n_cases", "EpiWeek", group_cols = "Province_Residence")
+#' ```
+#'
+#' When passed a `dq_result`, anomaly rows are appended to `$flags` and the
+#' percent-change columns are added to `$data`.
+#'
+#' @param data A tibble or `dq_result` object.
+#' @param value_col `str` Name of the numeric column to check.
+#' @param period_col `str` Name of the column that defines time order within
+#'   each group (e.g. `"EpiWeek"`, `"month"`).
+#' @param threshold `num` Absolute percent change threshold (as a proportion).
+#'   Default `0.5` flags changes greater than 50%.
+#' @param group_cols `chr` vector of column names to group by before computing
+#'   change (e.g. `c("Province_Residence", "disease")`). Default `NULL` treats
+#'   the whole dataset as one group.
+#' @param year_col `str` or `NULL` When `period_col` resets each year
+#'   (e.g. `"EpiWeek"` 1–53), supply the year column so ordering is correct
+#'   across year boundaries. Default `NULL`.
+#'
+#' @returns The input object with two columns added to the data:
+#'   `pct_change_{value_col}` (numeric) and `anomaly_pct_change_{value_col}`
+#'   (logical). If the input is a `dq_result`, flagged rows are also appended
+#'   to `$flags`.
+#' @examples
+#' \dontrun{
+#' agg <- dplyr::count(raw_dr, Year, EpiWeek, Province_Residence, name = "n_cases")
+#' agg_flagged <- add_anomaly_pct_change(agg, "n_cases", "EpiWeek",
+#'                                        group_cols = "Province_Residence",
+#'                                        year_col   = "Year")
+#' }
+#' @export
+add_anomaly_pct_change <- function(data, value_col, period_col,
+                                    threshold  = 0.5,
+                                    group_cols = NULL,
+                                    year_col   = NULL) {
+  is_dq <- inherits(data, "dq_result")
+  df    <- if (is_dq) data$data else tibble::as_tibble(data)
+
+  if (!value_col %in% names(df)) {
+    cli::cli_abort("{.arg value_col} {.val {value_col}} not found in data.")
+  }
+  if (!period_col %in% names(df)) {
+    cli::cli_abort("{.arg period_col} {.val {period_col}} not found in data.")
+  }
+
+  # Build ordering key: combine year + period when year_col supplied
+  if (!is.null(year_col) && year_col %in% names(df)) {
+    df$.eri_order <- df[[year_col]] * 1000 + df[[period_col]]
+  } else {
+    df$.eri_order <- df[[period_col]]
+  }
+
+  sort_cols <- c(group_cols, ".eri_order")
+
+  df <- df |>
+    dplyr::arrange(dplyr::across(dplyr::all_of(sort_cols))) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols %||% character(0)))) |>
+    dplyr::mutate(
+      .eri_lag = dplyr::lag(.data[[value_col]]),
+      .eri_pct = dplyr::if_else(
+        is.na(.eri_lag) | .eri_lag == 0,
+        NA_real_,
+        (.data[[value_col]] - .eri_lag) / .eri_lag
+      )
+    ) |>
+    dplyr::ungroup()
+
+  pct_col  <- paste0("pct_change_",         value_col)
+  flag_col <- paste0("anomaly_pct_change_", value_col)
+
+  df[[pct_col]]  <- df$.eri_pct
+  df[[flag_col]] <- !is.na(df$.eri_pct) & abs(df$.eri_pct) > threshold
+  df$.eri_order  <- NULL
+  df$.eri_lag    <- NULL
+  df$.eri_pct    <- NULL
+
+  n_flagged <- sum(df[[flag_col]], na.rm = TRUE)
+  if (n_flagged > 0) {
+    cli::cli_alert_warning(
+      "{n_flagged} row{?s} flagged for % change anomaly in {.val {value_col}} (threshold: {threshold * 100}%)."
+    )
+  } else {
+    cli::cli_alert_success("No % change anomalies detected in {.val {value_col}}.")
+  }
+
+  if (is_dq) {
+    flagged_idx <- which(df[[flag_col]])
+    if (length(flagged_idx) > 0) {
+      pct_vals <- round(df[[pct_col]][flagged_idx] * 100, 1)
+      data$flags <- dplyr::bind_rows(
+        data$flags,
+        tibble::tibble(
+          row    = flagged_idx,
+          column = value_col,
+          value  = as.character(df[[value_col]][flagged_idx]),
+          issue  = paste0("% change anomaly (", pct_vals, "%): exceeds threshold ", threshold * 100, "%")
+        )
+      )
+    }
+    data$data <- df
+    return(invisible(data))
+  }
+
+  df
+}
+
+#### 4) Public API ####
 
 #' Load a DQ schema
 #'
