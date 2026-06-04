@@ -9,10 +9,13 @@ eri_ingest_cmr(path, sheet, country = NULL)
 \arguments{
 \item{path}{\code{str} Local path to the CMR Excel file.}
 
-\item{sheet}{\code{str} or \code{int} Sheet name or 1-based index to read.}
+\item{sheet}{\code{str} or \code{int} Sheet name, 1-based index, or canonical slug
+(e.g. \code{"rb_treatment"}). Slugs are resolved to actual sheet names via the
+country schema's \code{sheet_aliases} block when \code{country} is supplied.}
 
-\item{country}{\code{str} or \code{NULL} Optional country code (e.g. \code{"ug"}, \code{"et"})
-added as the first column. Default \code{NULL}.}
+\item{country}{\code{str} or \code{NULL} Optional country code (e.g. \code{"tcd"}, \code{"uga"}).
+When supplied, the country code is prepended as a \code{country} column and slug
+aliases are resolved. Default \code{NULL}.}
 }
 \value{
 A tibble with field-code column names and data from row 6 onward.
@@ -41,6 +44,9 @@ both English and French templates.
 }
 \examples{
 \dontrun{
-df <- eri_ingest_cmr("data/uga_2024_01.xlsx", sheet = "RB Treatment", country = "ug")
+# English template — sheet name directly
+df <- eri_ingest_cmr("data/uga_2024_01.xlsx", sheet = "RB Treatment", country = "uga")
+# French template — canonical slug resolved via schema
+df <- eri_ingest_cmr("data/tcd_2024_01.xlsx", sheet = "rb_treatment", country = "tcd")
 }
 }

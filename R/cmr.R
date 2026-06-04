@@ -58,16 +58,22 @@ load_cmr_schema <- function(country) {
 #' | 6+ | Data |
 #'
 #' @param path `str` Local path to the CMR Excel file.
-#' @param sheet `str` or `int` Sheet name or 1-based index to read.
-#' @param country `str` or `NULL` Optional country code (e.g. `"ug"`, `"et"`)
-#'   added as the first column. Default `NULL`.
+#' @param sheet `str` or `int` Sheet name, 1-based index, or canonical slug
+#'   (e.g. `"rb_treatment"`). Slugs are resolved to actual sheet names via the
+#'   country schema's `sheet_aliases` block when `country` is supplied.
+#' @param country `str` or `NULL` Optional country code (e.g. `"tcd"`, `"uga"`).
+#'   When supplied, the country code is prepended as a `country` column and slug
+#'   aliases are resolved. Default `NULL`.
 #'
 #' @returns A tibble with field-code column names and data from row 6 onward.
 #'   All-NA spacer rows are dropped. If `country` is supplied it is prepended
 #'   as a `country` column.
 #' @examples
 #' \dontrun{
-#' df <- eri_ingest_cmr("data/uga_2024_01.xlsx", sheet = "RB Treatment", country = "ug")
+#' # English template — sheet name directly
+#' df <- eri_ingest_cmr("data/uga_2024_01.xlsx", sheet = "RB Treatment", country = "uga")
+#' # French template — canonical slug resolved via schema
+#' df <- eri_ingest_cmr("data/tcd_2024_01.xlsx", sheet = "rb_treatment", country = "tcd")
 #' }
 #' @export
 eri_ingest_cmr <- function(path, sheet, country = NULL) {
@@ -75,7 +81,16 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
     cli::cli_abort("File not found: {.path {path}}")
   }
 
-  raw <- readxl::read_excel(path, sheet = sheet, skip = 4,
+  actual_sheet <- sheet
+  if (!is.null(country) && is.character(sheet)) {
+    schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
+    if (!is.null(schema) && !is.null(schema$sheet_aliases)) {
+      resolved <- schema$sheet_aliases[[sheet]]
+      if (!is.null(resolved)) actual_sheet <- resolved
+    }
+  }
+
+  raw <- readxl::read_excel(path, sheet = actual_sheet, skip = 4,
                              col_names = TRUE, .name_repair = "minimal")
 
   field_cols <- names(raw)[startsWith(names(raw), "#")]
@@ -98,7 +113,7 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   }
 
   cli::cli_alert_success(
-    "CMR sheet {.val {sheet}}: {nrow(df)} data row{?s}, {length(field_cols)} field code{?s}."
+    "CMR sheet {.val {actual_sheet}}: {nrow(df)} data row{?s}, {length(field_cols)} field code{?s}."
   )
 
   df
