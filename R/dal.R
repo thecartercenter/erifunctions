@@ -955,14 +955,183 @@ eri_trigger <- function(pipeline, country, disease,
   invisible(run_url)
 }
 
+#' Stage intermediate pipeline output into the data/ blob
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Pulls cleaned files from the `projects` blob's `intermediate/` folder for a
+#' registered pipeline and copies them into `data/{country}/{disease}/surveillance/staged/`,
+#' ready for analyst review via [eri_approve()].
+#'
+#' If any destination file already exists in `staged/`, a warning is issued for
+#' each collision and the file is overwritten.
+#'
+#' ## Registered pipelines
+#' | Name | Project folder | Countries |
+#' |------|---------------|-----------|
+#' | `hsp-mal` | health-hsp-malaria-dev | `"dr"`, `"ht"` |
+#'
+#' @param pipeline `str` Registered pipeline name. Currently `"hsp-mal"`.
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
+#' @param disease `str` Disease name (e.g. `"malaria"`).
+#' @param pattern `str` or `NULL` Optional substring filter applied to filenames
+#'   before staging (e.g. `"2026"` to stage only 2026 files). Default `NULL` stages all files.
+#' @param overwrite `logical` Controls behaviour when a file already exists in
+#'   `staged/`. `FALSE` (default) issues a [cli::cli_warn()] for each collision
+#'   before overwriting — useful for interactive review. `TRUE` overwrites
+#'   silently — intended for scripted or automated workflows.
+#' @param projects_con Azure container object for the `projects` blob. If `NULL`
+#'   (default), connects automatically using [get_azure_storage_connection()].
+#' @param data_con Azure container object for the `data` blob. If `NULL`
+#'   (default), connects using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#'
+#' @returns Invisibly, a character vector of the staged file paths in the `data` blob.
+#' @examples
+#' \dontrun{
+#' eri_stage("hsp-mal", "dr", "malaria")
+#' eri_stage("hsp-mal", "ht", "malaria", pattern = "2026")
+#' eri_stage("hsp-mal", "dr", "malaria", overwrite = TRUE)  # silent, for scripts
+#' }
+#' @export
+eri_stage <- function(pipeline, country, disease,
+                      pattern = NULL,
+                      overwrite = FALSE,
+                      projects_con = NULL,
+                      data_con = NULL) {
+  .eri_log_session()
+
+  reg <- .eri_pipeline_registry[[pipeline]]
+  if (is.null(reg)) {
+    known <- paste(names(.eri_pipeline_registry), collapse = ", ")
+    cli::cli_abort(c(
+      "Unknown pipeline {.val {pipeline}}.",
+      "i" = "Registered pipelines: {known}."
+    ))
+  }
+
+  subfolder <- reg$country_map[[country]]
+  if (is.null(subfolder)) {
+    known_countries <- paste(names(reg$country_map), collapse = ", ")
+    cli::cli_abort(c(
+      "Country {.val {country}} is not registered for pipeline {.val {pipeline}}.",
+      "i" = "Registered countries: {known_countries}."
+    ))
+  }
+
+  if (is.null(projects_con)) {
+    projects_con <- suppressMessages(get_azure_storage_connection())
+  }
+  if (is.null(data_con)) {
+    data_con <- suppressMessages(
+      get_azure_storage_connection(
+        storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+      )
+    )
+  }
+
+  src_dir    <- paste0(reg$project_folder, "/intermediate/", subfolder)
+  staged_dir <- eri_data_path(country, disease, "surveillance", "staged")
+  log_dir    <- paste(c(country, disease, "surveillance", "logs"), collapse = "/")
+
+  op_log <- list(
+    operation  = "eri_stage",
+    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(pipeline = pipeline, country = country,
+                      disease = disease, pattern = pattern),
+    status     = "in_progress",
+    steps      = list(),
+    error      = NULL,
+    files      = NULL
+  )
+
+  staged    <- character(0)
+  had_error <- FALSE
+  err_msg   <- NULL
+
+  tryCatch({
+    if (!AzureStor::storage_dir_exists(projects_con, src_dir)) {
+      cli::cli_abort("Source directory not found in projects blob: {.path {src_dir}}")
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "check_src_dir", path = src_dir)
+
+    all_files <- AzureStor::list_storage_files(projects_con, src_dir) |>
+      dplyr::as_tibble()
+    src_files <- all_files[!all_files$isdir, ]
+
+    if (!is.null(pattern)) {
+      src_files <- src_files[grepl(pattern, src_files$name, fixed = TRUE), ]
+    }
+
+    if (nrow(src_files) == 0) {
+      pat_msg <- if (!is.null(pattern)) paste0(" matching pattern '", pattern, "'") else ""
+      cli::cli_abort("No files found in {.path {src_dir}}{pat_msg}.")
+    }
+    op_log$steps <- .eri_log_step(op_log$steps, "list_src_files",
+                                   files_found = nrow(src_files),
+                                   filenames   = as.list(basename(src_files$name)))
+
+    if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
+      AzureStor::create_storage_dir(data_con, staged_dir)
+      op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir", path = staged_dir)
+    }
+
+    for (src_path in src_files$name) {
+      fname     <- basename(src_path)
+      dest_path <- paste0(staged_dir, "/", fname)
+
+      if (AzureStor::storage_file_exists(data_con, dest_path)) {
+        if (!overwrite) {
+          cli::cli_warn("Overwriting existing staged file: {.path {fname}}")
+        }
+        op_log$steps <- .eri_log_step(op_log$steps, "overwrite",
+                                       status = "warning", file = dest_path)
+      }
+
+      tmp <- tempfile()
+      AzureStor::storage_download(projects_con, src_path, tmp, overwrite = TRUE)
+      AzureStor::storage_upload(data_con, tmp, dest_path)
+      unlink(tmp)
+      staged <- c(staged, dest_path)
+      op_log$steps <- .eri_log_step(op_log$steps, "stage_file",
+                                     src = src_path, dest = dest_path)
+      cli::cli_alert_success("Staged: {.path {fname}}")
+    }
+
+    op_log$status <- "success"
+    op_log$files  <- as.list(staged)
+
+  }, error = function(e) {
+    had_error <<- TRUE
+    err_msg   <<- conditionMessage(e)
+  })
+
+  op_log$completed_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (had_error) {
+    op_log$status <- "error"
+    op_log$error  <- err_msg
+    op_log$steps  <- .eri_log_step(op_log$steps, "error_caught",
+                                    status = "error", message = err_msg)
+  }
+  .eri_write_log(op_log, data_con, log_dir)
+  if (had_error) cli::cli_abort(err_msg, call = NULL)
+  invisible(staged)
+}
+
 # Private functions ----
 
-# Internal registry: pipeline name -> owner/repo/workflow_id
+# Internal registry: pipeline name -> owner/repo/workflow_id/project_folder/country_map
 .eri_pipeline_registry <- list(
   "hsp-mal" = list(
-    owner    = "thecartercenter",
-    repo     = "health-hsp-malaria",
-    workflow = "data_ingestion.yml"
+    owner          = "thecartercenter",
+    repo           = "health-hsp-malaria",
+    workflow       = "data_ingestion.yml",
+    project_folder = "health-hsp-malaria-dev",
+    country_map    = list(
+      "dr" = "dom",
+      "ht" = "hti"
+    )
   )
 )
 
