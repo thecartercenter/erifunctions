@@ -2,30 +2,30 @@
 % Please edit documentation in R/odk.R
 \name{list_odk_form_users}
 \alias{list_odk_form_users}
-\title{See all users who have access to a form}
+\title{List users assigned to an ODK form}
 \usage{
 list_odk_form_users(
+  con = NULL,
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
   project_id,
-  form_id,
-  testing = FALSE
+  form_id
 )
 }
 \arguments{
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{project_id}{\code{int} The project id for which you want to identify users}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{form_id}{\code{chr} The form id for which we want to identify users}
+\item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{form_id}{\code{chr} Form ID from \code{\link[=list_odk_forms]{list_odk_forms()}}}
 }
 \value{
-\code{tibble} Output of all form users and roles within a given form
+\code{tibble} of assigned users and roles
 }
 \description{
-Given verified access list all users
+List users assigned to an ODK form
 }

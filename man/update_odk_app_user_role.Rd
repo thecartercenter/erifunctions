@@ -2,44 +2,42 @@
 % Please edit documentation in R/odk.R
 \name{update_odk_app_user_role}
 \alias{update_odk_app_user_role}
-\title{Create/Delete/Assign/Un-assign app users}
+\title{Create, delete, assign, or revoke an ODK app user role}
 \usage{
 update_odk_app_user_role(
   action,
+  con = NULL,
+  url = Sys.getenv("ODK_URL"),
+  auth = Sys.getenv("ODK_TOKEN"),
   project_id,
   form_id = NULL,
   actor_name = NULL,
   role_id = NULL,
-  actor_id = NULL,
-  testing = FALSE,
-  url = Sys.getenv("ODK_URL"),
-  auth = Sys.getenv("ODK_TOKEN")
+  actor_id = NULL
 )
 }
 \arguments{
-\item{action}{\code{chr} 'create': Create a general app-user;
-'delete': Delete an app-user;
-'assign': Assign an app-user a role within a specific form
-'revoke': Revoke an app-user role within a specific form
-assign, revoke}
+\item{action}{\code{chr} One of \code{"create"}, \code{"delete"}, \code{"assign"}, \code{"revoke"}}
 
-\item{project_id}{\code{int} The project id for which you want to identify users}
+\item{con}{An \code{odk_connection} from \code{\link[=init_odk_connection]{init_odk_connection()}}, or \code{NULL} to use env vars}
 
-\item{form_id}{\code{chr} The form id for which you want to identify users}
+\item{url}{\code{chr} Server URL (used when \code{con = NULL})}
 
-\item{actor_name}{\code{chr} The display name of the actor to be updated}
+\item{auth}{\code{chr} Bearer token (used when \code{con = NULL})}
 
-\item{role_id}{\code{int} The role id which you want to assign, usually 2}
+\item{project_id}{\code{int} Project ID}
 
-\item{actor_id}{\code{int} The actor id to be deleted}
+\item{form_id}{\code{chr} Form ID; required for \code{"assign"} and \code{"revoke"}}
 
-\item{testing}{\code{bool} T/F if you want to just verify that the API if working}
+\item{actor_name}{\code{chr} Display name; required for \code{"create"}}
 
-\item{url}{\code{chr} Target URL for the ODK Central API}
+\item{role_id}{\code{int} Role ID; required for \code{"assign"} and \code{"revoke"}}
 
-\item{auth}{\code{chr} Authorization token to access URL}
+\item{actor_id}{\code{int} Actor ID; required for \code{"delete"}, \code{"assign"}, \code{"revoke"}}
+}
+\value{
+Named list (for \code{"create"}) or logical (for all others)
 }
 \description{
-Given an action, project id, form id, role id and actor id,
-update the access that a specific app user is provided
+Create, delete, assign, or revoke an ODK app user role
 }

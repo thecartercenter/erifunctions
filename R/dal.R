@@ -831,6 +831,18 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
       moved <- c(moved, dest_path)
       op_log$steps <- .eri_log_step(op_log$steps, "move_file",
                                      src = src_path, dest = dest_path)
+      tryCatch(
+        eri_catalog_register(
+          path      = dest_path,
+          country   = country,
+          disease   = disease,
+          data_type = data_type,
+          layer     = "processed",
+          period    = period,
+          data_con  = azcontainer
+        ),
+        error = function(e) invisible(NULL)
+      )
       cli::cli_alert_success("Approved: {.path {basename(src_path)}}")
     }
 

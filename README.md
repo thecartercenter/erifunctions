@@ -1,98 +1,209 @@
+# erifunctions
+
+Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center's NTD and malaria programs.
+
+**Version:** 0.4.0 · **Status:** Active development
+
 ---
-title: "Guide to the `erifunctions` Repository"
-output: 
-  rmdformats::readthedown
+
+## Installation
+
+```r
+# Install from GitHub
+devtools::install_github("thecartercenter/erifunctions")
+
+# Pin the version in your analysis project (recommended)
+renv::install("thecartercenter/erifunctions")
+renv::snapshot()
+```
+
 ---
 
-# Background
-The "erifunctions" repository is intended for use by the Epidemiology, Research, and Innovation unit of the River Blindness, Lymphatic Filariasis, Schistosomiasis, and Malaria team at The Carter Center.
-The purpose of its suite of helper functions is to create a standardized code base and assist anyone in the group with streamlining certain tasks related to data analysis.
-Additional functions used by the ERI unit will be added continuously to this repository.
+## Setup
 
-# How to Download
-
-1) Ensure you have the latest versions of [R and R Studio](https://posit.co/download/rstudio-desktop/) downloaded.
-2) As that loads, install Rtools45 [here](https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html).
-3) Within the Console (bottom panel) in RStudio, type `install.packages("devtools")`. This installs the "devtools" package, which will be necessary to run certain features of the code found in the repository. 
-If you are asked within the Console if you want to proceed, type "Y".
-4) Next, type `devtools::load_all()` into the Console. If you are asked to install required packages (e.g., "dplyr", "here", "httr", etc.), select "Yes".
-5) To access the "erifunctions" repository, type `devtools::install_github("nish-kishore/erifunctions")` into the Console.
-
-# How to Set Up the Initial Interaction
-
-1) In the Console, type:
-```
-init_odk_connection(url = "https://rblf.tccodk.org/", user = "[FIRST NAME].[LAST NAME]@cartercenter.org", pass = "[YOUR PASSWORD]")
-``` 
-Replace the items in brackets with your first name, last name, and ODK password. This will create an active ODK token. After your token expires in 24 hours, you can just type this code again to create a new token.
- However, users should get into the habit of using `init_odk_connection` at the beginning of every work session rather than trying to keep track of when they last validated.
-
-2) You should now be able to use other functions in the repository! Try typing `list_odk_projects()` in the Console and see if all existing ODK projects for the RBLFSCHMAL team appear.
-
-*Note:* The parameters of the `init_odk_connection()` function are the ODK URL, username (TCC email), and password, along with items that indicate if testing is needed (`testing`, automatically set as "FALSE") and if
- a full explanation of the ODK token is needed so details can be specified (`verbose`, automatically set as "TRUE"). If you would just like a simple answer that the ODK token has been established or not,
- just type the same code in Step 1 and add `, verbose = FALSE` after the password.
-
-# Key Functions and Definitions
-
-- `init_odk_connection()`: This establishes an active ODK token and confirms with the user that this occurred. See the above section for how to use.
-- `list_odk_projects()`: Simply produces all country projects that exist in ODK for the RBLFSCHMAL team. No additional parameters are needed to use this function.
-* `list_odk_forms()`: Lists out all existing ODK forms within each project. This requires a project ID to run, which you are able to obtain from the previous function. 
-    - Example: `list_odk_forms(project_id = X)` will provide all forms for Project X. If there are no existing forms for a country (e.g., if no active data collection or project is archived), you will receive an error that the subscript is out of bounds.
-* `download_odk_form()`: Allows a user to download all data from a particular ODK form into a tbbl format. This requires a project ID and form ID to run, which you are able to obtain from the previous two functions. Note that the form ID must be written out explicitly in quotes, due to forms being identified by name in ODK.
-    - Example: `download_odk_form(project_id = X, form_id = "Y Form")` will provide all data from Y Form contained in Project X.
-* `list_all_odk_app_users()`: Lists all users with access to an ODK project. The required parameter for this is a project ID.
-    - Example: `list_all_odk_app_users(project_id = X)` will provide all users who have access to the Project X forms.
-* `list_odk_form_users()`: Lists all users with access to a specific ODK form. The required parameters for this are a project ID and form ID.
-    - Example: `list_odk_form_users(project_id = X, form_id = "Y Form")` will provide all users who have access to the Y Form contained in Project X.
-* `update_odk_app_user_role()`: Allows you to create, delete, assign, or un-assign app users. You will need an action ("create", "delete", "assign", or "revoke") and a project ID. A form ID is necessary to change permissions on any specific form. 
-An actor name is necessary to create a new user, while an actor ID is needed to delete an existing user or assign certain permissions. While not a required parameter, a role ID indicates the type of role that someone should be assigned to (typically 2 for App Users).
-    - Example 1: `update_odk_app_user_role(action = "create", project_id = X, actor_name = "amehtaTEST")` will create a new user called "amehtaTEST" in Project X.
-    - Example 2: `update_odk_app_user_role(action = "delete", project_id = X, actor_id = Z)` will delete the user with ID Z in Project X (which should correspond to "amehtaTEST" in this case).
-
-# Coding Example with Data
-
-- Use the code below in a new RStudio script to follow along with some of the key functions included in this repository. In this example, we will be initializing an ODK token, downloading data from the River Prospection Form in the Ethiopia Training & Development ODK project,
- and adding a user to (and subsequently deleting them from) this project.
+Add the following to your project `.Renviron` (`usethis::edit_r_environ(scope = "project")`):
 
 ```
-install.packages("devtools")
-devtools::load_all()
+# Azure storage
+ERIFUNCTIONS_TENANT_ID=<Azure tenant ID>
+ERIFUNCTIONS_APP_ID=<Azure app registration ID>
+ERIFUNCTIONS_RESOURCE_ENDPOINT=<storage account endpoint URL>
+ERIFUNCTIONS_STORAGE_NAME=projects
+ERIFUNCTIONS_DATA_STORAGE_NAME=data
 
-init_odk_connection(url = "https://rblf.tccodk.org/", user = "Aditya.Mehta@cartercenter.org", pass = "[YOUR PASSWORD]") 
-#not providing actual password for security reasons
+# Service principal — for scripted/automated use only
+ERIFUNCTIONS_SP_CLIENT_ID=<SP client ID>
+ERIFUNCTIONS_SP_CLIENT_SECRET=<SP client secret>
 
-list_odk_projects()
-form_tbbl <- list_odk_forms(project_id = 7) #created an object in your environment so you can view all forms in a tbbl format
-form_data <- download_odk_form(project_id = 7, form_id = "RiverProspection")
+# Your analyst identity (appears in approval and access logs)
+ERI_ANALYST_ID=firstname.lastname
 
-list_all_odk_app_users(project_id = 7)
-list_odk_form_users(project_id = 7, form_id = "RiverProspection")
-update_odk_app_user_role(action = "create", project_id = 7, actor_name = "TrainingTest1")
-
-list_all_odk_app_users(project_id = 7) #Doing this step again reflects the addition of user "TrainingTest1" to this project
-
-update_odk_app_user_role(action = "delete", project_id = 7, actor_id = 980) #make sure to update the actor_id parameter with the appropriate number - the result should display as "TRUE" if completed correctly.
-list_all_odk_app_users(project_id = 7) #Doing this step again reflects the deletion of user "TrainingTest1" from this project
+# ODK Central
+ODK_URL=https://rblf.tccodk.org/
+ODK_USER=your.email@cartercenter.org
+ODK_PASS=<ODK password>
 ```
 
-Congratulations! You have successfully used the "erifunctions" repository. Check back in periodically to see what new functions have been added.
+Restart R after editing `.Renviron`.
 
-# How to Contribute/Edit Functions
+---
 
-1) Create a GitHub account [here](https://github.com/) (if not done already).
-2) Download [GitHub Desktop](https://desktop.github.com/download/) and sign in with your credentials.
-3) Access the [erifunctions repository](https://github.com/nish-kishore/erifunctions).
-4) At the top right of the repository page, you should see a green button that says "< > Code". Click the drop down button and select "Open with GitHub Desktop".
-5) You now have access to the repository! Click on the "Repository" menu item on GitHub Desktop and select "Show in Explorer".
-6) **Important**: Ensure the filepath that the repository is saved to is outside of OneDrive (e.g., on your personal device).
-7) Within the "erifunctions" repository folder in your Explorer filepath, open the "erifunctions" RStudio Project File.
-8) As that loads, install Rtools45 [here](https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html).
-9) Within the Console (bottom panel) in RStudio, type `install.packages("devtools")`. This installs the "devtools" package, which will be necessary to run certain features of the code found in the repository. 
-If you are asked within the Console if you want to proceed, type "Y".
-10) Next, type `devtools::load_all()` into the Console. If you are asked to install required packages (e.g., "dplyr", "here", "httr", etc.), select "Yes".
-      
-      + This will load the "erifunctions" repository as if it were a package.
+## Daily workflow
 
-11) You should now be able to create new branches on GitHub on your local device to add or edit functions in the "erifunctions" package. Any edits you make should always be saved, committed, and pushed to the origin on GitHub Desktop.
- Once you have finalized your edits, you should submit a pull request on GitHub Desktop so the creator of the repository can review the changes in your branch, make any suggestions, and ultimately merge them into the main branch for the repository.
+The fastest way to get started is to copy the daily workflow template into your analysis project:
+
+```r
+file.copy(
+  system.file("templates/eri_daily_workflow.qmd", package = "erifunctions"),
+  "."
+)
+```
+
+Open `eri_daily_workflow.qmd` in RStudio and knit it. The template walks through:
+1. Connecting to Azure and ODK Central
+2. Checking survey submission health
+3. Syncing new ODK data to Azure
+4. Reviewing and approving staged data
+
+---
+
+## Core concepts
+
+### Data layers
+
+All data lives in the `data/` Azure blob under a standard path:
+
+```
+data/{country}/{disease}/{data_type}/{layer}/
+                                     raw/        <- as-received from source
+                                     staged/     <- DQ-checked, awaiting approval
+                                     processed/  <- analyst-approved, canonical
+```
+
+`eri_approve()` is the explicit human gate. Nothing reaches `processed/` without it.
+
+### Data catalog
+
+Every file promoted by `eri_approve()` is automatically registered in `_catalog/data_catalog.yaml`. Query it to see what data exists on the system:
+
+```r
+# What processed Uganda oncho data do we have?
+eri_catalog_query(country = "uga", disease = "oncho", layer = "processed")
+
+# Is everything in the catalog still in Azure?
+eri_catalog_verify()
+```
+
+---
+
+## Function reference
+
+### Connections
+
+| Function | What it does |
+|---|---|
+| `get_azure_storage_connection()` | Authenticate with Azure (browser or service principal) |
+| `init_odk_connection()` | Authenticate with ODK Central |
+
+### Reading and writing data
+
+| Function | What it does |
+|---|---|
+| `eri_read(file_loc)` | Read a file from Azure (parquet, csv, xlsx, rds) |
+| `eri_write(obj, file_loc)` | Write an object to Azure |
+| `eri_upload(local_path, file_loc)` | Upload any local file to Azure |
+| `eri_list(file_loc)` | List files in an Azure directory |
+| `eri_file_exists(file_loc)` | Check whether a file exists |
+| `eri_data_path(country, disease, data_type, layer)` | Build a canonical blob path |
+
+### Data pipeline
+
+| Function | What it does |
+|---|---|
+| `eri_approve(country, disease, data_type, period)` | Promote staged files to processed (human gate) |
+| `eri_stage(pipeline, country, disease)` | Pull pipeline output from projects blob into staged |
+| `eri_ingest(path, country, disease)` | DQ-check a local file and dual-write to both blobs |
+| `eri_trigger(pipeline, country, disease)` | Dispatch a GitHub Actions pipeline |
+
+### Data quality
+
+| Function | What it does |
+|---|---|
+| `load_dq_schema(country, disease)` | Load a bundled YAML DQ schema |
+| `run_dq_checks(data, schema)` | Run all schema-driven checks; returns a `dq_result` |
+| `dq_report(result)` | Print a summary of flags and corrections |
+| `add_anomaly_pct_change(data, value_col, period_col)` | Flag period-over-period spikes |
+| `add_anomaly_gaps(data, period_col, period_type)` | Detect missing periods in a time series |
+| `add_anomaly_consistency(data, schema)` | Validate cross-field rules |
+| `add_anomaly_spatial(data, schema)` | Validate admin names against reference shapefiles |
+
+### CMR monthly reports
+
+| Function | What it does |
+|---|---|
+| `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet |
+| `load_cmr_schema(country)` | Load a bundled CMR country schema |
+| `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
+
+### ODK
+
+| Function | What it does |
+|---|---|
+| `eri_odk_register(project_id, form_id, country, disease, server_url)` | Register a form in the Azure registry |
+| `eri_odk_deregister(project_id, form_id)` | Soft-delete a registered form |
+| `eri_odk_list_registered()` | List all active registered forms |
+| `eri_odk_sync(project_id, form_id)` | Download new submissions to Azure as parquet |
+| `eri_survey_status(project_id, form_id)` | Check submission counts and recency |
+| `eri_odk_bulk_users(csv_path)` | Assign/remove/create app users from a CSV |
+| `list_odk_projects()` | List all ODK projects |
+| `list_odk_forms(project_id)` | List forms in a project |
+| `download_odk_form(project_id, form_id)` | Download all submissions from a form |
+
+### Data catalog
+
+| Function | What it does |
+|---|---|
+| `eri_catalog_register(path, country, disease, data_type, layer)` | Register a file in the catalog |
+| `eri_catalog_query(country, disease, data_type, layer, period)` | Query catalog entries |
+| `eri_catalog_verify()` | Check catalog entries exist in Azure; update verification timestamps |
+
+### Onboarding a new country or disease
+
+| Function | What it does |
+|---|---|
+| `eri_onboard_country(country_code, country_name, disease)` | Scaffold a surveillance schema and create Azure directories |
+| `eri_onboard_cmr(country_code, country_name)` | Scaffold a CMR schema |
+| `eri_schema_validate(schema_path)` | Validate a local schema YAML for structural issues |
+
+### Teams notifications
+
+| Function | What it does |
+|---|---|
+| `get_teams_connection(webhook_url)` | Create a Teams connection object |
+| `eri_teams_send(con, message)` | Send a message to a Teams channel |
+| `eri_notify_dq(con, result)` | Post a DQ summary to Teams |
+
+---
+
+## Supported countries
+
+| Country | Code | Programs |
+|---|---|---|
+| Dominican Republic | `dr` | malaria |
+| Haiti | `ht` | malaria |
+| Ethiopia | `eth` | oncho, LF |
+| Nigeria | `nga` | oncho, LF, SCH, STH |
+| Sudan | `sdn` | oncho, LF |
+| South Sudan | `ssd` | oncho, LF |
+| Uganda | `uga` | oncho, SCH |
+| Madagascar | `mad` | LF |
+| Chad | `tcd` | oncho, LF |
+
+To add a new country, run `eri_onboard_country()` and follow the checklist it prints.
+
+---
+
+## Getting help
+
+- Open an issue: <https://github.com/thecartercenter/erifunctions/issues>
+- For developer contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)

@@ -1,534 +1,425 @@
 #Helper functions for interaction with ODK Central
 
+# --- Internal helpers -------------------------------------------------------
 
-#' Initialize/test ODK connection
-#' @description
-#' Have a user prompt to enter username and password and then
-#' save the resulting token to be used for this session
-#' @param url `chr` Target URL for the ODK Central API
-#' @param user `chr` Username
+#' Resolve url/auth from an odk_connection or explicit args
+#' @keywords internal
+.odk_creds <- function(con, url, auth) {
+  if (!is.null(con)) {
+    if (!inherits(con, "odk_connection"))
+      cli::cli_abort("{.arg con} must be an {.cls odk_connection} object from {.fn init_odk_connection}.")
+    list(url = con$url, auth = con$token)
+  } else {
+    list(url = url, auth = auth)
+  }
+}
+
+#' Check an httr response and return parsed content, or abort on HTTP error
+#' @keywords internal
+.odk_check_response <- function(resp, context = "ODK API request") {
+  if (httr::http_error(resp))
+    cli::cli_abort("{context} failed with HTTP {httr::status_code(resp)}.")
+  httr::content(resp)
+}
+
+# --- Connection -------------------------------------------------------------
+
+#' Initialize an ODK Central connection
+#'
+#' Authenticates with ODK Central and returns a connection object that can be
+#' passed to other ODK functions via the `con` argument.  As a fallback for
+#' backward compatibility, all ODK functions also accept credentials via the
+#' `ODK_URL`, `ODK_USER`, and `ODK_PASS` environment variables.
+#'
+#' @param url `chr` ODK Central server URL
+#' @param user `chr` Email address used to authenticate
 #' @param pass `chr` Password
-#' @param testing `bool` Should results be evaluated for testing
-#' @param verbose `bool` Should the function return character with information
-#' or a boolean vector verifying connection
-#' @return `chr`/`bool` Verbose response or a T/F
+#' @return An `odk_connection` object (returned invisibly)
 #' @export
 init_odk_connection <- function(
     url  = Sys.getenv("ODK_URL",  unset = "https://rblf.tccodk.org/"),
     user = Sys.getenv("ODK_USER", unset = ""),
-    pass = Sys.getenv("ODK_PASS", unset = ""),
-    testing = FALSE,
-    verbose = TRUE
-){
+    pass = Sys.getenv("ODK_PASS", unset = "")
+) {
+  if (nchar(user) == 0)
+    cli::cli_abort("ODK username is required. Set {.envvar ODK_USER} or pass {.arg user}.")
+  if (nchar(pass) == 0)
+    cli::cli_abort("ODK password is required. Set {.envvar ODK_PASS} or pass {.arg pass}.")
 
-  if(testing){
-    x <- httr::GET(
-      url = "https://api.ipify.org/?format=json"
-    )
+  resp <- httr::POST(
+    url    = httr::modify_url(url, path = "v1/sessions"),
+    body   = list(email = user, password = pass),
+    encode = "json"
+  )
+  x <- .odk_check_response(resp, "ODK authentication")
 
-    x <- httr::content(x)
-
-    Sys.setenv("ODK_TOKEN" = x$ip)
-  }else{
-    x <- httr::POST(
-      url = httr::modify_url(url, path = glue::glue("v1/sessions")),
-      body = list(
-        "email" = user,
-        "password" = pass
-      ),
-      encode = "json"
-    )
-
-    x <- httr::content(x)
-
-    Sys.setenv("ODK_TOKEN" = x$token)
-    Sys.setenv("ODK_CSRF" = x$csrf)
-    Sys.setenv("ODK_URL" = url)
-  }
-
-  if(verbose){
-    cli::cli_alert_info(paste0("Your session has been validated at ", x$createdAt,
-                               " and will remain active until ", x$expiresAt,
-                               ". Your ODK session token has been cached and will
-                             remain active until you restart this R session"))
-
-  }else{
-    return(!Sys.getenv("ODK_TOKEN") == "")
-  }
+  con <- structure(
+    list(url = url, token = x$token, expires_at = x$expiresAt, created_at = x$createdAt),
+    class = "odk_connection"
+  )
+  cli::cli_alert_success("Connected to {.url {url}}. Session expires {x$expiresAt}.")
+  invisible(con)
 }
+
+#' @export
+print.odk_connection <- function(x, ...) {
+  cli::cli_inform(c(
+    "i" = "ODK connection: {.url {x$url}}",
+    "i" = "Expires: {x$expires_at}"
+  ))
+  invisible(x)
+}
+
+# --- Listing ----------------------------------------------------------------
 
 #' List ODK projects
-#' @description
-#' Given verified access, list all projects the user can access
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @returns `tibble` Output of all projects from API call
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @returns `tibble` with columns `project_id`, `project`, `description`
 #' @export
 list_odk_projects <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
-    testing = FALSE
-){
-
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-  }else{
-    x <- httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/projects")),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth),
-        "forms" = "true"
-      )
-    )
-
-    x <- httr::content(x)
-
-    out <- lapply(1:length(x), function(i){
-      tibble::tibble(
-        "project_id" = x[[i]]$id,
-        "project" = x[[i]]$name,
-        "description" = x[[i]]$description
-      )
-    }) |> dplyr::bind_rows()
-
-    return(out)
-  }
+    con  = NULL,
+    url  = Sys.getenv("ODK_URL"),
+    auth = Sys.getenv("ODK_TOKEN")
+) {
+  creds <- .odk_creds(con, url, auth)
+  resp <- httr::GET(
+    url    = httr::modify_url(creds$url, path = "v1/projects"),
+    config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth), forms = "true")
+  )
+  x <- .odk_check_response(resp, "list_odk_projects()")
+  if (length(x) == 0L)
+    return(tibble::tibble(project_id = integer(), project = character(), description = character()))
+  lapply(seq_along(x), function(i) {
+    tibble::tibble(project_id = x[[i]]$id, project = x[[i]]$name, description = x[[i]]$description)
+  }) |> dplyr::bind_rows()
 }
 
-#' List ODK forms
-#' @description
-#' Given verified access and a project id, list all forms under a project
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param project_id `int` Project id from `list_odk_projects()`
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @returns `tibble` Output of all forms within a project from API call
+#' List ODK forms within a project
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID from [list_odk_projects()]
+#' @returns `tibble` with columns `xmlFormId`, `name`
 #' @export
 list_odk_forms <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
-    project_id,
-    testing = FALSE
-){
-
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-  }else{
-    x <- httr::GET(
-      url = paste0(url, "v1/projects/",project_id,"/forms"),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    )
-
-    x <- httr::content(x)
-
-    out <- lapply(1:length(x), function(i){
-      x[[i]] |> unlist() |> t() |>  tibble::as_tibble()
-    }) |> dplyr::bind_rows() |>
-      dplyr::select("xmlFormId", "name")
-
-    return(out)
-  }
+    con        = NULL,
+    url        = Sys.getenv("ODK_URL"),
+    auth       = Sys.getenv("ODK_TOKEN"),
+    project_id
+) {
+  creds <- .odk_creds(con, url, auth)
+  resp <- httr::GET(
+    url    = paste0(creds$url, "v1/projects/", project_id, "/forms"),
+    config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+  )
+  x <- .odk_check_response(resp, "list_odk_forms()")
+  if (length(x) == 0L)
+    return(tibble::tibble(xmlFormId = character(), name = character()))
+  lapply(seq_along(x), function(i) {
+    x[[i]] |> unlist() |> t() |> tibble::as_tibble()
+  }) |> dplyr::bind_rows() |> dplyr::select("xmlFormId", "name")
 }
 
-#' Download ODK form data
-#' @description
-#' Given verified access, project id and form ID, download all data from an
-#' ODK form
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param project_id `int` Project id from `list_odk_projects()`
-#' @param form_id `chr` From id from `list_odk_forms()`
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @param attachments `bool` T/F if you want to include attachments from the form
-#' @returns `tibble` Download of all data from an ODK form
-#' @importFrom utils unzip URLencode URLdecode
+#' Download all submissions from an ODK form
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID from [list_odk_projects()]
+#' @param form_id `chr` Form ID from [list_odk_forms()]
+#' @param attachments `lgl` Include attachment metadata columns
+#' @param data_con Azure container for operation logging; `NULL` skips logging
+#' @returns `tibble` of all submissions
+#' @importFrom utils URLencode URLdecode unzip
 #' @export
 download_odk_form <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
+    con         = NULL,
+    url         = Sys.getenv("ODK_URL"),
+    auth        = Sys.getenv("ODK_TOKEN"),
     project_id,
     form_id,
-    testing = FALSE,
-    attachments = FALSE
-){
+    attachments = FALSE,
+    data_con    = NULL
+) {
+  creds       <- .odk_creds(con, url, auth)
+  enc_form_id <- URLencode(form_id)
 
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-  }else{
-    form_id <- URLencode(form_id)
-
-    tmp_file <- tempfile(fileext = ".csv.zip")
-
-    if(attachments){
-      send_url <- paste0(url, "v1/projects/",project_id,
-                         "/forms/",form_id,"/submissions.csv.zip")
-    }else{
-      send_url <- paste0(url, "v1/projects/",project_id,
-             "/forms/",form_id,"/submissions.csv.zip?attachments=false")
-    }
-
-    x <- httr::GET(
-      url = send_url,
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      ),
-      httr::write_disk(tmp_file, overwrite = T)
-    )
-
-    unzip(tmp_file, exdir = tempdir())
-
-    out <- suppressWarnings(readr::read_csv(paste0(tempdir(),"/", URLdecode(form_id),".csv"),
-                           show_col_types = FALSE))
-
-    cli::cli_alert_info(paste0("Downloaded ", nrow(out), " records from: ", URLdecode(form_id)))
-
-    return(out)
+  send_url <- if (attachments) {
+    paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id, "/submissions.csv.zip")
+  } else {
+    paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
+           "/submissions.csv.zip?attachments=false")
   }
+
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  withr::defer(unlink(tmp_dir, recursive = TRUE))
+  tmp_zip <- file.path(tmp_dir, "submissions.csv.zip")
+
+  resp <- httr::GET(
+    url    = send_url,
+    config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth)),
+    httr::write_disk(tmp_zip, overwrite = TRUE)
+  )
+  .odk_check_response(resp, paste0("download_odk_form(", form_id, ")"))
+
+  unzip(tmp_zip, exdir = tmp_dir)
+  csv_path <- file.path(tmp_dir, paste0(URLdecode(enc_form_id), ".csv"))
+  out <- suppressWarnings(readr::read_csv(csv_path, show_col_types = FALSE))
+
+  cli::cli_alert_info("Downloaded {nrow(out)} record{?s} from {.val {URLdecode(enc_form_id)}}.")
+
+  if (!is.null(data_con)) {
+    .eri_write_log(
+      list(
+        operation  = "download_odk_form",
+        form_id    = form_id,
+        project_id = project_id,
+        n_records  = nrow(out),
+        analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+        timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+      ),
+      data_con,
+      "logs/_access"
+    )
+  }
+
+  out
 }
 
-#' List all users in ODK
-#' @description
-#' Given verified access list all users
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param project_id `int` The project id for which you want to identify users
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @returns `tibble` Output of all app-users in the project
+#' List all app users in an ODK project
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID from [list_odk_projects()]
+#' @returns `tibble` of app users
 #' @export
 list_all_odk_app_users <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
-    project_id,
-    testing = FALSE
-){
-
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-  }else{
-    x <- httr::GET(
-      url = paste0(url, "v1/projects/",project_id,"/app-users/"),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    )
-
-    x <- httr::content(x)
-
-    out <- lapply(1:length(x), function(i){
-      x[[i]] |> unlist() |> t() |>  tibble::as_tibble()
-    }) |> dplyr::bind_rows()
-
-    return(out)
-  }
+    con        = NULL,
+    url        = Sys.getenv("ODK_URL"),
+    auth       = Sys.getenv("ODK_TOKEN"),
+    project_id
+) {
+  creds <- .odk_creds(con, url, auth)
+  resp <- httr::GET(
+    url    = paste0(creds$url, "v1/projects/", project_id, "/app-users/"),
+    config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+  )
+  x <- .odk_check_response(resp, "list_all_odk_app_users()")
+  if (length(x) == 0L) return(tibble::tibble())
+  lapply(seq_along(x), function(i) {
+    x[[i]] |> unlist() |> t() |> tibble::as_tibble()
+  }) |> dplyr::bind_rows()
 }
 
-#' See all users who have access to a form
-#' @description
-#' Given verified access list all users
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param project_id `int` The project id for which you want to identify users
-#' @param form_id `chr` The form id for which we want to identify users
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @returns `tibble` Output of all form users and roles within a given form
+#' List users assigned to an ODK form
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID from [list_odk_projects()]
+#' @param form_id `chr` Form ID from [list_odk_forms()]
+#' @returns `tibble` of assigned users and roles
 #' @importFrom utils URLencode URLdecode
 #' @export
 list_odk_form_users <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
+    con        = NULL,
+    url        = Sys.getenv("ODK_URL"),
+    auth       = Sys.getenv("ODK_TOKEN"),
     project_id,
-    form_id,
-    testing = FALSE
-){
-
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-  }else{
-    form_id <- URLencode(form_id)
-    x <- httr::GET(
-      url = paste0(url, "v1/projects/",project_id,"/forms/",form_id,"/assignments"),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    )
-
-    x <- httr::content(x)
-
-    out <- lapply(1:length(x), function(i){
-      x[[i]] |> unlist() |> t() |>  tibble::as_tibble()
-    }) |> dplyr::bind_rows()
-
-    return(out)
-  }
+    form_id
+) {
+  creds       <- .odk_creds(con, url, auth)
+  enc_form_id <- URLencode(form_id)
+  resp <- httr::GET(
+    url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id, "/assignments"),
+    config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+  )
+  x <- .odk_check_response(resp, "list_odk_form_users()")
+  if (length(x) == 0L) return(tibble::tibble())
+  lapply(seq_along(x), function(i) {
+    x[[i]] |> unlist() |> t() |> tibble::as_tibble()
+  }) |> dplyr::bind_rows()
 }
 
-#' Create/Delete/Assign/Un-assign app users
-#' @description
-#' Given an action, project id, form id, role id and actor id,
-#' update the access that a specific app user is provided
-#' @param action `chr` 'create': Create a general app-user;
-#' 'delete': Delete an app-user;
-#' 'assign': Assign an app-user a role within a specific form
-#' 'revoke': Revoke an app-user role within a specific form
-#' assign, revoke
-#' @param project_id `int` The project id for which you want to identify users
-#' @param form_id `chr` The form id for which you want to identify users
-#' @param actor_name `chr` The display name of the actor to be updated
-#' @param role_id `int` The role id which you want to assign, usually 2
-#' @param actor_id `int` The actor id to be deleted
-#' @param testing `bool` T/F if you want to just verify that the API if working
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
+#' Create, delete, assign, or revoke an ODK app user role
+#'
+#' @param action `chr` One of `"create"`, `"delete"`, `"assign"`, `"revoke"`
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID
+#' @param form_id `chr` Form ID; required for `"assign"` and `"revoke"`
+#' @param actor_name `chr` Display name; required for `"create"`
+#' @param role_id `int` Role ID; required for `"assign"` and `"revoke"`
+#' @param actor_id `int` Actor ID; required for `"delete"`, `"assign"`, `"revoke"`
+#' @returns Named list (for `"create"`) or logical (for all others)
 #' @importFrom utils URLencode URLdecode
 #' @export
 update_odk_app_user_role <- function(
     action,
+    con        = NULL,
+    url        = Sys.getenv("ODK_URL"),
+    auth       = Sys.getenv("ODK_TOKEN"),
     project_id,
-    form_id = NULL,
+    form_id    = NULL,
     actor_name = NULL,
-    role_id = NULL,
-    actor_id = NULL,
-    testing = FALSE,
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN")
-){
+    role_id    = NULL,
+    actor_id   = NULL
+) {
+  if (!action %in% c("create", "delete", "assign", "revoke"))
+    cli::cli_abort("{.arg action} must be one of {.val create}, {.val delete}, {.val assign}, or {.val revoke}.")
+  if (action == "create" && is.null(actor_name))
+    cli::cli_abort("{.arg actor_name} is required to create an app user.")
+  if (action == "delete" && is.null(actor_id))
+    cli::cli_abort("{.arg actor_id} is required to delete an app user.")
+  if (action %in% c("assign", "revoke") && is.null(form_id))
+    cli::cli_abort("{.arg form_id} is required to assign or revoke access.")
+  if (action %in% c("assign", "revoke") && is.null(role_id))
+    cli::cli_abort("{.arg role_id} is required to assign or revoke access.")
+  if (action %in% c("assign", "revoke") && is.null(actor_id))
+    cli::cli_abort("{.arg actor_id} is required to assign or revoke access.")
 
-  if(!action %in% c("create", "delete", "assign", "revoke")){
-    stop("Action must be 'create', 'delete', 'assign' or 'revoke'")
-  }
+  creds <- .odk_creds(con, url, auth)
 
-  if(action == "create" & is.null(actor_name)){
-    stop("An 'actor_name' is necessary to create an app-user")
-  }
-
-  if(action == "delete" & is.null(actor_id)){
-    stop("An 'actor_id' is necessary to delete an app-user")
-  }
-
-  if(action %in% c("assign", "revoke") & is.null(form_id)){
-    stop("A 'form_id' must be specified to assign or revoke access")
-  }
-
-  if(action %in% c("assign", "revoke") & is.null(role_id)){
-    stop("A 'role_id' must be specified to assign or revoke access")
-  }
-
-  if(action %in% c("assign", "revoke") & is.null(actor_id)){
-    stop("An 'actor_id' is necessary to assign or evoke permissions.")
-  }
-
-  if(testing){
-    (httr::GET(
-      url = httr::modify_url(url, path = glue::glue("v1/example2"))
-    ) |>
-      httr::content())$code
-    stop()
-  }
-
-  if(action == "create"){
+  if (action == "create") {
     x <- httr::POST(
-      url = paste0(url,"v1/projects/",project_id,"/app-users"),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      ),
-      body = list(
-        "displayName" = actor_name
-      ),
+      url    = paste0(creds$url, "v1/projects/", project_id, "/app-users"),
+      config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth)),
+      body   = list(displayName = actor_name),
       encode = "json"
-    ) |> httr::content()
-
-    return(
-      list(
-        "actor_name" = x$displayName,
-        "actor_id" = x$id,
-        "project_id" = x$projectId
-      )
-    )
+    ) |> .odk_check_response("create app user")
+    return(list(actor_name = x$displayName, actor_id = x$id, project_id = x$projectId))
   }
 
-  if(action == "delete"){
+  if (action == "delete") {
     x <- httr::DELETE(
-      url = paste0(url,"v1/projects/",project_id,"/app-users/", actor_id),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    ) |> httr::content()
-
-    if("success" %in% names(x)){
-      return(x$success)
-    }else{
-      return(F)
-    }
+      url    = paste0(creds$url, "v1/projects/", project_id, "/app-users/", actor_id),
+      config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+    ) |> .odk_check_response("delete app user")
+    return(isTRUE(x$success))
   }
 
-  if(action == "assign"){
-    form_id <- URLencode(form_id)
+  enc_form_id <- URLencode(form_id)
+
+  if (action == "assign") {
     x <- httr::POST(
-      url = paste0(url,"v1/projects/",project_id,"/forms/", form_id,
-                   "/assignments/",role_id,"/",actor_id),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    ) |> httr::content()
-
-
-    if("success" %in% names(x)){
-      return(x$success)
-    }else{
-      return(F)
-    }
+      url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
+                      "/assignments/", role_id, "/", actor_id),
+      config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+    ) |> .odk_check_response("assign app user")
+    return(isTRUE(x$success))
   }
 
-  if(action == "revoke"){
-    form_id <- URLencode(form_id)
+  if (action == "revoke") {
     x <- httr::DELETE(
-      url = paste0(url,"v1/projects/",project_id,"/forms/", form_id,
-                   "/assignments/",role_id,"/",actor_id),
-      config = httr::add_headers(
-        "Authorization" = paste0("Bearer ", auth)
-      )
-    ) |> httr::content()
-
-
-    if("success" %in% names(x)){
-      return(x$success)
-    }else{
-      return(F)
-    }
+      url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
+                      "/assignments/", role_id, "/", actor_id),
+      config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+    ) |> .odk_check_response("revoke app user")
+    return(isTRUE(x$success))
   }
-
 }
 
-#' See all users who have access to a form
-#' @description
-#' Pull all media attachments from a form
-#' @param url `chr` Target URL for the ODK Central API
-#' @param auth `chr` Authorization token to access URL
-#' @param project_id `int` The project id for which you want to identify attachments
-#' @param form_id `chr` The form id for which we want to identify attachments
-#' @param folder_loc `chr` The folder in which all images should be dumped out
-#' @param image_label `chr` The variable name that will be used for the image label
-#' @param other_vars `chr` A concatenated character vector of other variables to include
-#' @param add_condition `bool` Determine if a condition should be used
-#' @param condition `chr` The dplyr::filter() command to filter the downloaded data
-#' @returns `tibble` Output of all attachment names and their links to the forms
+#' Download all media attachments from an ODK form
+#'
+#' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
+#' @param url `chr` Server URL (used when `con = NULL`)
+#' @param auth `chr` Bearer token (used when `con = NULL`)
+#' @param project_id `int` Project ID from [list_odk_projects()]
+#' @param form_id `chr` Form ID from [list_odk_forms()]
+#' @param folder_loc `chr` Local directory to write downloaded attachments
+#' @param image_label `chr` Column name used as the output file stem
+#' @param other_vars `chr` Additional columns to include in the returned tibble
+#' @param add_condition `lgl` Apply a row filter before downloading
+#' @param condition Unquoted `dplyr::filter()` expression; used when `add_condition = TRUE`
+#' @returns `tibble` of attachment metadata
 #' @importFrom rlang .data
 #' @importFrom utils URLencode URLdecode
 #' @export
 download_form_attachments <- function(
-    url = Sys.getenv("ODK_URL"),
-    auth = Sys.getenv("ODK_TOKEN"),
+    con           = NULL,
+    url           = Sys.getenv("ODK_URL"),
+    auth          = Sys.getenv("ODK_TOKEN"),
     project_id,
     form_id,
     folder_loc,
     image_label,
     other_vars,
     add_condition = FALSE,
-    condition = NULL
-){
+    condition     = NULL
+) {
+  creds       <- .odk_creds(con, url, auth)
+  enc_form_id <- URLencode(form_id)
 
-  form_id <- URLencode(form_id)
-
-  if(!dir.exists(folder_loc)){
-    cli::cli_process_start("Folder not found, creating folder.")
+  if (!dir.exists(folder_loc)) {
+    cli::cli_process_start("Folder not found, creating {.path {folder_loc}}.")
     dir.create(folder_loc)
-    cli::cli_process_done(msg_done = paste0("Folder: '", folder_loc, "' - created!"))
+    cli::cli_process_done()
   }
 
   cli::cli_process_start("Downloading ODK form data")
-  form_data <- download_odk_form(project_id = project_id, form_id = form_id) |>
+  form_data <- download_odk_form(
+    con = con, url = url, auth = auth,
+    project_id = project_id, form_id = form_id
+  ) |>
     dplyr::filter(.data$AttachmentsExpected != 0) |>
-    dplyr::select(dplyr::all_of(image_label), dplyr::all_of(other_vars), "meta-instanceID",
-                  "AttachmentsExpected", "AttachmentsPresent")
+    dplyr::select(dplyr::all_of(image_label), dplyr::all_of(other_vars),
+                  "meta-instanceID", "AttachmentsExpected", "AttachmentsPresent")
   cli::cli_process_done()
 
-  if(add_condition){
-    form_data <- form_data |>
-      dplyr::filter({{condition}})
-  }
+  if (add_condition) form_data <- dplyr::filter(form_data, {{ condition }})
 
-  cli::cli_alert_info(paste0("Identified ", nrow(form_data), " forms with attachments."))
+  cli::cli_alert_info("Identified {nrow(form_data)} form{?s} with attachments.")
 
   cli::cli_process_start("Downloading form attachments list")
   attachments <- lapply(
-    cli::cli_progress_along(1:nrow(form_data), "Downloading attachment list"), function(i){
-      instance_id <- form_data |> dplyr::slice(i) |> dplyr::pull("meta-instanceID")
-
-      list_of_attachments <- httr::GET(
-        url = paste0(url, "v1/projects/",project_id,
-                     "/forms/",form_id,"/submissions/", instance_id, "/attachments"),
-        config = httr::add_headers(
-          "Authorization" = paste0("Bearer ", auth))) |>
-        httr::content()
-
-      lapply(1:length(list_of_attachments), function(x){
-        list_of_attachments[[x]] |>
-          unlist() |>
-          t() |>
-          tibble::as_tibble() |>
-          dplyr::mutate(instance_id)
-      }
-      ) |>
-        dplyr::bind_rows()
+    cli::cli_progress_along(seq_len(nrow(form_data)), "Downloading attachment list"),
+    function(i) {
+      instance_id <- dplyr::slice(form_data, i) |> dplyr::pull("meta-instanceID")
+      resp <- httr::GET(
+        url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
+                        "/submissions/", instance_id, "/attachments"),
+        config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+      )
+      lst <- .odk_check_response(resp, "attachment list")
+      if (length(lst) == 0L) return(tibble::tibble())
+      lapply(seq_along(lst), function(j) {
+        lst[[j]] |> unlist() |> t() |> tibble::as_tibble() |>
+          dplyr::mutate(instance_id = instance_id)
+      }) |> dplyr::bind_rows()
     }
-
-  ) |>
-    dplyr::bind_rows()
+  ) |> dplyr::bind_rows()
   cli::cli_process_done()
 
   download_dataset <- dplyr::left_join(
-    attachments,
-    form_data,
-    by = c("instance_id" = "meta-instanceID")
+    attachments, form_data, by = c("instance_id" = "meta-instanceID")
   )
-
-  cli::cli_alert_info(paste0("Identified ", nrow(download_dataset), " attachments to download."))
+  cli::cli_alert_info("Identified {nrow(download_dataset)} attachment{?s} to download.")
 
   lapply(
-    cli::cli_progress_along(1:nrow(download_dataset), "Downloading attachments"), function(i){
-
-      instance_id <- download_dataset |> dplyr::slice(i) |> dplyr::pull("instance_id")
-      filename <- download_dataset |> dplyr::slice(i) |> dplyr::pull("name")
-
-      x <- httr::GET(
-        url = paste0(url, "v1/projects/",project_id,
-                     "/forms/",form_id,"/submissions/", instance_id, "/attachments/", filename),
-        config = httr::add_headers(
-          "Authorization" = paste0("Bearer ", auth)))
-
-      # Open a file connection in write-binary mode ('wb')
-      out_name <- paste0(folder_loc, "/",
-                         dplyr::slice(download_dataset, i) |> dplyr::pull(image_label),
-                         ".jpeg")
+    cli::cli_progress_along(seq_len(nrow(download_dataset)), "Downloading attachments"),
+    function(i) {
+      row         <- dplyr::slice(download_dataset, i)
+      instance_id <- dplyr::pull(row, "instance_id")
+      filename    <- dplyr::pull(row, "name")
+      resp <- httr::GET(
+        url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
+                        "/submissions/", instance_id, "/attachments/", filename),
+        config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
+      )
+      out_name <- file.path(folder_loc, paste0(dplyr::pull(row, !!image_label), ".jpeg"))
       fid <- file(out_name, "wb")
-      # Write the data
-      writeBin(x$content, fid)
-      # Close the connection
+      writeBin(resp$content, fid)
       close(fid)
     }
   )
 
-  cli::cli_alert_success("Attachments downloaded successfully into: ", folder_loc)
-
-  return(download_dataset)
-
+  cli::cli_alert_success("Attachments downloaded to {.path {folder_loc}}.")
+  download_dataset
 }
-
