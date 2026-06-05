@@ -15,7 +15,7 @@
 
 #' @keywords internal
 .eri_template_bundled <- function() {
-  # Probe via a known file to get the directory — system.file() on a directory
+  # Probe via a known file to get the directory -- system.file() on a directory
   # path can return "" in pkgload dev contexts even when the dir exists.
   probe    <- system.file("templates/eri_daily_workflow.qmd", package = "erifunctions")
   tmpl_dir <- if (nchar(probe)) dirname(probe) else ""
@@ -90,7 +90,7 @@ eri_template_list <- function(data_con = NULL) {
       reg <- .eri_template_registry_read(con)
       reg$entries
     }, error = function(e) {
-      cli::cli_warn("Could not reach Azure template registry — showing bundled templates only.")
+      cli::cli_warn("Could not reach Azure template registry -- showing bundled templates only.")
       list()
     })
   }
@@ -123,7 +123,7 @@ eri_template_list <- function(data_con = NULL) {
 
 #' Copy a template to a local destination
 #'
-#' Copies a named template — bundled or Azure-hosted — to `dest`. Bundled templates
+#' Copies a named template -- bundled or Azure-hosted -- to `dest`. Bundled templates
 #' are copied directly from the package installation. Azure templates are downloaded
 #' from `templates/{filename}` in the `data/` blob.
 #'

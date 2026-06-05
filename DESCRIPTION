@@ -36,6 +36,7 @@ Imports:
     sf,
     tibble,
     tidyr,
+    utils,
     withr,
     writexl,
     yaml

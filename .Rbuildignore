@@ -5,6 +5,7 @@
 ^README\.Rmd$
 ^LICENSE\.md$
 ^cran-comments\.md$
+^CONTRIBUTING\.md$
 ^data-raw$
 ^pkgdown$
 ^pkgdown_site$

@@ -17,7 +17,7 @@ eri_template_pull(name, dest = getwd(), data_con = NULL)
 Local path to the copied template (invisibly).
 }
 \description{
-Copies a named template — bundled or Azure-hosted — to \code{dest}. Bundled templates
+Copies a named template -- bundled or Azure-hosted -- to \code{dest}. Bundled templates
 are copied directly from the package installation. Azure templates are downloaded
 from \code{templates/{filename}} in the \verb{data/} blob.
 }
