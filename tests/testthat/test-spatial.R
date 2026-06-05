@@ -140,36 +140,54 @@ test_that("eri_spatial_load errors informatively when file not in Azure", {
   expect_error(eri_spatial_load("dr", 2), "Upload it first")
 })
 
-test_that("eri_spatial_load(cache=TRUE) delegates to eri_research_pull and returns the sf", {
+test_that("eri_spatial_load(cache=TRUE) caches the single file via the real pull chain and records provenance", {
   skip_if_not_installed("sf")
-  tmp <- withr::local_tempdir()
+  proj <- withr::local_tempdir()
+  withr::local_dir(proj)
 
-  # The "downloaded" boundary that eri_research_pull would produce.
+  # A minimal research project so eri_research_pull records provenance.
+  yaml::write_yaml(
+    list(
+      project_name = "p", country = "dr", disease = "malaria", description = "d",
+      created_at = "t", created_by = "u", azure_path = "research/p/",
+      pulled_data = list(), artifacts_used = list(), log = list(),
+      snapshots = list(), outputs = list(), tags = list()
+    ),
+    file.path(proj, "research.yaml")
+  )
+
   fake_sf <- sf::st_sf(
     adm2_name = "Azua",
     geometry  = sf::st_sfc(sf::st_point(c(0, 0)), crs = 4326)
   )
-  cached_path <- file.path(tmp, "adm2.rds")
-  saveRDS(fake_sf, cached_path)
 
-  pulled <- NULL
+  downloaded_src <- NULL
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "fake_con",
     eri_file_exists              = function(...) TRUE,
-    eri_research_pull            = function(path, dest, data_con, ...) {
-      pulled <<- list(path = path, dest = dest)
-      cached_path
-    },
     .package = "erifunctions"
   )
+  # Let the REAL eri_research_pull run; only mock Azure. storage_file_exists = TRUE
+  # exercises the single-file branch; storage_download writes the boundary locally.
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download    = function(container, src, dest, ...) {
+      downloaded_src <<- src
+      saveRDS(fake_sf, dest)
+      invisible(NULL)
+    },
+    .package = "AzureStor"
+  )
 
-  out <- eri_spatial_load("dr", 2, cache = TRUE, dest = tmp)
+  out <- eri_spatial_load("dr", 2, cache = TRUE)
 
   expect_s3_class(out, "sf")
   expect_equal(nrow(out), 1L)
-  # delegated to the pull entry point with the canonical spatial path
-  expect_equal(pulled$path, "spatial/dr/adm2.rds")
-  expect_equal(pulled$dest, tmp)
+  expect_equal(downloaded_src, "spatial/dr/adm2.rds")  # canonical single-file path
+
+  # provenance was recorded through the pull entry point (ADR-0005/0007)
+  manifest <- yaml::read_yaml(file.path(proj, "research.yaml"))
+  expect_equal(length(manifest$pulled_data), 1L)
 })
 
 #### eri_landscan_upload validation ####

@@ -317,19 +317,30 @@ eri_research_pull <- function(
   local_dest <- if (!is.null(dest)) dest else file.path(getwd(), "data")
   if (!dir.exists(local_dest)) dir.create(local_dest, recursive = TRUE)
 
-  all_names <- tryCatch(
-    AzureStor::list_storage_files(data_con, azure_path, info = "name"),
-    error = function(e) {
-      cli::cli_abort("Could not list {.path {azure_path}}: {conditionMessage(e)}")
+  # A path may point at a single file (e.g. a spatial boundary) or a directory of
+  # files. Handle the single-file case directly; otherwise list the directory.
+  is_single_file <- isTRUE(tryCatch(
+    AzureStor::storage_file_exists(data_con, azure_path),
+    error = function(e) FALSE
+  ))
+
+  if (is_single_file) {
+    file_names <- azure_path
+  } else {
+    all_names <- tryCatch(
+      AzureStor::list_storage_files(data_con, azure_path, info = "name"),
+      error = function(e) {
+        cli::cli_abort("Could not list {.path {azure_path}}: {conditionMessage(e)}")
+      }
+    )
+
+    # Keep only files (no trailing slash / no directory entries)
+    file_names <- all_names[!grepl("/$", all_names) & nchar(basename(all_names)) > 0L]
+
+    if (length(file_names) == 0L) {
+      cli::cli_warn("No files found at {.path {azure_path}}.")
+      return(invisible(character(0L)))
     }
-  )
-
-  # Keep only files (no trailing slash / no directory entries)
-  file_names <- all_names[!grepl("/$", all_names) & nchar(basename(all_names)) > 0L]
-
-  if (length(file_names) == 0L) {
-    cli::cli_warn("No files found at {.path {azure_path}}.")
-    return(invisible(character(0L)))
   }
 
   local_paths <- vapply(file_names, function(f) {

@@ -75,8 +75,13 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
   if (isTRUE(cache)) {
     # Source reproducibly: cache into the research project and record provenance through
     # the pull entry point (ADR-0005/0007), then read the local copy.
-    local_dest  <- if (is.null(dest)) file.path(getwd(), "data") else dest
-    local_paths <- eri_research_pull(path = blob_path, dest = local_dest, data_con = con)
+    if (!file.exists(file.path(getwd(), "research.yaml"))) {
+      cli::cli_warn(c(
+        "{.arg cache = TRUE} but no {.file research.yaml} in the working directory.",
+        "i" = "The boundary is cached locally, but its provenance is NOT recorded -- run {.fn eri_research_init} first for a reproducible pull."
+      ))
+    }
+    local_paths <- eri_research_pull(path = blob_path, dest = dest, data_con = con)
     if (length(local_paths) == 0L) {
       cli::cli_abort("Failed to cache {.path {blob_path}}.")
     }

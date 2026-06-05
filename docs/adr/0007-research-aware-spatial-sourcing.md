@@ -19,7 +19,7 @@ in the research folder for reproducibility."
 
 ## Decision
 
-Add a `cache` flag to `eri_spatial_load(country, level, cache = TRUE, dest = NULL)`. When set, it
+Add a `cache` flag to `eri_spatial_load(country, level, cache = FALSE, dest = NULL)`. When set, it
 sources the boundary by **delegating to `eri_research_pull()`** (which downloads into the project
 `data/` and records the pull in `research.yaml` when present), then reads and returns the local
 copy. Provenance therefore still flows through the one pull entry point (ADR-0005); the flag is a

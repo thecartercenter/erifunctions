@@ -79,6 +79,36 @@ test_that("eri_research_pull by canonical args resolves processed path and downl
   expect_true(any(grepl("2024_W02.parquet", downloaded)))
 })
 
+test_that("eri_research_pull handles a single-file path directly (no directory listing)", {
+  tmp <- withr::local_tempdir()
+  dir.create(file.path(tmp, "data"))
+  .write_manifest(tmp)
+
+  downloaded <- character(0)
+  listed     <- FALSE
+
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,                       # path is a single file
+    list_storage_files  = function(...) { listed <<- TRUE; character(0) },
+    storage_download    = function(con, src, dest, ...) {
+      downloaded <<- c(downloaded, src); invisible(NULL)
+    },
+    .package = "AzureStor"
+  )
+
+  withr::with_dir(tmp, {
+    result <- eri_research_pull(path = "spatial/dr/adm4.rds", dest = file.path(tmp, "data"))
+  })
+
+  expect_equal(length(result), 1L)
+  expect_equal(downloaded, "spatial/dr/adm4.rds")
+  expect_false(listed)  # single-file branch skips the directory listing
+})
+
 test_that("eri_research_pull records pull in research.yaml", {
   tmp <- withr::local_tempdir()
   dir.create(file.path(tmp, "data"))
