@@ -2,7 +2,11 @@
 
 Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center's NTD and malaria programs.
 
-**Version:** 0.5.0 · **Status:** Active development
+**Version:** 0.8.0 · **Status:** Active development
+
+> 🛣️ **Where this is going:** see the [V2 roadmap](docs/roadmap.md) and the
+> [architecture decision records](docs/adr/) for the development plan and the reasoning
+> behind key design choices.
 
 ---
 
@@ -234,3 +238,6 @@ To add a new country, run `eri_onboard_country()` and follow the checklist it pr
 
 - Open an issue: <https://github.com/thecartercenter/erifunctions/issues>
 - For developer contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)
+- For the development roadmap and design decisions, see [docs/roadmap.md](docs/roadmap.md)
+  and [docs/adr/](docs/adr/); working conventions live in [CLAUDE.md](CLAUDE.md), and the
+  founding vision in [docs/vision.md](docs/vision.md)

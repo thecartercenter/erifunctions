@@ -39,8 +39,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# pkgdown site
-docs/
+# pkgdown site (built output; docs/ itself holds committed roadmap + ADRs)
+pkgdown_site/
 
 # translation temp files
 po/*~

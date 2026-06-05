@@ -1,0 +1,188 @@
+url: https://thecartercenter.github.io/erifunctions
+
+destination: pkgdown_site
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, roadmap, news]
+    right: [search, github]
+  components:
+    roadmap:
+      text: Roadmap
+      href: https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md
+
+articles:
+- title: Workflows
+  navbar: Workflows
+  contents:
+  - dq-pipeline
+  - epi-analytics
+  - spatial-workflow
+  - research-workflow
+  - sharepoint-workflow
+  - adding-a-program
+
+reference:
+- title: Connections & authentication
+  desc: Authenticate to Azure, ODK, SharePoint, and Teams.
+  contents:
+  - get_azure_storage_connection
+  - init_odk_connection
+  - eri_sharepoint_connect
+  - get_teams_connection
+
+- title: Reading & writing data
+  desc: Read, write, list, and manage files in Azure (and locally).
+  contents:
+  - eri_read
+  - eri_write
+  - eri_upload
+  - eri_list
+  - eri_file_exists
+  - eri_dir_exists
+  - eri_dir_create
+  - eri_delete
+  - eri_dir_delete
+  - eri_data_path
+  - erifunctions_io
+  - azure_io
+
+- title: Data pipeline
+  desc: Ingest, stage, approve, and trigger surveillance and CMR pipelines.
+  contents:
+  - eri_ingest
+  - eri_stage
+  - eri_approve
+  - eri_trigger
+  - eri_ingest_cmr
+  - eri_stage_cmr
+  - load_cmr_schema
+
+- title: Data quality
+  desc: Schema-driven DQ checks and anomaly detection.
+  contents:
+  - load_dq_schema
+  - run_dq_checks
+  - dq_result-methods
+  - dq_report
+  - add_anomaly_pct_change
+  - add_anomaly_gaps
+  - add_anomaly_consistency
+  - add_anomaly_spatial
+
+- title: Data catalog
+  desc: Register, query, and verify processed-layer data.
+  contents:
+  - eri_catalog_register
+  - eri_catalog_query
+  - eri_catalog_verify
+
+- title: ODK
+  desc: Register forms, sync submissions, monitor surveys, and manage users.
+  contents:
+  - eri_odk_register
+  - eri_odk_deregister
+  - eri_odk_list_registered
+  - eri_odk_sync
+  - eri_survey_status
+  - print.survey_status
+  - eri_odk_bulk_users
+  - list_odk_projects
+  - list_odk_forms
+  - download_odk_form
+  - download_form_attachments
+  - list_all_odk_app_users
+  - list_odk_form_users
+  - update_odk_app_user_role
+
+- title: Spatial
+  desc: Admin boundaries, LandScan population, and spatial joins.
+  contents:
+  - eri_spatial_load
+  - eri_spatial_upload
+  - eri_spatial_join
+  - eri_spatial_pop
+  - eri_bbox_expand
+  - eri_landscan_upload
+  - eri_landscan_list
+
+- title: Epi analytics
+  desc: Incidence, epiweeks, epidemic curves, and disease-specific functions.
+  contents:
+  - eri_incidence_rate
+  - eri_case_summary
+  - eri_epidemic_curve
+  - eri_epiweek_date
+  - eri_study_week
+  - eri_date_to_epiweek
+  - eri_epiweek_range
+  - eri_lf_pooled_prev
+  - eri_lf_program_levels
+  - eri_lf_tas_summary
+  - eri_lf_status_map
+  - eri_oncho_program_levels
+  - eri_oncho_status_map
+
+- title: Reporting & visual style
+  desc: Branded tables, themes, maps, and Excel/HTML/PowerPoint reports.
+  contents:
+  - eri_brand_colors
+  - eri_brand_ggplot_theme
+  - eri_color_scheme
+  - eri_plot_theme
+  - eri_table
+  - eri_map_choropleth
+  - eri_map_incidence
+  - eri_map_points
+  - eri_map_inset
+  - eri_report_excel
+  - eri_wb_create
+  - eri_wb_add_sheet
+  - eri_wb_save
+  - eri_report_html
+  - eri_report_qmd_template
+  - eri_pptx_create
+  - eri_pptx_add_title
+  - eri_pptx_add_section
+  - eri_pptx_add_table
+  - eri_pptx_add_plot
+  - eri_pptx_save
+
+- title: Research projects
+  desc: Scaffold studies, track provenance, manage artifacts, and snapshot data.
+  contents:
+  - eri_research_init
+  - eri_research_resume
+  - eri_research_log
+  - eri_research_list
+  - eri_research_pull
+  - eri_research_upload_figure
+  - eri_research_upload_output
+  - eri_research_snapshot
+  - eri_artifact_upload
+  - eri_artifact_list
+  - eri_artifact_pull
+  - eri_artifact_archive
+  - eri_template_list
+  - eri_template_pull
+  - eri_template_upload
+
+- title: SharePoint & Teams
+  desc: Share files via SharePoint and post notifications to Teams.
+  contents:
+  - eri_sharepoint_list
+  - eri_sharepoint_read
+  - eri_sharepoint_upload
+  - eri_teams_send
+  - eri_notify_dq
+
+- title: Onboarding new programs
+  desc: Scaffold schemas and Azure directories for a new country, disease, or CMR.
+  contents:
+  - eri_onboard_country
+  - eri_onboard_disease
+  - eri_onboard_cmr
+  - eri_schema_validate
