@@ -22,6 +22,10 @@ jobs:
   review:
     name: Claude design review
     runs-on: ubuntu-latest
+    # The `secrets` context isn't allowed in `if:`; map it to job env (which can read
+    # secrets) and gate on that, so the step skips cleanly when the key isn't configured.
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -29,10 +33,10 @@ jobs:
 
       - name: Claude design review
         # Skip cleanly when the secret isn't configured, so this never blocks a PR.
-        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_api_key: ${{ env.ANTHROPIC_API_KEY }}
           prompt: |
             You are an INDEPENDENT design reviewer for the erifunctions R package, reviewing
             pull request #${{ github.event.pull_request.number }}. You did not write this code;
