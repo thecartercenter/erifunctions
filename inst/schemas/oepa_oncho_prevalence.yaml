@@ -1,0 +1,80 @@
+country: oepa
+disease: oncho
+data_type: prevalence
+version: "1.0"
+description: "OEPA onchocerciasis prevalence survey (one row per person examined)"
+language: es
+time_grain: survey
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  focus:
+    required: true
+    type: character
+    aliases: [Focus, foco, focus_name, nombre_foco]
+
+  country:
+    required: true
+    type: character
+    aliases: [Country, Pais, pais]
+    allowed_values:
+      - Brazil
+      - Colombia
+      - Ecuador
+      - Guatemala
+      - Mexico
+      - Venezuela
+
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Año, ano]
+    range: [1990, 2035]
+
+  survey_type:
+    required: true
+    type: character
+    aliases: [SurveyType, survey, tipo_encuesta, type]
+    allowed_values: [nodule_palpation, skin_snip, rapid_assessment, OAE]
+
+  result:
+    required: true
+    type: character
+    aliases: [Result, resultado, test_result]
+    allowed_values: [Positive, Negative]
+
+  lat:
+    required: true
+    type: numeric
+    aliases: [latitude, Latitude, LAT]
+    range: [-60, 35]
+
+  lon:
+    required: true
+    type: numeric
+    aliases: [longitude, Longitude, LON, lng]
+    range: [-120, -50]
+
+consistency:
+  lat_in_range:
+    lhs: lat
+    op: ">="
+    rhs_value: -60
+    message: "Latitude below -60 (outside OEPA region)"
+  lat_in_range_max:
+    lhs: lat
+    op: "<="
+    rhs_value: 35
+    message: "Latitude above 35 (outside OEPA region)"
+  lon_in_range:
+    lhs: lon
+    op: ">="
+    rhs_value: -120
+    message: "Longitude below -120 (outside OEPA region)"
+  lon_in_range_max:
+    lhs: lon
+    op: "<="
+    rhs_value: -50
+    message: "Longitude above -50 (outside OEPA region)"
