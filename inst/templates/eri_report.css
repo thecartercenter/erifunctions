@@ -1,0 +1,42 @@
+/* ERI Carter Center HTML Report Styles */
+
+body {
+  font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+  font-size: 11pt;
+  color: #222;
+}
+
+h1.title {
+  color: #44546A;
+  font-weight: bold;
+  border-bottom: 3px solid #44546A;
+  padding-bottom: 0.3em;
+}
+
+.subtitle {
+  color: #44546A;
+}
+
+h2 {
+  color: #44546A;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.2em;
+}
+
+h3 {
+  color: #4472C4;
+}
+
+#TOC {
+  border-left: 4px solid #44546A;
+  padding-left: 1em;
+}
+
+#TOC a {
+  color: #44546A;
+}
+
+footer {
+  border-top: 1px solid #ccc;
+  padding-top: 0.5em;
+}

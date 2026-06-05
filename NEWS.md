@@ -1,3 +1,46 @@
+# erifunctions 0.7.0
+
+## Phase 6 -- Reporting and documentation
+
+### New functions
+
+**Reporting core** (`R/reports.R`)
+- `eri_brand_colors()` -- named vector of Carter Center brand colours (navy, blue, orange, gold, green, light_blue, gray)
+- `eri_brand_ggplot_theme()` -- Carter Center ggplot2 theme built on `theme_bw()`; applies brand fonts, colours, and strip formatting
+- `eri_table()` -- branded `flextable` with navy header, alternating row shading, Calibri font, optional title and footnote; renders in Excel, HTML, and PowerPoint
+
+**Excel reports** (`R/reports_excel.R`)
+- `eri_wb_create()` -- create a blank `openxlsx2` workbook with Carter Center metadata
+- `eri_wb_add_sheet()` -- add a styled data sheet (navy header, alternating shading, frozen first row, optional title)
+- `eri_wb_save()` -- save a workbook to disk, auto-creating parent directories
+- `eri_report_excel()` -- convenience wrapper: create → add multiple sheets → save in one call
+
+**HTML reports** (`R/reports_html.R`)
+- `eri_report_html()` -- render a self-contained HTML report from a structured section list via Quarto
+- `eri_report_qmd_template()` -- copy the bundled Quarto template to a local path for customisation
+- Internal: `.eri_serialise_sections()` -- converts section tables to HTML fragments and figures to base64 PNGs
+
+**PowerPoint reports** (`R/reports_pptx.R`)
+- `eri_pptx_create()` -- load the bundled Carter Center `.pptx` template (or a custom template) as an `officer` object
+- `eri_pptx_add_title()` -- add a title slide with optional subtitle
+- `eri_pptx_add_section()` -- add a section divider slide
+- `eri_pptx_add_table()` -- add a `eri_table()` flextable on a new slide
+- `eri_pptx_add_plot()` -- add a ggplot figure (saved as PNG) on a new slide
+- `eri_pptx_save()` -- write the presentation to disk, auto-creating parent directories
+
+### New templates
+
+- `inst/templates/eri_template.pptx` -- default Carter Center PowerPoint template
+- `inst/templates/eri_report.qmd` -- Quarto self-contained HTML report template
+- `inst/templates/eri_report.css` -- Carter Center HTML report stylesheet
+
+### New vignettes
+
+- `vignettes/dq-pipeline.Rmd` -- DQ pipeline walkthrough: schema anatomy, `run_dq_checks()`, anomaly detection, custom checks, and export
+- `vignettes/spatial-workflow.Rmd` -- loading and uploading admin boundaries, spatial joins, bbox expansion, choropleth maps
+- `vignettes/epi-analytics.Rmd` -- incidence rates, epiweek utilities, LF pooled prevalence, oncho status maps, branded tables
+- `vignettes/research-workflow.Rmd` -- project init, session management, lab notebook, snapshots, and full session walkthrough
+
 # erifunctions 0.6.0
 
 ## Phase 5 — Spatial, epi analytics, and disease-specific functions
