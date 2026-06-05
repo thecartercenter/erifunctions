@@ -36,7 +36,9 @@ jobs:
           needs: website
 
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        # dest_dir must be pkgdown_site (not the default "docs"): docs/ holds the committed
+        # roadmap + ADRs, not pkgdown output (matches _pkgdown.yml `destination`).
+        run: pkgdown::build_site_github_pages(dest_dir = "pkgdown_site", new_process = FALSE, install = FALSE)
         shell: Rscript {0}
 
       - name: Deploy to GitHub Pages

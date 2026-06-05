@@ -1,5 +1,10 @@
 # erifunctions
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/thecartercenter/erifunctions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/thecartercenter/erifunctions/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/thecartercenter/erifunctions/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/thecartercenter/erifunctions/actions/workflows/pkgdown.yaml)
+<!-- badges: end -->
+
 Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center's NTD and malaria programs.
 
 **Version:** 0.8.0 · **Status:** Active development
