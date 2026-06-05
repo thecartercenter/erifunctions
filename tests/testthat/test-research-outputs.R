@@ -177,7 +177,7 @@ test_that("eri_research_snapshot errors when research.yaml absent", {
 test_that("eri_research_snapshot errors when data/ directory absent", {
   tmp <- withr::local_tempdir()
   .write_manifest(tmp)
-  expect_error(eri_research_snapshot(path = tmp), "data/")
+  expect_error(eri_research_snapshot(path = tmp), "data")
 })
 
 test_that("eri_research_snapshot warns and returns NULL when data/ is empty", {

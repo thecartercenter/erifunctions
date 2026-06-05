@@ -37,7 +37,10 @@ Live integration tests against real Azure and ODK Central infrastructure.
 | Block | User type | What is tested |
 |---|---|---|
 | 1 | **Data analyst (primary)** | Azure connection, path building, file listing, DQ schema + checks, CMR schema, anomaly detection, catalog query, ODK connection, survey status, form register/deregister |
-| 2 | Epidemiologist (secondary) | Artifact upload → list → pull → archive; research project init, log, list in Azure |
+| 2 | **Data analyst — spatial** | `eri_spatial_load`, `eri_spatial_join` |
+| 3 | **Data analyst — epi analytics** | `eri_incidence_rate`, `eri_epidemic_curve` |
+| 4 | **Data analyst — reporting** | `eri_table`, `eri_report_excel`, `eri_pptx_create`/`save` |
+| 5 | Epidemiologist (secondary) | Artifact upload → list → pull → archive; research project init, log, list in Azure |
 
 ### Cleanup
 
