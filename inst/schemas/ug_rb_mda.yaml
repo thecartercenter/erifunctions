@@ -1,0 +1,84 @@
+country: ug
+disease: rb
+data_type: mda
+version: "1.0"
+description: "Uganda river blindness (onchocerciasis) MDA coverage -- APOC community-directed treatment (CDT)"
+language: en
+time_grain: annual
+
+temporal:
+  year_col: year
+  period_col: round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR]
+    range: [1990, 2035]
+
+  round:
+    required: true
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round]
+    range: [1, 4]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, parish]
+
+  community:
+    required: true
+    type: character
+    aliases: [Community, village, community_name]
+
+  target_pop:
+    required: true
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, ivermectin_treated]
+
+  coverage_pct:
+    required: true
+    type: numeric
+    aliases: [CoveragePct, coverage, geographic_coverage]
+    range: [0, 150]
+
+  albendazole_coadmin:
+    required: false
+    type: categorical
+    aliases: [AlbendazoleCoadmin, alb_coadmin, co_admin]
+    allowed_values: [Yes, No, yes, no]
+    translations:
+      yes: Yes
+      no: No
+
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (>100% raw coverage)"
+  coverage_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"
+  target_positive:
+    lhs: target_pop
+    op: ">"
+    rhs_value: 0
+    message: "target_pop must be positive"

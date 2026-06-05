@@ -187,3 +187,80 @@ test_that("eri_schema_validate flags invalid column type", {
   expect_true(any(result$issue_type == "invalid_value" & grepl("Year", result$field)))
   unlink(tmp)
 })
+
+# --- eri_onboard_disease -------------------------------------------------------
+
+test_that("eri_onboard_disease dry_run returns NULL without writing files", {
+  tmp <- tempdir()
+  result <- eri_onboard_disease("schisto", "ug", output_dir = tmp, dry_run = TRUE)
+  expect_null(result)
+  expect_false(file.exists(file.path(tmp, "ug_schisto_mda.yaml")))
+  expect_false(file.exists(file.path(tmp, "ug_schisto_prevalence.yaml")))
+})
+
+test_that("eri_onboard_disease generates one file per data_type", {
+  tmp <- tempdir()
+  paths <- eri_onboard_disease("schisto", "ug", output_dir = tmp)
+  expect_length(paths, 2L)
+  expect_true(all(file.exists(paths)))
+  expect_true(any(grepl("mda", paths)))
+  expect_true(any(grepl("prevalence", paths)))
+  unlink(paths)
+})
+
+test_that("eri_onboard_disease mda skeleton contains required columns", {
+  tmp  <- tempdir()
+  paths <- eri_onboard_disease("rb", "ug", data_types = "mda", output_dir = tmp)
+  content <- paste(readLines(paths[[1L]], warn = FALSE), collapse = "\n")
+  expect_match(content, "target_pop")
+  expect_match(content, "treated")
+  expect_match(content, "coverage_pct")
+  unlink(paths)
+})
+
+test_that("eri_onboard_disease prevalence skeleton contains result and survey_type", {
+  tmp   <- tempdir()
+  paths <- eri_onboard_disease("sth", "global", data_types = "prevalence", output_dir = tmp)
+  content <- paste(readLines(paths[[1L]], warn = FALSE), collapse = "\n")
+  expect_match(content, "result")
+  expect_match(content, "survey_type")
+  expect_match(content, "lat")
+  unlink(paths)
+})
+
+test_that("eri_onboard_disease errors on unsupported data_type", {
+  expect_error(
+    eri_onboard_disease("rb", "ug", data_types = "cas_count"),
+    class = "error"
+  )
+})
+
+# --- bundled schemas for new programs -----------------------------------------
+
+new_schemas <- list(
+  c("ug",      "rb_mda"),
+  c("ug",      "rb_prevalence"),
+  c("schisto", "mda"),
+  c("schisto", "prevalence"),
+  c("sth",     "mda"),
+  c("sth",     "prevalence")
+)
+
+for (s in new_schemas) {
+  local({
+    ctry <- s[[1L]]; dis <- s[[2L]]
+    test_that(paste0("load_dq_schema('", ctry, "', '", dis, "') loads without error"), {
+      result <- load_dq_schema(ctry, dis, azcontainer = NULL)
+      expect_type(result, "list")
+      expect_true(!is.null(result$disease))
+    })
+    test_that(paste0("eri_schema_validate passes for ", ctry, "_", dis), {
+      path <- system.file(paste0("schemas/", ctry, "_", dis, ".yaml"),
+                          package = "erifunctions")
+      skip_if(nchar(path) == 0L, paste("schema file not found:", ctry, dis))
+      result <- suppressWarnings(eri_schema_validate(path))
+      expect_s3_class(result, "tbl_df")
+      expect_equal(nrow(result), 0L)
+    })
+  })
+}

@@ -1,0 +1,86 @@
+country: global
+disease: schisto
+data_type: prevalence
+version: "1.0"
+description: "Schistosomiasis prevalence survey -- Kato-Katz egg count by species"
+language: en
+
+temporal:
+  year_col: year
+  period_col: survey_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR]
+    range: [2000, 2035]
+
+  survey_round:
+    required: true
+    type: numeric
+    aliases: [SurveyRound, survey_year, round]
+    range: [1, 50]
+
+  country_name:
+    required: true
+    type: character
+    aliases: [Country, country, CountryName]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, admin2]
+
+  school:
+    required: false
+    type: character
+    aliases: [School, school_name, site]
+
+  result:
+    required: true
+    type: categorical
+    aliases: [Result, test_result, kato_result]
+    allowed_values: [Positive, Negative]
+
+  survey_type:
+    required: true
+    type: categorical
+    aliases: [SurveyType, method, diagnostic]
+    allowed_values: [kato_katz, urine_filtration, cca]
+    translations:
+      "Kato-Katz": kato_katz
+      "Urine filtration": urine_filtration
+
+  species:
+    required: false
+    type: categorical
+    aliases: [Species, schisto_species, parasite_species]
+    allowed_values: [S.mansoni, S.haematobium, S.japonicum, mixed]
+
+  epg:
+    required: false
+    type: numeric
+    aliases: [EPG, eggs_per_gram, egg_count]
+    range: [0, 100000]
+
+  intensity_class:
+    required: false
+    type: categorical
+    aliases: [IntensityClass, infection_intensity, severity]
+    allowed_values: [light, moderate, heavy]
+
+  lat:
+    required: false
+    type: numeric
+    aliases: [latitude, Latitude, GPS_lat]
+    range: [-90, 90]
+
+  lon:
+    required: false
+    type: numeric
+    aliases: [longitude, Longitude, GPS_lon]
+    range: [-180, 180]
