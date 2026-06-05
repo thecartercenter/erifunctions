@@ -73,8 +73,14 @@ pre_post <- weekly |>
 Convert individual case dates to epiweek numbers for aggregation:
 
 ```{r date-to-epiweek}
+# Add epiweek number from a sample date column
 cases <- cases |>
   mutate(epiweek = eri_date_to_epiweek(sample_date))
+
+# Filter to a cross-year epiweek range (week 40/2023 through week 10/2024)
+subset <- eri_epiweek_range(weekly, "year", "epiweek",
+                             start_year = 2023, start_week = 40,
+                             end_year   = 2024, end_week   = 10)
 ```
 
 ## Branded ggplot theme and colour palette
