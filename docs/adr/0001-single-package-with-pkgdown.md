@@ -22,8 +22,10 @@ documentation, not package boundaries:
 - A **pkgdown site** with a **grouped function reference** (Connections / Data I/O / Pipeline
   / Data quality / Catalog / ODK / Spatial / Epi analytics / Reporting / Research / Onboarding).
 - roxygen `@family` tags so related functions cross-link.
-- The two existing **role-based onboarding vignettes** (`eri_daily_workflow` for DAs,
-  `eri_research_workflow` for Epis) as the front door.
+- The two **role-based onboarding templates** (`eri_daily_workflow` for DAs,
+  `eri_research_workflow` for Epis), bundled in `inst/templates/` and pulled via
+  `eri_template_pull()`, plus the task-oriented **workflow vignettes** (`vignettes/*.Rmd`,
+  surfaced as pkgdown articles) as the front door.
 
 ## Consequences
 
