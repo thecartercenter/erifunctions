@@ -7,7 +7,7 @@
 
 Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center's NTD and malaria programs.
 
-**Version:** 0.8.0 · **Status:** Active development
+**Version:** 0.9.0 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2 roadmap](docs/roadmap.md) and the
 > [architecture decision records](docs/adr/) for the development plan and the reasoning
