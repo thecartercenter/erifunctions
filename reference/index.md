@@ -237,6 +237,8 @@ Scaffold studies, track provenance, manage artifacts, and snapshot data.
 
 - [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md)
   : Initialise a new research project
+- [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md)
+  : Scaffold a new research-project repository
 - [`eri_research_resume()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_resume.md)
   : Resume a research project session
 - [`eri_research_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_log.md)

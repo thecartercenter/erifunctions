@@ -52,6 +52,10 @@
 <code><a href="../reference/eri_research_tag.html">eri_research_tag()</a></code> – bind a frozen data snapshot, the analysis git commit, the input provenance, and the output manifest into an immutable, citable tag in Azure, recorded in <code>research.yaml</code>. Makes a tagged analysis reproducible from a citation, including across data updates. Tags are immutable and auto-create a snapshot if none exists. (<a href="https://github.com/thecartercenter/erifunctions/issues/135" class="external-link">#135</a>)</li>
 <li>
 <code>eri_spatial_load(cache = TRUE)</code> – cache an admin boundary into the research project and record its provenance (delegating to <code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code>), then read the local copy, so a study’s spatial inputs are reproducible and frozen by <code><a href="../reference/eri_research_tag.html">eri_research_tag()</a></code>. See ADR-0007. (<a href="https://github.com/thecartercenter/erifunctions/issues/133" class="external-link">#133</a>)</li>
+<li>
+<code><a href="../reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> – create a standalone research-project repo skeleton (README, <code>analysis/</code> seeded from the workflow template, data-safe <code>.gitignore</code>, minimal reproducibility
+<ol start="101" style="list-style-type: upper-roman"><li>plus the standard research scaffold via <code><a href="../reference/eri_research_init.html">eri_research_init()</a></code>. Implements ADR-0006. (<a href="https://github.com/thecartercenter/erifunctions/issues/136" class="external-link">#136</a>)</li>
+</ol></li>
 </ul></div>
 </div>
     <div class="section level2">

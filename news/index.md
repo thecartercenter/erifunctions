@@ -19,6 +19,14 @@
   [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md).
   See ADR-0007.
   ([\#133](https://github.com/thecartercenter/erifunctions/issues/133))
+- [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md)
+  – create a standalone research-project repo skeleton (README,
+  `analysis/` seeded from the workflow template, data-safe `.gitignore`,
+  minimal reproducibility
+  101. plus the standard research scaffold via
+       [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md).
+       Implements ADR-0006.
+       ([\#136](https://github.com/thecartercenter/erifunctions/issues/136))
 
 ## erifunctions 0.9.0
 
