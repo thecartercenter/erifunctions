@@ -784,6 +784,15 @@ eri_research_scaffold <- function(name, country, disease, description,
   if (missing(name) || !is.character(name) || length(name) != 1L || !nzchar(name)) {
     cli::cli_abort("{.arg name} must be a single non-empty string.")
   }
+  if (missing(country) || !is.character(country) || length(country) != 1L || !nzchar(country)) {
+    cli::cli_abort("{.arg country} must be a single non-empty string.")
+  }
+  if (missing(disease) || !is.character(disease) || length(disease) != 1L || !nzchar(disease)) {
+    cli::cli_abort("{.arg disease} must be a single non-empty string.")
+  }
+  if (missing(description) || !is.character(description) || length(description) != 1L || !nzchar(description)) {
+    cli::cli_abort("{.arg description} must be a single non-empty string.")
+  }
   repo_dir <- file.path(dest, name)
   if (dir.exists(repo_dir) && length(list.files(repo_dir, all.files = TRUE, no.. = TRUE)) > 0L) {
     cli::cli_abort("{.path {repo_dir}} already exists and is not empty.")
@@ -807,11 +816,17 @@ eri_research_scaffold <- function(name, country, disease, description,
     "",
     "## Setup",
     "",
+    "This study is its own version-controlled repository (ADR-0006):",
+    "",
+    "```sh",
+    "git init",
+    "```",
+    "",
     "```r",
     "install.packages(\"renv\")",
     "renv::init()",
     "renv::install(\"thecartercenter/erifunctions\")",
-    "renv::snapshot()",
+    "renv::snapshot()   # commit renv.lock -- this also activates the CI reproducibility check",
     "```",
     "",
     "Then configure Azure credentials in `.Renviron` (see the erifunctions README).",
@@ -851,8 +866,9 @@ eri_research_scaffold <- function(name, country, disease, description,
   ), file.path(repo_dir, ".gitignore"))
 
   writeLines(c(
-    "# Reproducibility check: restore renv and confirm erifunctions loads.",
-    "# Does NOT run the analysis (that needs Azure credentials + data).",
+    "# Reproducibility check: once renv.lock is committed, restore it and confirm erifunctions",
+    "# loads. Inert (passes) until a lockfile exists. Does NOT run the analysis (that needs",
+    "# Azure credentials + data).",
     "on: [push, pull_request]",
     "name: reproducibility-check",
     "jobs:",
@@ -860,14 +876,31 @@ eri_research_scaffold <- function(name, country, disease, description,
     "    runs-on: ubuntu-latest",
     "    steps:",
     "      - uses: actions/checkout@v5",
-    "      - uses: r-lib/actions/setup-r@v2",
-    "      - uses: r-lib/actions/setup-renv@v2",
-    "      - name: erifunctions loads from the pinned environment",
-    "        run: Rscript -e 'library(erifunctions); cat(\"environment OK\\n\")'"
+    "      - id: lock",
+    "        run: |",
+    "          if [ -f renv.lock ]; then echo \"present=true\" >> \"$GITHUB_OUTPUT\"; else echo \"present=false\" >> \"$GITHUB_OUTPUT\"; fi",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        uses: r-lib/actions/setup-r@v2",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        uses: r-lib/actions/setup-renv@v2",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        name: erifunctions loads from the pinned environment",
+    "        run: Rscript -e 'library(erifunctions); cat(\"environment OK\\n\")'",
+    "      - if: steps.lock.outputs.present != 'true'",
+    "        run: echo 'No renv.lock yet -- run renv::init()/renv::snapshot() and commit it to enable this check.'"
   ), file.path(repo_dir, ".github", "workflows", "ci.yaml"))
 
-  # Standard research scaffold (data/figs/outputs + research.yaml + Azure dir).
-  eri_research_init(name, country, disease, description, path = repo_dir, data_con = data_con)
+  # Standard research scaffold (data/figs/outputs + research.yaml + Azure dir). If init fails
+  # (e.g. Azure creds), make the partial-scaffold state and recovery path explicit.
+  tryCatch(
+    eri_research_init(name, country, disease, description, path = repo_dir, data_con = data_con),
+    error = function(e) {
+      cli::cli_abort(c(
+        "Repo skeleton created at {.path {repo_dir}}, but research-project init failed: {conditionMessage(e)}",
+        "i" = "Resolve the cause (e.g. Azure credentials), then finish setup from inside the project."
+      ))
+    }
+  )
 
   cli::cli_alert_success("Scaffolded research project {.val {name}} at {.path {repo_dir}}.")
   cli::cli_inform(c(
