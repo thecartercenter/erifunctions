@@ -1,6 +1,6 @@
 # Copy a template to a local destination
 
-Copies a named template — bundled or Azure-hosted — to `dest`. Bundled
+Copies a named template – bundled or Azure-hosted – to `dest`. Bundled
 templates are copied directly from the package installation. Azure
 templates are downloaded from `templates/{filename}` in the `data/`
 blob.
