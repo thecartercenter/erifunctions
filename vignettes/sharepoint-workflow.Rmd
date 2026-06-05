@@ -1,0 +1,182 @@
+---
+title: "SharePoint Workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{SharePoint Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+This vignette covers the full SharePoint read/write pattern using the `eri_sharepoint_*`
+functions. These functions require the `Microsoft365R` package:
+
+```{r install, eval=FALSE}
+install.packages("Microsoft365R")
+```
+
+## 1. Connect to a SharePoint site
+
+```{r connect}
+library(erifunctions)
+
+site <- eri_sharepoint_connect("https://cartercenter.sharepoint.com/sites/ERI")
+```
+
+`eri_sharepoint_connect()` opens a browser window for interactive authentication the first
+time. The token is cached by `AzureAuth` so subsequent calls within a session do not
+re-prompt.
+
+## 2. List files in a document library folder
+
+```{r list}
+# List the root of the default document library
+files <- eri_sharepoint_list(site)
+
+# List a specific subfolder
+weekly_files <- eri_sharepoint_list(site, "Shared Documents/Weekly Data/Haiti")
+print(weekly_files)
+# A tibble with columns: name, size, modified, is_folder, path
+```
+
+Filter to find the most recent weekly upload:
+
+```{r filter-list}
+library(dplyr)
+
+latest <- weekly_files |>
+  filter(!is_folder, grepl("\\.xlsx$", name)) |>
+  arrange(desc(modified)) |>
+  slice(1)
+
+cat("Latest file:", latest$name, "\n")
+cat("Modified:   ", format(latest$modified), "\n")
+```
+
+## 3. Read a file directly into R
+
+`eri_sharepoint_read()` downloads the file to a temp location and reads it based on
+the extension (`.xlsx`, `.csv`, `.parquet`, `.rds`).
+
+```{r read-excel}
+# Read an Excel file
+df <- eri_sharepoint_read(site, "Shared Documents/Weekly Data/Haiti/ht_weekly_2024.xlsx")
+head(df)
+```
+
+```{r read-csv}
+# Read a CSV file with extra readr arguments
+df_csv <- eri_sharepoint_read(
+  site,
+  "Shared Documents/Weekly Data/DR/dr_cases_2024.csv",
+  col_types = readr::cols(.default = "c")
+)
+```
+
+```{r read-sheet}
+# Read a specific Excel sheet
+df_sheet <- eri_sharepoint_read(
+  site,
+  "Shared Documents/Reports/annual_summary.xlsx",
+  sheet = "Malaria"
+)
+```
+
+For an unknown extension the function returns the local temp path so you can read
+it manually:
+
+```{r read-unknown}
+path <- eri_sharepoint_read(site, "Shared Documents/Data/custom_format.sav")
+# path is a character string -- use haven::read_sav(path) or similar
+```
+
+## 4. Upload a finished report to SharePoint
+
+```{r upload}
+# Push a local Excel report to the team SharePoint
+eri_sharepoint_upload(
+  local_path  = "outputs/ht_malaria_weekly_summary.xlsx",
+  site        = site,
+  folder_path = "Shared Documents/Reports/Haiti/2024"
+)
+```
+
+The destination folder is created automatically if it does not exist. Use
+`overwrite = FALSE` to prevent accidentally replacing a file:
+
+```{r upload-guard}
+eri_sharepoint_upload(
+  local_path  = "outputs/ht_malaria_weekly_summary.xlsx",
+  site        = site,
+  folder_path = "Shared Documents/Reports/Haiti/2024",
+  overwrite   = FALSE   # errors if the file already exists
+)
+```
+
+The function returns the SharePoint item URL invisibly:
+
+```{r upload-url}
+url <- eri_sharepoint_upload("outputs/report.xlsx", site, "Shared Documents/Reports")
+cat("Shared at:", url, "\n")
+```
+
+## 5. Combined workflow
+
+The most common pattern is: pull data from SharePoint, run DQ checks, generate a
+report, push the report back.
+
+```{r full-workflow}
+library(erifunctions)
+library(dplyr)
+
+# ---- Step 1: connect ----
+site <- eri_sharepoint_connect("https://cartercenter.sharepoint.com/sites/ERI")
+
+# ---- Step 2: pull the latest weekly submission ----
+files <- eri_sharepoint_list(site, "Shared Documents/Weekly Data/Haiti")
+latest_path <- files |>
+  filter(!is_folder, grepl("\\.xlsx$", name)) |>
+  arrange(desc(modified)) |>
+  slice(1) |>
+  pull(path)
+
+raw <- eri_sharepoint_read(site, latest_path)
+
+# ---- Step 3: run DQ checks ----
+schema <- load_dq_schema("haiti", "malaria", azcontainer = NULL)
+result <- run_dq_checks(raw, schema)
+
+# ---- Step 4: generate a summary Excel report ----
+tmp_report <- tempfile(fileext = ".xlsx")
+eri_report_excel(
+  list(
+    data   = list(data = result$data),
+    flags  = list(data = result$flags)
+  ),
+  path = tmp_report
+)
+
+# ---- Step 5: push back to SharePoint ----
+week_label <- format(Sys.Date(), "%Y-W%V")
+eri_sharepoint_upload(
+  local_path  = tmp_report,
+  site        = site,
+  folder_path = paste0("Shared Documents/DQ Reports/Haiti/", week_label)
+)
+```
+
+## Authentication notes
+
+- Tokens are cached in `~/.AzureR/` by `AzureAuth`. If you are prompted every
+  session, check that `~/.AzureR/` is writable.
+- For scripted / CI use, prefer service-principal auth configured through
+  `Microsoft365R::create_sharepoint_site()` with `auth_type = "client_credentials"`.
+- All `eri_sharepoint_*` functions guard against `Microsoft365R` not being
+  installed and give a clear install instruction if it is absent.

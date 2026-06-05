@@ -1,0 +1,158 @@
+---
+title: "Adding a New NTD Program"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Adding a New NTD Program}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+This vignette walks through the full process of adding a new disease program
+to `erifunctions` -- from generating skeleton schemas to opening a pull request.
+Estimated time: 1--2 hours for a new country/disease combination.
+
+## 1. Generate skeleton schemas
+
+`eri_onboard_disease()` writes one YAML file per data type:
+
+```{r scaffold}
+library(erifunctions)
+
+eri_onboard_disease(
+  disease    = "schisto",
+  country    = "ug",
+  data_types = c("mda", "prevalence"),
+  output_dir = "schemas/"     # write locally, not to the package
+)
+# Writes schemas/ug_schisto_mda.yaml and schemas/ug_schisto_prevalence.yaml
+```
+
+Use `dry_run = TRUE` first to preview what will be written:
+
+```{r dry-run}
+eri_onboard_disease("rb", "eth", dry_run = TRUE)
+```
+
+## 2. Fill in disease-specific columns
+
+Open each skeleton file and complete the TODO sections:
+
+```yaml
+# ug_schisto_mda.yaml (excerpt)
+columns:
+  species_target:
+    required: true
+    type: categorical
+    aliases: [Species, species, schisto_species]
+    allowed_values:
+      - S.mansoni        # fill in the species relevant to this country
+      - S.haematobium
+
+  school_name:           # add country-specific columns here
+    required: false
+    type: character
+    aliases: [School, school_name, etablissement]
+```
+
+Key decisions to make for each column:
+
+- **`required`** -- will the pipeline hard-error if this column is missing?
+- **`type`** -- `numeric`, `character`, `categorical`, or `date`
+- **`aliases`** -- all the column name variants found in raw data files
+- **`range`** -- for numeric columns; flag implausible values
+- **`allowed_values`** -- for categorical columns; triggers a flag if a value is unexpected
+- **`translations`** -- map raw variants to a canonical value (e.g. `"YES"` -> `"Yes"`)
+
+## 3. Validate the schema
+
+Run `eri_schema_validate()` to check for structural problems:
+
+```{r validate}
+result <- eri_schema_validate("schemas/ug_schisto_mda.yaml")
+# Prints: "Schema ug_schisto_mda.yaml is valid." if no issues found
+# Or:     a summary of issues with field names and messages
+print(result)
+```
+
+Fix any flagged issues before moving on. Common problems:
+
+- Missing `required` or `type` on a column definition
+- A consistency rule referencing a column name not defined in `columns`
+- A `temporal.year_col` or `temporal.period_col` pointing to a column not in `columns`
+
+## 4. Test with sample data
+
+Before submitting, test the schema against real or synthetic data:
+
+```{r test-dq}
+schema <- load_dq_schema("ug", "schisto_mda", azcontainer = NULL)
+# azcontainer = NULL tells it to use the local file, not Azure
+
+# Create a small synthetic data frame that matches your schema
+sample_data <- data.frame(
+  year       = c(2023L, 2023L, 2024L),
+  round      = c(1L, 2L, 1L),
+  district   = c("Kampala", "Wakiso", "Kampala"),
+  target_pop = c(5000L, 3200L, 5100L),
+  treated    = c(4800L, 3100L, 4950L),
+  coverage_pct = c(96.0, 96.9, 97.1)
+)
+
+result <- run_dq_checks(sample_data, schema)
+cat("Flags:", nrow(result$flags), "\n")
+```
+
+If the sample data passes cleanly (`nrow(result$flags) == 0`), the schema is
+ready for real data.
+
+## 5. Submit to the package
+
+Copy the validated schema file to `inst/schemas/` using the naming convention
+`{country}_{disease}_{data_type}.yaml`:
+
+```
+inst/schemas/ug_schisto_mda.yaml
+inst/schemas/ug_schisto_prevalence.yaml
+```
+
+PR checklist:
+
+- [ ] Schema file is in `inst/schemas/` with correct name
+- [ ] `eri_schema_validate()` returns 0 issues
+- [ ] `load_dq_schema("ug", "schisto_mda", azcontainer = NULL)` works
+- [ ] At least one `load_dq_schema` + `eri_schema_validate` test added to
+  `tests/testthat/test-onboarding.R` following the existing pattern
+- [ ] NEWS.md entry in the next version section
+
+## 6. Optional: add disease-specific epi functions
+
+If the new program needs custom analytics beyond the generic DQ pipeline
+(e.g. DALY calculations, TAS interpretation, programme status maps), add
+them to a new file `R/epi_{disease}.R` following the pattern in
+`R/epi_lf.R`:
+
+```{r epi-template}
+# R/epi_schisto.R
+
+#' Compute school-level Kato-Katz prevalence from survey data
+#'
+#' @param data A tibble with one row per tested individual.
+#' @param result_col `chr` Column containing `"Positive"` / `"Negative"`.
+#' @param group_cols `chr` vector Grouping columns (school, district, year).
+#' @returns A tibble of prevalence estimates by group.
+#' @export
+eri_schisto_kk_prevalence <- function(data, result_col, group_cols) {
+  # implementation here
+}
+```
+
+Export and document following standard roxygen conventions, then add tests in
+`tests/testthat/test-epi-schisto.R`.
