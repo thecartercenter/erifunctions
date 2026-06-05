@@ -20,6 +20,7 @@ Imports:
     cli,
     dplyr,
     ggplot2,
+    ggspatial,
     glue,
     httr,
     lubridate,
@@ -34,8 +35,12 @@ Imports:
     writexl,
     yaml
 Suggests:
+    cowplot,
+    exactextractr,
     flextable,
+    ggnewscale,
     lifecycle,
+    sf,
     spelling,
     terra,
     testthat (>= 3.0.0),
