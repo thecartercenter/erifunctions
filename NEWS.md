@@ -1,3 +1,31 @@
+# erifunctions 0.8.0
+
+## Phase 7 -- SharePoint integration and multi-program expansion
+
+### New functions
+
+**SharePoint** (`R/sharepoint.R`)
+- `eri_sharepoint_connect()` -- interactive browser auth via `Microsoft365R`; token cached by `AzureAuth`
+- `eri_sharepoint_list()` -- tibble of files/folders at a document library path (`name`, `size`, `modified`, `is_folder`, `path`)
+- `eri_sharepoint_read()` -- download and read a SharePoint file by extension (xlsx/xls, csv, parquet, rds; returns temp path for unknown types)
+- `eri_sharepoint_upload()` -- upload a local file to SharePoint; auto-creates destination folder; `overwrite = FALSE` guard; returns item URL invisibly
+
+**Onboarding** (`R/onboarding.R`)
+- `eri_onboard_disease()` -- generate MDA and/or prevalence skeleton YAML schemas for a new disease program
+
+### New bundled schemas (`inst/schemas/`)
+
+- `ug_rb_mda.yaml` / `ug_rb_prevalence.yaml` -- Uganda river blindness (APOC community-directed treatment; nodule palpation / skin snip)
+- `schisto_mda.yaml` / `schisto_prevalence.yaml` -- Schistosomiasis (praziquantel MDA; Kato-Katz egg count by species)
+- `sth_mda.yaml` / `sth_prevalence.yaml` -- STH (albendazole/mebendazole MDA; Kato-Katz species breakdown)
+
+### New vignettes
+
+- `vignettes/sharepoint-workflow.Rmd` -- full connect/list/read/upload cycle with combined pull-DQ-report-push workflow
+- `vignettes/adding-a-program.Rmd` -- step-by-step guide: scaffold, edit, validate, test, PR checklist, epi functions pattern
+
+---
+
 # erifunctions 0.7.0
 
 ## Phase 6 -- Reporting and documentation
