@@ -4,7 +4,7 @@
 \alias{eri_spatial_load}
 \title{Load admin boundary from Azure}
 \usage{
-eri_spatial_load(country, level, data_con = NULL)
+eri_spatial_load(country, level, data_con = NULL, cache = FALSE, dest = NULL)
 }
 \arguments{
 \item{country}{\code{chr} Country code (e.g. \code{"dr"}, \code{"ht"}).}
@@ -13,6 +13,15 @@ eri_spatial_load(country, level, data_con = NULL)
 3 = municipality/locality, 4 = sub-locality).}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{cache}{\code{lgl} If \code{TRUE}, cache the boundary into the local research project and read it
+from there instead of reading directly from Azure. Caching delegates to
+\code{\link[=eri_research_pull]{eri_research_pull()}}, which downloads into \code{dest} and records the pull in \code{research.yaml}
+when present -- so a study's spatial inputs are reproducible and frozen by
+\code{\link[=eri_research_tag]{eri_research_tag()}}. Default \code{FALSE} (read directly from Azure). See ADR-0007.}
+
+\item{dest}{\code{chr} Directory to cache into when \code{cache = TRUE}. Defaults to the project
+\verb{data/} directory.}
 }
 \value{
 An \code{sf} object with the admin boundary geometries.
@@ -25,5 +34,8 @@ in the \verb{data/} Azure blob. Returns it ready for mapping or spatial joins.
 \dontrun{
 haiti_communes <- eri_spatial_load("ht", level = 2)
 dr_provinces   <- eri_spatial_load("dr", level = 2)
+
+# Inside a research project: cache the boundary and record its provenance.
+dr_loc <- eri_spatial_load("dr", level = 4, cache = TRUE)
 }
 }

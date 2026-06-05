@@ -34,14 +34,24 @@
 #' @param level `int` Admin level (0 = country, 1 = region/department, 2 = province/commune,
 #'   3 = municipality/locality, 4 = sub-locality).
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @param cache `lgl` If `TRUE`, cache the boundary into the local research project and read it
+#'   from there instead of reading directly from Azure. Caching delegates to
+#'   [eri_research_pull()], which downloads into `dest` and records the pull in `research.yaml`
+#'   when present -- so a study's spatial inputs are reproducible and frozen by
+#'   [eri_research_tag()]. Default `FALSE` (read directly from Azure). See ADR-0007.
+#' @param dest `chr` Directory to cache into when `cache = TRUE`. Defaults to the project
+#'   `data/` directory.
 #' @returns An `sf` object with the admin boundary geometries.
 #' @examples
 #' \dontrun{
 #' haiti_communes <- eri_spatial_load("ht", level = 2)
 #' dr_provinces   <- eri_spatial_load("dr", level = 2)
+#'
+#' # Inside a research project: cache the boundary and record its provenance.
+#' dr_loc <- eri_spatial_load("dr", level = 4, cache = TRUE)
 #' }
 #' @export
-eri_spatial_load <- function(country, level, data_con = NULL) {
+eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, dest = NULL) {
   if (!requireNamespace("sf", quietly = TRUE)) {
     cli::cli_abort("Package {.pkg sf} must be installed to use {.fn eri_spatial_load}.")
   }
@@ -60,6 +70,26 @@ eri_spatial_load <- function(country, level, data_con = NULL) {
       "i" = "Upload it first with:",
       " " = "{.code eri_spatial_upload(local_path, country = \"{country}\", level = {level})}"
     ))
+  }
+
+  if (isTRUE(cache)) {
+    # Source reproducibly: cache into the research project and record provenance through
+    # the pull entry point (ADR-0005/0007), then read the local copy.
+    if (!file.exists(file.path(getwd(), "research.yaml"))) {
+      cli::cli_warn(c(
+        "{.arg cache = TRUE} but no {.file research.yaml} in the working directory.",
+        "i" = "The boundary is cached locally, but its provenance is NOT recorded -- run {.fn eri_research_init} first for a reproducible pull."
+      ))
+    }
+    local_paths <- eri_research_pull(path = blob_path, dest = dest, data_con = con)
+    if (length(local_paths) == 0L) {
+      cli::cli_abort("Failed to cache {.path {blob_path}}.")
+    }
+    sf_obj <- readRDS(local_paths[[1L]])
+    cli::cli_alert_success(
+      "Loaded {.val {country}} admin level {level} from cache {.path {local_paths[[1L]]}} ({nrow(sf_obj)} feature{?s})."
+    )
+    return(sf_obj)
   }
 
   sf_obj <- eri_read(blob_path, azcontainer = con)
