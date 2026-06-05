@@ -1,0 +1,114 @@
+country: dr
+disease: malaria_case
+data_type: case
+version: "1.0"
+description: "Dominican Republic individual malaria case record (one row per patient)"
+language: es
+time_grain: case
+
+preprocessing:
+  - remove_smart_quotes
+
+temporal:
+  date_col: sample_date
+  year_col: year
+  cross_check_year_col: year
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Año, ano]
+    range: [2000, 2035]
+
+  epiweek:
+    required: true
+    type: numeric
+    aliases: [EpiWeek, semana, Semana, Sem, week]
+    range: [1, 53]
+
+  province:
+    required: true
+    type: character
+    aliases: [Province_Residence, Provincia_residencia, provincia, Provincia]
+    allowed_values:
+      - Distrito Nacional
+      - Santo Domingo
+      - San Cristobal
+      - Peravia
+      - Azua
+      - San Juan
+      - Baoruco
+      - Barahona
+      - Pedernales
+      - Independencia
+      - La Romana
+      - San Pedro de Macoris
+      - El Seibo
+      - La Altagracia
+      - Hato Mayor
+      - Santiago
+      - Espaillat
+      - La Vega
+      - Monseñor Nouel
+      - Sanchez Ramirez
+      - Salcedo
+      - Maria Trinidad Sanchez
+      - Samana
+      - Puerto Plata
+      - Santiago Rodriguez
+      - Valverde
+      - Montecristi
+      - Dajabon
+      - Elias Pina
+      - San Jose de Ocoa
+      - Monte Plata
+      # Non-DR values indicate imported/nationality anomaly
+      - Extranjero
+      - Africa
+      - Haiti
+      - Venezuela
+      - Otros
+
+  municipality:
+    required: true
+    type: character
+    aliases: [Municipality_Residence, Municipio_residencia, municipio]
+
+  locality:
+    required: false
+    type: character
+    aliases: [Barrio_Residence, barrio, localidad, Localidad]
+
+  nationality:
+    required: false
+    type: character
+    aliases: [Nationality, Nacionalidad, nacionalidad]
+
+  sample_date:
+    required: true
+    type: date
+    aliases: [SampleDate, Fecha_Toma_Muestra, fecha_muestra]
+
+  species:
+    required: false
+    type: character
+    aliases: [Plasmodium, especie, Species]
+    allowed_values: [P. falciparum, P. vivax, Mixed, Unknown]
+
+# Derived flag for imported cases (province value outside DR)
+derived:
+  imported_flag:
+    formula: "as.integer(province %in% c('Extranjero', 'Africa', 'Haiti', 'Venezuela', 'Otros'))"
+
+consistency:
+  epiweek_valid:
+    lhs: epiweek
+    op: ">="
+    rhs_value: 1
+    message: "Epiweek below 1"
+  epiweek_valid_max:
+    lhs: epiweek
+    op: "<="
+    rhs_value: 53
+    message: "Epiweek above 53"
