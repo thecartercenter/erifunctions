@@ -1,0 +1,53 @@
+name: Claude PR review
+
+# Independent, advisory design review on every PR. Checks alignment with the governance
+# docs (CLAUDE.md, docs/roadmap.md, docs/adr/) per .github/claude-review-guidelines.md.
+# It complements — does not replace — the deterministic R-CMD-check / pkgdown gates, and it
+# never approves or merges (a human is the merge gate). Do NOT add this to required checks.
+#
+# Setup: add an `ANTHROPIC_API_KEY` repository secret. Until then the review step skips
+# cleanly and this workflow stays green.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    name: Claude design review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Claude design review
+        # Skip cleanly when the secret isn't configured, so this never blocks a PR.
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are an INDEPENDENT design reviewer for the erifunctions R package, reviewing
+            pull request #${{ github.event.pull_request.number }}. You did not write this code;
+            review it fresh.
+
+            Read, in order: .github/claude-review-guidelines.md, then CLAUDE.md,
+            docs/roadmap.md, and the files under docs/adr/. Then read the PR diff with
+            `gh pr diff ${{ github.event.pull_request.number }}`.
+
+            Apply the checklist in .github/claude-review-guidelines.md. Review ONLY for
+            design/convention/vision alignment — NOT test pass/fail (CI owns that).
+
+            Post exactly one PR review via the gh CLI. Use inline comments where you can point
+            at a specific line, and cite the relevant doc/ADR. Request changes only for clear
+            violations; otherwise leave comments. Ask the maintainer questions directly in the
+            review when something is ambiguous. Do NOT approve and do NOT merge.
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh api:*)"
