@@ -5,8 +5,10 @@ name: Claude PR review
 # It complements — does not replace — the deterministic R-CMD-check / pkgdown gates, and it
 # never approves or merges (a human is the merge gate). Do NOT add this to required checks.
 #
-# Setup: add an `ANTHROPIC_API_KEY` repository secret. Until then the review step skips
-# cleanly and this workflow stays green.
+# Setup (both required to activate; until done the review step skips cleanly and stays green):
+#   1. Install the Claude GitHub App on this repo: https://github.com/apps/claude
+#      (gives the bot its GitHub identity/permissions to read PRs and post reviews).
+#   2. Add an `ANTHROPIC_API_KEY` repository secret (model usage/billing).
 
 on:
   pull_request:
