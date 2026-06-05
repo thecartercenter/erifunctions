@@ -132,3 +132,66 @@ test_that("eri_sharepoint_read returns temp path for unknown extension", {
   expect_type(result, "character")
   expect_true(grepl("\\.bin$", result))
 })
+
+#### eri_sharepoint_upload ####
+
+test_that("eri_sharepoint_upload errors clearly when Microsoft365R is absent", {
+  skip_if(requireNamespace("Microsoft365R", quietly = TRUE), "Microsoft365R is installed")
+  expect_error(eri_sharepoint_upload("file.csv", NULL, "Shared Documents"), "Microsoft365R")
+})
+
+test_that("eri_sharepoint_upload errors when local file does not exist", {
+  skip_if_not_installed("Microsoft365R")
+  expect_error(
+    eri_sharepoint_upload("/nonexistent/path/file.xlsx", list(), "Shared Documents"),
+    "not found"
+  )
+})
+
+test_that("eri_sharepoint_upload calls folder$upload with the local path", {
+  skip_if_not_installed("Microsoft365R")
+
+  tmp_file <- tempfile(fileext = ".csv")
+  writeLines("x,y\n1,2", tmp_file)
+  withr::defer(unlink(tmp_file))
+
+  uploaded <- NULL
+  mock_folder <- list(
+    upload    = function(path) { uploaded <<- path; list(properties = list(webUrl = "https://sp/file.csv")) },
+    get_item  = function(...) stop("not found")
+  )
+  mock_drive <- list(
+    get_item = function(...) mock_folder
+  )
+  mock_site <- list(
+    get_drive = function() mock_drive
+  )
+
+  result <- suppressMessages(eri_sharepoint_upload(tmp_file, mock_site, "Shared Documents"))
+  expect_equal(uploaded, tmp_file)
+  expect_equal(result, "https://sp/file.csv")
+})
+
+test_that("eri_sharepoint_upload errors when overwrite = FALSE and file exists", {
+  skip_if_not_installed("Microsoft365R")
+
+  tmp_file <- tempfile(fileext = ".csv")
+  writeLines("x,y\n1,2", tmp_file)
+  withr::defer(unlink(tmp_file))
+
+  mock_folder <- list(
+    get_item = function(...) list(properties = list(name = basename(tmp_file))),
+    upload   = function(path) list(properties = list(webUrl = "https://sp/file.csv"))
+  )
+  mock_drive <- list(
+    get_item = function(...) mock_folder
+  )
+  mock_site <- list(
+    get_drive = function() mock_drive
+  )
+
+  expect_error(
+    eri_sharepoint_upload(tmp_file, mock_site, "Shared Documents", overwrite = FALSE),
+    "already exists"
+  )
+})

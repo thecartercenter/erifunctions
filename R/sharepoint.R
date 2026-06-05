@@ -1,7 +1,7 @@
 #' Connect to a SharePoint site
 #'
 #' Returns a SharePoint site object for use with [eri_sharepoint_list()],
-#' [eri_sharepoint_read()], and `eri_sharepoint_upload()`. Authentication
+#' [eri_sharepoint_read()], and [eri_sharepoint_upload()]. Authentication
 #' uses browser-based interactive login via `Microsoft365R` -- consistent with
 #' the rest of the package's Azure auth pattern. The token is cached by
 #' `AzureAuth` so subsequent calls within a session do not re-prompt.
@@ -194,3 +194,93 @@ eri_sharepoint_read <- function(site, file_path, ...) {
   )
 }
 
+#' Upload a local file to a SharePoint document library
+#'
+#' Uploads a file from the local filesystem to a SharePoint document library
+#' folder. The destination folder is created automatically if it does not exist.
+#' Returns the SharePoint item URL invisibly so it can be pasted into emails or
+#' logged.
+#'
+#' @param local_path `chr` Path to the local file to upload.
+#' @param site A `ms_site` object from [eri_sharepoint_connect()].
+#' @param folder_path `chr` Destination folder within the document library
+#'   (e.g. `"Shared Documents/Reports/2024"`).
+#' @param overwrite `lgl` If `TRUE` (default) an existing file at the
+#'   destination is silently replaced. If `FALSE` the function errors when the
+#'   destination already exists.
+#'
+#' @return The SharePoint item URL (invisibly).
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' site <- eri_sharepoint_connect("https://cartercenter.sharepoint.com/sites/ERI")
+#' eri_sharepoint_upload("outputs/ht_malaria_summary.xlsx", site,
+#'                        "Shared Documents/Reports/2024")
+#' }
+eri_sharepoint_upload <- function(local_path, site, folder_path,
+                                   overwrite = TRUE) {
+  if (!requireNamespace("Microsoft365R", quietly = TRUE)) {
+    cli::cli_abort(
+      "Package {.pkg Microsoft365R} is required. Install with {.code install.packages('Microsoft365R')}."
+    )
+  }
+
+  if (!file.exists(local_path)) {
+    cli::cli_abort("Local file not found: {.path {local_path}}")
+  }
+
+  drive <- tryCatch(
+    site$get_drive(),
+    error = function(e) {
+      cli::cli_abort("Could not access the document library: {e$message}", call = NULL)
+    }
+  )
+
+  folder <- tryCatch(
+    drive$get_item(folder_path),
+    error = function(e) {
+      tryCatch(
+        drive$create_folder(folder_path),
+        error = function(e2) {
+          cli::cli_abort(
+            "Could not find or create folder {.path {folder_path}}: {e2$message}",
+            call = NULL
+          )
+        }
+      )
+    }
+  )
+
+  dest_name <- basename(local_path)
+
+  if (!overwrite) {
+    existing <- tryCatch(
+      folder$get_item(dest_name),
+      error = function(e) NULL
+    )
+    if (!is.null(existing)) {
+      cli::cli_abort(
+        c("{.path {dest_name}} already exists in {.path {folder_path}}.",
+          "i" = "Set {.arg overwrite = TRUE} to replace it."),
+        call = NULL
+      )
+    }
+  }
+
+  item <- tryCatch(
+    folder$upload(local_path),
+    error = function(e) {
+      cli::cli_abort(
+        "Upload failed for {.path {local_path}}: {e$message}",
+        call = NULL
+      )
+    }
+  )
+
+  url <- tryCatch(item$properties$webUrl, error = function(e) NULL)
+  cli::cli_alert_success(
+    "Uploaded {.path {dest_name}} to {.path {folder_path}} on SharePoint."
+  )
+  invisible(url)
+}

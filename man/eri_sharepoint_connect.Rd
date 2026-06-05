@@ -15,7 +15,7 @@ A \code{ms_site} object from \code{Microsoft365R}.
 }
 \description{
 Returns a SharePoint site object for use with \code{\link[=eri_sharepoint_list]{eri_sharepoint_list()}},
-\code{\link[=eri_sharepoint_read]{eri_sharepoint_read()}}, and \code{eri_sharepoint_upload()}. Authentication
+\code{\link[=eri_sharepoint_read]{eri_sharepoint_read()}}, and \code{\link[=eri_sharepoint_upload]{eri_sharepoint_upload()}}. Authentication
 uses browser-based interactive login via \code{Microsoft365R} -- consistent with
 the rest of the package's Azure auth pattern. The token is cached by
 \code{AzureAuth} so subsequent calls within a session do not re-prompt.
