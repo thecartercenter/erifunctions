@@ -41,6 +41,7 @@ Suggests:
     flextable,
     ggnewscale,
     lifecycle,
+    sf,
     spelling,
     terra,
     testthat (>= 3.0.0),
