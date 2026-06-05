@@ -143,9 +143,9 @@ test_that("eri_research_tag auto-creates a snapshot when none exist", {
   cap <- new.env()
   .setup_tag_mocks(cap)
 
-  # Snapshot writes research.yaml mid-call, so the tree is dirty at git-check ->
-  # the dirty warning is expected; we only assert the snapshot/tag wiring.
-  suppressWarnings(
+  # Git provenance is captured BEFORE the auto-snapshot writes research.yaml, so a
+  # clean checkout must NOT trigger a spurious dirty-tree warning.
+  expect_no_warning(
     expect_message(eri_research_tag("v1", path = tmp), "creating one")
   )
 

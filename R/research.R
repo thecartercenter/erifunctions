@@ -642,10 +642,30 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
 
   tag_dir  <- paste0(manifest$azure_path, "tags/", label, "/")
   tag_file <- paste0(tag_dir, "_tag.yaml")
+  # NOTE: this check-then-write is a TOCTOU race -- two sessions tagging the same
+  # label concurrently could both pass here. Acceptable for the single-analyst
+  # pilot; Phase 2 (ADR-0002) replaces it with a conditional/If-Match upload, which
+  # is also what hardens the read-modify-write of the manifest `tags` list below.
   if (AzureStor::storage_file_exists(data_con, tag_file)) {
     cli::cli_abort(c(
       "Tag {.val {label}} already exists for project {.val {manifest$project_name}}.",
       "i" = "Tags are immutable -- choose a new label for a new version."
+    ))
+  }
+
+  # Capture analysis code provenance BEFORE resolving the snapshot: an auto-created
+  # snapshot writes research.yaml into the tree, which would otherwise make a clean
+  # checkout look "dirty" and fire a spurious warning.
+  git <- .eri_git_info(path)
+  if (is.na(git$sha)) {
+    cli::cli_warn(c(
+      "No git commit found for the analysis at {.path {path}}.",
+      "i" = "Research projects should be git repositories (ADR-0006) so the code is pinned."
+    ))
+  } else if (isTRUE(git$dirty)) {
+    cli::cli_warn(c(
+      "The analysis repo has uncommitted changes.",
+      "i" = "The tag records commit {.val {substr(git$sha, 1L, 8L)}}, but the working tree differs -- commit first for a faithful tag."
     ))
   }
 
@@ -668,20 +688,6 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
       cli::cli_abort("No snapshot matching {.val {snapshot}} in {.file research.yaml}.")
     }
     snap <- hit[[length(hit)]]
-  }
-
-  # Capture analysis code provenance.
-  git <- .eri_git_info(path)
-  if (is.na(git$sha)) {
-    cli::cli_warn(c(
-      "No git commit found for the analysis at {.path {path}}.",
-      "i" = "Research projects should be git repositories (ADR-0006) so the code is pinned."
-    ))
-  } else if (isTRUE(git$dirty)) {
-    cli::cli_warn(c(
-      "The analysis repo has uncommitted changes.",
-      "i" = "The tag records commit {.val {substr(git$sha, 1L, 8L)}}, but the working tree differs -- commit first for a faithful tag."
-    ))
   }
 
   in_prov  <- c(
