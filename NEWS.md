@@ -1,3 +1,17 @@
+# erifunctions (development version)
+
+## V2 Phase 0 -- Governance & shared-memory scaffolding
+
+Documentation and project-infrastructure only; no changes to package functions.
+
+- `docs/roadmap.md` -- version-controlled V2 development roadmap (Phases 0-5)
+- `docs/adr/` -- architecture decision records (single-package vs split, concurrency-safe
+  metadata, token-derived identity, DuckDB query layer, pull-then-process, research-as-repos)
+- `docs/vision.md` -- the founding vision brief, moved out of the gitignored `sandbox/`
+- `CLAUDE.md` -- working memory and conventions for contributors (human and AI)
+- `_pkgdown.yml` + `.github/workflows/pkgdown.yaml` -- grouped-reference documentation site
+- README version banner corrected to 0.8.0 and linked to the roadmap
+
 # erifunctions 0.8.0
 
 ## Phase 7 -- SharePoint integration and multi-program expansion
