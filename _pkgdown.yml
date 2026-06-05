@@ -162,6 +162,7 @@ reference:
   - eri_research_upload_figure
   - eri_research_upload_output
   - eri_research_snapshot
+  - eri_research_tag
   - eri_artifact_upload
   - eri_artifact_list
   - eri_artifact_pull
