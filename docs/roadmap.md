@@ -87,30 +87,41 @@ has no local R.)
 
 ## Phase 1 — `dr_irs` vertical slice (Epi research, end-to-end)  *(first pilot)*
 
-Drive the real DR IRS interrupted-time-series study entirely through the package, letting
-the friction expose the missing helpers. The scaffolding already fits —
-`eri_research_init("dr_irs_2024", "dr", "malaria", …)` is the documented example.
+Drive the real DR IRS interrupted-time-series study end-to-end with the package. **The
+package's role here is to *source data reproducibly* and *maintain study-data discipline* —
+not to do the analysis.** Epidemiologists run the ITS themselves (matching, windowing,
+modelling, counterfactuals) in the research repo (ADR-0006); the package removes the friction
+around getting data in, keeping it reproducible, and producing standard figures. The
+scaffolding already fits — `eri_research_init("dr_irs_2024", "dr", "malaria", …)` is the
+documented example.
 
-**Required input:** `dr_irs.R` and example IRS + incidence data shapes (currently in
-gitignored `sandbox/`).
+**Required input:** `dr_irs.R` and the structure of its IRS / incidence / spatial inputs
+(local, gitignored).
 
-1. **Onboard the IRS dataset.** IRS is not routinely reported, so digitized IRS data enters
-   via `eri_artifact_upload()` → `eri_artifact_pull()`; malaria incidence comes from the
-   surveillance `processed/` layer via `eri_research_pull()`. Confirm both land with
-   provenance in `research.yaml`.
-2. **Build the analysis helpers** `dr_irs.R` needs but the package lacks — an IRS↔incidence
-   temporal/spatial **matching** helper and an **ITS modelling** convenience (in `R/epi.R`;
-   `eri_incidence_rate()`, `eri_study_week()` are existing building blocks).
+1. **Source the data with provenance.** IRS is not routinely reported, so digitized IRS data
+   enters via `eri_artifact_upload()` → `eri_artifact_pull()`; malaria incidence comes from
+   the surveillance `processed/` layer via `eri_research_pull()`; spatial (admin boundaries,
+   LandScan) is sourced from the Azure `spatial/` blob via `eri_spatial_load()` /
+   `eri_spatial_pop()`. **Gap:** spatial reads from Azure without caching — cache every input
+   into the project and record it in `research.yaml` for reproducibility. Exercise the
+   surveillance pipeline (`eri_ingest` → `eri_stage` → `eri_approve`) by updating incidence
+   with a newer country dataset, then re-pulling.
+2. **Reconcile inputs for sourcing** (not analysis): a thin, opt-in geocoding/admin-unit
+   reconciliation helper mapping free-text localities to canonical admin units
+   (`eri_spatial_join`). The ITS matching/windowing/modelling stays in the research repo.
 3. **Version-tag-linked-to-publication** (genuine gap): `eri_research_snapshot()` freezes
    `data/` but gives no named tag binding *data + code commit + outputs* to a publication.
    Add `eri_research_tag(label, …)` recording snapshot ref + analysis git SHA + output
-   manifest, so an analysis is reproducible from a citation.
+   manifest, so an analysis is reproducible from a citation — including across data updates.
 4. **Research-repo template** (ADR-0006): port `dr_irs` into a standalone repo from the new
-   template as the reference example.
+   template as the reference example (this is where the ITS analysis lives).
+5. **(Stretch) figures:** thin helpers on top of `eri_map_*` / `eri_brand_ggplot_theme()` for
+   the recurring study figures.
 
-**Verification:** full study via a `test-smoke.R`-style live test (`ERI_SMOKE_TESTS=true`):
-init → pull IRS artifact + incidence → match → ITS fit → upload outputs → tag; re-pull the
-tag on a clean checkout and reproduce a figure.
+**Verification:** a `test-smoke.R`-style live test (`ERI_SMOKE_TESTS=true`): init → pull IRS
+artifact + incidence + spatial (cached, with provenance) → [analysis runs in the example
+research repo] → upload outputs → `eri_research_tag()`; update incidence through the pipeline
+and re-tag; re-pull the original tag on a clean checkout and reproduce its figure.
 
 ---
 
