@@ -512,6 +512,8 @@ Scaffold studies, track provenance, manage artifacts, and snapshot data.
   : Upload an R object to the research project outputs in Azure
 - [`eri_research_snapshot()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_snapshot.md)
   : Snapshot the full research project data directory to Azure
+- [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md)
+  : Tag a reproducible, citable version of a research project
 - [`eri_artifact_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_upload.md)
   : Upload a non-standard reference file to the artifact registry
 - [`eri_artifact_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_list.md)
