@@ -45,6 +45,7 @@ Suggests:
     ggnewscale,
     knitr,
     lifecycle,
+    Microsoft365R,
     quarto,
     rmarkdown,
     spelling,
