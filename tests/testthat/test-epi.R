@@ -181,3 +181,95 @@ test_that("eri_case_summary errors when start is given without date_col", {
     "date_col"
   )
 })
+
+#### eri_date_to_epiweek ####
+
+test_that("eri_date_to_epiweek returns correct week for a known date (CDC Sunday)", {
+  # CDC epiweek 1 of 2024 runs Dec 31 2023 - Jan 6 2024
+  # Jan 1 2024 is within that window
+  result <- eri_date_to_epiweek(as.Date("2024-01-01"))
+  expect_equal(result, 1L)
+  # Jan 7 2024 is the first day of epiweek 2
+  result2 <- eri_date_to_epiweek(as.Date("2024-01-07"))
+  expect_equal(result2, 2L)
+})
+
+test_that("eri_date_to_epiweek returns correct week mid-year", {
+  result <- eri_date_to_epiweek(as.Date("2024-06-30"))
+  expect_type(result, "integer")
+  expect_true(result >= 26L && result <= 27L)
+})
+
+test_that("eri_date_to_epiweek is vectorized", {
+  dates  <- as.Date(c("2024-01-07", "2024-06-30", "2024-12-29"))
+  result <- eri_date_to_epiweek(dates)
+  expect_equal(length(result), 3L)
+  expect_type(result, "integer")
+})
+
+test_that("eri_date_to_epiweek returns NA for NA input", {
+  result <- eri_date_to_epiweek(as.Date(NA))
+  expect_true(is.na(result))
+})
+
+test_that("eri_date_to_epiweek round-trips with eri_epiweek_date", {
+  # week 1 of 2024 starts Dec 31 2023
+  start_date <- eri_epiweek_date(2024, 1, "Sunday")
+  week_back  <- eri_date_to_epiweek(start_date, "Sunday")
+  expect_equal(week_back, 1L)
+
+  start_date2 <- eri_epiweek_date(2024, 26, "Sunday")
+  week_back2  <- eri_date_to_epiweek(start_date2, "Sunday")
+  expect_equal(week_back2, 26L)
+})
+
+test_that("eri_date_to_epiweek Monday start returns ISO week", {
+  # ISO week 1 of 2024 starts Jan 1, 2024
+  result <- eri_date_to_epiweek(as.Date("2024-01-01"), "Monday")
+  expect_equal(result, 1L)
+})
+
+#### eri_epiweek_range ####
+
+test_that("eri_epiweek_range filters within a single year", {
+  df <- tibble::tibble(
+    year    = rep(2024L, 10),
+    epiweek = 1:10L
+  )
+  result <- eri_epiweek_range(df, "year", "epiweek",
+                               start_year = 2024, start_week = 3,
+                               end_year   = 2024, end_week   = 7)
+  expect_equal(nrow(result), 5L)
+  expect_equal(result$epiweek, 3:7L)
+})
+
+test_that("eri_epiweek_range handles cross-year ranges", {
+  df <- tibble::tibble(
+    year    = c(rep(2023L, 5), rep(2024L, 5)),
+    epiweek = c(48:52L, 1:5L)
+  )
+  result <- eri_epiweek_range(df, "year", "epiweek",
+                               start_year = 2023, start_week = 50,
+                               end_year   = 2024, end_week   = 3)
+  expect_equal(nrow(result), 6L)
+  expect_true(all(result$epiweek %in% c(50L, 51L, 52L, 1L, 2L, 3L)))
+})
+
+test_that("eri_epiweek_range drops NA rows silently", {
+  df <- tibble::tibble(
+    year    = c(2024L, NA_integer_, 2024L),
+    epiweek = c(1L, 2L, 3L)
+  )
+  result <- eri_epiweek_range(df, "year", "epiweek",
+                               start_year = 2024, start_week = 1,
+                               end_year   = 2024, end_week   = 5)
+  expect_equal(nrow(result), 2L)
+})
+
+test_that("eri_epiweek_range errors on missing column", {
+  df <- tibble::tibble(yr = 2024L, wk = 1L)
+  expect_error(
+    eri_epiweek_range(df, "year", "wk", 2024, 1, 2024, 5),
+    "year"
+  )
+})

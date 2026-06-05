@@ -65,6 +65,80 @@ eri_epiweek_date <- function(year, week, week_start = "Sunday") {
   week1_start + (as.integer(week) - 1L) * 7L
 }
 
+#### eri_date_to_epiweek ####
+
+#' Convert a Date to a CDC epiweek number
+#'
+#' Returns the epidemiological week number (1–53) for each date. The inverse of
+#' [eri_epiweek_date()]. Uses CDC Sunday-start convention by default (matching
+#' DR and Haiti surveillance data); pass `week_start = "Monday"` for ISO weeks.
+#'
+#' Dates that fall in an epiweek belonging to a different calendar year (e.g.
+#' Dec 31 in CDC epiweek 1 of the following year) return the correct week number
+#' for that epiweek. Use `lubridate::epiyear()` / `lubridate::isoyear()` to
+#' obtain the corresponding epi year when needed.
+#'
+#' @param date A `Date` vector (or character coercible to Date).
+#' @param week_start `chr` `"Sunday"` (CDC default) or `"Monday"` (ISO).
+#' @returns An integer vector of epiweek numbers (1–53).
+#' @examples
+#' \dontrun{
+#' eri_date_to_epiweek(as.Date("2024-01-07"))   # 1
+#' eri_date_to_epiweek(as.Date("2024-12-29"))   # 52
+#'
+#' # Add epiweek to a case line list
+#' cases |> dplyr::mutate(epiweek = eri_date_to_epiweek(sample_date))
+#' }
+#' @export
+eri_date_to_epiweek <- function(date, week_start = "Sunday") {
+  week_start <- match.arg(week_start, c("Sunday", "Monday"))
+  date <- as.Date(date)
+  if (week_start == "Sunday") {
+    as.integer(lubridate::epiweek(date))
+  } else {
+    as.integer(lubridate::isoweek(date))
+  }
+}
+
+#### eri_epiweek_range ####
+
+#' Filter data to an epiweek range
+#'
+#' Returns rows of `data` whose year + epiweek falls within the inclusive range
+#' `[start_year/start_week, end_year/end_week]`. Handles cross-year ranges
+#' (e.g. week 40/2023 through week 10/2024) correctly.
+#'
+#' @param data A data frame or tibble.
+#' @param year_col `chr` Name of the column containing the 4-digit year.
+#' @param week_col `chr` Name of the column containing the epiweek number (1–53).
+#' @param start_year `int` Start epi year (inclusive).
+#' @param start_week `int` Start epiweek number (inclusive).
+#' @param end_year `int` End epi year (inclusive).
+#' @param end_week `int` End epiweek number (inclusive).
+#' @returns A filtered tibble.
+#' @examples
+#' \dontrun{
+#' # Keep weeks 40/2023 through 10/2024
+#' eri_epiweek_range(weekly_data, "year", "epiweek",
+#'                    start_year = 2023, start_week = 40,
+#'                    end_year   = 2024, end_week   = 10)
+#' }
+#' @export
+eri_epiweek_range <- function(data, year_col, week_col,
+                               start_year, start_week,
+                               end_year, end_week) {
+  if (!year_col %in% names(data)) {
+    cli::cli_abort("{.arg year_col} {.val {year_col}} not found in data.")
+  }
+  if (!week_col %in% names(data)) {
+    cli::cli_abort("{.arg week_col} {.val {week_col}} not found in data.")
+  }
+  composite   <- as.integer(data[[year_col]]) * 100L + as.integer(data[[week_col]])
+  start_key   <- as.integer(start_year) * 100L + as.integer(start_week)
+  end_key     <- as.integer(end_year)   * 100L + as.integer(end_week)
+  data[!is.na(composite) & composite >= start_key & composite <= end_key, , drop = FALSE]
+}
+
 #### eri_study_week ####
 
 #' Calculate study week relative to an index date
