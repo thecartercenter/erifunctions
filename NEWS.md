@@ -1,3 +1,40 @@
+# erifunctions 0.5.0
+
+## Phase 4 -- Research infrastructure
+
+### New functions
+
+**Artifact registry** (`R/artifacts.R`)
+- `eri_artifact_upload()` -- upload a non-standard reference file to `artifacts/{type}/{name}/` in Azure and register it in `artifacts/_registry.yaml`
+- `eri_artifact_list()` -- return a tibble of registered artifacts, filtered by type; excludes archived entries by default
+- `eri_artifact_pull()` -- download an artifact to a local destination; auto-records usage in `research.yaml` if present
+- `eri_artifact_archive()` -- soft-delete (sets `archived: true`; file preserved in Azure)
+
+**Research project scaffolding** (`R/research.R`)
+- `eri_research_init()` -- scaffold local dirs (`data/`, `figs/`, `outputs/`), write `research.yaml` manifest, create Azure project directory
+- `eri_research_resume()` -- re-read `research.yaml` and print session summary (last pull, last log, snapshot count); call at the top of each work session
+- `eri_research_log()` -- append a timestamped free-text entry to the `research.yaml` log (lab notebook)
+- `eri_research_list()` -- list all research projects under `research/` in Azure
+- `eri_research_pull()` -- pull canonical processed data or any Azure path into the local project with provenance tracking
+- `eri_research_upload_figure()` -- upload a figure to `research/{project}/outputs/figs/` and record in manifest
+- `eri_research_upload_output()` -- serialize an R object via `qs2` and upload to `research/{project}/outputs/`
+- `eri_research_snapshot()` -- freeze the full `data/` directory to a timestamped Azure snapshot with a `_manifest.yaml`
+
+**Template management** (`R/templates.R`)
+- `eri_template_list()` -- list available templates (bundled + Azure-hosted); falls back to bundled-only on Azure error
+- `eri_template_pull()` -- copy a named template (bundled or Azure) to a local destination
+- `eri_template_upload()` -- upload a `.qmd` or `.R` template to Azure and register it for team sharing
+
+**Research Quarto template**
+- `inst/templates/eri_research_workflow.qmd` -- epidemiologist research workflow template; pull with `eri_template_pull("eri_research_workflow")`
+
+**Smoke tests**
+- `tests/testthat/test-smoke.R` -- live integration test suite (skipped in CI); covers data analyst and epidemiologist workflows end-to-end against real Azure and ODK infrastructure; enable with `Sys.setenv(ERI_SMOKE_TESTS = "true")`
+
+### Other changes
+- Fixed non-ASCII characters (`--` replacing em dashes) in `R/research.R`
+- `eri_research_snapshot()` now validates local `data/` directory before attempting Azure connection
+
 # erifunctions 0.4.0
 
 ## Phase 3 — ODK integration, data catalog, and onboarding
