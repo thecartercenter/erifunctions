@@ -44,3 +44,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0004](0004-duckdb-query-layer.md) | Blob as system-of-record + serverless DuckDB query layer | Accepted |
 | [0005](0005-pull-then-process.md) | Pull-then-process with provenance | Accepted |
 | [0006](0006-research-projects-as-repos.md) | Research projects as separate template-generated repos | Accepted |
+| [0007](0007-research-aware-spatial-sourcing.md) | Research-aware spatial sourcing via a `cache` flag | Accepted |

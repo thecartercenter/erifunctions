@@ -140,6 +140,38 @@ test_that("eri_spatial_load errors informatively when file not in Azure", {
   expect_error(eri_spatial_load("dr", 2), "Upload it first")
 })
 
+test_that("eri_spatial_load(cache=TRUE) delegates to eri_research_pull and returns the sf", {
+  skip_if_not_installed("sf")
+  tmp <- withr::local_tempdir()
+
+  # The "downloaded" boundary that eri_research_pull would produce.
+  fake_sf <- sf::st_sf(
+    adm2_name = "Azua",
+    geometry  = sf::st_sfc(sf::st_point(c(0, 0)), crs = 4326)
+  )
+  cached_path <- file.path(tmp, "adm2.rds")
+  saveRDS(fake_sf, cached_path)
+
+  pulled <- NULL
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) TRUE,
+    eri_research_pull            = function(path, dest, data_con, ...) {
+      pulled <<- list(path = path, dest = dest)
+      cached_path
+    },
+    .package = "erifunctions"
+  )
+
+  out <- eri_spatial_load("dr", 2, cache = TRUE, dest = tmp)
+
+  expect_s3_class(out, "sf")
+  expect_equal(nrow(out), 1L)
+  # delegated to the pull entry point with the canonical spatial path
+  expect_equal(pulled$path, "spatial/dr/adm2.rds")
+  expect_equal(pulled$dest, tmp)
+})
+
 #### eri_landscan_upload validation ####
 
 test_that("eri_landscan_upload errors on invalid year", {

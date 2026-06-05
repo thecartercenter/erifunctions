@@ -6,6 +6,9 @@
   provenance, and the output manifest into an immutable, citable tag in Azure, recorded in
   `research.yaml`. Makes a tagged analysis reproducible from a citation, including across data
   updates. Tags are immutable and auto-create a snapshot if none exists. (#135)
+- `eri_spatial_load(cache = TRUE)` -- cache an admin boundary into the research project and
+  record its provenance (delegating to `eri_research_pull()`), then read the local copy, so a
+  study's spatial inputs are reproducible and frozen by `eri_research_tag()`. See ADR-0007. (#133)
 
 # erifunctions 0.9.0
 
