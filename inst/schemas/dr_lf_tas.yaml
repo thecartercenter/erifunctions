@@ -1,0 +1,59 @@
+country: dr
+disease: lf
+data_type: tas
+version: "1.0"
+description: "Dominican Republic LF TAS individual antigen test result (one row per person)"
+language: es
+time_grain: survey
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  eu:
+    required: true
+    type: character
+    aliases: [EU, evaluation_unit, Evaluation_Unit, unidad_evaluacion]
+
+  survey_type:
+    required: true
+    type: character
+    aliases: [SurveyType, survey, type]
+    allowed_values: [TAS-1, TAS-2, TAS-3]
+
+  fts_result:
+    required: true
+    type: character
+    aliases: [FTS, fts, FilariasisTestStrip, FTS_Result]
+    allowed_values: [Positive, Negative]
+
+  rdt_result:
+    required: false
+    type: character
+    aliases: [RDT, rdt, RapidDiagTest, RDT_Result]
+    allowed_values: [Positive, Negative]
+
+  lat:
+    required: true
+    type: numeric
+    aliases: [latitude, Latitude, LAT]
+    range: [-20, 30]
+
+  lon:
+    required: true
+    type: numeric
+    aliases: [longitude, Longitude, LON, lng]
+    range: [-75, -60]
+
+# Derives a flag column for discordant FTS/RDT pairs (FTS-Negative, RDT-Positive).
+# After run_dq_checks(), use add_anomaly_consistency() to flag these rows.
+derived:
+  discordant_fts_rdt:
+    formula: "as.integer(!is.na(fts_result) & !is.na(rdt_result) & fts_result == 'Negative' & rdt_result == 'Positive')"
+
+consistency:
+  no_discordant_fts_rdt:
+    lhs: discordant_fts_rdt
+    op: "=="
+    rhs_value: 0
+    message: "FTS Negative but RDT Positive (discordant result -- requires clinical review)"

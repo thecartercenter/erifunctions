@@ -1,0 +1,55 @@
+country: dr
+disease: lf
+data_type: mda
+version: "1.0"
+description: "Dominican Republic LF MDA coverage (one row per EU per round)"
+language: es
+time_grain: annual
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  eu:
+    required: true
+    type: character
+    aliases: [EU, evaluation_unit, Evaluation_Unit]
+
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Año, ano]
+    range: [2010, 2035]
+
+  round:
+    required: true
+    type: numeric
+    aliases: [Round, ronda, MDA_round]
+    range: [1, 10]
+
+  target_pop:
+    required: true
+    type: numeric
+    aliases: [TargetPop, target_population, poblacion_meta]
+
+  doses_distributed:
+    required: true
+    type: numeric
+    aliases: [DosesDistributed, dosis, doses]
+
+  coverage_pct:
+    required: true
+    type: numeric
+    aliases: [CoveragePct, coverage, cobertura]
+    range: [0, 150]
+
+derived:
+  implied_coverage:
+    formula: "round(doses_distributed / target_pop * 100, 1)"
+
+consistency:
+  implausible_overcoverage:
+    lhs: doses_distributed
+    op: "<="
+    rhs: target_pop
+    message: "doses_distributed exceeds target_pop (>100% raw coverage; verify migrant population data)"
