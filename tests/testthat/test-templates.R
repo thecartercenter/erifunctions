@@ -1,5 +1,7 @@
 #### Tests for inst/templates ####
 
+# --- eri_daily_workflow.qmd ---------------------------------------------------
+
 test_that("eri_daily_workflow.qmd template is installed and non-empty", {
   path <- system.file("templates/eri_daily_workflow.qmd", package = "erifunctions")
   expect_gt(nchar(path), 0L)
@@ -17,6 +19,37 @@ test_that("eri_daily_workflow.qmd template contains required sections", {
   expect_match(content, "eri_approve")
   expect_match(content, "get_azure_storage_connection")
   expect_match(content, "init_odk_connection")
+})
+
+# --- eri_research_workflow.qmd -----------------------------------------------
+
+test_that("eri_research_workflow.qmd template is installed and non-empty", {
+  path <- system.file("templates/eri_research_workflow.qmd", package = "erifunctions")
+  expect_gt(nchar(path), 0L)
+  expect_true(file.exists(path), label = "template file exists on disk")
+  lines <- readLines(path, warn = FALSE)
+  expect_gt(length(lines), 20L)
+})
+
+test_that("eri_research_workflow.qmd contains key function calls", {
+  path <- system.file("templates/eri_research_workflow.qmd", package = "erifunctions")
+  skip_if(nchar(path) == 0, "template not installed")
+  content <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  expect_match(content, "eri_research_resume")
+  expect_match(content, "eri_research_init")
+  expect_match(content, "eri_research_pull")
+  expect_match(content, "eri_research_log")
+  expect_match(content, "eri_research_upload_figure")
+  expect_match(content, "eri_research_upload_output")
+  expect_match(content, "eri_research_snapshot")
+  expect_match(content, "eri_artifact_pull")
+})
+
+test_that("eri_research_workflow.qmd is available via eri_template_pull", {
+  tmp    <- withr::local_tempdir()
+  result <- eri_template_pull("eri_research_workflow", dest = tmp)
+  expect_true(file.exists(result))
+  expect_equal(basename(result), "eri_research_workflow.qmd")
 })
 
 #### eri_template_list / pull / upload ########################################

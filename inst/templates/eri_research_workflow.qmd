@@ -1,0 +1,205 @@
+---
+title: "ERI Research Project Workflow"
+subtitle: "Data pull, analysis, logging, and archiving"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: false
+    self-contained: true
+knitr:
+  opts_chunk:
+    echo: true
+    message: false
+    warning: false
+---
+
+<!--
+SOP NOTES -- read before running
+=================================
+1. DO NOT commit this file or data/ back to the erifunctions repository.
+   This template belongs in your analysis project repo.
+
+2. Add data/ to your project .gitignore IMMEDIATELY:
+      echo "data/" >> .gitignore
+   Never commit raw or processed data to git.
+
+3. Pin the package version you are using:
+      renv::snapshot()
+   Run this after installing or updating erifunctions.
+
+4. Set all required environment variables in your project .Renviron
+   before knitting. To open it:
+      usethis::edit_r_environ(scope = "project")
+   Required variables:
+      ERIFUNCTIONS_TENANT_ID
+      ERIFUNCTIONS_APP_ID
+      ERIFUNCTIONS_RESOURCE_ENDPOINT
+      ERIFUNCTIONS_DATA_STORAGE_NAME
+      ERI_ANALYST_ID
+
+5. To pull a fresh copy of this template:
+      eri_template_pull("eri_research_workflow")
+
+6. One snapshot per major milestone -- before a model run, before submission,
+   after peer review. Snapshots are stored in Azure and are not a substitute
+   for version control on your analysis code.
+-->
+
+```{r setup}
+library(erifunctions)
+
+cat("erifunctions version:", as.character(packageVersion("erifunctions")), "\n")
+cat("Session started:", format(Sys.time(), "%Y-%m-%d %H:%M %Z"), "\n")
+cat("Analyst:", Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]), "\n")
+```
+
+## Session setup
+
+On the **first run** of a new project, use `eri_research_init()`. On every
+subsequent session, use `eri_research_resume()` -- it re-reads your
+`research.yaml` manifest and prints a session summary (last pull, last log
+entry, snapshot count) so you can pick up where you left off without
+re-typing project context.
+
+```{r init-first-run, eval=FALSE}
+# --- FIRST RUN ONLY ---------------------------------------------------------
+# Run once to scaffold local dirs (data/, figs/, outputs/) and create the
+# Azure project directory. Then switch to eri_research_resume() below.
+
+az_con <- get_azure_storage_connection(
+  storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+)
+
+eri_research_init(
+  project_name = "my_project",      # <-- replace: short identifier, no spaces
+  country      = "dr",              # <-- replace: country code
+  disease      = "malaria",         # <-- replace: disease
+  description  = "Brief description of the research question",
+  data_con     = az_con
+)
+```
+
+```{r resume}
+# --- EVERY SUBSEQUENT SESSION -----------------------------------------------
+# Re-establishes context from research.yaml. Prints last pull, last log,
+# snapshot count. Replace with your project root path if not running from it.
+
+az_con <- eri_research_resume()
+```
+
+## Pull data
+
+Pull canonical processed data from the three-layer pipeline or any Azure
+reference path. Every pull is recorded in `research.yaml` for provenance.
+
+For non-standard external files not yet in Azure (e.g. IRS campaign data,
+population grids), upload them first with `eri_artifact_upload()`, then pull
+with `eri_artifact_pull()`.
+
+```{r pull-canonical, eval=FALSE}
+# Pull processed surveillance data for your country and disease
+eri_research_pull(
+  country   = "dr",              # <-- replace
+  disease   = "malaria",         # <-- replace
+  data_type = "surveillance",    # <-- replace: surveillance, cmr, odk
+  data_con  = az_con
+)
+```
+
+```{r pull-spatial, eval=FALSE}
+# Pull standard spatial reference files (shapefiles, rasters)
+eri_research_pull(
+  path     = "spatial/dom_admin_boundaries",  # <-- replace
+  dest     = "data/spatial",
+  data_con = az_con
+)
+```
+
+```{r pull-artifact, eval=FALSE}
+# Pull a non-standard reference file from the artifact registry
+# (upload it first with eri_artifact_upload() if not already registered)
+eri_artifact_pull(
+  name     = "dr_irs_2024",      # <-- replace: artifact name
+  dest     = "data/raw",
+  data_con = az_con
+)
+```
+
+## Analysis
+
+Your analysis code goes here. Keep chunks focused and named. Log key decisions
+inline with `eri_research_log()` immediately after they occur -- do not batch
+logging at the end of the session.
+
+```{r load-data, eval=FALSE}
+# Example: load pulled data
+library(arrow)
+surveillance <- read_parquet("data/surveillance.parquet")
+```
+
+```{r log-data-loaded}
+eri_research_log("Data loaded. Surveillance file covers 2020-2024.")
+```
+
+```{r analysis, eval=FALSE}
+# Your analysis code here.
+# Example (ITS model):
+#   library(MASS)
+#   model <- glm.nb(cases ~ time + intervention + time_after, data = surveillance)
+#   summary(model)
+```
+
+```{r log-model}
+eri_research_log("Ran primary model. Converged. Saving output.")
+```
+
+## Archive outputs
+
+Upload key outputs to Azure so they are accessible to the team and versioned
+alongside the project manifest. Figures go to `outputs/figs/`, model objects
+to `outputs/`.
+
+```{r upload-figure, eval=FALSE}
+# Save a figure locally first, then upload
+library(ggplot2)
+p <- ggplot(surveillance, aes(x = epiweek, y = cases)) + geom_line()
+ggsave("figs/its_model.png", p, width = 8, height = 5)
+
+eri_research_upload_figure(
+  "figs/its_model.png",
+  caption  = "ITS model -- malaria incidence pre/post IRS",  # <-- replace
+  data_con = az_con
+)
+```
+
+```{r upload-output, eval=FALSE}
+# Upload R model object for reproducibility
+eri_research_upload_output(
+  obj      = model,               # <-- replace: any R object
+  filename = "its_model.qs2",    # <-- replace
+  data_con = az_con
+)
+```
+
+## Snapshot
+
+Take a snapshot to freeze the full `data/` directory in Azure at a named
+milestone. Do this before a major model run, before sharing results, or after
+peer review. Snapshots are append-only and recorded in `research.yaml`.
+
+```{r snapshot, eval=FALSE}
+eri_research_snapshot(
+  label    = "pre-submission",   # <-- replace: short descriptive label
+  data_con = az_con
+)
+```
+
+## Session summary
+
+```{r session-summary}
+cat("Session completed:", format(Sys.time(), "%Y-%m-%d %H:%M %Z"), "\n")
+cat("Analyst:", Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]), "\n")
+cat("erifunctions version:", as.character(packageVersion("erifunctions")), "\n")
+```
