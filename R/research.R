@@ -149,7 +149,7 @@ eri_research_resume <- function(path = getwd(), data_con = NULL) {
 
   last_pull <- if (length(manifest$pulled_data) > 0L) {
     pulls <- manifest$pulled_data
-    tail(vapply(pulls, function(p) rlang::`%||%`(p$pulled_at, ""), character(1L)), 1L)
+    utils::tail(vapply(pulls, function(p) rlang::`%||%`(p$pulled_at, ""), character(1L)), 1L)
   } else {
     "none"
   }
