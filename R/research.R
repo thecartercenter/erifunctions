@@ -748,3 +748,164 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
   invisible(tag_file)
 }
 
+#### eri_research_scaffold ####
+
+#' Scaffold a new research-project repository
+#'
+#' Creates a standalone analysis-project skeleton (ADR-0006) at `dest/name/`: a README,
+#' an `analysis/` directory seeded with the research-workflow template, a data-safe
+#' `.gitignore`, a minimal reproducibility CI workflow, and the standard research scaffold
+#' (`data/`, `figs/`, `outputs/`, `research.yaml`) via [eri_research_init()].
+#'
+#' Each research project is its own git repository that depends on `erifunctions` -- analysis
+#' code does not live in the package. After scaffolding, the analyst initialises version
+#' control and `renv` (see the generated README), sources data with provenance
+#' ([eri_research_pull()] / [eri_spatial_load()]), and freezes citable versions with
+#' [eri_research_tag()].
+#'
+#' @param name `chr` Project name; also the new directory name (e.g. `"dr_irs_2024"`).
+#' @param country `chr` Country code (e.g. `"dr"`).
+#' @param disease `chr` Disease name (e.g. `"malaria"`).
+#' @param description `chr` One-line description of the research question.
+#' @param dest `chr` Parent directory in which to create `name/`. Defaults to `getwd()`.
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Path to the created project directory (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_scaffold(
+#'   "dr_irs_2024", country = "dr", disease = "malaria",
+#'   description = "ITS analysis of IRS impact on malaria incidence in the DR",
+#'   dest = "~/studies"
+#' )
+#' }
+#' @export
+eri_research_scaffold <- function(name, country, disease, description,
+                                  dest = getwd(), data_con = NULL) {
+  if (missing(name) || !is.character(name) || length(name) != 1L || !nzchar(name)) {
+    cli::cli_abort("{.arg name} must be a single non-empty string.")
+  }
+  if (missing(country) || !is.character(country) || length(country) != 1L || !nzchar(country)) {
+    cli::cli_abort("{.arg country} must be a single non-empty string.")
+  }
+  if (missing(disease) || !is.character(disease) || length(disease) != 1L || !nzchar(disease)) {
+    cli::cli_abort("{.arg disease} must be a single non-empty string.")
+  }
+  if (missing(description) || !is.character(description) || length(description) != 1L || !nzchar(description)) {
+    cli::cli_abort("{.arg description} must be a single non-empty string.")
+  }
+  repo_dir <- file.path(dest, name)
+  if (dir.exists(repo_dir) && length(list.files(repo_dir, all.files = TRUE, no.. = TRUE)) > 0L) {
+    cli::cli_abort("{.path {repo_dir}} already exists and is not empty.")
+  }
+  dir.create(file.path(repo_dir, "analysis"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(repo_dir, ".github", "workflows"), recursive = TRUE, showWarnings = FALSE)
+
+  # Seed analysis/ with the bundled research-workflow template.
+  tmpl <- system.file("templates/eri_research_workflow.qmd", package = "erifunctions")
+  if (nzchar(tmpl)) {
+    file.copy(tmpl, file.path(repo_dir, "analysis", "workflow.qmd"), overwrite = TRUE)
+  }
+
+  writeLines(c(
+    paste0("# ", name),
+    "",
+    paste0(description, " (", country, " / ", disease, ")."),
+    "",
+    "Research project built on [erifunctions](https://github.com/thecartercenter/erifunctions).",
+    "Each study is its own repository depending on the package (ADR-0006).",
+    "",
+    "## Setup",
+    "",
+    "This study is its own version-controlled repository (ADR-0006):",
+    "",
+    "```sh",
+    "git init",
+    "```",
+    "",
+    "```r",
+    "install.packages(\"renv\")",
+    "renv::init()",
+    "renv::install(\"thecartercenter/erifunctions\")",
+    "renv::snapshot()   # commit renv.lock -- this also activates the CI reproducibility check",
+    "```",
+    "",
+    "Then configure Azure credentials in `.Renviron` (see the erifunctions README).",
+    "",
+    "## Structure",
+    "",
+    "- `analysis/` -- analysis code; start from `analysis/workflow.qmd`.",
+    "- `data/` -- inputs sourced via erifunctions (`eri_research_pull()`,",
+    "  `eri_spatial_load(cache = TRUE)`). **Gitignored** -- never commit data.",
+    "- `figs/`, `outputs/` -- results; upload with `eri_research_upload_*()`. Gitignored.",
+    "- `research.yaml` -- provenance manifest / lab notebook.",
+    "",
+    "## Reproducibility",
+    "",
+    "Source data through erifunctions so provenance lands in `research.yaml`, then freeze a",
+    "citable version with `eri_research_tag()`. Commit `renv.lock` so the package versions are",
+    "pinned. Do **not** commit `data/`."
+  ), file.path(repo_dir, "README.md"))
+
+  writeLines(c(
+    "# Data must never be committed (Carter Center data policy)",
+    "data/",
+    "outputs/",
+    "figs/",
+    "",
+    "# R session / credentials",
+    ".Rproj.user/",
+    ".Rhistory",
+    ".RData",
+    ".Renviron",
+    "",
+    "# renv: keep renv.lock + renv/activate.R, ignore the local library",
+    "renv/library/",
+    "renv/local/",
+    "renv/cellar/",
+    "renv/staging/"
+  ), file.path(repo_dir, ".gitignore"))
+
+  writeLines(c(
+    "# Reproducibility check: once renv.lock is committed, restore it and confirm erifunctions",
+    "# loads. Inert (passes) until a lockfile exists. Does NOT run the analysis (that needs",
+    "# Azure credentials + data).",
+    "on: [push, pull_request]",
+    "name: reproducibility-check",
+    "jobs:",
+    "  renv:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      - uses: actions/checkout@v5",
+    "      - id: lock",
+    "        run: |",
+    "          if [ -f renv.lock ]; then echo \"present=true\" >> \"$GITHUB_OUTPUT\"; else echo \"present=false\" >> \"$GITHUB_OUTPUT\"; fi",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        uses: r-lib/actions/setup-r@v2",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        uses: r-lib/actions/setup-renv@v2",
+    "      - if: steps.lock.outputs.present == 'true'",
+    "        name: erifunctions loads from the pinned environment",
+    "        run: Rscript -e 'library(erifunctions); cat(\"environment OK\\n\")'",
+    "      - if: steps.lock.outputs.present != 'true'",
+    "        run: echo 'No renv.lock yet -- run renv::init()/renv::snapshot() and commit it to enable this check.'"
+  ), file.path(repo_dir, ".github", "workflows", "ci.yaml"))
+
+  # Standard research scaffold (data/figs/outputs + research.yaml + Azure dir). If init fails
+  # (e.g. Azure creds), make the partial-scaffold state and recovery path explicit.
+  tryCatch(
+    eri_research_init(name, country, disease, description, path = repo_dir, data_con = data_con),
+    error = function(e) {
+      cli::cli_abort(c(
+        "Repo skeleton created at {.path {repo_dir}}, but research-project init failed: {conditionMessage(e)}",
+        "i" = "Resolve the cause (e.g. Azure credentials), then finish setup from inside the project."
+      ))
+    }
+  )
+
+  cli::cli_alert_success("Scaffolded research project {.val {name}} at {.path {repo_dir}}.")
+  cli::cli_inform(c(
+    " " = "Next: {.code cd {name}}, then {.code git init} and {.code renv::init()} (see README)."
+  ))
+  invisible(repo_dir)
+}
+
