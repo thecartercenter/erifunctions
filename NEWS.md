@@ -1,3 +1,63 @@
+# erifunctions 0.6.0
+
+## Phase 5 — Spatial, epi analytics, and disease-specific functions
+
+### New functions
+
+**Spatial data management** (`R/spatial.R`)
+- `eri_spatial_load()` — read an admin boundary RDS from Azure (`data/spatial/{country}/adm{level}.rds`)
+- `eri_spatial_upload()` — validate (CRS, required name column, no empty geometries) and push a local shapefile to Azure
+- `eri_bbox_expand()` — expand a bounding box by metres in each direction (port of `sirfunctions::f.expand.bbox()`)
+- `eri_spatial_join()` — point-in-polygon join; drops rows with NA coordinates with a warning
+- `eri_landscan_upload()` — upload a LandScan raster to Azure; validates year and exact filename convention
+- `eri_landscan_list()` — list available LandScan years from Azure; returns a tibble sorted descending
+- `eri_spatial_pop()` — extract population totals for a shapefile from LandScan via `exactextractr`; auto-selects latest year if none given
+
+**Visual style system** (`R/style.R`)
+- `eri_color_scheme()` — return a named colour vector for `malaria.incidence`, `lf.status`, `oncho.status`, `activities`, or `dq.flag`
+- `eri_plot_theme()` — return a ggplot2 theme preset for `map`, `epicurve`, or `map.inset`
+
+**Standard maps** (`R/maps.R`)
+- `eri_map_choropleth()` — fill choropleth with optional scale bar and north arrow
+- `eri_map_incidence()` — malaria incidence rate map with automatic `0 / <1 / 1-10 / >=10` binning
+- `eri_map_points()` — overlay point data on a shapefile base map
+- `eri_map_inset()` — compose a main map with a country-context inset via `cowplot`
+
+**Epi core analytics** (`R/epi.R`)
+- `eri_incidence_rate()` — vectorised cases / population × multiplier; returns `NA` for zero/missing populations
+- `eri_epiweek_date()` — convert year + epiweek to a `Date`; supports CDC Sunday-start and ISO Monday-start
+- `eri_study_week()` — integer study week relative to an index date
+- `eri_epidemic_curve()` — ggplot2 epidemic curve by day/week/month/year with optional grouping and faceting
+- `eri_case_summary()` — grouped case counts from line-list or aggregate data with optional date filtering
+
+**LF programme functions** (`R/epi_lf.R`)
+- `eri_lf_pooled_prev()` — pooled prevalence from pool-screening data: `1 - ((1 - npos/npool)^(1/pool_size))`
+- `eri_lf_program_levels()` — ordered 5-level WHO/GPELF programme status vector
+- `eri_lf_tas_summary()` — group-level TAS positivity table (n and %) from individual result data
+- `eri_lf_status_map()` — choropleth coloured by LF programme status
+
+**OEPA oncho functions** (`R/epi_oncho.R`)
+- `eri_oncho_program_levels()` — ordered 5-level OEPA programme status vector
+- `eri_oncho_status_map()` — choropleth coloured by OEPA oncho programme status
+
+### New DQ schemas (`inst/schemas/`)
+
+**LF (Hispaniola)**
+- `dr_lf_tas.yaml`, `ht_lf_tas.yaml` — individual antigen test results; `discordant_fts_rdt` derived flag; consistency check for FTS-Neg/RDT-Pos discordance requiring clinical review
+- `dr_lf_mda.yaml`, `ht_lf_mda.yaml` — MDA coverage per EU per round; `implied_coverage` derived; overcoverage consistency check
+
+**Malaria case (Hispaniola)**
+- `dr_malaria_case.yaml` — DR individual case record; `imported_flag` derived from non-DR province values (Extranjero, Africa, Haiti, Venezuela, Otros)
+- `ht_malaria_case.yaml` — Haiti aggregated commune-level; `admin_match` block validates department (adm1) and commune (adm2) names against spatial boundaries
+
+**OEPA oncho**
+- `oepa_oncho_mda.yaml` — MDA coverage per focus per round; `overcoverage_flag` derived (treated > 1.3× target); consistency check for implausible overcoverage
+- `oepa_oncho_prevalence.yaml` — prevalence survey (one row per person); lat/lon range checks for OEPA region
+
+### Other changes
+- `add_anomaly_spatial()` extended to support `admin_match` schema blocks — validates column values against canonical admin names loaded from Azure via `eri_spatial_load()`
+- `ggspatial` and `sf` added to `Imports`; `cowplot`, `exactextractr`, `ggnewscale` added to `Suggests`
+
 # erifunctions 0.5.0
 
 ## Phase 4 -- Research infrastructure

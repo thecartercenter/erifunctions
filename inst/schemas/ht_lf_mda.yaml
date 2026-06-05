@@ -1,0 +1,51 @@
+country: ht
+disease: lf
+data_type: mda
+version: "1.0"
+description: "Haiti LF MDA coverage (one row per EU per round)"
+language: fr
+time_grain: annual
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  eu:
+    required: true
+    type: character
+    aliases: [EU, evaluation_unit, unite_evaluation, commune, Commune]
+
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Annee, annee]
+    range: [2010, 2035]
+
+  round:
+    required: true
+    type: numeric
+    aliases: [Round, ronde, MDA_round]
+    range: [1, 10]
+
+  target_pop:
+    required: true
+    type: numeric
+    aliases: [TargetPop, target_population, population_cible]
+
+  doses_distributed:
+    required: true
+    type: numeric
+    aliases: [DosesDistributed, doses, medicaments_distribues]
+
+  coverage_pct:
+    required: true
+    type: numeric
+    aliases: [CoveragePct, coverage, couverture]
+    range: [0, 150]
+
+consistency:
+  implausible_overcoverage:
+    lhs: doses_distributed
+    op: "<="
+    rhs: target_pop
+    message: "doses_distributed exceeds target_pop (>100% raw coverage)"

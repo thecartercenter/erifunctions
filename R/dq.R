@@ -770,8 +770,10 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
   is_dq <- inherits(data, "dq_result")
   df    <- if (is_dq) data$data else tibble::as_tibble(data)
 
-  admin <- schema$admin
-  if (is.null(admin)) {
+  admin       <- schema$admin
+  admin_match <- schema$admin_match %||% list()
+
+  if (is.null(admin) && length(admin_match) == 0L) {
     cli::cli_alert_info("No admin block in schema; skipping spatial name check.")
     if (is_dq) return(invisible(data))
     return(.dq_empty_flags())
@@ -809,8 +811,57 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
     )
   }
 
-  .check_level(admin$admin1_col, admin$admin1_spatial, admin$admin1_name_field, "admin1")
-  .check_level(admin$admin2_col, admin$admin2_spatial, admin$admin2_name_field, "admin2")
+  if (!is.null(admin)) {
+    .check_level(admin$admin1_col, admin$admin1_spatial, admin$admin1_name_field, "admin1")
+    .check_level(admin$admin2_col, admin$admin2_spatial, admin$admin2_name_field, "admin2")
+  }
+
+  # --- admin_match: use eri_spatial_load() for canonical names ---
+  for (entry in admin_match) {
+    col     <- entry$col
+    country <- entry$country
+    level   <- entry$level
+    label   <- entry$label %||% paste0("adm", level, " (", country, ")")
+
+    if (is.null(col) || is.null(country) || is.null(level)) next
+    if (!col %in% names(df)) {
+      cli::cli_warn("admin_match: column {.val {col}} not found in data; skipping.")
+      next
+    }
+
+    canonical_sf <- tryCatch(
+      eri_spatial_load(country, level, data_con = azcontainer),
+      error = function(e) {
+        cli::cli_warn(
+          "admin_match: could not load {label} boundaries ({e$message}); skipping name check."
+        )
+        NULL
+      }
+    )
+    if (is.null(canonical_sf)) next
+
+    name_col  <- paste0("adm", as.integer(level), "_name")
+    canonical <- unique(as.character(
+      canonical_sf[[name_col]][!is.na(canonical_sf[[name_col]])]
+    ))
+
+    bad_rows <- which(!df[[col]] %in% canonical & !is.na(df[[col]]))
+    if (length(bad_rows) == 0) {
+      cli::cli_alert_success("All {label} names match spatial reference.")
+      next
+    }
+
+    cli::cli_warn("! {length(bad_rows)} row{?s} with unrecognized {label} name{?s}.")
+    all_flags <- dplyr::bind_rows(
+      all_flags,
+      tibble::tibble(
+        row    = bad_rows,
+        column = col,
+        value  = as.character(df[[col]][bad_rows]),
+        issue  = paste0("admin_match: unrecognized ", label, " name")
+      )
+    )
+  }
 
   if (is_dq) {
     data$flags <- dplyr::bind_rows(data$flags, all_flags)

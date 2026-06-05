@@ -29,6 +29,6 @@ Uploads a local figure file to \verb{research/\{project_name\}/outputs/figs/} in
 }
 \examples{
 \dontrun{
-eri_research_upload_figure("figs/its_model.png", caption = "ITS model — DR malaria 2024")
+eri_research_upload_figure("figs/its_model.png", caption = "ITS model -- DR malaria 2024")
 }
 }

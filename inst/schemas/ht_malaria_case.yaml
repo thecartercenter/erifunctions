@@ -1,0 +1,92 @@
+country: ht
+disease: malaria
+data_type: case
+version: "1.0"
+description: "Haiti malaria case data (aggregated, one row per commune per week)"
+language: fr
+time_grain: weekly
+
+preprocessing:
+  - remove_smart_quotes
+
+temporal:
+  year_col: year
+  epiweek_col: epiweek
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Annee, annee]
+    range: [2000, 2035]
+
+  epiweek:
+    required: true
+    type: numeric
+    aliases: [EpiWeek, semaine, Semaine, week]
+    range: [1, 53]
+
+  department:
+    required: true
+    type: character
+    aliases: [Department, departement, Departement, dept]
+    allowed_values:
+      - Artibonite
+      - Centre
+      - Grand-Anse
+      - Nippes
+      - Nord
+      - Nord-Est
+      - Nord-Ouest
+      - Ouest
+      - Sud
+      - Sud-Est
+
+  commune:
+    required: true
+    type: character
+    aliases: [Commune, commune_name, municipalite]
+
+  cases:
+    required: true
+    type: numeric
+    aliases: [Cases, cas, malaria_cases, cas_paludisme]
+    range: [0, null]
+
+  population:
+    required: true
+    type: numeric
+    aliases: [Population, pop, population_totale]
+    range: [1, null]
+
+admin_match:
+  - col: department
+    country: ht
+    level: 1
+    label: "Haiti department (adm1)"
+  - col: commune
+    country: ht
+    level: 2
+    label: "Haiti commune (adm2)"
+
+consistency:
+  epiweek_valid:
+    lhs: epiweek
+    op: ">="
+    rhs_value: 1
+    message: "Epiweek below 1"
+  epiweek_valid_max:
+    lhs: epiweek
+    op: "<="
+    rhs_value: 53
+    message: "Epiweek above 53"
+  cases_nonneg:
+    lhs: cases
+    op: ">="
+    rhs_value: 0
+    message: "Negative case count"
+  population_positive:
+    lhs: population
+    op: ">"
+    rhs_value: 0
+    message: "Population must be positive"

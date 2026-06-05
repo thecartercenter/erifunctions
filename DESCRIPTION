@@ -1,7 +1,7 @@
 Package: erifunctions
 Title: ERI team functions
-Version: 0.5.0
-Authors@R: 
+Version: 0.6.0
+Authors@R:
     person("Nishant", "Kishore", , "ynm2@cdc.gov", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-0408-2747"))
 Description: Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.
@@ -20,6 +20,7 @@ Imports:
     cli,
     dplyr,
     ggplot2,
+    ggspatial,
     glue,
     httr,
     lubridate,
@@ -28,13 +29,17 @@ Imports:
     readr,
     readxl,
     rlang,
+    sf,
     tibble,
     tidyr,
     withr,
     writexl,
     yaml
 Suggests:
+    cowplot,
+    exactextractr,
     flextable,
+    ggnewscale,
     lifecycle,
     spelling,
     terra,
