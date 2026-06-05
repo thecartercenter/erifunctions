@@ -1,0 +1,79 @@
+country: oepa
+disease: oncho
+data_type: mda
+version: "1.0"
+description: "OEPA onchocerciasis MDA coverage (one row per focus per round)"
+language: es
+time_grain: annual
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  focus:
+    required: true
+    type: character
+    aliases: [Focus, foco, focus_name, nombre_foco]
+
+  country:
+    required: true
+    type: character
+    aliases: [Country, Pais, pais]
+    allowed_values:
+      - Brazil
+      - Colombia
+      - Ecuador
+      - Guatemala
+      - Mexico
+      - Venezuela
+
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, Año, ano]
+    range: [1990, 2035]
+
+  round:
+    required: true
+    type: numeric
+    aliases: [Round, ronda, MDA_round]
+    range: [1, 4]
+
+  target_pop:
+    required: true
+    type: numeric
+    aliases: [TargetPop, target_population, poblacion_meta]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, tratados, people_treated]
+
+  coverage_pct:
+    required: true
+    type: numeric
+    aliases: [CoveragePct, coverage, cobertura]
+    range: [0, 130]
+
+derived:
+  implied_coverage:
+    formula: "round(treated / target_pop * 100, 1)"
+  overcoverage_flag:
+    formula: "as.integer(treated > target_pop * 1.3)"
+
+consistency:
+  implausible_overcoverage:
+    lhs: overcoverage_flag
+    op: "=="
+    rhs_value: 0
+    message: "treated exceeds 130% of target_pop (implausible overcoverage; verify migrant/mobile population)"
+  coverage_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"
+  target_positive:
+    lhs: target_pop
+    op: ">"
+    rhs_value: 0
+    message: "target_pop must be positive"
