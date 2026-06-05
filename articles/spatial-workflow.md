@@ -1,0 +1,171 @@
+# Spatial Workflow
+
+The spatial workflow covers three use cases: loading canonical admin
+boundaries from Azure, joining GPS coordinates to those boundaries, and
+producing programmatic maps. All functions require the `sf` package.
+
+## Loading admin boundaries
+
+Admin boundaries are stored in Azure at
+`spatial/{country}/adm{level}.rds` as validated `sf` objects. Levels
+follow the standard hierarchy: 0 = country, 1 = department/region, 2 =
+province/commune, 3 = municipality/locality, 4 = sub-locality.
+
+``` r
+
+library(erifunctions)
+
+# Load Haiti commune (adm2) boundaries
+communes <- eri_spatial_load("ht", level = 2)
+
+# Load DR province (adm2) boundaries
+provinces <- eri_spatial_load("dr", level = 2)
+```
+
+Every object loaded from Azure has been validated to have: - A defined
+CRS (WGS 84, EPSG 4326) - No empty geometries - A canonical name column
+`adm{level}_name`
+
+## Uploading new boundaries
+
+When adding a new country or updating boundaries, use
+[`eri_spatial_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_upload.md).
+It validates the shapefile before accepting the upload:
+
+``` r
+
+# Prepare your shapefile first:
+#   - Set CRS to 4326 if not already set
+#   - Rename the admin name column to adm2_name
+#   - Remove any empty geometries
+
+eri_spatial_upload(
+  local_path = "data/shapefiles/hti_adm2.shp",
+  country    = "ht",
+  level      = 2
+)
+```
+
+The function blocks with a descriptive error if any validation check
+fails, explaining exactly what to fix.
+
+## Spatial join: GPS coordinates to admin units
+
+Use
+[`eri_spatial_join()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_join.md)
+to assign admin unit names to point data with lat/lon columns. Rows with
+missing coordinates are dropped with a warning.
+
+``` r
+
+# Load the reference boundary
+communes <- eri_spatial_load("ht", level = 2)
+
+# Attach commune and department names to case records
+case_data <- eri_spatial_join(
+  data       = raw_cases,
+  lat_col    = "latitude",
+  lon_col    = "longitude",
+  shapefile  = communes,
+  admin_cols = c("adm2_name", "adm1_name")
+)
+```
+
+The result is a plain tibble — geometry is dropped automatically, so
+downstream analysis does not need to handle `sf` objects.
+
+## Bounding box expansion
+
+When composing maps it is often useful to add a buffer around the study
+area so that boundary features are fully visible.
+[`eri_bbox_expand()`](https://thecartercenter.github.io/erifunctions/reference/eri_bbox_expand.md)
+takes an `sf` bounding box and expands it by a specified distance in
+metres:
+
+``` r
+
+library(sf)
+
+haiti <- eri_spatial_load("ht", level = 0)
+bbox  <- sf::st_bbox(haiti) |>
+  eri_bbox_expand(X = 30000, Y = 30000)   # 30 km padding on all sides
+
+# Use the expanded bbox as a crop/map extent
+```
+
+## Choropleth maps
+
+Combine
+[`eri_spatial_load()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_load.md)
+with
+[`eri_brand_ggplot_theme()`](https://thecartercenter.github.io/erifunctions/reference/eri_brand_ggplot_theme.md)
+and standard `ggplot2` / `sf` functions to produce branded choropleth
+maps.
+
+``` r
+
+library(ggplot2)
+library(sf)
+
+# Aggregate case counts by commune
+case_counts <- dplyr::count(case_data, adm2_name, name = "n_cases")
+
+# Join to boundaries
+map_data <- dplyr::left_join(communes, case_counts, by = "adm2_name")
+
+ggplot(map_data) +
+  geom_sf(aes(fill = n_cases), colour = "white", linewidth = 0.2) +
+  scale_fill_gradient(
+    low  = "#E8F4FD",
+    high = eri_brand_colors()[["navy"]],
+    na.value = "grey90",
+    name = "Cases"
+  ) +
+  labs(title = "Malaria cases by commune") +
+  eri_brand_ggplot_theme()
+```
+
+## LandScan population raster
+
+LandScan global population rasters are stored in Azure under
+`spatial/landscan/`. Use `eri_spatial_load_landscan()` (from
+`R/spatial.R`) to load the raster for a given year, then extract
+population for each admin unit using the `exactextractr` package:
+
+``` r
+
+library(terra)
+library(exactextractr)
+
+pop_raster <- eri_spatial_load_landscan(year = 2023)
+communes   <- eri_spatial_load("ht", level = 2)
+
+# Sum population pixels within each commune
+communes$population <- exact_extract(pop_raster, communes, "sum")
+```
+
+## Onchocerciasis programme-status maps
+
+For OEPA onchocerciasis data,
+[`eri_oncho_status_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_status_map.md)
+wraps the full mapping pipeline — it joins status data to a shapefile,
+applies the standard ERI programme-status colour palette, and adds a
+scale bar and north arrow:
+
+``` r
+
+eus     <- eri_spatial_load("oepa", level = 2)  # evaluation unit boundaries
+status  <- read_dq_result("outputs/oepa_status_2024.parquet")
+
+map <- eri_oncho_status_map(
+  shapefile   = eus,
+  status_data = status,
+  eu_col      = "eu_name",
+  status_col  = "programme_status",
+  title       = "OEPA Onchocerciasis Programme Status 2024"
+)
+
+eri_pptx_create() |>
+  eri_pptx_add_plot(map, title = "Programme Status") |>
+  eri_pptx_save("outputs/oepa_status_report.pptx")
+```

@@ -1,0 +1,201 @@
+# Epidemiological Analytics
+
+This vignette covers the epidemiological helper functions for malaria,
+lymphatic filariasis, and onchocerciasis analyses — from computing
+incidence rates and epiweek dates to LF pooled prevalence and
+onchocerciasis programme-status maps.
+
+## Malaria: incidence and epidemic curves
+
+### Incidence rate
+
+``` r
+
+library(erifunctions)
+library(dplyr)
+
+weekly <- result$data |>
+  group_by(year, epiweek, province) |>
+  summarise(n_cases = n(), .groups = "drop") |>
+  left_join(population_data, by = c("year", "province")) |>
+  mutate(rate_per_1000 = eri_incidence_rate(n_cases, population, multiplier = 1000))
+```
+
+Rows with `population <= 0` or `NA` values automatically return `NA` to
+avoid silent division errors.
+
+### Epiweek dates
+
+Convert CDC epiweek numbers to calendar dates for time-series plots:
+
+``` r
+
+weekly <- weekly |>
+  mutate(week_start = eri_epiweek_date(year, epiweek, week_start = "Sunday"))
+
+library(ggplot2)
+ggplot(weekly, aes(week_start, n_cases, colour = province)) +
+  geom_line() +
+  labs(x = NULL, y = "Cases", title = "Weekly malaria cases by province") +
+  eri_brand_ggplot_theme()
+```
+
+### Study week
+
+[`eri_study_week()`](https://thecartercenter.github.io/erifunctions/reference/eri_study_week.md)
+expresses epiweeks relative to an index event — useful for intervention
+analyses such as IRS campaigns:
+
+``` r
+
+irs_date <- as.Date("2023-06-15")
+
+weekly <- weekly |>
+  mutate(study_week = eri_study_week(year, epiweek, index_date = irs_date))
+
+# week < 0 = before IRS; week >= 1 = after IRS
+pre_post <- weekly |>
+  mutate(period = ifelse(study_week < 0, "Pre-IRS", "Post-IRS"))
+```
+
+### Epiweek from date
+
+Convert individual case dates to epiweek numbers for aggregation:
+
+``` r
+
+# Add epiweek number from a sample date column
+cases <- cases |>
+  mutate(epiweek = eri_date_to_epiweek(sample_date))
+
+# Filter to a cross-year epiweek range (week 40/2023 through week 10/2024)
+subset <- eri_epiweek_range(weekly, "year", "epiweek",
+                             start_year = 2023, start_week = 40,
+                             end_year   = 2024, end_week   = 10)
+```
+
+## Branded ggplot theme and colour palette
+
+All ERI figures should use
+[`eri_brand_ggplot_theme()`](https://thecartercenter.github.io/erifunctions/reference/eri_brand_ggplot_theme.md)
+and colours from
+[`eri_brand_colors()`](https://thecartercenter.github.io/erifunctions/reference/eri_brand_colors.md):
+
+``` r
+
+cols <- eri_brand_colors()
+# navy="#44546A"  blue="#4472C4"  orange="#ED7D31"
+# gold="#FFC000"  green="#70AD47" light_blue="#5B9BD5"  gray="#A5A5A5"
+
+ggplot(weekly, aes(week_start, rate_per_1000)) +
+  geom_col(fill = cols[["blue"]]) +
+  eri_brand_ggplot_theme() +
+  labs(title = "Malaria incidence rate", y = "Cases per 1 000")
+```
+
+## Lymphatic filariasis: pooled prevalence
+
+LF TAS data is typically collected in pools (FTS cards). Use
+[`eri_lf_pooled_prev()`](https://thecartercenter.github.io/erifunctions/reference/eri_lf_pooled_prev.md)
+to estimate individual-level prevalence from pool results using the
+standard formula `1 - ((1 - npos/npool)^(1/pool_size))`.
+
+``` r
+
+# Scalar estimate for a single survey
+eri_lf_pooled_prev(npos = 3, npool = 100, pool_size = 5)
+
+# Per-commune estimates
+commune_prev <- tas_data |>
+  group_by(commune) |>
+  summarise(
+    npos      = sum(fts_result == "Positive"),
+    npool     = n(),
+    pool_size = mean(pool_size, na.rm = TRUE),
+    .groups   = "drop"
+  ) |>
+  mutate(pooled_prev = eri_lf_pooled_prev(npos, npool, pool_size))
+```
+
+The function warns (rather than errors) when `npos > npool` and returns
+`NA` for those rows, so batch processing is not interrupted.
+
+## Lymphatic filariasis: MDA coverage
+
+Use the `ht_lf_mda` and `dr_lf_mda` schemas to clean coverage data, then
+compute programme indicators:
+
+``` r
+
+schema <- load_dq_schema("ht", "lf_mda", azcontainer = NULL)
+result <- run_dq_checks(raw_mda, schema)
+
+coverage <- result$data |>
+  mutate(
+    coverage_pct = treated / target_pop * 100,
+    reached_80   = coverage_pct >= 80
+  )
+
+dplyr::count(coverage, year, reached_80)
+```
+
+## Onchocerciasis: programme status map
+
+Onchocerciasis uses a standardised five-level programme status
+framework.
+[`eri_oncho_program_levels()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_program_levels.md)
+returns the ordered factor levels used across all OEPA visualisations,
+and
+[`eri_oncho_status_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_status_map.md)
+produces a ready-to-insert `ggplot` object:
+
+``` r
+
+eri_oncho_program_levels()
+# [1] "Non-endemic"
+# [2] "Under surveillance"
+# [3] "MDA ongoing"
+# [4] "MDA stopped - under surveillance"
+# [5] "Verified free of transmission"
+
+eus <- eri_spatial_load("oepa", level = 2)
+
+status_map <- eri_oncho_status_map(
+  shapefile   = eus,
+  status_data = programme_status_2024,
+  eu_col      = "eu_name",
+  status_col  = "programme_status",
+  title       = "OEPA Onchocerciasis Programme Status 2024",
+  scale_bar   = TRUE,
+  north_arrow = TRUE
+)
+```
+
+## Styled tables
+
+[`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
+produces a Carter Center-branded `flextable` that renders consistently
+in PowerPoint, HTML, and Excel:
+
+``` r
+
+summary_tbl <- weekly |>
+  group_by(province) |>
+  summarise(
+    total_cases = sum(n_cases),
+    mean_weekly = round(mean(n_cases), 1),
+    peak_rate   = max(rate_per_1000, na.rm = TRUE)
+  )
+
+ft <- eri_table(
+  summary_tbl,
+  title    = "Malaria summary by province",
+  footnote = "Source: DIGEPI surveillance data"
+)
+
+# Insert into a PowerPoint presentation
+eri_pptx_create() |>
+  eri_pptx_add_title("Hispaniola Malaria 2024") |>
+  eri_pptx_add_table(summary_tbl, title = "Province summary") |>
+  eri_pptx_save("outputs/malaria_2024.pptx")
+```
