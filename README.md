@@ -2,7 +2,7 @@
 
 Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center's NTD and malaria programs.
 
-**Version:** 0.4.0 · **Status:** Active development
+**Version:** 0.5.0 · **Status:** Active development
 
 ---
 
@@ -50,20 +50,17 @@ Restart R after editing `.Renviron`.
 
 ## Daily workflow
 
-The fastest way to get started is to copy the daily workflow template into your analysis project:
+Two templates ship with the package. Pull either one with `eri_template_pull()`:
 
 ```r
-file.copy(
-  system.file("templates/eri_daily_workflow.qmd", package = "erifunctions"),
-  "."
-)
+# Data analyst daily workflow (connections, ODK sync, DQ, approve)
+eri_template_pull("eri_daily_workflow")
+
+# Epidemiologist research workflow (init/resume, pull data, analysis, snapshot)
+eri_template_pull("eri_research_workflow")
 ```
 
-Open `eri_daily_workflow.qmd` in RStudio and knit it. The template walks through:
-1. Connecting to Azure and ODK Central
-2. Checking survey submission health
-3. Syncing new ODK data to Azure
-4. Reviewing and approving staged data
+Open the `.qmd` file in RStudio and knit it.
 
 ---
 
@@ -174,6 +171,36 @@ eri_catalog_verify()
 | `eri_onboard_country(country_code, country_name, disease)` | Scaffold a surveillance schema and create Azure directories |
 | `eri_onboard_cmr(country_code, country_name)` | Scaffold a CMR schema |
 | `eri_schema_validate(schema_path)` | Validate a local schema YAML for structural issues |
+
+### Artifact registry
+
+| Function | What it does |
+|---|---|
+| `eri_artifact_upload(local_path, name, type, description)` | Upload a non-standard reference file to Azure and register it |
+| `eri_artifact_list(type, include_archived)` | List registered artifacts; excludes archived by default |
+| `eri_artifact_pull(name, dest)` | Download an artifact locally; records usage in `research.yaml` if present |
+| `eri_artifact_archive(name)` | Soft-delete an artifact (file preserved, hidden from list/pull) |
+
+### Research projects
+
+| Function | What it does |
+|---|---|
+| `eri_research_init(project_name, country, disease, description)` | Scaffold a new research project locally and in Azure |
+| `eri_research_resume()` | Re-read `research.yaml` and print session summary |
+| `eri_research_log(note)` | Append a timestamped lab notebook entry to `research.yaml` |
+| `eri_research_list()` | List all research projects in Azure |
+| `eri_research_pull(country, disease, data_type)` | Pull canonical or reference data into the project with provenance |
+| `eri_research_upload_figure(local_path, caption)` | Upload a figure to Azure outputs and record in manifest |
+| `eri_research_upload_output(obj, filename)` | Serialize and upload an R object to Azure outputs |
+| `eri_research_snapshot(label)` | Freeze the local `data/` directory to a timestamped Azure snapshot |
+
+### Template management
+
+| Function | What it does |
+|---|---|
+| `eri_template_list()` | List bundled and Azure-hosted templates |
+| `eri_template_pull(name, dest)` | Copy a template to a local directory |
+| `eri_template_upload(local_path, name, description)` | Upload a custom template to Azure for team sharing |
 
 ### Teams notifications
 
