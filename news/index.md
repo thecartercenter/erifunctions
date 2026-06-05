@@ -11,6 +11,14 @@
   reproducible from a citation, including across data updates. Tags are
   immutable and auto-create a snapshot if none exists.
   ([\#135](https://github.com/thecartercenter/erifunctions/issues/135))
+- `eri_spatial_load(cache = TRUE)` – cache an admin boundary into the
+  research project and record its provenance (delegating to
+  [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)),
+  then read the local copy, so a study’s spatial inputs are reproducible
+  and frozen by
+  [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md).
+  See ADR-0007.
+  ([\#133](https://github.com/thecartercenter/erifunctions/issues/133))
 
 ## erifunctions 0.9.0
 
