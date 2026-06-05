@@ -144,7 +144,100 @@ test_that("smoke [analyst]: full ODK register -> list -> deregister cycle", {
   expect_true(test_form %in% registered$form_id)
 })
 
-# ── 2. Epidemiologist (secondary) ─────────────────────────────────────────────
+# ── 2. Spatial (Phase 5) ──────────────────────────────────────────────────────
+# Requires the 'sf' package and a loaded boundary in Azure.
+
+test_that("smoke [spatial]: eri_spatial_load returns an sf object", {
+  .smoke_skip()
+  skip_if_not_installed("sf")
+  az_con <- .smoke_az()
+  result <- tryCatch(
+    eri_spatial_load("ht", level = 2, data_con = az_con),
+    error = function(e) skip(paste("Boundary not found:", e$message))
+  )
+  expect_s3_class(result, "sf")
+  expect_true(nrow(result) > 0L)
+})
+
+test_that("smoke [spatial]: eri_spatial_join assigns admin names to point data", {
+  .smoke_skip()
+  skip_if_not_installed("sf")
+  az_con    <- .smoke_az()
+  communes  <- tryCatch(
+    eri_spatial_load("ht", level = 2, data_con = az_con),
+    error = function(e) skip(paste("Boundary not found:", e$message))
+  )
+  pts <- tibble::tibble(
+    lat = c(18.5, 19.0),
+    lon = c(-72.3, -72.5)
+  )
+  result <- eri_spatial_join(pts, lat_col = "lat", lon_col = "lon",
+                              shapefile = communes,
+                              admin_cols = c("adm2_name", "adm1_name"))
+  expect_s3_class(result, "tbl_df")
+  expect_true("adm2_name" %in% names(result))
+})
+
+# ── 3. Epi analytics (Phase 5) ────────────────────────────────────────────────
+
+test_that("smoke [epi]: eri_incidence_rate computes correctly on sample data", {
+  .smoke_skip()
+  cases  <- c(10L, 20L, 0L)
+  pop    <- c(1000L, 500L, 200L)
+  result <- eri_incidence_rate(cases, pop, multiplier = 1000L)
+  expect_equal(result, c(10, 40, 0), tolerance = 1e-6)
+})
+
+test_that("smoke [epi]: eri_epidemic_curve returns a ggplot on sample data", {
+  .smoke_skip()
+  skip_if_not_installed("ggplot2")
+  df <- tibble::tibble(
+    date   = seq.Date(as.Date("2024-01-01"), by = "week", length.out = 10),
+    cases  = sample(1:20, 10)
+  )
+  p <- eri_epidemic_curve(df, date_col = "date", count_col = "cases",
+                           period = "week")
+  expect_s3_class(p, "ggplot")
+})
+
+# ── 4. Reporting (Phase 6) ────────────────────────────────────────────────────
+
+test_that("smoke [reporting]: eri_table returns a flextable", {
+  .smoke_skip()
+  skip_if_not_installed("flextable")
+  df <- tibble::tibble(country = c("DR", "Haiti"), n = c(100L, 200L))
+  ft <- eri_table(df, title = "Smoke test table")
+  expect_s3_class(ft, "flextable")
+})
+
+test_that("smoke [reporting]: eri_report_excel writes a real xlsx file", {
+  .smoke_skip()
+  skip_if_not_installed("openxlsx2")
+  path <- tempfile(fileext = ".xlsx")
+  withr::defer(unlink(path))
+  df <- tibble::tibble(x = 1:3, y = c("a", "b", "c"))
+  eri_report_excel(
+    sheets   = list(data = list(data = df, title = "Smoke test")),
+    path     = path,
+    title    = "Smoke test workbook"
+  )
+  expect_true(file.exists(path))
+  expect_gt(file.size(path), 0L)
+})
+
+test_that("smoke [reporting]: eri_pptx_create and eri_pptx_save write a real pptx file", {
+  .smoke_skip()
+  skip_if_not_installed("officer")
+  path <- tempfile(fileext = ".pptx")
+  withr::defer(unlink(path))
+  eri_pptx_create() |>
+    eri_pptx_add_title("Smoke test") |>
+    eri_pptx_save(path)
+  expect_true(file.exists(path))
+  expect_gt(file.size(path), 0L)
+})
+
+# ── 5. Epidemiologist (secondary) ─────────────────────────────────────────────
 # Lighter coverage: artifact registry and research project init/log.
 
 test_that("smoke [epi]: artifact upload -> list -> pull -> archive cycle", {
