@@ -9,6 +9,9 @@
 - `eri_spatial_load(cache = TRUE)` -- cache an admin boundary into the research project and
   record its provenance (delegating to `eri_research_pull()`), then read the local copy, so a
   study's spatial inputs are reproducible and frozen by `eri_research_tag()`. See ADR-0007. (#133)
+- `eri_research_scaffold()` -- create a standalone research-project repo skeleton (README,
+  `analysis/` seeded from the workflow template, data-safe `.gitignore`, minimal reproducibility
+  CI) plus the standard research scaffold via `eri_research_init()`. Implements ADR-0006. (#136)
 
 # erifunctions 0.9.0
 

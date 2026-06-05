@@ -155,6 +155,7 @@ reference:
   desc: Scaffold studies, track provenance, manage artifacts, and snapshot data.
   contents:
   - eri_research_init
+  - eri_research_scaffold
   - eri_research_resume
   - eri_research_log
   - eri_research_list
