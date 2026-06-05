@@ -107,7 +107,8 @@ eri_research_init <- function(
     artifacts_used = list(),
     log            = list(),
     snapshots      = list(),
-    outputs        = list()
+    outputs        = list(),
+    tags           = list()
   )
   .eri_research_write_manifest(manifest, path)
 
@@ -556,5 +557,177 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
     "Snapshot of {length(local_files)} file{?s} saved to {.path {snap_path}}."
   )
   invisible(snap_path)
+}
+
+#### eri_research_tag ####
+
+#' Capture git provenance for a local analysis directory
+#'
+#' Returns the HEAD commit, branch, origin remote, and a dirty-working-tree flag
+#' for the git repository at `path`. All fields are `NA` when `git` is unavailable
+#' or `path` is not inside a work tree.
+#'
+#' @param path `chr` Directory to inspect.
+#' @returns A list with `sha`, `branch`, `remote`, `dirty`.
+#' @keywords internal
+.eri_git_info <- function(path) {
+  na_info <- list(sha = NA_character_, branch = NA_character_,
+                  remote = NA_character_, dirty = NA)
+  if (!nzchar(Sys.which("git"))) return(na_info)
+
+  git_out <- function(args) {
+    out <- tryCatch(
+      suppressWarnings(system2("git", c("-C", path, args), stdout = TRUE, stderr = FALSE)),
+      error = function(e) character(0)
+    )
+    if (length(out) == 0L) NA_character_ else out[[1L]]
+  }
+
+  if (!identical(git_out(c("rev-parse", "--is-inside-work-tree")), "true")) {
+    return(na_info)
+  }
+
+  status <- tryCatch(
+    suppressWarnings(system2("git", c("-C", path, "status", "--porcelain"),
+                             stdout = TRUE, stderr = FALSE)),
+    error = function(e) character(0)
+  )
+  list(
+    sha    = git_out(c("rev-parse", "HEAD")),
+    branch = git_out(c("rev-parse", "--abbrev-ref", "HEAD")),
+    remote = git_out(c("config", "--get", "remote.origin.url")),
+    dirty  = length(status) > 0L
+  )
+}
+
+#' Tag a reproducible, citable version of a research project
+#'
+#' Binds a frozen data snapshot, the analysis code commit (the research project's
+#' git SHA), the recorded input provenance, and the output manifest into a single
+#' immutable **tag** at `research/{project_name}/tags/{label}/_tag.yaml` in the
+#' `data/` Azure blob, and records it in `research.yaml`.
+#'
+#' A tag answers "what produced this published result?" -- which data
+#' ([eri_research_snapshot()]), which code (git commit), which inputs
+#' ([eri_research_pull()] / [eri_artifact_pull()] provenance), and which outputs.
+#' Because data is bound by a snapshot and code by a commit SHA, a tagged analysis
+#' can be reproduced from a citation -- including across data updates, by tagging
+#' again after re-pulling refreshed data.
+#'
+#' If no snapshot exists yet, one is created automatically. Tags are immutable:
+#' tagging an already-used label is an error.
+#'
+#' @param label `chr` Short, unique tag name (e.g. `"lancet-2026-submission"`).
+#' @param description `chr` or `NULL` Optional note describing this version.
+#' @param snapshot `chr` or `NULL` Which snapshot to bind: a snapshot label or
+#'   timestamp already in `research.yaml`. If `NULL`, the most recent snapshot is
+#'   used, or a fresh one is created if none exist.
+#' @param path `chr` Local project root (must contain `research.yaml`). Defaults to `getwd()`.
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns The Azure path of the tag file (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_snapshot(label = "final-data")
+#' eri_research_tag("lancet-2026-submission", description = "Figures 1-3, Table 2")
+#' }
+#' @export
+eri_research_tag <- function(label, description = NULL, snapshot = NULL,
+                             path = getwd(), data_con = NULL) {
+  if (missing(label) || !is.character(label) || length(label) != 1L || !nzchar(label)) {
+    cli::cli_abort("{.arg label} must be a single non-empty string.")
+  }
+  manifest <- .eri_research_read_manifest(path)
+  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  data_con <- .eri_research_con(data_con)
+
+  tag_dir  <- paste0(manifest$azure_path, "tags/", label, "/")
+  tag_file <- paste0(tag_dir, "_tag.yaml")
+  if (AzureStor::storage_file_exists(data_con, tag_file)) {
+    cli::cli_abort(c(
+      "Tag {.val {label}} already exists for project {.val {manifest$project_name}}.",
+      "i" = "Tags are immutable -- choose a new label for a new version."
+    ))
+  }
+
+  # Resolve the snapshot to bind (create one if none exist).
+  snaps <- if (is.null(manifest$snapshots)) list() else manifest$snapshots
+  if (length(snaps) == 0L) {
+    cli::cli_inform("No snapshot found -- creating one to bind to this tag.")
+    eri_research_snapshot(label = paste0("tag-", label), path = path, data_con = data_con)
+    manifest <- .eri_research_read_manifest(path)
+    snaps    <- manifest$snapshots
+    snap     <- snaps[[length(snaps)]]
+  } else if (is.null(snapshot)) {
+    snap <- snaps[[length(snaps)]]
+  } else {
+    hit <- Filter(
+      function(s) identical(s$label, snapshot) || identical(s$timestamp, snapshot),
+      snaps
+    )
+    if (length(hit) == 0L) {
+      cli::cli_abort("No snapshot matching {.val {snapshot}} in {.file research.yaml}.")
+    }
+    snap <- hit[[length(hit)]]
+  }
+
+  # Capture analysis code provenance.
+  git <- .eri_git_info(path)
+  if (is.na(git$sha)) {
+    cli::cli_warn(c(
+      "No git commit found for the analysis at {.path {path}}.",
+      "i" = "Research projects should be git repositories (ADR-0006) so the code is pinned."
+    ))
+  } else if (isTRUE(git$dirty)) {
+    cli::cli_warn(c(
+      "The analysis repo has uncommitted changes.",
+      "i" = "The tag records commit {.val {substr(git$sha, 1L, 8L)}}, but the working tree differs -- commit first for a faithful tag."
+    ))
+  }
+
+  in_prov  <- c(
+    if (is.null(manifest$pulled_data))    list() else manifest$pulled_data,
+    if (is.null(manifest$artifacts_used)) list() else manifest$artifacts_used
+  )
+  tag_record <- list(
+    label        = label,
+    project_name = manifest$project_name,
+    tagged_at    = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    tagged_by    = analyst,
+    description  = if (is.null(description)) NA_character_ else description,
+    snapshot     = list(
+      label      = snap$label,
+      timestamp  = snap$timestamp,
+      azure_path = snap$azure_path,
+      file_count = snap$file_count
+    ),
+    code         = list(sha = git$sha, branch = git$branch,
+                        remote = git$remote, dirty = git$dirty),
+    inputs       = in_prov,
+    outputs      = if (is.null(manifest$outputs)) list() else manifest$outputs
+  )
+
+  if (!AzureStor::storage_dir_exists(data_con, tag_dir)) {
+    AzureStor::create_storage_dir(data_con, tag_dir)
+  }
+  tmp <- tempfile(fileext = ".yaml")
+  withr::defer(unlink(tmp))
+  yaml::write_yaml(tag_record, tmp)
+  AzureStor::storage_upload(data_con, tmp, tag_file)
+
+  tag_entry <- list(
+    label       = label,
+    tagged_at   = tag_record$tagged_at,
+    azure_path  = tag_dir,
+    snapshot_at = snap$timestamp,
+    code_sha    = git$sha
+  )
+  if (is.null(manifest$tags)) manifest$tags <- list()
+  manifest$tags <- c(manifest$tags, list(tag_entry))
+  .eri_research_write_manifest(manifest, path)
+
+  cli::cli_alert_success(
+    "Tagged {.val {label}}: snapshot {.val {snap$timestamp}} + code {.val {if (is.na(git$sha)) 'none' else substr(git$sha, 1L, 8L)}}."
+  )
+  invisible(tag_file)
 }
 

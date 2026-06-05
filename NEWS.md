@@ -1,3 +1,12 @@
+# erifunctions (development version)
+
+## V2 Phase 1 -- dr_irs vertical slice (in progress)
+
+- `eri_research_tag()` -- bind a frozen data snapshot, the analysis git commit, the input
+  provenance, and the output manifest into an immutable, citable tag in Azure, recorded in
+  `research.yaml`. Makes a tagged analysis reproducible from a citation, including across data
+  updates. Tags are immutable and auto-create a snapshot if none exists. (#135)
+
 # erifunctions 0.9.0
 
 ## V2 Phase 0 -- Governance & shared-memory scaffolding
