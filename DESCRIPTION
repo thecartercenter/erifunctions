@@ -43,6 +43,7 @@ Suggests:
     cowplot,
     exactextractr,
     ggnewscale,
+    knitr,
     lifecycle,
     quarto,
     rmarkdown,
@@ -50,3 +51,4 @@ Suggests:
     terra,
     testthat (>= 3.0.0),
     urlchecker
+VignetteBuilder: knitr
