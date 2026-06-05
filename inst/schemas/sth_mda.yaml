@@ -1,0 +1,84 @@
+country: global
+disease: sth
+data_type: mda
+version: "1.0"
+description: "Soil-transmitted helminths preventive chemotherapy MDA -- albendazole/mebendazole; SAC and pre-SAC"
+language: en
+time_grain: annual
+
+temporal:
+  year_col: year
+  period_col: round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR]
+    range: [2000, 2035]
+
+  round:
+    required: true
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round]
+    range: [1, 4]
+
+  country_name:
+    required: true
+    type: character
+    aliases: [Country, country, CountryName]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, admin2]
+
+  target_pop_sac:
+    required: true
+    type: numeric
+    aliases: [TargetPopSAC, sac_target, school_age_target]
+
+  treated_sac:
+    required: true
+    type: numeric
+    aliases: [TreatedSAC, sac_treated, school_age_treated]
+
+  target_pop_presac:
+    required: false
+    type: numeric
+    aliases: [TargetPopPreSAC, presac_target, preschool_target]
+
+  treated_presac:
+    required: false
+    type: numeric
+    aliases: [TreatedPreSAC, presac_treated, preschool_treated]
+
+  drug:
+    required: true
+    type: categorical
+    aliases: [Drug, drug_used, medicine]
+    allowed_values: [albendazole, mebendazole]
+    translations:
+      ALB: albendazole
+      MEB: mebendazole
+
+  coverage_pct:
+    required: true
+    type: numeric
+    aliases: [CoveragePct, coverage, sac_coverage]
+    range: [0, 150]
+
+consistency:
+  sac_not_exceed_target:
+    lhs: treated_sac
+    op: "<="
+    rhs: target_pop_sac
+    message: "treated_sac exceeds target_pop_sac (>100% raw coverage)"
+  sac_nonneg:
+    lhs: treated_sac
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated_sac count"

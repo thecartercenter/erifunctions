@@ -1,0 +1,95 @@
+country: global
+disease: sth
+data_type: prevalence
+version: "1.0"
+description: "STH prevalence survey -- Kato-Katz; species breakdown (hookworm, Ascaris, Trichuris)"
+language: en
+
+temporal:
+  year_col: year
+  period_col: survey_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR]
+    range: [2000, 2035]
+
+  survey_round:
+    required: true
+    type: numeric
+    aliases: [SurveyRound, survey_year, round]
+    range: [1, 50]
+
+  country_name:
+    required: true
+    type: character
+    aliases: [Country, country, CountryName]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, admin2]
+
+  school:
+    required: false
+    type: character
+    aliases: [School, school_name, site]
+
+  result:
+    required: true
+    type: categorical
+    aliases: [Result, test_result, kato_result]
+    allowed_values: [Positive, Negative]
+
+  survey_type:
+    required: true
+    type: categorical
+    aliases: [SurveyType, method, diagnostic]
+    allowed_values: [kato_katz]
+
+  hookworm_epg:
+    required: false
+    type: numeric
+    aliases: [HookwormEPG, hookworm_eggs, necator_epg]
+    range: [0, 50000]
+
+  ascaris_epg:
+    required: false
+    type: numeric
+    aliases: [AscarisEPG, ascaris_eggs, ascaris_lumbricoides_epg]
+    range: [0, 200000]
+
+  trichuris_epg:
+    required: false
+    type: numeric
+    aliases: [TrichurisEPG, trichuris_eggs, trichuris_trichiura_epg]
+    range: [0, 50000]
+
+  species_result:
+    required: false
+    type: categorical
+    aliases: [SpeciesResult, parasite, species]
+    allowed_values: [hookworm, ascaris, trichuris, mixed, none]
+
+  intensity_class:
+    required: false
+    type: categorical
+    aliases: [IntensityClass, infection_intensity, severity]
+    allowed_values: [light, moderate, heavy]
+
+  lat:
+    required: false
+    type: numeric
+    aliases: [latitude, Latitude, GPS_lat]
+    range: [-90, 90]
+
+  lon:
+    required: false
+    type: numeric
+    aliases: [longitude, Longitude, GPS_lon]
+    range: [-180, 180]

@@ -3,6 +3,139 @@
 # Valid column types accepted by the DQ pipeline
 .VALID_SCHEMA_COL_TYPES <- c("numeric", "character", "categorical", "date")
 
+# ---- disease skeleton templates ----------------------------------------------
+
+.mda_schema_template <- function(country_code, disease) {
+  paste0(
+    "country: ", country_code, "\n",
+    "disease: ", disease, "\n",
+    "data_type: mda\n",
+    "version: \"1.0\"\n",
+    "# time_grain: annual\n",
+    "\n",
+    "temporal:\n",
+    "  year_col: year\n",
+    "  period_col: round\n",
+    "\n",
+    "preprocessing:\n",
+    "  - remove_smart_quotes\n",
+    "\n",
+    "columns:\n",
+    "  year:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [Year, YEAR, annee]\n",
+    "    range: [2000, 2035]\n",
+    "\n",
+    "  round:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [Round, ronda, MDA_round]\n",
+    "    range: [1, 10]\n",
+    "\n",
+    "  # TODO: add geographic unit column (community, district, commune, ...)\n",
+    "  # geo_unit:\n",
+    "  #   required: true\n",
+    "  #   type: character\n",
+    "  #   aliases: [community, village, commune]\n",
+    "\n",
+    "  target_pop:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [TargetPop, target_population, pop_cible]\n",
+    "\n",
+    "  treated:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [Treated, people_treated, traites]\n",
+    "\n",
+    "  coverage_pct:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [CoveragePct, coverage, couverture]\n",
+    "    range: [0, 150]\n",
+    "\n",
+    "  # TODO: add drug column if multiple drugs used in same program\n",
+    "  # drug:\n",
+    "  #   required: false\n",
+    "  #   type: categorical\n",
+    "  #   allowed_values:\n",
+    "  #     - ivermectin\n",
+    "  #     - albendazole\n",
+    "  #     - praziquantel\n",
+    "  #     - mebendazole\n",
+    "\n",
+    "consistency:\n",
+    "  implausible_overcoverage:\n",
+    "    lhs: treated\n",
+    "    op: \"<=\"\n",
+    "    rhs: target_pop\n",
+    "    message: \"treated exceeds target_pop (>100% raw coverage)\"\n"
+  )
+}
+
+.prevalence_schema_template <- function(country_code, disease) {
+  paste0(
+    "country: ", country_code, "\n",
+    "disease: ", disease, "\n",
+    "data_type: prevalence\n",
+    "version: \"1.0\"\n",
+    "# time_grain: annual\n",
+    "\n",
+    "temporal:\n",
+    "  year_col: year\n",
+    "  period_col: survey_round\n",
+    "\n",
+    "preprocessing:\n",
+    "  - remove_smart_quotes\n",
+    "\n",
+    "columns:\n",
+    "  year:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [Year, YEAR]\n",
+    "    range: [2000, 2035]\n",
+    "\n",
+    "  survey_round:\n",
+    "    required: true\n",
+    "    type: numeric\n",
+    "    aliases: [SurveyRound, survey_year, round]\n",
+    "    range: [1, 50]\n",
+    "\n",
+    "  # TODO: add geographic unit column\n",
+    "  # geo_unit:\n",
+    "  #   required: true\n",
+    "  #   type: character\n",
+    "\n",
+    "  result:\n",
+    "    required: true\n",
+    "    type: categorical\n",
+    "    aliases: [Result, test_result, outcome]\n",
+    "    # TODO: add allowed_values for this disease\n",
+    "    # allowed_values:\n",
+    "    #   - Positive\n",
+    "    #   - Negative\n",
+    "\n",
+    "  survey_type:\n",
+    "    required: false\n",
+    "    type: categorical\n",
+    "    aliases: [SurveyType, method, diagnostic]\n",
+    "    # TODO: add allowed_values specific to disease (e.g. Kato-Katz, skin snip)\n",
+    "\n",
+    "  lat:\n",
+    "    required: false\n",
+    "    type: numeric\n",
+    "    aliases: [latitude, Latitude, GPS_lat]\n",
+    "    range: [-90, 90]\n",
+    "\n",
+    "  lon:\n",
+    "    required: false\n",
+    "    type: numeric\n",
+    "    aliases: [longitude, Longitude, GPS_lon]\n",
+    "    range: [-180, 180]\n"
+  )
+}
+
 # Required top-level keys in a surveillance DQ schema
 .REQUIRED_SCHEMA_KEYS <- c("country", "disease", "columns", "temporal")
 
@@ -165,6 +298,74 @@
     "  #     - \"#cddtrn_target\"\n",
     "  #     - \"#cddtrn_trained\"\n"
   )
+}
+
+#### eri_onboard_disease ####
+
+#' Scaffold DQ schema YAML files for a new disease program
+#'
+#' Generates one skeleton YAML file per `data_type` (e.g. `"mda"`,
+#' `"prevalence"`) following the standard column layout for each type.
+#' TODO comments in the generated files flag fields that must be customised
+#' before the schema is ready for team-wide use.
+#'
+#' @param disease `chr` Short disease code (e.g. `"rb"`, `"schisto"`, `"sth"`).
+#' @param country `chr` Country or program code (e.g. `"ug"`, `"global"`).
+#' @param data_types `chr` vector Data types to scaffold. Each generates one
+#'   file. Supported values: `"mda"`, `"prevalence"`. Default both.
+#' @param output_dir `chr` Directory to write skeleton YAML files into.
+#'   Default is the current working directory.
+#' @param dry_run `lgl` If `TRUE`, print a plan but do not write files.
+#'   Default `FALSE`.
+#' @returns Invisibly, a character vector of paths written (or `NULL` in
+#'   dry-run mode).
+#' @examples
+#' \dontrun{
+#' eri_onboard_disease("schisto", "ug", output_dir = "schemas/")
+#' eri_onboard_disease("rb", "ug", data_types = "mda", dry_run = TRUE)
+#' }
+#' @export
+eri_onboard_disease <- function(disease,
+                                 country,
+                                 data_types  = c("mda", "prevalence"),
+                                 output_dir  = getwd(),
+                                 dry_run     = FALSE) {
+  disease    <- tolower(trimws(disease))
+  country    <- tolower(trimws(country))
+  data_types <- match.arg(data_types, c("mda", "prevalence"), several.ok = TRUE)
+
+  file_names <- paste0(country, "_", disease, "_", data_types, ".yaml")
+  file_paths <- file.path(output_dir, file_names)
+
+  if (dry_run) {
+    cli::cli_inform(c(
+      "i" = "Dry run -- nothing will be written.",
+      " " = "Would write:"
+    ))
+    for (fp in file_paths) cli::cli_inform("    {.path {fp}}")
+    return(invisible(NULL))
+  }
+
+  written <- character(0)
+  for (i in seq_along(data_types)) {
+    dt      <- data_types[[i]]
+    content <- switch(dt,
+      mda        = .mda_schema_template(country, disease),
+      prevalence = .prevalence_schema_template(country, disease)
+    )
+    writeLines(content, file_paths[[i]])
+    cli::cli_alert_success("Schema skeleton written to {.path {file_paths[[i]]}}.")
+    written <- c(written, file_paths[[i]])
+  }
+
+  cli::cli_inform(c(
+    "i" = "Next steps:",
+    " " = "1. Open each file and fill in the TODO sections.",
+    " " = "2. Run {.run eri_schema_validate('<path>')} to check your edits.",
+    " " = "3. Submit via pull request to {.path inst/schemas/}."
+  ))
+
+  invisible(written)
 }
 
 #### eri_onboard_country ####

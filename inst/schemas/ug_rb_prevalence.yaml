@@ -1,0 +1,69 @@
+country: ug
+disease: rb
+data_type: prevalence
+version: "1.0"
+description: "Uganda river blindness (onchocerciasis) prevalence survey -- nodule palpation and skin snip"
+language: en
+
+temporal:
+  year_col: year
+  period_col: survey_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR]
+    range: [1990, 2035]
+
+  survey_round:
+    required: true
+    type: numeric
+    aliases: [SurveyRound, survey_year, round]
+    range: [1, 50]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2]
+
+  community:
+    required: true
+    type: character
+    aliases: [Community, village, community_name]
+
+  result:
+    required: true
+    type: categorical
+    aliases: [Result, test_result, outcome, nodule_result]
+    allowed_values: [Positive, Negative]
+
+  survey_type:
+    required: true
+    type: categorical
+    aliases: [SurveyType, method, diagnostic, test_method]
+    allowed_values: [nodule_palpation, skin_snip]
+    translations:
+      "Nodule palpation": nodule_palpation
+      "Skin snip": skin_snip
+
+  mf_count:
+    required: false
+    type: numeric
+    aliases: [MfCount, microfilaria_count, mf_per_snip]
+    range: [0, 10000]
+
+  lat:
+    required: false
+    type: numeric
+    aliases: [latitude, Latitude, GPS_lat]
+    range: [-90, 90]
+
+  lon:
+    required: false
+    type: numeric
+    aliases: [longitude, Longitude, GPS_lon]
+    range: [-180, 180]
