@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.8.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,10 +45,10 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.9.0" id="erifunctions-090">erifunctions 0.9.0<a class="anchor" aria-label="anchor" href="#erifunctions-090"></a></h2>
 <div class="section level3">
-<h3 id="v2-phase--governance--shared-memory-scaffolding-development-version">V2 Phase 0 – Governance &amp; shared-memory scaffolding<a class="anchor" aria-label="anchor" href="#v2-phase--governance--shared-memory-scaffolding-development-version"></a></h3>
-<p>Documentation and project-infrastructure only; no changes to package functions.</p>
+<h3 id="v2-phase--governance--shared-memory-scaffolding-0-9-0">V2 Phase 0 – Governance &amp; shared-memory scaffolding<a class="anchor" aria-label="anchor" href="#v2-phase--governance--shared-memory-scaffolding-0-9-0"></a></h3>
+<p>Documentation and project-infrastructure only; no changes to package functions. Marks the start of the V2 effort.</p>
 <ul><li>
 <code>docs/roadmap.md</code> – version-controlled V2 development roadmap (Phases 0-5)</li>
 <li>
@@ -59,8 +59,13 @@
 <li>
 <code>CLAUDE.md</code> – working memory and conventions for contributors (human and AI)</li>
 <li>
-<code>_pkgdown.yml</code> + <code>.github/workflows/pkgdown.yaml</code> – grouped-reference documentation site</li>
-<li>README version banner corrected to 0.8.0 and linked to the roadmap</li>
+<code>_pkgdown.yml</code> + <code>.github/workflows/pkgdown.yaml</code> – grouped-reference documentation site, published to <a href="https://thecartercenter.github.io/erifunctions/" class="uri">https://thecartercenter.github.io/erifunctions/</a>
+</li>
+<li>README version banner and CI status badges (R-CMD-check, pkgdown)</li>
+<li>Cleared the pre-existing <code>R CMD check</code> warning and notes (non-ASCII source, <code><a href="https://rdrr.io/r/utils/head.html" class="external-link">utils::tail</a></code> import, <code>CONTRIBUTING.md</code> in <code>.Rbuildignore</code>); bumped CI actions to <code>checkout@v5</code>
+</li>
+<li>
+<code>main</code> branch protection requiring the R-CMD-check and pkgdown gates</li>
 </ul></div>
 </div>
     <div class="section level2">

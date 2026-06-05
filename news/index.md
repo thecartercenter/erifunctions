@@ -1,11 +1,11 @@
 # Changelog
 
-## erifunctions (development version)
+## erifunctions 0.9.0
 
 ### V2 Phase 0 – Governance & shared-memory scaffolding
 
 Documentation and project-infrastructure only; no changes to package
-functions.
+functions. Marks the start of the V2 effort.
 
 - `docs/roadmap.md` – version-controlled V2 development roadmap (Phases
   0-5)
@@ -17,8 +17,14 @@ functions.
 - `CLAUDE.md` – working memory and conventions for contributors (human
   and AI)
 - `_pkgdown.yml` + `.github/workflows/pkgdown.yaml` – grouped-reference
-  documentation site
-- README version banner corrected to 0.8.0 and linked to the roadmap
+  documentation site, published to
+  <https://thecartercenter.github.io/erifunctions/>
+- README version banner and CI status badges (R-CMD-check, pkgdown)
+- Cleared the pre-existing `R CMD check` warning and notes (non-ASCII
+  source, [`utils::tail`](https://rdrr.io/r/utils/head.html) import,
+  `CONTRIBUTING.md` in `.Rbuildignore`); bumped CI actions to
+  `checkout@v5`
+- `main` branch protection requiring the R-CMD-check and pkgdown gates
 
 ## erifunctions 0.8.0
 
