@@ -20,6 +20,6 @@ Use this to record decisions, observations, or status updates during analysis.
 }
 \examples{
 \dontrun{
-eri_research_log("Ran ITS model — negative binomial converged. Saving output.")
+eri_research_log("Ran ITS model -- negative binomial converged. Saving output.")
 }
 }
