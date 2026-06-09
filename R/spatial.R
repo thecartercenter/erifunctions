@@ -369,15 +369,31 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
       "i" = "Or call {.fn eri_spatial_reconcile} with {.code method = NULL} to match only (no geocoding)."
     ))
   }
-  df  <- tibble::tibble(address = as.character(addresses))
-  out <- tidygeocoder::geocode(
-    df, address = "address", method = method,
-    lat = "latitude", long = "longitude", ...
-  )
+  df <- tibble::tibble(address = as.character(addresses))
+
+  # Google returns `partial_match = TRUE` when it could not fully match the query and
+  # substituted a coarser guess (e.g. a fabricated locality resolved to its parent) --
+  # the signal a reconciliation should not trust. Request full results to capture it.
+  # Methods that expose no such flag report `partial = NA` (not flagged).
+  # `full_results` is managed here for google; do not also pass it via `...`.
+  if (identical(method, "google")) {
+    out     <- tidygeocoder::geocode(
+      df, address = "address", method = method,
+      lat = "latitude", long = "longitude", full_results = TRUE, ...
+    )
+    partial <- if ("partial_match" %in% names(out)) out[["partial_match"]] %in% TRUE else NA
+  } else {
+    out     <- tidygeocoder::geocode(
+      df, address = "address", method = method,
+      lat = "latitude", long = "longitude", ...
+    )
+    partial <- NA
+  }
   tibble::tibble(
     address   = out[["address"]],
     longitude = out[["longitude"]],
-    latitude  = out[["latitude"]]
+    latitude  = out[["latitude"]],
+    partial   = partial
   )
 }
 
@@ -400,6 +416,16 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #'    address built from `loc_cols` (+ `country_name`), then assigned a canonical
 #'    admin unit by point-in-polygon via [eri_spatial_join()]. Set
 #'    `method = NULL` to skip geocoding entirely (match-only).
+#'
+#' A geocode is only **trusted** (status `"geocoded"`, names assigned) when the
+#' service did not flag a partial/low-confidence match *and* the assigned coarser
+#' admin units agree with the parent levels supplied in `loc_cols`. Otherwise the
+#' row is flagged `"geocoded_review"`: its coordinates are recorded for inspection
+#' but the analyst's names are left untouched. This guards against geocoders that
+#' "best-guess" a fabricated or unmatched locality into a plausible nearby point
+#' (issue #145). The partial-match signal is currently read from the `"google"`
+#' method; methods that do not expose one rely on the parent-consistency check
+#' alone.
 #'
 #' Only the place-name address strings are sent to the geocoder; no data records
 #' leave the machine. The `"google"` method is the most accurate but requires
@@ -425,16 +451,17 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #' @param max_dist `int` Maximum edit distance for an approximate match on the
 #'   finest level. `0` (default) requires an exact normalized match.
 #' @param status_col `chr` Name of the status column added to the result.
-#'   Default `"reconcile_status"`; values are `"matched"`, `"geocoded"`, or
-#'   `"unresolved"`.
+#'   Default `"reconcile_status"`; values are `"matched"`, `"geocoded"`,
+#'   `"geocoded_review"` (geocoded but low-confidence or parent-inconsistent --
+#'   verify before use), or `"unresolved"`.
 #' @param coord_cols `chr` length-2 names for the longitude and latitude columns
 #'   added to the result. Default `c("longitude", "latitude")`. Populated for any
 #'   row sent to the geocoder, regardless of its final status (so geocoded points
 #'   that fall outside every polygon still record their coordinates).
 #' @param ... Passed to [tidygeocoder::geocode()] (e.g. `min_time`, `api_options`).
 #' @returns A tibble: `data` with `loc_cols` replaced by their canonical values
-#'   where reconciled (originals kept where unresolved), plus the two `coord_cols`
-#'   and `status_col`.
+#'   where confidently reconciled (originals kept where unresolved or flagged
+#'   `"geocoded_review"`), plus the two `coord_cols` and `status_col`.
 #' @examples
 #' \dontrun{
 #' dr_loc <- eri_spatial_load("dr", level = 4, cache = TRUE)
@@ -529,9 +556,10 @@ eri_spatial_reconcile <- function(data,
   canon_out <- paste0(".canon_", loc_cols)
   res <- keys
   for (k in seq_len(n_lvl)) res[[canon_out[k]]] <- NA_character_
-  res$.lon    <- NA_real_
-  res$.lat    <- NA_real_
-  res$.status <- NA_character_
+  res$.lon     <- NA_real_
+  res$.lat     <- NA_real_
+  res$.status  <- NA_character_
+  res$.partial <- NA
 
   matched <- !is.na(match_idx)
   for (k in seq_len(n_lvl)) {
@@ -553,8 +581,14 @@ eri_spatial_reconcile <- function(data,
     if (length(to_geo) > 0L) {
       cli::cli_alert_info("Geocoding {length(to_geo)} unmatched localit{?y/ies} via {.val {method}}...")
       geo <- .eri_geocode(addr[nzchar(addr)], method = method, ...)
-      res$.lon[to_geo] <- geo$longitude
-      res$.lat[to_geo] <- geo$latitude
+      if (nrow(geo) != length(to_geo)) {
+        cli::cli_abort(
+          "Geocoder returned {nrow(geo)} row{?s} for {length(to_geo)} address{?es} (expected one per address)."
+        )
+      }
+      res$.lon[to_geo]     <- geo$longitude
+      res$.lat[to_geo]     <- geo$latitude
+      res$.partial[to_geo] <- if ("partial" %in% names(geo)) geo$partial else NA
 
       has_coords <- to_geo[!is.na(geo$longitude) & !is.na(geo$latitude)]
       if (length(has_coords) > 0L) {
@@ -571,14 +605,39 @@ eri_spatial_reconcile <- function(data,
         # than one unit; keep the first (shapefile order) so each input row resolves
         # to exactly one admin unit.
         jr  <- dplyr::distinct(jr, .rid, .keep_all = TRUE)
-        pos <- match(jr$.rid, has_coords)
-        for (k in seq_len(n_lvl)) {
-          vals <- as.character(jr[[admin_cols[k]]])
-          res[[canon_out[k]]][has_coords[pos]] <- vals
+        ord <- match(has_coords, jr$.rid)
+
+        # A geocode is trusted only if the service did not flag a partial match AND
+        # the assigned coarser admin units agree with the parent levels the analyst
+        # supplied. Trusted -> "geocoded" and names assigned; otherwise
+        # "geocoded_review" -> coordinates kept for inspection, names left untouched.
+        for (i in seq_along(has_coords)) {
+          rk   <- has_coords[i]
+          jrow <- ord[i]
+          if (is.na(jrow) || is.na(jr[[admin_cols[1L]]][jrow])) next  # outside all polygons
+
+          # Any coarser level disagreeing with the analyst's claim flags the row.
+          consistent <- TRUE
+          if (n_lvl > 1L) {
+            for (j in 2:n_lvl) {
+              claimed  <- key_norm[[j]][rk]
+              assigned <- .eri_normalize_name(jr[[admin_cols[j]]][jrow])
+              if (!is.na(claimed) && !is.na(assigned) && !identical(claimed, assigned)) {
+                consistent <- FALSE
+                break
+              }
+            }
+          }
+
+          if (isTRUE(res$.partial[rk]) || !consistent) {
+            res$.status[rk] <- "geocoded_review"
+          } else {
+            for (k in seq_len(n_lvl)) {
+              res[[canon_out[k]]][rk] <- as.character(jr[[admin_cols[k]]][jrow])
+            }
+            res$.status[rk] <- "geocoded"
+          }
         }
-        # A point inside a polygon resolves the finest level; mark it geocoded.
-        resolved <- has_coords[!is.na(res[[canon_out[1L]]][has_coords])]
-        res$.status[resolved] <- "geocoded"
       }
     }
   }
@@ -593,15 +652,21 @@ eri_spatial_reconcile <- function(data,
   out[[coord_cols[1L]]] <- out$.lon
   out[[coord_cols[2L]]] <- out$.lat
   out[[status_col]]     <- out$.status
-  out <- out[, setdiff(names(out), c(canon_out, ".lon", ".lat", ".status")), drop = FALSE]
+  out <- out[, setdiff(names(out), c(canon_out, ".lon", ".lat", ".status", ".partial")), drop = FALSE]
 
   n_keys <- nrow(keys)
   n_m    <- sum(res$.status == "matched")
   n_g    <- sum(res$.status == "geocoded")
+  n_r    <- sum(res$.status == "geocoded_review")
   n_u    <- sum(res$.status == "unresolved")
   cli::cli_alert_success(
-    "Reconciled {n_keys} distinct localit{?y/ies}: {n_m} matched, {n_g} geocoded, {n_u} unresolved."
+    "Reconciled {n_keys} distinct localit{?y/ies}: {n_m} matched, {n_g} geocoded, {n_r} need review, {n_u} unresolved."
   )
+  if (n_r > 0L) {
+    cli::cli_alert_warning(
+      "{n_r} geocode{?s} flagged {.val geocoded_review} (low-confidence or parent mismatch) -- verify before use."
+    )
+  }
   tibble::as_tibble(out)
 }
 
