@@ -328,8 +328,38 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
   trimws(x)
 }
 
+# Geocoding services that need an API key, mapped to the env var tidygeocoder reads
+# (see `tidygeocoder::geocode()`). Keyless services (e.g. "osm") are not listed.
+.ERI_GEOCODE_KEY_ENV <- c(
+  google   = "GOOGLEGEOCODE_API_KEY",
+  geocodio = "GEOCODIO_API_KEY",
+  here     = "HERE_API_KEY",
+  mapbox   = "MAPBOX_API_KEY",
+  tomtom   = "TOMTOM_API_KEY",
+  mapquest = "MAPQUEST_API_KEY",
+  opencage = "OPENCAGE_KEY",
+  bing     = "BINGMAPS_API_KEY",
+  geoapify = "GEOAPIFY_KEY"
+)
+
 #' @keywords internal
 .eri_geocode <- function(addresses, method = "osm", ...) {
+  # Key preflight first: a pure environment check (needs no package) and the most
+  # common setup gap for non-developer users. Keyless methods skip it.
+  key_env <- if (!is.null(method) && method %in% names(.ERI_GEOCODE_KEY_ENV)) {
+    .ERI_GEOCODE_KEY_ENV[[method]]
+  } else {
+    NULL
+  }
+  if (!is.null(key_env) && !nzchar(Sys.getenv(key_env))) {
+    cli::cli_abort(c(
+      "Geocoding method {.val {method}} needs an API key, but {.envvar {key_env}} is not set.",
+      "i" = "Sign up for your own key, then store it once in your user {.file .Renviron}:",
+      "*" = "Run {.code usethis::edit_r_environ()} and add a line: {.code {key_env}=your_key}",
+      "*" = "Save the file, then restart R so the key is loaded.",
+      "i" = "No key is needed for {.code method = \"osm\"} (free) or {.code method = NULL} (match only)."
+    ))
+  }
   if (!requireNamespace("tidygeocoder", quietly = TRUE)) {
     cli::cli_abort(c(
       "Package {.pkg tidygeocoder} must be installed to geocode place names.",
@@ -370,9 +400,12 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #'    `method = NULL` to skip geocoding entirely (match-only).
 #'
 #' Only the place-name address strings are sent to the geocoder; no data records
-#' leave the machine. The `"google"` method is the most accurate but requires an
-#' API key (`GOOGLEGEOCODE_API_KEY`) and is billed per call; the default
-#' `"osm"` (Nominatim) needs no key. See [tidygeocoder::geocode()].
+#' leave the machine. The `"google"` method is the most accurate but requires
+#' **your own API key** and is billed per call: sign up for a key, then store it
+#' once in your user `.Renviron` as `GOOGLEGEOCODE_API_KEY` (e.g. via
+#' `usethis::edit_r_environ()`) and restart R. The function checks for the key up
+#' front and explains this if it is missing. The default `"osm"` (Nominatim) needs
+#' no key. See [tidygeocoder::geocode()].
 #'
 #' @param data A data frame or tibble containing the free-text place-name columns.
 #' @param loc_cols `chr` vector of free-text column names, ordered **finest to
