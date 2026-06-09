@@ -104,6 +104,7 @@ reference:
   - eri_spatial_load
   - eri_spatial_upload
   - eri_spatial_join
+  - eri_spatial_reconcile
   - eri_spatial_pop
   - eri_bbox_expand
   - eri_landscan_upload
