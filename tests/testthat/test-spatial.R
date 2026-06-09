@@ -494,3 +494,12 @@ test_that(".eri_geocode skips the key check for keyless methods", {
   withr::local_envvar(GOOGLEGEOCODE_API_KEY = "")
   expect_error(.eri_geocode("Somewhere", method = "osm"), regexp = "tidygeocoder")
 })
+
+test_that(".eri_geocode passes the key gate when the key is present", {
+  # A set key clears the preflight; the next gate is the tidygeocoder requireNamespace
+  # error. Skip when tidygeocoder is installed (proceeding would make a network call).
+  skip_if(requireNamespace("tidygeocoder", quietly = TRUE),
+          "tidygeocoder installed; passing the gate would make a network call")
+  withr::local_envvar(GOOGLEGEOCODE_API_KEY = "dummy-key")
+  expect_error(.eri_geocode("Somewhere", method = "google"), regexp = "tidygeocoder")
+})

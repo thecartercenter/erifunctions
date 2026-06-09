@@ -345,7 +345,9 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #' @keywords internal
 .eri_geocode <- function(addresses, method = "osm", ...) {
   # Key preflight first: a pure environment check (needs no package) and the most
-  # common setup gap for non-developer users. Keyless methods skip it.
+  # common setup gap for non-developer users. This is a key-*presence* check, not a
+  # method allow-list: `method = NULL` and any unlisted method deliberately fall
+  # through to tidygeocoder's own handling.
   key_env <- if (!is.null(method) && method %in% names(.ERI_GEOCODE_KEY_ENV)) {
     .ERI_GEOCODE_KEY_ENV[[method]]
   } else {
