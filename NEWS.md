@@ -12,6 +12,12 @@
 - `eri_research_scaffold()` -- create a standalone research-project repo skeleton (README,
   `analysis/` seeded from the workflow template, data-safe `.gitignore`, minimal reproducibility
   CI) plus the standard research scaffold via `eri_research_init()`. Implements ADR-0006. (#136)
+- `eri_spatial_reconcile()` -- thin, opt-in data-sourcing helper that maps free-text locality
+  names to canonical admin units: normalized exact/fuzzy match against the boundary `sf` first,
+  then geocodes only the unmatched (via `tidygeocoder`, `method = NULL` to disable) and assigns
+  admin units by point-in-polygon through `eri_spatial_join()`. Returns the data with names
+  reconciled in place plus coordinates and a `reconcile_status` column. Only place-name strings
+  are sent to the geocoder. (#134)
 
 # erifunctions 0.9.0
 

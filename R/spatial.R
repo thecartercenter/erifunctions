@@ -313,6 +313,252 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
     tibble::as_tibble()
 }
 
+#### eri_spatial_reconcile ####
+
+#' @keywords internal
+.eri_normalize_name <- function(x) {
+  x <- as.character(x)
+  # Transliterate accents to ASCII (e.g. "Tábara" -> "Tabara"); keep the
+  # original where transliteration fails (returns NA).
+  ascii <- suppressWarnings(iconv(x, to = "ASCII//TRANSLIT"))
+  x <- ifelse(!is.na(ascii), ascii, x)
+  x <- tolower(x)
+  x <- gsub("[[:punct:]]", " ", x)
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+#' @keywords internal
+.eri_geocode <- function(addresses, method = "osm", ...) {
+  if (!requireNamespace("tidygeocoder", quietly = TRUE)) {
+    cli::cli_abort(c(
+      "Package {.pkg tidygeocoder} must be installed to geocode place names.",
+      "i" = "Install it with {.code install.packages(\"tidygeocoder\")}.",
+      "i" = "Or call {.fn eri_spatial_reconcile} with {.code method = NULL} to match only (no geocoding)."
+    ))
+  }
+  df  <- tibble::tibble(address = as.character(addresses))
+  out <- tidygeocoder::geocode(
+    df, address = "address", method = method,
+    lat = "latitude", long = "longitude", ...
+  )
+  tibble::tibble(
+    address   = out[["address"]],
+    longitude = out[["longitude"]],
+    latitude  = out[["latitude"]]
+  )
+}
+
+#' Reconcile free-text place names to canonical admin units
+#'
+#' A thin, opt-in **data-sourcing** helper that maps messy, free-text locality
+#' names in incoming data to the canonical admin units in an authoritative
+#' boundary `sf` object (from [eri_spatial_load()]). It does the
+#' name-reconciliation step many studies do by hand before analysis -- it is
+#' **not** an analysis tool (matching/windowing/modelling stay in the research
+#' repo; see ADR-0006).
+#'
+#' The reconciliation runs in two passes (per issue #134):
+#' 1. **Match first.** Free-text names are normalized (lower-cased, accent- and
+#'    punctuation-stripped, whitespace-squished) and matched against the
+#'    canonical names. Coarser levels must match exactly; the finest level may
+#'    match approximately when `max_dist > 0` (Levenshtein distance via
+#'    [utils::adist()]). Matched rows are **not** geocoded.
+#' 2. **Geocode the residual.** Rows that don't match are geocoded from an
+#'    address built from `loc_cols` (+ `country_name`), then assigned a canonical
+#'    admin unit by point-in-polygon via [eri_spatial_join()]. Set
+#'    `method = NULL` to skip geocoding entirely (match-only).
+#'
+#' Only the place-name address strings are sent to the geocoder; no data records
+#' leave the machine. The `"google"` method is the most accurate but requires an
+#' API key (`GOOGLEGEOCODE_API_KEY`) and is billed per call; the default
+#' `"osm"` (Nominatim) needs no key. See [tidygeocoder::geocode()].
+#'
+#' @param data A data frame or tibble containing the free-text place-name columns.
+#' @param loc_cols `chr` vector of free-text column names, ordered **finest to
+#'   coarsest** (e.g. `c("loc", "mun", "prov")`). Used both to match and to build
+#'   the geocoding address (finest first).
+#' @param shapefile An admin-boundary `sf` object, e.g. from [eri_spatial_load()].
+#' @param admin_cols `chr` vector of canonical name columns in `shapefile`,
+#'   **parallel to `loc_cols`** (same length, same finest-to-coarsest order).
+#' @param country_name `chr` Country name appended to each geocoding address
+#'   (e.g. `"Dominican Republic"`), improving geocoder accuracy. Optional.
+#' @param method `chr` Geocoding service passed to [tidygeocoder::geocode()]
+#'   (e.g. `"osm"`, `"google"`). `NULL` disables geocoding (match-only). Default `"osm"`.
+#' @param max_dist `int` Maximum edit distance for an approximate match on the
+#'   finest level. `0` (default) requires an exact normalized match.
+#' @param status_col `chr` Name of the status column added to the result.
+#'   Default `"reconcile_status"`; values are `"matched"`, `"geocoded"`, or
+#'   `"unresolved"`.
+#' @param coord_cols `chr` length-2 names for the longitude and latitude columns
+#'   added to the result. Default `c("longitude", "latitude")`. Populated for
+#'   geocoded rows only.
+#' @param ... Passed to [tidygeocoder::geocode()] (e.g. `min_time`, `api_options`).
+#' @returns A tibble: `data` with `loc_cols` replaced by their canonical values
+#'   where reconciled (originals kept where unresolved), plus the two `coord_cols`
+#'   and `status_col`.
+#' @examples
+#' \dontrun{
+#' dr_loc <- eri_spatial_load("dr", level = 4, cache = TRUE)
+#' incidence <- eri_spatial_reconcile(
+#'   incidence,
+#'   loc_cols     = c("loc", "mun", "prov"),
+#'   shapefile    = dr_loc,
+#'   admin_cols   = c("adm4_name", "adm3_name", "adm2_name"),
+#'   country_name = "Dominican Republic",
+#'   method       = "google",  # needs GOOGLEGEOCODE_API_KEY
+#'   max_dist     = 1
+#' )
+#' table(incidence$reconcile_status)
+#' }
+#' @export
+eri_spatial_reconcile <- function(data,
+                                  loc_cols,
+                                  shapefile,
+                                  admin_cols,
+                                  country_name = NULL,
+                                  method       = "osm",
+                                  max_dist     = 0L,
+                                  status_col   = "reconcile_status",
+                                  coord_cols   = c("longitude", "latitude"),
+                                  ...) {
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg sf} must be installed to use {.fn eri_spatial_reconcile}.")
+  }
+
+  data <- tibble::as_tibble(data)
+
+  if (length(loc_cols) == 0L || length(admin_cols) == 0L) {
+    cli::cli_abort("{.arg loc_cols} and {.arg admin_cols} must be non-empty.")
+  }
+  if (length(loc_cols) != length(admin_cols)) {
+    cli::cli_abort(c(
+      "{.arg loc_cols} and {.arg admin_cols} must be the same length (parallel mapping).",
+      "i" = "{.arg loc_cols} has {length(loc_cols)}, {.arg admin_cols} has {length(admin_cols)}."
+    ))
+  }
+  missing_loc <- setdiff(loc_cols, names(data))
+  if (length(missing_loc) > 0L) {
+    cli::cli_abort("Column{?s} {.val {missing_loc}} not found in {.arg data}.")
+  }
+  shp_names   <- setdiff(names(shapefile), attr(shapefile, "sf_column"))
+  missing_adm <- setdiff(admin_cols, shp_names)
+  if (length(missing_adm) > 0L) {
+    cli::cli_abort("Column{?s} {.val {missing_adm}} not found in {.arg shapefile}.")
+  }
+  if (length(coord_cols) != 2L) {
+    cli::cli_abort("{.arg coord_cols} must be a length-2 character vector (longitude, latitude).")
+  }
+  reserved <- c(coord_cols, status_col)
+  clash    <- intersect(reserved, names(data))
+  if (length(clash) > 0L) {
+    cli::cli_abort(c(
+      "Output column{?s} {.val {clash}} already exist{?s/} in {.arg data}.",
+      "i" = "Rename them, or pass different {.arg coord_cols}/{.arg status_col}."
+    ))
+  }
+  max_dist <- suppressWarnings(as.integer(max_dist))
+  if (is.na(max_dist) || max_dist < 0L) {
+    cli::cli_abort("{.arg max_dist} must be a non-negative integer.")
+  }
+
+  # Work on the distinct free-text tuples to minimise matching and geocoding work.
+  keys <- dplyr::distinct(data[, loc_cols, drop = FALSE])
+
+  canon      <- sf::st_drop_geometry(shapefile)[, admin_cols, drop = FALSE]
+  canon      <- dplyr::distinct(tibble::as_tibble(canon))
+  key_norm   <- lapply(loc_cols,   function(col) .eri_normalize_name(keys[[col]]))
+  canon_norm <- lapply(admin_cols, function(col) .eri_normalize_name(canon[[col]]))
+  n_lvl      <- length(loc_cols)
+
+  # Pass 1 -- match free-text tuples to canonical units.
+  match_idx <- vapply(seq_len(nrow(keys)), function(i) {
+    cand <- rep(TRUE, nrow(canon))
+    if (n_lvl > 1L) {
+      for (j in 2:n_lvl) cand <- cand & (canon_norm[[j]] == key_norm[[j]][i])
+    }
+    cand[is.na(cand)] <- FALSE
+    if (!any(cand) || is.na(key_norm[[1L]][i])) return(NA_integer_)
+    cw <- which(cand)
+    d  <- as.integer(utils::adist(key_norm[[1L]][i], canon_norm[[1L]][cw]))
+    ok <- which(d <= max_dist)
+    if (length(ok) == 0L) return(NA_integer_)
+    cw[ok[which.min(d[ok])]]
+  }, integer(1L))
+
+  # Per-key result, keyed by the original free-text tuple. Canonical values go in
+  # prefixed columns so the join back to `data` never collides with `loc_cols`.
+  canon_out <- paste0(".canon_", loc_cols)
+  res <- keys
+  for (k in seq_len(n_lvl)) res[[canon_out[k]]] <- NA_character_
+  res$.lon    <- NA_real_
+  res$.lat    <- NA_real_
+  res$.status <- NA_character_
+
+  matched <- !is.na(match_idx)
+  for (k in seq_len(n_lvl)) {
+    res[[canon_out[k]]][matched] <- as.character(canon[[admin_cols[k]]][match_idx[matched]])
+  }
+  res$.status[matched] <- "matched"
+
+  # Pass 2 -- geocode the residual, then assign admin units by point-in-polygon.
+  todo <- which(!matched)
+  if (length(todo) > 0L && !is.null(method)) {
+    addr <- vapply(todo, function(i) {
+      parts <- vapply(loc_cols, function(col) as.character(keys[[col]][i]), character(1L))
+      parts <- parts[!is.na(parts) & nzchar(parts)]
+      paste(c(parts, country_name), collapse = ", ")
+    }, character(1L))
+
+    cli::cli_alert_info("Geocoding {length(addr)} unmatched localit{?y/ies} via {.val {method}}...")
+    geo <- .eri_geocode(addr, method = method, ...)
+    res$.lon[todo] <- geo$longitude
+    res$.lat[todo] <- geo$latitude
+
+    has_coords <- todo[!is.na(geo$longitude) & !is.na(geo$latitude)]
+    if (length(has_coords) > 0L) {
+      jf <- tibble::tibble(
+        .rid      = has_coords,
+        longitude = res$.lon[has_coords],
+        latitude  = res$.lat[has_coords]
+      )
+      jr <- eri_spatial_join(
+        jf, lat_col = "latitude", lon_col = "longitude",
+        shapefile = shapefile, admin_cols = admin_cols
+      )
+      pos <- match(jr$.rid, has_coords)
+      for (k in seq_len(n_lvl)) {
+        vals <- as.character(jr[[admin_cols[k]]])
+        res[[canon_out[k]]][has_coords[pos]] <- vals
+      }
+      # A point inside a polygon resolves the finest level; mark it geocoded.
+      resolved <- has_coords[!is.na(res[[canon_out[1L]]][has_coords])]
+      res$.status[resolved] <- "geocoded"
+    }
+  }
+  res$.status[is.na(res$.status)] <- "unresolved"
+
+  # Join per-key results back to the full data and coalesce names in place.
+  out <- dplyr::left_join(data, res, by = loc_cols)
+  for (k in seq_len(n_lvl)) {
+    canonical <- out[[canon_out[k]]]
+    out[[loc_cols[k]]] <- ifelse(is.na(canonical), out[[loc_cols[k]]], canonical)
+  }
+  out[[coord_cols[1L]]] <- out$.lon
+  out[[coord_cols[2L]]] <- out$.lat
+  out[[status_col]]     <- out$.status
+  out <- out[, setdiff(names(out), c(canon_out, ".lon", ".lat", ".status")), drop = FALSE]
+
+  n_keys <- nrow(keys)
+  n_m    <- sum(res$.status == "matched")
+  n_g    <- sum(res$.status == "geocoded")
+  n_u    <- sum(res$.status == "unresolved")
+  cli::cli_alert_success(
+    "Reconciled {n_keys} distinct localit{?y/ies}: {n_m} matched, {n_g} geocoded, {n_u} unresolved."
+  )
+  tibble::as_tibble(out)
+}
+
 #### eri_landscan_upload ####
 
 #' Upload a LandScan population raster to Azure
