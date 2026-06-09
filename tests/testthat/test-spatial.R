@@ -308,3 +308,170 @@ test_that("add_anomaly_spatial admin_match skips gracefully when eri_spatial_loa
   )
   expect_equal(nrow(out), 0L)
 })
+
+#### eri_spatial_reconcile ####
+
+# Two adjacent localities in different municipalities of one province.
+recon_shp <- function() {
+  sf::st_sf(
+    adm4_name = c("Jínova", "Las Zanjas"),
+    adm3_name = c("Juan de Herrera", "San Juan"),
+    adm2_name = c("San Juan", "San Juan"),
+    geometry  = sf::st_sfc(
+      sf::st_polygon(list(matrix(c(0,0, 1,0, 1,1, 0,1, 0,0), ncol = 2, byrow = TRUE))),
+      sf::st_polygon(list(matrix(c(1,0, 2,0, 2,1, 1,1, 1,0), ncol = 2, byrow = TRUE)))
+    ),
+    crs = 4326
+  )
+}
+
+recon_cols <- list(
+  loc_cols   = c("loc", "mun", "prov"),
+  admin_cols = c("adm4_name", "adm3_name", "adm2_name")
+)
+
+test_that(".eri_normalize_name lower-cases, strips accents/punctuation, squishes space", {
+  expect_equal(.eri_normalize_name("  Áéí  Test "), "aei test")
+  expect_equal(.eri_normalize_name("Jínova"), "jinova")
+  expect_equal(.eri_normalize_name("San Juan (D.M.)"), "san juan d m")
+})
+
+test_that("eri_spatial_reconcile matches exactly without geocoding", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(...) stop("must not geocode a matched row"),
+    .package = "erifunctions"
+  )
+  df <- tibble::tibble(
+    loc  = "jinova",  # different case/accent from canonical "Jínova"
+    mun  = "Juan de Herrera",
+    prov = "San Juan",
+    cases = 3L
+  )
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "matched")
+  expect_equal(out$loc, "Jínova")           # replaced in place with canonical
+  expect_equal(out$cases, 3L)               # untouched columns preserved
+  expect_true(all(is.na(c(out$longitude, out$latitude))))
+})
+
+test_that("eri_spatial_reconcile scopes matching by coarser levels", {
+  skip_no_sf()
+  # "Jínova" exists, but under the wrong municipality -> no match (no geocode).
+  local_mocked_bindings(.eri_geocode = function(...) stop("no geocode"), .package = "erifunctions")
+  df  <- tibble::tibble(loc = "Jínova", mun = "San Juan", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(),
+                               recon_cols$admin_cols, method = NULL)
+  expect_equal(out$reconcile_status, "unresolved")
+  expect_equal(out$loc, "Jínova")           # original kept
+})
+
+test_that("eri_spatial_reconcile fuzzy-matches the finest level within max_dist", {
+  skip_no_sf()
+  df <- tibble::tibble(loc = "Jinoba", mun = "Juan de Herrera", prov = "San Juan")  # 1 edit
+  exact <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(),
+                                 recon_cols$admin_cols, method = NULL, max_dist = 0)
+  expect_equal(exact$reconcile_status, "unresolved")
+  fuzzy <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(),
+                                 recon_cols$admin_cols, method = NULL, max_dist = 1)
+  expect_equal(fuzzy$reconcile_status, "matched")
+  expect_equal(fuzzy$loc, "Jínova")
+})
+
+test_that("eri_spatial_reconcile geocodes the unmatched and assigns admin units", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 0.5, latitude = 0.5)  # inside Jínova
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "El Rincon", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "geocoded")
+  expect_equal(out$loc, "Jínova")           # assigned by point-in-polygon
+  expect_equal(out$longitude, 0.5)
+  expect_equal(out$latitude, 0.5)
+})
+
+test_that("eri_spatial_reconcile marks geocoded-but-outside points unresolved", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 50, latitude = 50)  # outside all polys
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "Nowhere", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "unresolved")
+  expect_equal(out$loc, "Nowhere")          # original kept
+  expect_equal(out$longitude, 50)           # coords still recorded for inspection
+})
+
+test_that("eri_spatial_reconcile records NA coords as unresolved", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = NA_real_, latitude = NA_real_)
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "Unfindable", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "unresolved")
+  expect_true(is.na(out$longitude))
+})
+
+test_that("eri_spatial_reconcile resolves a boundary point to a single row", {
+  skip_no_sf()
+  # x = 1 lies on the shared edge of Jínova (0-1) and Las Zanjas (1-2): the
+  # point-in-polygon join matches both, but the result must stay one row per input.
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 1, latitude = 0.5)
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "Edge", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$reconcile_status, "geocoded")
+})
+
+test_that("eri_spatial_reconcile skips geocoding when no place name is available", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(...) stop("must not geocode an empty address"),
+    .package = "erifunctions"
+  )
+  df <- tibble::tibble(
+    loc = NA_character_, mun = NA_character_, prov = NA_character_
+  )
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "unresolved")
+  expect_true(is.na(out$longitude))
+})
+
+test_that("eri_spatial_reconcile validates its arguments", {
+  skip_no_sf()
+  shp <- recon_shp()
+  df  <- tibble::tibble(loc = "x", mun = "y", prov = "z")
+  expect_error(
+    eri_spatial_reconcile(df, c("loc", "mun"), shp, recon_cols$admin_cols),
+    regexp = "same length"
+  )
+  expect_error(
+    eri_spatial_reconcile(df, "nope", shp, "adm4_name"),
+    regexp = "not found in.*data"
+  )
+  expect_error(
+    eri_spatial_reconcile(df, "loc", shp, "no_such_col"),
+    regexp = "not found in.*shapefile"
+  )
+  bad <- tibble::tibble(loc = "x", mun = "y", prov = "z", reconcile_status = 1)
+  expect_error(
+    eri_spatial_reconcile(bad, recon_cols$loc_cols, shp, recon_cols$admin_cols),
+    regexp = "already exist"
+  )
+})

@@ -52,5 +52,6 @@ Suggests:
     spelling,
     terra,
     testthat (>= 3.0.0),
+    tidygeocoder,
     urlchecker
 VignetteBuilder: knitr
