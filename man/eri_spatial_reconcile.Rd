@@ -41,8 +41,9 @@ wrong matches.}
 finest level. \code{0} (default) requires an exact normalized match.}
 
 \item{status_col}{\code{chr} Name of the status column added to the result.
-Default \code{"reconcile_status"}; values are \code{"matched"}, \code{"geocoded"}, or
-\code{"unresolved"}.}
+Default \code{"reconcile_status"}; values are \code{"matched"}, \code{"geocoded"},
+\code{"geocoded_review"} (geocoded but low-confidence or parent-inconsistent --
+verify before use), or \code{"unresolved"}.}
 
 \item{coord_cols}{\code{chr} length-2 names for the longitude and latitude columns
 added to the result. Default \code{c("longitude", "latitude")}. Populated for any
@@ -53,8 +54,8 @@ that fall outside every polygon still record their coordinates).}
 }
 \value{
 A tibble: \code{data} with \code{loc_cols} replaced by their canonical values
-where reconciled (originals kept where unresolved), plus the two \code{coord_cols}
-and \code{status_col}.
+where confidently reconciled (originals kept where unresolved or flagged
+\code{"geocoded_review"}), plus the two \code{coord_cols} and \code{status_col}.
 }
 \description{
 A thin, opt-in \strong{data-sourcing} helper that maps messy, free-text locality
@@ -77,6 +78,16 @@ address built from \code{loc_cols} (+ \code{country_name}), then assigned a cano
 admin unit by point-in-polygon via \code{\link[=eri_spatial_join]{eri_spatial_join()}}. Set
 \code{method = NULL} to skip geocoding entirely (match-only).
 }
+
+A geocode is only \strong{trusted} (status \code{"geocoded"}, names assigned) when the
+service did not flag a partial/low-confidence match \emph{and} the assigned coarser
+admin units agree with the parent levels supplied in \code{loc_cols}. Otherwise the
+row is flagged \code{"geocoded_review"}: its coordinates are recorded for inspection
+but the analyst's names are left untouched. This guards against geocoders that
+"best-guess" a fabricated or unmatched locality into a plausible nearby point
+(issue #145). The partial-match signal is currently read from the \code{"google"}
+method; methods that do not expose one rely on the parent-consistency check
+alone.
 
 Only the place-name address strings are sent to the geocoder; no data records
 leave the machine. The \code{"google"} method is the most accurate but requires

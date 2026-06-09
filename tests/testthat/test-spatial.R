@@ -423,17 +423,49 @@ test_that("eri_spatial_reconcile records NA coords as unresolved", {
   expect_true(is.na(out$longitude))
 })
 
+test_that("eri_spatial_reconcile flags a low-confidence (partial) geocode for review", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 0.5, latitude = 0.5, partial = TRUE)
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "El Rincon", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "geocoded_review")
+  expect_equal(out$loc, "El Rincon")   # names NOT overwritten on a flagged geocode
+  expect_equal(out$longitude, 0.5)     # coordinates still recorded for inspection
+})
+
+test_that("eri_spatial_reconcile flags a parent-inconsistent geocode for review", {
+  skip_no_sf()
+  # Point falls in Jínova (mun "Juan de Herrera"), but the analyst claimed "San Juan".
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 0.5, latitude = 0.5, partial = FALSE)
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "Somewhere", mun = "San Juan", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "geocoded_review")
+  expect_equal(out$mun, "San Juan")    # claimed parent kept, not overwritten
+})
+
 test_that("eri_spatial_reconcile resolves a boundary point to a single row", {
   skip_no_sf()
   # x = 1 lies on the shared edge of Jínova (0-1) and Las Zanjas (1-2): the
   # point-in-polygon join matches both, but the result must stay one row per input.
   local_mocked_bindings(
     .eri_geocode = function(addresses, ...) {
-      tibble::tibble(address = addresses, longitude = 1, latitude = 0.5)
+      tibble::tibble(address = addresses, longitude = 1, latitude = 0.5, partial = FALSE)
     },
     .package = "erifunctions"
   )
-  df  <- tibble::tibble(loc = "Edge", mun = "Juan de Herrera", prov = "San Juan")
+  # Parent levels left NA so the parent-consistency check (which polygon a boundary
+  # point dedups to is arbitrary) does not interfere with the single-row assertion.
+  df  <- tibble::tibble(loc = "Edge", mun = NA_character_, prov = NA_character_)
   out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
   expect_equal(nrow(out), 1L)
   expect_equal(out$reconcile_status, "geocoded")

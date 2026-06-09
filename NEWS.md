@@ -22,6 +22,11 @@
     `eri_spatial_reconcile()` now aborts up front with guidance to store the key once in the
     user `.Renviron` (e.g. `GOOGLEGEOCODE_API_KEY`), rather than surfacing a lower-level
     geocoder error. (#143)
+  - Geocodes are now trusted (status `"geocoded"`, names assigned) only when the service did
+    not flag a partial/low-confidence match *and* the assigned coarser admin units agree with
+    the parent levels supplied. Otherwise the row is flagged `"geocoded_review"`: coordinates
+    are kept for inspection but the analyst's names are left untouched. Guards against geocoders
+    that best-guess a fabricated or unmatched locality into a plausible point. (#145)
 
 # erifunctions 0.9.0
 
