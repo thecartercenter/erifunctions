@@ -69,8 +69,9 @@ eri_spatial_reconcile(
 - status_col:
 
   `chr` Name of the status column added to the result. Default
-  `"reconcile_status"`; values are `"matched"`, `"geocoded"`, or
-  `"unresolved"`.
+  `"reconcile_status"`; values are `"matched"`, `"geocoded"`,
+  `"geocoded_review"` (geocoded but low-confidence or
+  parent-inconsistent – verify before use), or `"unresolved"`.
 
 - coord_cols:
 
@@ -89,8 +90,8 @@ eri_spatial_reconcile(
 ## Value
 
 A tibble: `data` with `loc_cols` replaced by their canonical values
-where reconciled (originals kept where unresolved), plus the two
-`coord_cols` and `status_col`.
+where confidently reconciled (originals kept where unresolved or flagged
+`"geocoded_review"`), plus the two `coord_cols` and `status_col`.
 
 ## Details
 
@@ -109,6 +110,17 @@ The reconciliation runs in two passes (per issue \#134):
     canonical admin unit by point-in-polygon via
     [`eri_spatial_join()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_join.md).
     Set `method = NULL` to skip geocoding entirely (match-only).
+
+A geocode is only **trusted** (status `"geocoded"`, names assigned) when
+the service did not flag a partial/low-confidence match *and* the
+assigned coarser admin units agree with the parent levels supplied in
+`loc_cols`. Otherwise the row is flagged `"geocoded_review"`: its
+coordinates are recorded for inspection but the analyst's names are left
+untouched. This guards against geocoders that "best-guess" a fabricated
+or unmatched locality into a plausible nearby point (issue \#145). The
+partial-match signal is currently read from the `"google"` method;
+methods that do not expose one rely on the parent-consistency check
+alone.
 
 Only the place-name address strings are sent to the geocoder; no data
 records leave the machine. The `"google"` method is the most accurate

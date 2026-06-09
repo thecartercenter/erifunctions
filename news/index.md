@@ -45,6 +45,14 @@
     `.Renviron` (e.g. `GOOGLEGEOCODE_API_KEY`), rather than surfacing a
     lower-level geocoder error.
     ([\#143](https://github.com/thecartercenter/erifunctions/issues/143))
+  - Geocodes are now trusted (status `"geocoded"`, names assigned) only
+    when the service did not flag a partial/low-confidence match *and*
+    the assigned coarser admin units agree with the parent levels
+    supplied. Otherwise the row is flagged `"geocoded_review"`:
+    coordinates are kept for inspection but the analyst’s names are left
+    untouched. Guards against geocoders that best-guess a fabricated or
+    unmatched locality into a plausible point.
+    ([\#145](https://github.com/thecartercenter/erifunctions/issues/145))
 
 ## erifunctions 0.9.0
 

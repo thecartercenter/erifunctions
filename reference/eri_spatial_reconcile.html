@@ -122,8 +122,9 @@ finest level. <code>0</code> (default) requires an exact normalized match.</p></
 
 <dt id="arg-status-col">status_col<a class="anchor" aria-label="anchor" href="#arg-status-col"></a></dt>
 <dd><p><code>chr</code> Name of the status column added to the result.
-Default <code>"reconcile_status"</code>; values are <code>"matched"</code>, <code>"geocoded"</code>, or
-<code>"unresolved"</code>.</p></dd>
+Default <code>"reconcile_status"</code>; values are <code>"matched"</code>, <code>"geocoded"</code>,
+<code>"geocoded_review"</code> (geocoded but low-confidence or parent-inconsistent –
+verify before use), or <code>"unresolved"</code>.</p></dd>
 
 
 <dt id="arg-coord-cols">coord_cols<a class="anchor" aria-label="anchor" href="#arg-coord-cols"></a></dt>
@@ -140,8 +141,8 @@ that fall outside every polygon still record their coordinates).</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble: <code>data</code> with <code>loc_cols</code> replaced by their canonical values
-where reconciled (originals kept where unresolved), plus the two <code>coord_cols</code>
-and <code>status_col</code>.</p>
+where confidently reconciled (originals kept where unresolved or flagged
+<code>"geocoded_review"</code>), plus the two <code>coord_cols</code> and <code>status_col</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -154,7 +155,16 @@ match approximately when <code>max_dist &gt; 0</code> (Levenshtein distance via
 address built from <code>loc_cols</code> (+ <code>country_name</code>), then assigned a canonical
 admin unit by point-in-polygon via <code><a href="eri_spatial_join.html">eri_spatial_join()</a></code>. Set
 <code>method = NULL</code> to skip geocoding entirely (match-only).</p></li>
-</ol><p>Only the place-name address strings are sent to the geocoder; no data records
+</ol><p>A geocode is only <strong>trusted</strong> (status <code>"geocoded"</code>, names assigned) when the
+service did not flag a partial/low-confidence match <em>and</em> the assigned coarser
+admin units agree with the parent levels supplied in <code>loc_cols</code>. Otherwise the
+row is flagged <code>"geocoded_review"</code>: its coordinates are recorded for inspection
+but the analyst's names are left untouched. This guards against geocoders that
+"best-guess" a fabricated or unmatched locality into a plausible nearby point
+(issue #145). The partial-match signal is currently read from the <code>"google"</code>
+method; methods that do not expose one rely on the parent-consistency check
+alone.</p>
+<p>Only the place-name address strings are sent to the geocoder; no data records
 leave the machine. The <code>"google"</code> method is the most accurate but requires
 <strong>your own API key</strong> and is billed per call: sign up for a key, then store it
 once in your user <code>.Renviron</code> as <code>GOOGLEGEOCODE_API_KEY</code> (e.g. via
