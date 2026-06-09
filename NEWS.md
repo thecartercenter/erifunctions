@@ -18,6 +18,10 @@
   admin units by point-in-polygon through `eri_spatial_join()`. Returns the data with names
   reconciled in place plus coordinates and a `reconcile_status` column. Only place-name strings
   are sent to the geocoder. (#134)
+  - When a keyed method (e.g. `method = "google"`) is selected without its API key set,
+    `eri_spatial_reconcile()` now aborts up front with guidance to store the key once in the
+    user `.Renviron` (e.g. `GOOGLEGEOCODE_API_KEY`), rather than surfacing a lower-level
+    geocoder error. (#143)
 
 # erifunctions 0.9.0
 

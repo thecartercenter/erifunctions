@@ -79,9 +79,12 @@ admin unit by point-in-polygon via \code{\link[=eri_spatial_join]{eri_spatial_jo
 }
 
 Only the place-name address strings are sent to the geocoder; no data records
-leave the machine. The \code{"google"} method is the most accurate but requires an
-API key (\code{GOOGLEGEOCODE_API_KEY}) and is billed per call; the default
-\code{"osm"} (Nominatim) needs no key. See \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}}.
+leave the machine. The \code{"google"} method is the most accurate but requires
+\strong{your own API key} and is billed per call: sign up for a key, then store it
+once in your user \code{.Renviron} as \code{GOOGLEGEOCODE_API_KEY} (e.g. via
+\code{usethis::edit_r_environ()}) and restart R. The function checks for the key up
+front and explains this if it is missing. The default \code{"osm"} (Nominatim) needs
+no key. See \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}}.
 }
 \examples{
 \dontrun{

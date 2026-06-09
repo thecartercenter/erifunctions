@@ -475,3 +475,31 @@ test_that("eri_spatial_reconcile validates its arguments", {
     regexp = "already exist"
   )
 })
+
+#### .eri_geocode key preflight ####
+
+test_that(".eri_geocode aborts early when a keyed method has no API key", {
+  withr::local_envvar(GOOGLEGEOCODE_API_KEY = "")
+  expect_error(
+    .eri_geocode("Somewhere, Country", method = "google"),
+    regexp = "needs an API key|GOOGLEGEOCODE_API_KEY"
+  )
+})
+
+test_that(".eri_geocode skips the key check for keyless methods", {
+  # If the key check did not fire for "osm", the next gate is the tidygeocoder
+  # requireNamespace error. Skip when tidygeocoder is installed (would hit network).
+  skip_if(requireNamespace("tidygeocoder", quietly = TRUE),
+          "tidygeocoder installed; keyless path would make a network call")
+  withr::local_envvar(GOOGLEGEOCODE_API_KEY = "")
+  expect_error(.eri_geocode("Somewhere", method = "osm"), regexp = "tidygeocoder")
+})
+
+test_that(".eri_geocode passes the key gate when the key is present", {
+  # A set key clears the preflight; the next gate is the tidygeocoder requireNamespace
+  # error. Skip when tidygeocoder is installed (proceeding would make a network call).
+  skip_if(requireNamespace("tidygeocoder", quietly = TRUE),
+          "tidygeocoder installed; passing the gate would make a network call")
+  withr::local_envvar(GOOGLEGEOCODE_API_KEY = "dummy-key")
+  expect_error(.eri_geocode("Somewhere", method = "google"), regexp = "tidygeocoder")
+})
