@@ -375,6 +375,7 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
   # substituted a coarser guess (e.g. a fabricated locality resolved to its parent) --
   # the signal a reconciliation should not trust. Request full results to capture it.
   # Methods that expose no such flag report `partial = NA` (not flagged).
+  # `full_results` is managed here for google; do not also pass it via `...`.
   if (identical(method, "google")) {
     out     <- tidygeocoder::geocode(
       df, address = "address", method = method,
@@ -580,6 +581,11 @@ eri_spatial_reconcile <- function(data,
     if (length(to_geo) > 0L) {
       cli::cli_alert_info("Geocoding {length(to_geo)} unmatched localit{?y/ies} via {.val {method}}...")
       geo <- .eri_geocode(addr[nzchar(addr)], method = method, ...)
+      if (nrow(geo) != length(to_geo)) {
+        cli::cli_abort(
+          "Geocoder returned {nrow(geo)} row{?s} for {length(to_geo)} address{?es} (expected one per address)."
+        )
+      }
       res$.lon[to_geo]     <- geo$longitude
       res$.lat[to_geo]     <- geo$latitude
       res$.partial[to_geo] <- if ("partial" %in% names(geo)) geo$partial else NA
@@ -610,6 +616,7 @@ eri_spatial_reconcile <- function(data,
           jrow <- ord[i]
           if (is.na(jrow) || is.na(jr[[admin_cols[1L]]][jrow])) next  # outside all polygons
 
+          # Any coarser level disagreeing with the analyst's claim flags the row.
           consistent <- TRUE
           if (n_lvl > 1L) {
             for (j in 2:n_lvl) {
@@ -617,6 +624,7 @@ eri_spatial_reconcile <- function(data,
               assigned <- .eri_normalize_name(jr[[admin_cols[j]]][jrow])
               if (!is.na(claimed) && !is.na(assigned) && !identical(claimed, assigned)) {
                 consistent <- FALSE
+                break
               }
             }
           }
