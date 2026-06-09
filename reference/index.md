@@ -144,6 +144,8 @@ Admin boundaries, LandScan population, and spatial joins.
   : Upload an admin boundary shapefile to Azure
 - [`eri_spatial_join()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_join.md)
   : Join point data to admin boundaries
+- [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+  : Reconcile free-text place names to canonical admin units
 - [`eri_spatial_pop()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_pop.md)
   : Extract population from LandScan into spatial polygons
 - [`eri_bbox_expand()`](https://thecartercenter.github.io/erifunctions/reference/eri_bbox_expand.md)

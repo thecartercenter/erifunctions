@@ -27,6 +27,17 @@
        [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md).
        Implements ADR-0006.
        ([\#136](https://github.com/thecartercenter/erifunctions/issues/136))
+- [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+  – thin, opt-in data-sourcing helper that maps free-text locality names
+  to canonical admin units: normalized exact/fuzzy match against the
+  boundary `sf` first, then geocodes only the unmatched (via
+  `tidygeocoder`, `method = NULL` to disable) and assigns admin units by
+  point-in-polygon through
+  [`eri_spatial_join()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_join.md).
+  Returns the data with names reconciled in place plus coordinates and a
+  `reconcile_status` column. Only place-name strings are sent to the
+  geocoder.
+  ([\#134](https://github.com/thecartercenter/erifunctions/issues/134))
 
 ## erifunctions 0.9.0
 

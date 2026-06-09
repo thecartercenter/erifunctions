@@ -56,6 +56,8 @@
 <code><a href="../reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> – create a standalone research-project repo skeleton (README, <code>analysis/</code> seeded from the workflow template, data-safe <code>.gitignore</code>, minimal reproducibility
 <ol start="101" style="list-style-type: upper-roman"><li>plus the standard research scaffold via <code><a href="../reference/eri_research_init.html">eri_research_init()</a></code>. Implements ADR-0006. (<a href="https://github.com/thecartercenter/erifunctions/issues/136" class="external-link">#136</a>)</li>
 </ol></li>
+<li>
+<code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> – thin, opt-in data-sourcing helper that maps free-text locality names to canonical admin units: normalized exact/fuzzy match against the boundary <code>sf</code> first, then geocodes only the unmatched (via <code>tidygeocoder</code>, <code>method = NULL</code> to disable) and assigns admin units by point-in-polygon through <code><a href="../reference/eri_spatial_join.html">eri_spatial_join()</a></code>. Returns the data with names reconciled in place plus coordinates and a <code>reconcile_status</code> column. Only place-name strings are sent to the geocoder. (<a href="https://github.com/thecartercenter/erifunctions/issues/134" class="external-link">#134</a>)</li>
 </ul></div>
 </div>
     <div class="section level2">
