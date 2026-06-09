@@ -38,6 +38,13 @@
   `reconcile_status` column. Only place-name strings are sent to the
   geocoder.
   ([\#134](https://github.com/thecartercenter/erifunctions/issues/134))
+  - When a keyed method (e.g. `method = "google"`) is selected without
+    its API key set,
+    [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+    now aborts up front with guidance to store the key once in the user
+    `.Renviron` (e.g. `GOOGLEGEOCODE_API_KEY`), rather than surfacing a
+    lower-level geocoder error.
+    ([\#143](https://github.com/thecartercenter/erifunctions/issues/143))
 
 ## erifunctions 0.9.0
 

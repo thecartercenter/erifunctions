@@ -155,9 +155,12 @@ address built from <code>loc_cols</code> (+ <code>country_name</code>), then ass
 admin unit by point-in-polygon via <code><a href="eri_spatial_join.html">eri_spatial_join()</a></code>. Set
 <code>method = NULL</code> to skip geocoding entirely (match-only).</p></li>
 </ol><p>Only the place-name address strings are sent to the geocoder; no data records
-leave the machine. The <code>"google"</code> method is the most accurate but requires an
-API key (<code>GOOGLEGEOCODE_API_KEY</code>) and is billed per call; the default
-<code>"osm"</code> (Nominatim) needs no key. See <code><a href="https://jessecambon.github.io/tidygeocoder/reference/geocode.html" class="external-link">tidygeocoder::geocode()</a></code>.</p>
+leave the machine. The <code>"google"</code> method is the most accurate but requires
+<strong>your own API key</strong> and is billed per call: sign up for a key, then store it
+once in your user <code>.Renviron</code> as <code>GOOGLEGEOCODE_API_KEY</code> (e.g. via
+<code>usethis::edit_r_environ()</code>) and restart R. The function checks for the key up
+front and explains this if it is missing. The default <code>"osm"</code> (Nominatim) needs
+no key. See <code><a href="https://jessecambon.github.io/tidygeocoder/reference/geocode.html" class="external-link">tidygeocoder::geocode()</a></code>.</p>
     </div>
 
     <div class="section level2">

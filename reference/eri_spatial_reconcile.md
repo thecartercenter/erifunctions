@@ -112,8 +112,11 @@ The reconciliation runs in two passes (per issue \#134):
 
 Only the place-name address strings are sent to the geocoder; no data
 records leave the machine. The `"google"` method is the most accurate
-but requires an API key (`GOOGLEGEOCODE_API_KEY`) and is billed per
-call; the default `"osm"` (Nominatim) needs no key. See
+but requires **your own API key** and is billed per call: sign up for a
+key, then store it once in your user `.Renviron` as
+`GOOGLEGEOCODE_API_KEY` (e.g. via `usethis::edit_r_environ()`) and
+restart R. The function checks for the key up front and explains this if
+it is missing. The default `"osm"` (Nominatim) needs no key. See
 [`tidygeocoder::geocode()`](https://jessecambon.github.io/tidygeocoder/reference/geocode.html).
 
 ## Examples
