@@ -423,6 +423,36 @@ test_that("eri_spatial_reconcile records NA coords as unresolved", {
   expect_true(is.na(out$longitude))
 })
 
+test_that("eri_spatial_reconcile resolves a boundary point to a single row", {
+  skip_no_sf()
+  # x = 1 lies on the shared edge of Jínova (0-1) and Las Zanjas (1-2): the
+  # point-in-polygon join matches both, but the result must stay one row per input.
+  local_mocked_bindings(
+    .eri_geocode = function(addresses, ...) {
+      tibble::tibble(address = addresses, longitude = 1, latitude = 0.5)
+    },
+    .package = "erifunctions"
+  )
+  df  <- tibble::tibble(loc = "Edge", mun = "Juan de Herrera", prov = "San Juan")
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$reconcile_status, "geocoded")
+})
+
+test_that("eri_spatial_reconcile skips geocoding when no place name is available", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(...) stop("must not geocode an empty address"),
+    .package = "erifunctions"
+  )
+  df <- tibble::tibble(
+    loc = NA_character_, mun = NA_character_, prov = NA_character_
+  )
+  out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
+  expect_equal(out$reconcile_status, "unresolved")
+  expect_true(is.na(out$longitude))
+})
+
 test_that("eri_spatial_reconcile validates its arguments", {
   skip_no_sf()
   shp <- recon_shp()

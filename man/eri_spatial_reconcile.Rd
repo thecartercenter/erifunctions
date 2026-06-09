@@ -27,7 +27,9 @@ the geocoding address (finest first).}
 \item{shapefile}{An admin-boundary \code{sf} object, e.g. from \code{\link[=eri_spatial_load]{eri_spatial_load()}}.}
 
 \item{admin_cols}{\code{chr} vector of canonical name columns in \code{shapefile},
-\strong{parallel to \code{loc_cols}} (same length, same finest-to-coarsest order).}
+\strong{parallel to \code{loc_cols}} (same length, same finest-to-coarsest order). This
+ordering is load-bearing: passing the columns coarsest-first silently produces
+wrong matches.}
 
 \item{country_name}{\code{chr} Country name appended to each geocoding address
 (e.g. \code{"Dominican Republic"}), improving geocoder accuracy. Optional.}
@@ -43,8 +45,9 @@ Default \code{"reconcile_status"}; values are \code{"matched"}, \code{"geocoded"
 \code{"unresolved"}.}
 
 \item{coord_cols}{\code{chr} length-2 names for the longitude and latitude columns
-added to the result. Default \code{c("longitude", "latitude")}. Populated for
-geocoded rows only.}
+added to the result. Default \code{c("longitude", "latitude")}. Populated for any
+row sent to the geocoder, regardless of its final status (so geocoded points
+that fall outside every polygon still record their coordinates).}
 
 \item{...}{Passed to \code{\link[tidygeocoder:geocode]{tidygeocoder::geocode()}} (e.g. \code{min_time}, \code{api_options}).}
 }

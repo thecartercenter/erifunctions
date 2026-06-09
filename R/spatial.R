@@ -380,7 +380,9 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #'   the geocoding address (finest first).
 #' @param shapefile An admin-boundary `sf` object, e.g. from [eri_spatial_load()].
 #' @param admin_cols `chr` vector of canonical name columns in `shapefile`,
-#'   **parallel to `loc_cols`** (same length, same finest-to-coarsest order).
+#'   **parallel to `loc_cols`** (same length, same finest-to-coarsest order). This
+#'   ordering is load-bearing: passing the columns coarsest-first silently produces
+#'   wrong matches.
 #' @param country_name `chr` Country name appended to each geocoding address
 #'   (e.g. `"Dominican Republic"`), improving geocoder accuracy. Optional.
 #' @param method `chr` Geocoding service passed to [tidygeocoder::geocode()]
@@ -391,8 +393,9 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #'   Default `"reconcile_status"`; values are `"matched"`, `"geocoded"`, or
 #'   `"unresolved"`.
 #' @param coord_cols `chr` length-2 names for the longitude and latitude columns
-#'   added to the result. Default `c("longitude", "latitude")`. Populated for
-#'   geocoded rows only.
+#'   added to the result. Default `c("longitude", "latitude")`. Populated for any
+#'   row sent to the geocoder, regardless of its final status (so geocoded points
+#'   that fall outside every polygon still record their coordinates).
 #' @param ... Passed to [tidygeocoder::geocode()] (e.g. `min_time`, `api_options`).
 #' @returns A tibble: `data` with `loc_cols` replaced by their canonical values
 #'   where reconciled (originals kept where unresolved), plus the two `coord_cols`
@@ -510,30 +513,38 @@ eri_spatial_reconcile <- function(data,
       paste(c(parts, country_name), collapse = ", ")
     }, character(1L))
 
-    cli::cli_alert_info("Geocoding {length(addr)} unmatched localit{?y/ies} via {.val {method}}...")
-    geo <- .eri_geocode(addr, method = method, ...)
-    res$.lon[todo] <- geo$longitude
-    res$.lat[todo] <- geo$latitude
+    # Skip rows with no usable place name -- nothing to geocode (and no billed call).
+    to_geo <- todo[nzchar(addr)]
+    if (length(to_geo) > 0L) {
+      cli::cli_alert_info("Geocoding {length(to_geo)} unmatched localit{?y/ies} via {.val {method}}...")
+      geo <- .eri_geocode(addr[nzchar(addr)], method = method, ...)
+      res$.lon[to_geo] <- geo$longitude
+      res$.lat[to_geo] <- geo$latitude
 
-    has_coords <- todo[!is.na(geo$longitude) & !is.na(geo$latitude)]
-    if (length(has_coords) > 0L) {
-      jf <- tibble::tibble(
-        .rid      = has_coords,
-        longitude = res$.lon[has_coords],
-        latitude  = res$.lat[has_coords]
-      )
-      jr <- eri_spatial_join(
-        jf, lat_col = "latitude", lon_col = "longitude",
-        shapefile = shapefile, admin_cols = admin_cols
-      )
-      pos <- match(jr$.rid, has_coords)
-      for (k in seq_len(n_lvl)) {
-        vals <- as.character(jr[[admin_cols[k]]])
-        res[[canon_out[k]]][has_coords[pos]] <- vals
+      has_coords <- to_geo[!is.na(geo$longitude) & !is.na(geo$latitude)]
+      if (length(has_coords) > 0L) {
+        jf <- tibble::tibble(
+          .rid      = has_coords,
+          longitude = res$.lon[has_coords],
+          latitude  = res$.lat[has_coords]
+        )
+        jr <- eri_spatial_join(
+          jf, lat_col = "latitude", lon_col = "longitude",
+          shapefile = shapefile, admin_cols = admin_cols
+        )
+        # A point on a shared boundary (or in overlapping polygons) can match more
+        # than one unit; keep the first (shapefile order) so each input row resolves
+        # to exactly one admin unit.
+        jr  <- dplyr::distinct(jr, .rid, .keep_all = TRUE)
+        pos <- match(jr$.rid, has_coords)
+        for (k in seq_len(n_lvl)) {
+          vals <- as.character(jr[[admin_cols[k]]])
+          res[[canon_out[k]]][has_coords[pos]] <- vals
+        }
+        # A point inside a polygon resolves the finest level; mark it geocoded.
+        resolved <- has_coords[!is.na(res[[canon_out[1L]]][has_coords])]
+        res$.status[resolved] <- "geocoded"
       }
-      # A point inside a polygon resolves the finest level; mark it geocoded.
-      resolved <- has_coords[!is.na(res[[canon_out[1L]]][has_coords])]
-      res$.status[resolved] <- "geocoded"
     }
   }
   res$.status[is.na(res$.status)] <- "unresolved"
