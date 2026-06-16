@@ -360,6 +360,19 @@ eri_research_pull <- function(
     }
   }
 
+  # Update-with-archival (issue #148): if a target file already exists locally, move the prior
+  # version into <dest>/_archive/<timestamp>/ before overwriting, so an update is reversible and
+  # snapshots/tags can still capture the superseded input.
+  target_paths <- file.path(local_dest, basename(file_names))
+  existing     <- target_paths[file.exists(target_paths)]
+  archived_to  <- NULL
+  if (length(existing) > 0L) {
+    archived_to <- file.path(local_dest, "_archive", format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC"))
+    dir.create(archived_to, recursive = TRUE, showWarnings = FALSE)
+    file.rename(existing, file.path(archived_to, basename(existing)))
+    cli::cli_alert_info("Archived {length(existing)} prior version{?s} to {.path {archived_to}}.")
+  }
+
   local_paths <- vapply(file_names, function(f) {
     lpath <- file.path(local_dest, basename(f))
     AzureStor::storage_download(data_con, f, lpath, overwrite = TRUE)
@@ -368,7 +381,7 @@ eri_research_pull <- function(
 
   research_yaml <- file.path(getwd(), "research.yaml")
   if (file.exists(research_yaml)) {
-    .eri_research_record_pull(azure_path, local_paths, local_dest, research_yaml)
+    .eri_research_record_pull(azure_path, local_paths, local_dest, research_yaml, archived_to = archived_to)
   }
 
   cli::cli_alert_success(
@@ -378,23 +391,100 @@ eri_research_pull <- function(
 }
 
 #' @keywords internal
-.eri_research_record_pull <- function(azure_path, local_paths, local_dest, yaml_path) {
+.eri_research_record_pull <- function(azure_path, local_paths, local_dest, yaml_path, archived_to = NULL) {
   tryCatch({
     manifest <- yaml::read_yaml(yaml_path)
     if (is.null(manifest$pulled_data)) manifest$pulled_data <- list()
 
+    now <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     entry <- list(
       azure_path = azure_path,
       files      = as.list(basename(local_paths)),
       local_dest = local_dest,
-      pulled_at  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+      pulled_at  = now
     )
+    if (!is.null(archived_to)) entry$archived_prev <- archived_to
 
-    manifest$pulled_data <- c(manifest$pulled_data, list(entry))
+    # Dedup (issue #9): a re-pull of the same source REPLACES its record rather than appending a
+    # duplicate; carry forward the first-pull time and an update counter for provenance.
+    same <- vapply(manifest$pulled_data, function(e) {
+      identical(e$azure_path, azure_path) && identical(e$local_dest, local_dest)
+    }, logical(1L))
+    if (any(same)) {
+      prev <- manifest$pulled_data[[which(same)[1L]]]
+      entry$first_pulled_at <- rlang::`%||%`(prev$first_pulled_at, prev$pulled_at)
+      entry$update_count    <- rlang::`%||%`(prev$update_count, 0L) + 1L
+      # Drop ALL existing records for this source (collapses any pre-existing duplicates), then
+      # append the single current one.
+      manifest$pulled_data <- c(manifest$pulled_data[!same], list(entry))
+    } else {
+      manifest$pulled_data <- c(manifest$pulled_data, list(entry))
+    }
     yaml::write_yaml(manifest, yaml_path)
   }, error = function(e) {
     cli::cli_warn("Could not update research.yaml: {conditionMessage(e)}")
   })
+}
+
+#### eri_research_status ####
+
+#' Report the data state of a research project
+#'
+#' Summarises every input the project depends on -- pulls (with update counts and whether a prior
+#' version was archived) and artifacts -- plus the output/snapshot/tag counts, from `research.yaml`.
+#' One place to answer "what does this study depend on, and is any of it stale?". With
+#' `check_remote = TRUE`, flags inputs whose Azure source is newer than the local copy.
+#'
+#' @param path `chr` Local project root (must contain `research.yaml`). Defaults to `getwd()`.
+#' @param check_remote `lgl` If `TRUE`, compare each pulled input against its Azure source and flag
+#'   newer upstream versions (best-effort; needs a connection). Default `FALSE`.
+#' @param data_con Azure container for the `data/` blob; used only when `check_remote`. If `NULL`, connects automatically.
+#' @returns A tibble of tracked inputs (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_research_status()
+#' eri_research_status(check_remote = TRUE)
+#' }
+#' @export
+eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con = NULL) {
+  `%||%`   <- rlang::`%||%`
+  manifest <- .eri_research_read_manifest(path)
+  pulls    <- manifest$pulled_data %||% list()
+  arts     <- manifest$artifacts_used %||% list()
+
+  inputs <- tibble::tibble(
+    kind      = c(rep("pull", length(pulls)), rep("artifact", length(arts))),
+    source    = c(vapply(pulls, function(e) e$azure_path %||% NA_character_, character(1L)),
+                  vapply(arts,  function(e) e$azure_path %||% e$name %||% NA_character_, character(1L))),
+    pulled_at = c(vapply(pulls, function(e) e$pulled_at %||% NA_character_, character(1L)),
+                  vapply(arts,  function(e) e$pulled_at %||% NA_character_, character(1L))),
+    updates   = c(vapply(pulls, function(e) as.integer(e$update_count %||% 0L), integer(1L)),
+                  rep(NA_integer_, length(arts))),
+    archived  = c(vapply(pulls, function(e) !is.null(e$archived_prev), logical(1L)),
+                  rep(NA, length(arts)))
+  )
+
+  if (isTRUE(check_remote) && length(pulls) > 0L) {
+    con <- .eri_research_con(data_con)
+    avail <- rep(NA, nrow(inputs))
+    for (i in seq_along(pulls)) {
+      ap <- pulls[[i]]$azure_path; pat <- pulls[[i]]$pulled_at
+      avail[i] <- tryCatch({
+        info <- AzureStor::list_storage_files(con, ap, info = "all")
+        rm_mtime <- suppressWarnings(max(as.POSIXct(info$lastModified), na.rm = TRUE))
+        !is.na(rm_mtime) && rm_mtime > as.POSIXct(pat, tz = "UTC")
+      }, error = function(e) NA)
+    }
+    inputs$update_available <- avail
+  }
+
+  cli::cli_h1("Research project: {manifest$project_name} ({manifest$country}/{manifest$disease})")
+  cli::cli_inform(c(
+    "*" = "{nrow(inputs)} tracked input{?s} ({sum(inputs$kind == 'pull')} pull{?s}, {sum(inputs$kind == 'artifact')} artifact{?s})",
+    "*" = "{length(manifest$outputs %||% list())} output{?s}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}"
+  ))
+  if (nrow(inputs) > 0L) print(inputs)
+  invisible(inputs)
 }
 
 #### eri_research_upload_figure ####

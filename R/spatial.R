@@ -745,9 +745,13 @@ eri_landscan_list <- function(data_con = NULL) {
   files <- tryCatch(
     eri_list(.ERI_SPATIAL_LANDSCAN_DIR, azcontainer = con),
     error = function(e) {
-      cli::cli_warn("Could not list Azure LandScan directory: {e$message}")
-      return(tibble::tibble(name = character(), size = integer(),
-                            isdir = logical(), lastModified = as.POSIXct(character())))
+      # A missing directory just means nothing has been uploaded yet -- return empty quietly;
+      # only warn on a genuine error.
+      if (!grepl("does not exist|not found|404", conditionMessage(e), ignore.case = TRUE)) {
+        cli::cli_warn("Could not list Azure LandScan directory: {conditionMessage(e)}")
+      }
+      tibble::tibble(name = character(), size = integer(),
+                     isdir = logical(), lastModified = as.POSIXct(character()))
     }
   )
 
@@ -837,14 +841,26 @@ eri_spatial_pop <- function(shapefile, year = NULL, data_con = NULL, fun = "sum"
     ))
   }
 
-  tmp_tif <- tempfile(fileext = ".tif")
-  withr::defer(unlink(tmp_tif))
+  # Cache the raster in the project and reuse it, so repeated calls (e.g. adm3 then adm4) don't
+  # re-download ~100 MB each time; record provenance when in a research project. Outside a project,
+  # fall back to a session tempdir cache. (issue #148)
+  in_project <- file.exists(file.path(getwd(), "research.yaml"))
+  cache_dir  <- if (in_project) file.path(getwd(), "data") else tempdir()
+  tif_path   <- file.path(cache_dir, basename(blob_path))
 
-  cli::cli_alert_info("Downloading LandScan {year} from Azure...")
-  AzureStor::storage_download(con, blob_path, tmp_tif, overwrite = TRUE)
+  if (file.exists(tif_path)) {
+    cli::cli_alert_info("Using cached LandScan {year} ({.path {tif_path}}).")
+  } else {
+    cli::cli_alert_info("Downloading LandScan {year} from Azure...")
+    if (in_project) {
+      eri_research_pull(path = blob_path, dest = cache_dir, data_con = con)
+    } else {
+      AzureStor::storage_download(con, blob_path, tif_path, overwrite = TRUE)
+    }
+  }
 
   cli::cli_alert_info("Extracting population for {nrow(shapefile)} feature{?s}...")
-  rast_obj <- terra::rast(tmp_tif)
+  rast_obj <- terra::rast(tif_path)
   shapefile$pop <- exactextractr::exact_extract(rast_obj, shapefile, fun = fun)
 
   cli::cli_alert_success(

@@ -1,5 +1,19 @@
 # erifunctions (development version)
 
+## Research data lifecycle (issue #148, ADR-0009)
+
+- `eri_research_status()` -- **new**: a manifest of every input a project depends on (source,
+  `pulled_at`, update count, whether a prior version was archived) plus output/snapshot/tag counts.
+  `check_remote = TRUE` flags inputs whose Azure source is newer than the local copy.
+- `eri_research_pull()` now does **update-with-archival**: a re-pull moves the prior local version
+  into `data/_archive/<timestamp>/` and records it, and **dedups** `pulled_data` (a re-pull of the
+  same source replaces its record instead of appending a duplicate, and collapses any pre-existing
+  duplicates). `eri_spatial_load(cache = TRUE)` inherits this.
+- `eri_spatial_pop()` now **caches the LandScan raster in the project and reuses it** rather than
+  re-downloading ~100 MB on every call; records provenance when run inside a research project.
+- `eri_landscan_list()` no longer warns when the LandScan directory simply does not exist yet
+  (returns an empty tibble quietly).
+
 ## Azure access: zero-config interactive auth + ADLS Gen2 fixes
 
 - `get_azure_storage_connection()` ships working defaults for interactive (browser) auth, so analysts
