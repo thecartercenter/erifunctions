@@ -1,5 +1,21 @@
 # DAL - Data Access Layer
 
+# Defaults for interactive (browser) auth so analysts/Epis configure nothing. None of these
+# are secrets: a tenant id and a storage-account URL are non-sensitive identifiers (access is
+# gated by AAD + RBAC). The service-principal *secret* is the only credential that must never
+# be committed, and it stays in env vars. All three below are overridable via env var.
+#
+# - app_id: Microsoft's first-party Azure CLI public client -- pre-consented in every tenant
+#   and able to get delegated tokens for BOTH Azure Storage (https://storage.azure.com/) and
+#   Microsoft Graph (SharePoint/Teams), so one interactive login covers every resource.
+# - tenant_id: the TCC ERI (RB/LF/SCH/MAL) Entra tenant.
+# - resource_endpoint: the `eridev` ADLS Gen2 (Data Lake) endpoint where the ERI team works.
+#   AzureStor auto-detects ADLS from the `dfs.` host; the same account's blob API would be at
+#   https://eridev.blob.core.windows.net/ if a blob endpoint is ever needed.
+.ERI_DEFAULT_APP_ID            <- "04b07795-8ddb-461a-bbee-02f9e1bf7b46"
+.ERI_DEFAULT_TENANT_ID         <- "16decddb-28ac-4bea-8fc9-5844aadea669"
+.ERI_DEFAULT_RESOURCE_ENDPOINT <- "https://eridev.dfs.core.windows.net/"
+
 #### 1) Utility functions ####
 
 #' Validate connection to Azure
@@ -7,10 +23,13 @@
 #' Generate token which connects to TCC Azure resources and
 #' validates that the individual still has access.
 #'
-#' @param app_id `str` Application ID. Defaults to `Sys.getenv("ERIFUNCTIONS_APP_ID")`.
-#' @param tenant_id `str` ID of the Azure tenant. Defaults to `Sys.getenv("ERIFUNCTIONS_TENANT_ID")`.
-#' @param resource_endpoint `str` URL used to connect to the Azure resource.
-#' Defaults to `Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT")`.
+#' @param app_id `str` Application (client) ID. Defaults to the `ERIFUNCTIONS_APP_ID` env var,
+#' or -- when unset -- Microsoft's first-party Azure CLI public client
+#' (`"04b07795-8ddb-461a-bbee-02f9e1bf7b46"`), so interactive auth works with no per-user setup.
+#' @param tenant_id `str` Azure tenant. Defaults to the `ERIFUNCTIONS_TENANT_ID` env var, or the
+#' TCC ERI Entra tenant when unset.
+#' @param resource_endpoint `str` Storage endpoint URL. Defaults to the
+#' `ERIFUNCTIONS_RESOURCE_ENDPOINT` env var, or the team `eridev` ADLS endpoint when unset.
 #' @param storage_name `str` Name of the storage blob.
 #' Defaults to `Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")`.
 #' @param auth `str` Authorization type defaults to `"authorization_code"`,
@@ -33,9 +52,9 @@
 #'
 #' @export
 get_azure_storage_connection <- function(
-    tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
-    app_id = Sys.getenv("ERIFUNCTIONS_APP_ID"),
-    resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"),
+    tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID", unset = .ERI_DEFAULT_TENANT_ID),
+    app_id = Sys.getenv("ERIFUNCTIONS_APP_ID", unset = .ERI_DEFAULT_APP_ID),
+    resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT", unset = .ERI_DEFAULT_RESOURCE_ENDPOINT),
     storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
     auth = "authorization_code",
     creds_yaml_path = NULL,
