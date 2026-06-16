@@ -7,9 +7,10 @@ the individual still has access.
 
 ``` r
 get_azure_storage_connection(
-  tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
-  app_id = Sys.getenv("ERIFUNCTIONS_APP_ID"),
-  resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"),
+  tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID", unset = .ERI_DEFAULT_TENANT_ID),
+  app_id = Sys.getenv("ERIFUNCTIONS_APP_ID", unset = .ERI_DEFAULT_APP_ID),
+  resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT", unset =
+    .ERI_DEFAULT_RESOURCE_ENDPOINT),
   storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
   auth = "authorization_code",
   creds_yaml_path = NULL,
@@ -21,17 +22,21 @@ get_azure_storage_connection(
 
 - tenant_id:
 
-  `str` ID of the Azure tenant. Defaults to
-  `Sys.getenv("ERIFUNCTIONS_TENANT_ID")`.
+  `str` Azure tenant. Defaults to the `ERIFUNCTIONS_TENANT_ID` env var,
+  or the TCC ERI Entra tenant when unset.
 
 - app_id:
 
-  `str` Application ID. Defaults to `Sys.getenv("ERIFUNCTIONS_APP_ID")`.
+  `str` Application (client) ID. Defaults to the `ERIFUNCTIONS_APP_ID`
+  env var, or – when unset – Microsoft's first-party Azure CLI public
+  client (`"04b07795-8ddb-461a-bbee-02f9e1bf7b46"`), so interactive auth
+  works with no per-user setup.
 
 - resource_endpoint:
 
-  `str` URL used to connect to the Azure resource. Defaults to
-  `Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT")`.
+  `str` Storage endpoint URL. Defaults to the
+  `ERIFUNCTIONS_RESOURCE_ENDPOINT` env var, or the team `eridev` ADLS
+  endpoint when unset.
 
 - storage_name:
 

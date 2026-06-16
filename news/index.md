@@ -2,6 +2,28 @@
 
 ## erifunctions (development version)
 
+### Azure access: zero-config interactive auth + ADLS Gen2 fixes
+
+- [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
+  ships working defaults for interactive (browser) auth, so analysts and
+  epidemiologists configure nothing: `app_id` defaults to Microsoft’s
+  first-party Azure CLI public client and `tenant_id` /
+  `resource_endpoint` to the team’s Entra tenant and the `eridev` ADLS
+  endpoint. All remain overridable via the existing `ERIFUNCTIONS_*` env
+  vars; the service-principal secret stays env-only. One Microsoft
+  sign-in covers Azure Storage (and, later, Microsoft Graph).
+- Fixed research-project directory creation on **ADLS Gen2**: paths with
+  a trailing slash returned `HTTP 400 (request URI is invalid)` and
+  intermediate parents were not created. New internal
+  `.eri_ensure_azure_dir()` trims trailing slashes and creates each
+  missing parent level; all `R/research.R` directory sites use it.
+- [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md)
+  normalizes a trailing slash in `dest`, and its partial-failure message
+  now explains how to recover (finish
+  [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md)
+  in place, or [`unlink()`](https://rdrr.io/r/base/unlink.html) +
+  re-scaffold).
+
 ### V2 Phase 1 – dr_irs vertical slice (in progress)
 
 - [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md)

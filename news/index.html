@@ -47,6 +47,14 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="azure-access-zero-config-interactive-auth--adls-gen2-fixes-development-version">Azure access: zero-config interactive auth + ADLS Gen2 fixes<a class="anchor" aria-label="anchor" href="#azure-access-zero-config-interactive-auth--adls-gen2-fixes-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> ships working defaults for interactive (browser) auth, so analysts and epidemiologists configure nothing: <code>app_id</code> defaults to Microsoft’s first-party Azure CLI public client and <code>tenant_id</code> / <code>resource_endpoint</code> to the team’s Entra tenant and the <code>eridev</code> ADLS endpoint. All remain overridable via the existing <code>ERIFUNCTIONS_*</code> env vars; the service-principal secret stays env-only. One Microsoft sign-in covers Azure Storage (and, later, Microsoft Graph).</li>
+<li>Fixed research-project directory creation on <strong>ADLS Gen2</strong>: paths with a trailing slash returned <code>HTTP 400 (request URI is invalid)</code> and intermediate parents were not created. New internal <code>.eri_ensure_azure_dir()</code> trims trailing slashes and creates each missing parent level; all <code>R/research.R</code> directory sites use it.</li>
+<li>
+<code><a href="../reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> normalizes a trailing slash in <code>dest</code>, and its partial-failure message now explains how to recover (finish <code><a href="../reference/eri_research_init.html">eri_research_init()</a></code> in place, or <code><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink()</a></code> + re-scaffold).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="v2-phase--dr_irs-vertical-slice-in-progress-development-version">V2 Phase 1 – dr_irs vertical slice (in progress)<a class="anchor" aria-label="anchor" href="#v2-phase--dr_irs-vertical-slice-in-progress-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/eri_research_tag.html">eri_research_tag()</a></code> – bind a frozen data snapshot, the analysis git commit, the input provenance, and the output manifest into an immutable, citable tag in Azure, recorded in <code>research.yaml</code>. Makes a tagged analysis reproducible from a citation, including across data updates. Tags are immutable and auto-create a snapshot if none exists. (<a href="https://github.com/thecartercenter/erifunctions/issues/135" class="external-link">#135</a>)</li>
