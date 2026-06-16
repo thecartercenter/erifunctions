@@ -5,9 +5,10 @@
 \title{Validate connection to Azure}
 \usage{
 get_azure_storage_connection(
-  tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
-  app_id = Sys.getenv("ERIFUNCTIONS_APP_ID"),
-  resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"),
+  tenant_id = Sys.getenv("ERIFUNCTIONS_TENANT_ID", unset = .ERI_DEFAULT_TENANT_ID),
+  app_id = Sys.getenv("ERIFUNCTIONS_APP_ID", unset = .ERI_DEFAULT_APP_ID),
+  resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT", unset =
+    .ERI_DEFAULT_RESOURCE_ENDPOINT),
   storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
   auth = "authorization_code",
   creds_yaml_path = NULL,
@@ -15,12 +16,15 @@ get_azure_storage_connection(
 )
 }
 \arguments{
-\item{tenant_id}{\code{str} ID of the Azure tenant. Defaults to \code{Sys.getenv("ERIFUNCTIONS_TENANT_ID")}.}
+\item{tenant_id}{\code{str} Azure tenant. Defaults to the \code{ERIFUNCTIONS_TENANT_ID} env var, or the
+TCC ERI Entra tenant when unset.}
 
-\item{app_id}{\code{str} Application ID. Defaults to \code{Sys.getenv("ERIFUNCTIONS_APP_ID")}.}
+\item{app_id}{\code{str} Application (client) ID. Defaults to the \code{ERIFUNCTIONS_APP_ID} env var,
+or -- when unset -- Microsoft's first-party Azure CLI public client
+(\code{"04b07795-8ddb-461a-bbee-02f9e1bf7b46"}), so interactive auth works with no per-user setup.}
 
-\item{resource_endpoint}{\code{str} URL used to connect to the Azure resource.
-Defaults to \code{Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT")}.}
+\item{resource_endpoint}{\code{str} Storage endpoint URL. Defaults to the
+\code{ERIFUNCTIONS_RESOURCE_ENDPOINT} env var, or the team \code{eridev} ADLS endpoint when unset.}
 
 \item{storage_name}{\code{str} Name of the storage blob.
 Defaults to \code{Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")}.}
