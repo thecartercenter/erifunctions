@@ -12,13 +12,13 @@
   )
 }
 
-#' @keywords internal
 #' Ensure an Azure directory exists, creating any missing parents.
 #'
 #' ADLS Gen2 rejects a trailing slash in directory operations (HTTP 400, "the request URI is
 #' invalid") and does not reliably create intermediate parents, so we strip trailing slashes
 #' and create each level of the path that is missing. On flat blob storage these are cheap
 #' no-ops. Use this instead of a bare `create_storage_dir()` for any nested research path.
+#' @keywords internal
 .eri_ensure_azure_dir <- function(data_con, path) {
   parts <- strsplit(sub("/+$", "", path), "/", fixed = TRUE)[[1]]
   parts <- parts[nzchar(parts)]

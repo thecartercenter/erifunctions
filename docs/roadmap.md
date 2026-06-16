@@ -63,6 +63,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0005](adr/0005-pull-then-process.md) | Confirm pull-then-process; provenance via the pull entry points | "Pull-then-process vs push?" |
 | [0006](adr/0006-research-projects-as-repos.md) | Research projects are separate repos generated from a template, depending on erifunctions | "How to organise Epi analysis code?" |
 | [0007](adr/0007-research-aware-spatial-sourcing.md) | Research-aware spatial sourcing: a `cache` flag on `eri_spatial_load()` delegating to `eri_research_pull()` | Reproducible spatial inputs (Phase 1) |
+| [0008](adr/0008-baked-azure-auth-defaults.md) | Bake non-secret auth constants into the package; default to interactive AAD auth | Zero-config login (Phase 2 precondition, brought forward) |
 
 ---
 
@@ -130,6 +131,11 @@ and re-tag; re-pull the original tag on a clean checkout and reproduce its figur
 
 Implements ADR-0002/0003/0004 before multi-user surveillance pilots make concurrency and
 identity load-bearing.
+
+> **Update (2026-06-16):** the *interactive-auth enablement* half of ADR-0003 landed early —
+> zero-config browser auth via baked non-secret defaults ([ADR-0008](adr/0008-baked-azure-auth-defaults.md)) —
+> because epidemiologists couldn't use the package without it. Token-derived approver identity
+> (`.eri_token_identity()`, below) remains the Phase 2 work.
 - Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
   `R/artifacts.R`); add `eri_catalog_rebuild()`.
 - `.eri_token_identity()`; `eri_approve()` uses verified identity.
