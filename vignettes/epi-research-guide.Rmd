@@ -211,14 +211,20 @@ file and show up in `eri_artifact_list()` so anyone can see what it is without o
 
 ## 4. Source the data into your project {#source-data}
 
-Uploading put the data in Azure; now pull a copy *into your project* to work on. Pulling (rather
-than just reading a local file) records **where the data came from and when** in
-`research.yaml`, so your inputs are always traceable:
+Uploading put the data in Azure; now pull a copy *into your project* to work on. We use
+`eri_research_pull()` and hand it the artifact's path. Pulling this way (rather than just reading
+a local file) records **where the data came from and when** in `research.yaml`, and sets up the
+**reversible updates** you'll rely on in §11 when fresh data arrives:
 
-```{r artifact-pull}
-eri_artifact_pull("mtcars_study_data", dest = "data")
-#> ✔ Pulled "mtcars_study_data" to data/cars.csv.
+```{r research-pull}
+eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest = "data")
+#> ✔ Pulled 1 file from artifacts/study_data/mtcars_study_data/cars.csv to data.
 ```
+
+> **Two ways to pull, on purpose.** `eri_artifact_pull("mtcars_study_data")` is the quick
+> registry shortcut. Here we pull by *path* with `eri_research_pull()` because it also records the
+> pull in `research.yaml`, archives any superseded version, and counts updates — exactly the
+> lifecycle this guide demonstrates in §11.
 
 > **Never commit `data/` to git.** The scaffold's `.gitignore` already excludes it. Data lives in
 > Azure; your repository holds only *code* and the `research.yaml` record of what was pulled. For
@@ -321,7 +327,7 @@ commit your code, and you are done:
 
 ```{r snapshot}
 eri_research_snapshot(label = "before-break")
-#> ✔ Snapshot "before-break" → research/mtcars_study/snapshots/20260617T150500Z/ (1 file).
+#> ✔ Snapshot of 1 file saved to research/mtcars_study/snapshots/20260617T150500Z/.
 
 eri_research_log("Pausing here. Initial model done; awaiting the fuller dataset.")
 ```
@@ -408,14 +414,16 @@ Now pull the new version into the project. Because you have pulled this input be
 has now been updated:
 
 ```{r pull-v2}
-eri_artifact_pull("mtcars_study_data", dest = "data")
+eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest = "data")
+#> ℹ Archived 1 prior version to data/_archive/20260701T090000Z.
+#> ✔ Pulled 1 file from artifacts/study_data/mtcars_study_data/cars.csv to data.
 
 eri_research_status()
 #> ── Research project: mtcars_study (us/demo) ──
 #> # A tibble: 1 × 5
 #>   kind  source                                          pulled_at            updates archived
 #>   <chr> <chr>                                           <chr>                  <int> <lgl>
-#> 1 pull  artifacts/study_data/mtcars_study_data/cars.csv 2026-06-17T15:30:00Z       1 TRUE
+#> 1 pull  artifacts/study_data/mtcars_study_data/cars.csv 2026-07-01T09:00:00Z       1 TRUE
 ```
 
 See how `updates` ticked to `1` and `archived` is now `TRUE` — the original 19-car extract is
@@ -440,6 +448,9 @@ eri_research_upload_figure("figs/mpg_vs_weight.png",
                            caption = "MPG vs. weight, all cars (expanded dataset).")
 eri_research_log("Expanded to the full dataset (32 cars). Re-fit and updated the figure.")
 
+# Snapshot the new data first, so the tag binds *this* (full) dataset rather than the
+# earlier "before-break" snapshot.
+eri_research_snapshot(label = "full-data")
 eri_research_tag(
   "mtcars-full-v1",
   description = "Re-run on the full dataset (all transmissions)."
@@ -488,7 +499,8 @@ analyse, save, tag, pause, resume, handle new data, and tidy up.
 
 This is the first of a planned set of short, task-oriented guides — **one for each common
 job** an analyst or epidemiologist does (running a monthly country report, ingesting a
-surveillance dataset, onboarding a new country, and more). See [the guide index](../docs/guides.md)
+surveillance dataset, onboarding a new country, and more). See
+[the guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 for what exists today and what is coming.
 
 For the full menu of functions grouped by purpose, see the
