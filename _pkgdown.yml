@@ -4,8 +4,21 @@ destination: pkgdown_site
 
 template:
   bootstrap: 5
+  # Carter Center brand palette (sampled from cartercenter.org): navy #001737 primary,
+  # the iconic CC green #00873f for links/accents, navy navbar. Fonts approximate the
+  # site's serif-forward editorial look (their Denim/Gothia faces are proprietary).
+  bslib:
+    primary: "#00873f"       # CC green — links, buttons, active states
+    secondary: "#001737"     # CC navy — navbar background
+    bg: "#ffffff"
+    fg: "#001737"            # navy body text
+    base_font: { google: "Source Sans 3" }
+    heading_font: { google: "Source Serif 4" }
+    code_font: { google: "Source Code Pro" }
 
 navbar:
+  bg: secondary
+  type: dark
   structure:
     left:  [intro, reference, articles, roadmap, news]
     right: [search, github]
@@ -18,10 +31,10 @@ articles:
 - title: Workflows
   navbar: Workflows
   contents:
+  - epi-research-guide
   - dq-pipeline
   - epi-analytics
   - spatial-workflow
-  - research-workflow
   - sharepoint-workflow
   - adding-a-program
 
