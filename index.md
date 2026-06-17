@@ -3,13 +3,39 @@
 Standardized data tools for the Epidemiology, Research and Innovation
 (ERI) team at The Carter Center’s NTD and malaria programs.
 
+### 📖 **Documentation & guides → <https://thecartercenter.github.io/erifunctions>**
+
+**New here, start there.** The documentation site has step-by-step
+guides, the full function reference, and the project roadmap. This
+README is the quick orientation.
+
 **Version:** 0.9.0 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
-> roadmap](https://thecartercenter.github.io/erifunctions/docs/roadmap.md)
+> roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
 > and the [architecture decision
-> records](https://thecartercenter.github.io/erifunctions/docs/adr/) for
-> the development plan and the reasoning behind key design choices.
+> records](https://github.com/thecartercenter/erifunctions/tree/main/docs/adr)
+> for the development plan and the reasoning behind key design choices.
+
+------------------------------------------------------------------------
+
+## Guides
+
+These copy-paste, start-to-finish walkthroughs are the fastest way to
+learn the system. Read them on the [documentation
+site](https://thecartercenter.github.io/erifunctions/articles/):
+
+| Guide | For |
+|----|----|
+| [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result |
+| [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
+| [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
+| [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps |
+| [SharePoint workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html) | Sharing files via SharePoint and posting to Teams |
+| [Adding a new program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html) | Onboarding a new country, disease, or data type |
+
+The full, grouped **function reference** lives at
+<https://thecartercenter.github.io/erifunctions/reference/>.
 
 ------------------------------------------------------------------------
 
@@ -249,12 +275,13 @@ and follow the checklist it prints.
 - Open an issue:
   <https://github.com/thecartercenter/erifunctions/issues>
 - For developer contribution guidelines, see
-  [CONTRIBUTING.md](https://thecartercenter.github.io/erifunctions/CONTRIBUTING.md)
-- For the development roadmap and design decisions, see
-  [docs/roadmap.md](https://thecartercenter.github.io/erifunctions/docs/roadmap.md)
-  and
-  [docs/adr/](https://thecartercenter.github.io/erifunctions/docs/adr/);
-  working conventions live in
-  [CLAUDE.md](https://thecartercenter.github.io/erifunctions/CLAUDE.md),
-  and the founding vision in
-  [docs/vision.md](https://thecartercenter.github.io/erifunctions/docs/vision.md)
+  [CONTRIBUTING](https://github.com/thecartercenter/erifunctions/blob/main/CONTRIBUTING.md)
+- For the development roadmap and design decisions, see the
+  [roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
+  and [architecture decision
+  records](https://github.com/thecartercenter/erifunctions/tree/main/docs/adr);
+  the [project
+  conventions](https://github.com/thecartercenter/erifunctions/blob/main/CLAUDE.md)
+  and [founding
+  vision](https://github.com/thecartercenter/erifunctions/blob/main/docs/vision.md)
+  document the working practices and intent

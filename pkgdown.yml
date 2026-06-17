@@ -5,10 +5,10 @@ articles:
   adding-a-program: adding-a-program.html
   dq-pipeline: dq-pipeline.html
   epi-analytics: epi-analytics.html
-  research-workflow: research-workflow.html
+  epi-research-guide: epi-research-guide.html
   sharepoint-workflow: sharepoint-workflow.html
   spatial-workflow: spatial-workflow.html
-last_built: 2026-06-17T17:13Z
+last_built: 2026-06-17T18:57Z
 urls:
   reference: https://thecartercenter.github.io/erifunctions/reference
   article: https://thecartercenter.github.io/erifunctions/articles

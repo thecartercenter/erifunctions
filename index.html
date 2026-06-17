@@ -6,19 +6,28 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>ERI team functions • erifunctions</title>
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" sizes="any" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_3-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="ERI team functions">
 <meta name="description" content="Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.">
 <meta property="og:description" content="Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.">
+<meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-secondary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
@@ -37,10 +46,10 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
+    <li><a class="dropdown-item" href="articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="articles/epi-analytics.html">Epidemiological Analytics</a></li>
     <li><a class="dropdown-item" href="articles/spatial-workflow.html">Spatial Workflow</a></li>
-    <li><a class="dropdown-item" href="articles/research-workflow.html">Research Project Workflow</a></li>
     <li><a class="dropdown-item" href="articles/sharepoint-workflow.html">SharePoint Workflow</a></li>
     <li><a class="dropdown-item" href="articles/adding-a-program.html">Adding a New NTD Program</a></li>
   </ul>
@@ -61,16 +70,67 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="erifunctions">erifunctions<a class="anchor" aria-label="anchor" href="#erifunctions"></a>
-</h1></div>
+<div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1 id="erifunctions-">erifunctions <a class="anchor" aria-label="anchor" href="#erifunctions-"></a>
+</h1>
+</div>
 <!-- badges: start -->
 
 <p>Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter Center’s NTD and malaria programs.</p>
+<div class="section level3">
+<h3 id="open_book-documentation--guides--httpsthecartercentergithubioerifunctions">📖 <strong>Documentation &amp; guides → <a href="https://thecartercenter.github.io/erifunctions" class="uri">https://thecartercenter.github.io/erifunctions</a></strong>
+<a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
+</h3>
+<p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
 <p><strong>Version:</strong> 0.9.0 · <strong>Status:</strong> Active development</p>
 <blockquote>
-<p>🛣️ <strong>Where this is going:</strong> see the <a href="docs/roadmap.html">V2 roadmap</a> and the <a href="docs/adr/">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
+<p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
 <hr>
+</div>
+<div class="section level2">
+<h2 id="guides">Guides<a class="anchor" aria-label="anchor" href="#guides"></a>
+</h2>
+<p>These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them on the <a href="https://thecartercenter.github.io/erifunctions/articles/">documentation site</a>:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Guide</th>
+<th>For</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></td>
+<td>Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html">Data quality pipeline</a></td>
+<td>Running schema-driven DQ checks and anomaly detection on an extract</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html">Epi analytics</a></td>
+<td>Incidence, epiweeks, epidemic curves, and disease-specific helpers</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html">Spatial workflow</a></td>
+<td>Admin boundaries, population, and spatial joins/maps</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html">SharePoint workflow</a></td>
+<td>Sharing files via SharePoint and posting to Teams</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html">Adding a new program</a></td>
+<td>Onboarding a new country, disease, or data type</td>
+</tr>
+</tbody>
+</table>
+<p>The full, grouped <strong>function reference</strong> lives at <a href="https://thecartercenter.github.io/erifunctions/reference/" class="uri">https://thecartercenter.github.io/erifunctions/reference/</a>.</p>
+<hr>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -632,10 +692,9 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <ul>
 <li>Open an issue: <a href="https://github.com/thecartercenter/erifunctions/issues" class="external-link uri">https://github.com/thecartercenter/erifunctions/issues</a>
 </li>
-<li>For developer contribution guidelines, see <a href="CONTRIBUTING.html">CONTRIBUTING.md</a>
+<li>For developer contribution guidelines, see <a href="https://github.com/thecartercenter/erifunctions/blob/main/CONTRIBUTING.md" class="external-link">CONTRIBUTING</a>
 </li>
-<li>For the development roadmap and design decisions, see <a href="docs/roadmap.html">docs/roadmap.md</a> and <a href="docs/adr/">docs/adr/</a>; working conventions live in <a href="CLAUDE.html">CLAUDE.md</a>, and the founding vision in <a href="docs/vision.html">docs/vision.md</a>
-</li>
+<li>For the development roadmap and design decisions, see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">roadmap</a> and <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a>; the <a href="https://github.com/thecartercenter/erifunctions/blob/main/CLAUDE.md" class="external-link">project conventions</a> and <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/vision.md" class="external-link">founding vision</a> document the working practices and intent</li>
 </ul>
 </div>
 </div>
