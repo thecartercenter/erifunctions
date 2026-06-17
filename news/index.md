@@ -2,6 +2,19 @@
 
 ## erifunctions (development version)
 
+### Fixes
+
+- [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md):
+  the generated reproducibility-check workflow now installs the
+  geospatial/Azure system libraries (`gdal`/`proj`/`geos`/`udunits`,
+  `curl`/`openssl`) and uses Posit Public Package Manager binaries
+  (`use-public-rspm: true`). Previously
+  [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
+  on the Ubuntu runner tried to build `curl` (and the `sf` geospatial
+  stack) from source with no `-dev` libraries present and failed, so the
+  check was red for any real research project. Validated on the
+  `dr_irs_2026` reference repo.
+
 ### Research data lifecycle (issue [\#148](https://github.com/thecartercenter/erifunctions/issues/148), ADR-0009)
 
 - [`eri_spatial_promote()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_promote.md)
