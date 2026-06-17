@@ -14,6 +14,7 @@ azure_io(
   azcontainer = suppressMessages(get_azure_storage_connection()),
   force_delete = FALSE,
   local_path = NULL,
+  progress = FALSE,
   ...
 )
 ```
@@ -70,6 +71,12 @@ azure_io(
   `str` Local file pathway to upload a file to Azure. Default is `NULL`.
   This parameter is only required when passing `"upload"` in the `io`
   parameter.
+
+- progress:
+
+  `logical` Show AzureStor's byte progress bar for the transfer. Default
+  `FALSE` (suppressed). Set `TRUE` for a large single read/upload that
+  needs visible feedback.
 
 - ...:
 

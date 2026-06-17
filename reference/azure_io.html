@@ -64,6 +64,7 @@ all files in a folder.</p>
 <span>  azcontainer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  force_delete <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  local_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -106,6 +107,11 @@ of interest. See examples.</p></li>
 <dt id="arg-local-path">local_path<a class="anchor" aria-label="anchor" href="#arg-local-path"></a></dt>
 <dd><p><code>str</code> Local file pathway to upload a file to Azure. Default is <code>NULL</code>.
 This parameter is only required when passing <code>"upload"</code> in the <code>io</code> parameter.</p></dd>
+
+
+<dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
+<dd><p><code>logical</code> Show AzureStor's byte progress bar for the transfer. Default <code>FALSE</code>
+(suppressed). Set <code>TRUE</code> for a large single read/upload that needs visible feedback.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

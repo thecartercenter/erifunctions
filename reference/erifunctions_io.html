@@ -76,6 +76,7 @@ consider the verb-named wrappers: <code><a href="eri_read.html">eri_read()</a></
 <span>  azure <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  azcontainer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages</a></span><span class="op">(</span><span class="fu"><a href="get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  full_names <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -116,6 +117,11 @@ Defaults to <code>TRUE</code>, otherwise, interacts with files locally.</p></dd>
 
 <dt id="arg-full-names">full_names<a class="anchor" aria-label="anchor" href="#arg-full-names"></a></dt>
 <dd><p><code>logical</code> If <code>io="list"</code>, include the full reference path. Default <code>TRUE</code>.</p></dd>
+
+
+<dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
+<dd><p><code>logical</code> Show AzureStor's byte progress bar for the transfer. Default <code>FALSE</code>
+(suppressed; erifunctions renders its own output). Set <code>TRUE</code> for a large single read/upload.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

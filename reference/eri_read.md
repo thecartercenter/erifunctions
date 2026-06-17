@@ -9,7 +9,7 @@ for reading files, with a dedicated help page and tab-completable name.
 ## Usage
 
 ``` r
-eri_read(file_loc, ..., azure = TRUE, azcontainer = NULL)
+eri_read(file_loc, ..., azure = TRUE, azcontainer = NULL, progress = FALSE)
 ```
 
 ## Arguments
@@ -35,3 +35,9 @@ eri_read(file_loc, ..., azure = TRUE, azcontainer = NULL)
 
   `Azure container` A container object returned by
   [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).
+
+- progress:
+
+  `logical` Show AzureStor's byte progress bar for the transfer. Default
+  `FALSE` (suppressed; erifunctions renders its own output). Set `TRUE`
+  for a large single read/upload.

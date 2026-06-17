@@ -2,6 +2,34 @@
 
 ## erifunctions (development version)
 
+### Console output: clearer, calmer, and tunable
+
+For non-developer users a stack of anonymous progress bars looks like
+the package has hung. The console output is overhauled package-wide:
+
+- **One informative progress bar instead of many.** Multi-file transfers
+  (e.g. [`eri_research_snapshot()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_snapshot.md)
+  uploading 17 files,
+  [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md))
+  now show a single bar that names the current file and its position
+  (`3/17`), rather than a stack of AzureStor’s anonymous `|====| 100%`
+  bars. The native per-transfer bar is suppressed everywhere and
+  replaced with `cli` output; it is kept only for a genuinely large
+  single file (e.g. the ~100 MB LandScan raster) so a long download
+  still shows life.
+- **Summary end-caps.** Multi-step operations
+  ([`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md),
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md),
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md))
+  finish with a tidy `✔`-titled key/value summary of what happened.
+- **[`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
+  – new.** Controls how chatty the console is: `"full"` (default –
+  step-by-step confirmations and summaries) or `"quiet"` (headline
+  results, warnings, and errors only). Set it for a whole project via
+  `options(erifunctions.verbosity = "quiet")` in `.Rprofile`, per
+  session with `eri_verbosity("quiet")`, or via the
+  `ERIFUNCTIONS_VERBOSITY` environment variable.
+
 ### Fixes
 
 - [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md):

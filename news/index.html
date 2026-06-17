@@ -47,6 +47,16 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="console-output-clearer-calmer-and-tunable-development-version">Console output: clearer, calmer, and tunable<a class="anchor" aria-label="anchor" href="#console-output-clearer-calmer-and-tunable-development-version"></a></h3>
+<p>For non-developer users a stack of anonymous progress bars looks like the package has hung. The console output is overhauled package-wide:</p>
+<ul><li>
+<strong>One informative progress bar instead of many.</strong> Multi-file transfers (e.g. <code><a href="../reference/eri_research_snapshot.html">eri_research_snapshot()</a></code> uploading 17 files, <code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code>) now show a single bar that names the current file and its position (<code>3/17</code>), rather than a stack of AzureStor’s anonymous <code>|====| 100%</code> bars. The native per-transfer bar is suppressed everywhere and replaced with <code>cli</code> output; it is kept only for a genuinely large single file (e.g. the ~100 MB LandScan raster) so a long download still shows life.</li>
+<li>
+<strong>Summary end-caps.</strong> Multi-step operations (<code><a href="../reference/eri_research_tag.html">eri_research_tag()</a></code>, <code><a href="../reference/eri_approve.html">eri_approve()</a></code>, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>) finish with a tidy <code>✔</code>-titled key/value summary of what happened.</li>
+<li>
+<strong><code><a href="../reference/eri_verbosity.html">eri_verbosity()</a></code> – new.</strong> Controls how chatty the console is: <code>"full"</code> (default – step-by-step confirmations and summaries) or <code>"quiet"</code> (headline results, warnings, and errors only). Set it for a whole project via <code>options(erifunctions.verbosity = "quiet")</code> in <code>.Rprofile</code>, per session with <code>eri_verbosity("quiet")</code>, or via the <code>ERIFUNCTIONS_VERBOSITY</code> environment variable.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fixes-development-version">Fixes<a class="anchor" aria-label="anchor" href="#fixes-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/eri_research_scaffold.html">eri_research_scaffold()</a></code>: the generated reproducibility-check workflow now installs the geospatial/Azure system libraries (<code>gdal</code>/<code>proj</code>/<code>geos</code>/<code>udunits</code>, <code>curl</code>/<code>openssl</code>) and uses Posit Public Package Manager binaries (<code>use-public-rspm: true</code>). Previously <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> on the Ubuntu runner tried to build <code>curl</code> (and the <code>sf</code> geospatial stack) from source with no <code>-dev</code> libraries present and failed, so the check was red for any real research project. Validated on the <code>dr_irs_2026</code> reference repo.</li>

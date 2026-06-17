@@ -13,6 +13,13 @@ Authenticate to Azure, ODK, SharePoint, and Teams.
 - [`get_teams_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_teams_connection.md)
   : Connect to Microsoft Teams via the Graph API
 
+## Console output
+
+Control how chatty erifunctions is in the console.
+
+- [`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
+  : Control how much erifunctions prints to the console
+
 ## Reading & writing data
 
 Read, write, list, and manage files in Azure (and locally).

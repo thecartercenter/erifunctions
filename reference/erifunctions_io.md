@@ -27,6 +27,7 @@ erifunctions_io(
   azure = TRUE,
   azcontainer = suppressMessages(get_azure_storage_connection()),
   full_names = TRUE,
+  progress = FALSE,
   ...
 )
 ```
@@ -76,6 +77,12 @@ erifunctions_io(
 
   `logical` If `io="list"`, include the full reference path. Default
   `TRUE`.
+
+- progress:
+
+  `logical` Show AzureStor's byte progress bar for the transfer. Default
+  `FALSE` (suppressed; erifunctions renders its own output). Set `TRUE`
+  for a large single read/upload.
 
 - ...:
 

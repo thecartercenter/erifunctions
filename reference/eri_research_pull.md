@@ -12,7 +12,8 @@ eri_research_pull(
   data_type = NULL,
   path = NULL,
   dest = NULL,
-  data_con = NULL
+  data_con = NULL,
+  progress = FALSE
 )
 ```
 
@@ -47,6 +48,12 @@ eri_research_pull(
 
   Azure container object for the `data/` blob. If `NULL`, connects
   automatically.
+
+- progress:
+
+  `lgl` If `TRUE`, show a per-file byte progress bar (use for a few
+  large files, e.g. a LandScan raster). Default `FALSE` uses one compact
+  progress bar across all files.
 
 ## Value
 

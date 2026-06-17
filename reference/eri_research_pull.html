@@ -60,7 +60,8 @@ research.yaml for provenance. Two modes:"></head><body>
 <span>  data_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dest <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  data_con <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  progress <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -90,6 +91,11 @@ research.yaml for provenance. Two modes:"></head><body>
 
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container object for the <code>data/</code> blob. If <code>NULL</code>, connects automatically.</p></dd>
+
+
+<dt id="arg-progress">progress<a class="anchor" aria-label="anchor" href="#arg-progress"></a></dt>
+<dd><p><code>lgl</code> If <code>TRUE</code>, show a per-file byte progress bar (use for a few large files,
+e.g. a LandScan raster). Default <code>FALSE</code> uses one compact progress bar across all files.</p></dd>
 
 </dl></div>
     <div class="section level2">
