@@ -1,3 +1,29 @@
+#### Tests for .eri_create_azure_dir ####
+
+test_that(".eri_create_azure_dir trims trailing slash and creates each missing parent", {
+  created <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists = function(con, path) FALSE,
+    create_storage_dir = function(con, path) created <<- c(created, path),
+    .package = "AzureStor"
+  )
+  out <- .eri_create_azure_dir("mock_con", "research/dr_irs/data/")
+  # trailing slash trimmed, every level created in order
+  expect_equal(created, c("research", "research/dr_irs", "research/dr_irs/data"))
+  expect_equal(out, "research/dr_irs/data")
+})
+
+test_that(".eri_create_azure_dir skips levels that already exist", {
+  created <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists = function(con, path) path != "a/b/c",  # only the leaf is missing
+    create_storage_dir = function(con, path) created <<- c(created, path),
+    .package = "AzureStor"
+  )
+  .eri_create_azure_dir("mock_con", "a/b/c")
+  expect_equal(created, "a/b/c")
+})
+
 #### Tests for eri_data_path ####
 
 test_that("eri_data_path builds correct paths without filename", {

@@ -129,6 +129,166 @@ test_that("eri_spatial_upload blocks upload when required name column is missing
   )
 })
 
+#### eri_spatial_upload overwrite guard ####
+
+# A minimal, valid boundary written to a temp .rds (the canonical/cached format).
+.write_valid_boundary <- function(dir, level = 2) {
+  sf_obj <- sf::st_sf(
+    setNames(list("Azua"), paste0("adm", level, "_name")),
+    geometry = sf::st_sfc(
+      sf::st_polygon(list(matrix(c(0,0,1,0,1,1,0,1,0,0), ncol = 2, byrow = TRUE))),
+      crs = 4326
+    )
+  )
+  p <- file.path(dir, "boundary.rds")
+  saveRDS(sf_obj, p)
+  p
+}
+
+test_that("eri_spatial_upload refuses to overwrite an existing canonical boundary", {
+  skip_no_sf()
+  bnd <- .write_valid_boundary(withr::local_tempdir())
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) TRUE,
+    eri_upload                   = function(...) stop("must not upload"),
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_spatial_upload(bnd, "dr", 2),
+    "already exists|eri_spatial_promote"
+  )
+})
+
+test_that("eri_spatial_upload proceeds for a brand-new boundary", {
+  skip_no_sf()
+  bnd <- .write_valid_boundary(withr::local_tempdir())
+  uploaded <- NULL
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) FALSE,
+    eri_upload                   = function(local_path, file_loc, ...) uploaded <<- file_loc,
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_spatial_upload(bnd, "dr", 2))
+  expect_equal(uploaded, "spatial/dr/adm2.rds")
+})
+
+test_that("eri_spatial_upload(overwrite=TRUE) archives the prior version then replaces it", {
+  skip_no_sf()
+  bnd <- .write_valid_boundary(withr::local_tempdir())
+  uploaded <- character(0)
+  local_mocked_bindings(
+    storage_download   = function(...) invisible(NULL),
+    storage_dir_exists = function(...) TRUE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) TRUE,
+    eri_upload                   = function(local_path, file_loc, ...) uploaded <<- c(uploaded, file_loc),
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_spatial_upload(bnd, "dr", 2, overwrite = TRUE))
+  # prior version archived first, then the canonical path overwritten
+  expect_true(any(grepl("^spatial/_archive/.*/dr/adm2\\.rds$", uploaded)))
+  expect_equal(uploaded[length(uploaded)], "spatial/dr/adm2.rds")
+})
+
+#### eri_spatial_promote ####
+
+test_that("eri_spatial_promote refuses to replace canonical without overwrite", {
+  skip_no_sf()
+  bnd <- .write_valid_boundary(withr::local_tempdir())
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) TRUE,
+    eri_upload                   = function(...) stop("must not upload"),
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_spatial_promote(bnd, "dr", 2, path = withr::local_tempdir()),
+    "already exists|overwrite = TRUE"
+  )
+})
+
+test_that("eri_spatial_promote records provenance in research.yaml", {
+  skip_no_sf()
+  proj <- withr::local_tempdir()
+  yaml::write_yaml(
+    list(
+      project_name = "p", country = "dr", disease = "malaria", description = "d",
+      created_at = "t", created_by = "u", azure_path = "research/p/",
+      pulled_data = list(), artifacts_used = list(), log = list(),
+      snapshots = list(), outputs = list(), tags = list()
+    ),
+    file.path(proj, "research.yaml")
+  )
+  bnd <- .write_valid_boundary(proj)
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) FALSE,
+    eri_upload                   = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+  out <- eri_spatial_promote(bnd, "dr", 2, path = proj)
+  expect_equal(out, "spatial/dr/adm2.rds")
+
+  manifest <- yaml::read_yaml(file.path(proj, "research.yaml"))
+  expect_equal(length(manifest$promoted_data), 1L)
+  expect_equal(manifest$promoted_data[[1]]$azure_path, "spatial/dr/adm2.rds")
+  expect_false(manifest$promoted_data[[1]]$replaced)
+})
+
+test_that("eri_spatial_promote(overwrite=TRUE) archives the prior canonical version and records it", {
+  skip_no_sf()
+  proj <- withr::local_tempdir()
+  yaml::write_yaml(
+    list(
+      project_name = "p", country = "dr", disease = "malaria", description = "d",
+      created_at = "t", created_by = "u", azure_path = "research/p/",
+      pulled_data = list(), artifacts_used = list(), log = list(),
+      snapshots = list(), outputs = list(), tags = list()
+    ),
+    file.path(proj, "research.yaml")
+  )
+  bnd <- .write_valid_boundary(proj)
+  uploaded <- character(0)
+  local_mocked_bindings(
+    storage_download   = function(...) invisible(NULL),
+    storage_dir_exists = function(...) TRUE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) TRUE,
+    eri_upload                   = function(local_path, file_loc, ...) uploaded <<- c(uploaded, file_loc),
+    .package = "erifunctions"
+  )
+  out <- eri_spatial_promote(bnd, "dr", 2, overwrite = TRUE, path = proj)
+  expect_equal(out, "spatial/dr/adm2.rds")
+  expect_true(any(grepl("^spatial/_archive/.*/dr/adm2\\.rds$", uploaded)))
+
+  rec <- yaml::read_yaml(file.path(proj, "research.yaml"))$promoted_data[[1]]
+  expect_true(rec$replaced)
+  expect_match(rec$archived_prev, "^spatial/_archive/.*/dr/adm2\\.rds$")
+})
+
+test_that("eri_spatial_promote warns when there is no research.yaml", {
+  skip_no_sf()
+  bnd <- .write_valid_boundary(withr::local_tempdir())
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "fake_con",
+    eri_file_exists              = function(...) FALSE,
+    eri_upload                   = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+  expect_warning(
+    eri_spatial_promote(bnd, "dr", 2, path = withr::local_tempdir()),
+    "was NOT recorded"
+  )
+})
+
 #### eri_spatial_load ####
 
 test_that("eri_spatial_load errors informatively when file not in Azure", {

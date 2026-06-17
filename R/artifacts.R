@@ -32,9 +32,7 @@
   withr::defer(unlink(tmp))
   yaml::write_yaml(registry, tmp)
   dir_path <- dirname(.ERI_ARTIFACT_REGISTRY_PATH)
-  if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
-    AzureStor::create_storage_dir(data_con, dir_path)
-  }
+  .eri_create_azure_dir(data_con, dir_path)
   AzureStor::storage_upload(data_con, tmp, .ERI_ARTIFACT_REGISTRY_PATH)
 }
 
@@ -88,9 +86,7 @@ eri_artifact_upload <- function(
   azure_path <- paste0("artifacts/", type, "/", name, "/", filename)
 
   dir_path <- paste0("artifacts/", type, "/", name)
-  if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
-    AzureStor::create_storage_dir(data_con, dir_path)
-  }
+  .eri_create_azure_dir(data_con, dir_path)
   AzureStor::storage_upload(data_con, local_path, azure_path)
 
   entry <- list(

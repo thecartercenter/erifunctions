@@ -1,5 +1,38 @@
 # erifunctions (development version)
 
+## Research data lifecycle (issue #148, ADR-0009)
+
+- `eri_spatial_promote()` -- **new**: the explicit gate for pushing a boundary cleaned in a
+  research project up to the shared canonical `spatial/` store, recording the promotion (who,
+  what, when, whether it replaced an existing boundary, and where the prior version was archived)
+  in `research.yaml`. Replacing an existing canonical boundary requires `overwrite = TRUE`.
+- `eri_spatial_upload()` is now **overwrite-safe**: it refuses to clobber an existing canonical
+  boundary (shared cleaned data many users pull for figures) unless `overwrite = TRUE`, and points
+  to `eri_spatial_promote()` for deliberate replacement. Reads of the canonical/cached `.rds`
+  format are now supported alongside shapefiles.
+- **Canonical overwrites are archived.** A deliberate `overwrite = TRUE` (via either
+  `eri_spatial_upload()` or `eri_spatial_promote()`) first copies the prior canonical boundary to
+  `spatial/_archive/<timestamp>/`, so replacing shared reference data is reversible (ADR-0009).
+- `eri_research_status()` now also reports boundary **promotions** the project has made to canonical
+  (summarised separately from the inbound input table).
+- `eri_research_status()` -- **new**: a manifest of every input a project depends on (source,
+  `pulled_at`, update count, whether a prior version was archived) plus output/snapshot/tag counts.
+  `check_remote = TRUE` flags inputs whose Azure source is newer than the local copy.
+- `eri_research_pull()` now does **update-with-archival**: a re-pull moves the prior local version
+  into `data/_archive/<timestamp>/` and records it, and **dedups** `pulled_data` (a re-pull of the
+  same source replaces its record instead of appending a duplicate, and collapses any pre-existing
+  duplicates). `eri_spatial_load(cache = TRUE)` inherits this.
+- `eri_spatial_pop()` now **caches the LandScan raster in the project and reuses it** rather than
+  re-downloading ~100 MB on every call; records provenance when run inside a research project.
+- `eri_landscan_list()` no longer warns when the LandScan directory simply does not exist yet
+  (returns an empty tibble quietly).
+- **ADLS-safe directory creation is now centralized.** The trailing-slash trim + missing-parent
+  creation previously local to `R/research.R` (`.eri_ensure_azure_dir()`) is promoted into the DAL
+  as `.eri_create_azure_dir()`; `azure_io("create")` and every nested-path write site
+  (`artifacts.R`, `catalog.R`, `odk_registry.R`, `onboarding.R`, `cmr.R`, `templates.R`, `research.R`)
+  now route through it instead of calling `AzureStor::create_storage_dir()` directly. Robustness/
+  consistency fix from the PR #147 review.
+
 ## Azure access: zero-config interactive auth + ADLS Gen2 fixes
 
 - `get_azure_storage_connection()` ships working defaults for interactive (browser) auth, so analysts

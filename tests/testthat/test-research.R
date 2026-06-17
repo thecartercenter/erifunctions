@@ -1,5 +1,27 @@
 #### Tests for research project scaffolding ####
 
+test_that("eri_research_status surfaces promotions to canonical", {
+  proj <- withr::local_tempdir()
+  yaml::write_yaml(
+    list(
+      project_name = "p", country = "dr", disease = "malaria", description = "d",
+      created_at = "t", created_by = "u", azure_path = "research/p/",
+      pulled_data = list(), artifacts_used = list(), log = list(),
+      snapshots = list(), outputs = list(), tags = list(),
+      promoted_data = list(list(
+        type = "boundary", country = "dr", level = 3L,
+        azure_path = "spatial/dr/adm3.rds", replaced = TRUE,
+        promoted_at = "2026-06-17T12:00:00Z", promoted_by = "u"
+      ))
+    ),
+    file.path(proj, "research.yaml")
+  )
+  expect_message(
+    expect_message(eri_research_status(path = proj), "1 promotion"),
+    "spatial/dr/adm3.rds"
+  )
+})
+
 .mock_research_con <- function() {
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",

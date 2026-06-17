@@ -53,9 +53,7 @@
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
   yaml::write_yaml(registry, tmp)
-  if (!AzureStor::storage_dir_exists(data_con, .ERI_TEMPLATE_AZURE_DIR)) {
-    AzureStor::create_storage_dir(data_con, .ERI_TEMPLATE_AZURE_DIR)
-  }
+  .eri_create_azure_dir(data_con, .ERI_TEMPLATE_AZURE_DIR)
   AzureStor::storage_upload(data_con, tmp, .ERI_TEMPLATE_REGISTRY_PATH)
 }
 
@@ -214,9 +212,7 @@ eri_template_upload <- function(local_path, name, description, data_con = NULL) 
   filename <- basename(local_path)
   az_path  <- paste0(.ERI_TEMPLATE_AZURE_DIR, "/", filename)
 
-  if (!AzureStor::storage_dir_exists(con, .ERI_TEMPLATE_AZURE_DIR)) {
-    AzureStor::create_storage_dir(con, .ERI_TEMPLATE_AZURE_DIR)
-  }
+  .eri_create_azure_dir(con, .ERI_TEMPLATE_AZURE_DIR)
   AzureStor::storage_upload(con, local_path, az_path)
 
   entry <- list(

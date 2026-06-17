@@ -153,7 +153,8 @@
     for (layer in layers) {
       dir_path <- paste(country_code, disease, dt, layer, sep = "/")
       if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
-        AzureStor::create_storage_dir(data_con, dir_path)
+        # ADLS-safe: create the leaf and any missing parents (e.g. country/, disease/, dt/).
+        .eri_create_azure_dir(data_con, dir_path)
         created <- c(created, dir_path)
       }
     }

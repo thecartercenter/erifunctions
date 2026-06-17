@@ -299,3 +299,75 @@ test_that("smoke [epi]: research project init, log, and list in Azure", {
   listed <- eri_research_list(data_con = az_con)
   expect_true(proj_name %in% listed$project_name)
 })
+
+# Issue #148 / #133: the research-data lifecycle loop end-to-end. Uses a throwaway upstream
+# dataset this test uploads itself (no real country data), so it is safe to run anywhere with
+# Azure access. Mirrors what `sandbox/to_run.R` does live with the real dr_irs incidence data.
+test_that("smoke [epi]: data lifecycle -- update archives prior + dedups, re-tag, original tag survives", {
+  .smoke_skip()
+  az_con    <- .smoke_az()
+  stamp     <- format(Sys.time(), "%Y%m%d%H%M%S")
+  proj_name <- paste0("smoke_lifecycle_", stamp)
+  proj_dir  <- withr::local_tempdir()
+
+  # Throwaway upstream "dataset" under a smoke path we own; clean it up afterwards.
+  src_dir  <- paste0("smoke/", proj_name)
+  src_file <- paste0(src_dir, "/incidence.csv")
+  withr::defer(tryCatch(
+    AzureStor::delete_storage_dir(az_con, src_dir, confirm = FALSE),
+    error = function(e) NULL
+  ))
+  upload_src <- function(content) {
+    tmp <- tempfile(fileext = ".csv"); writeLines(content, tmp); on.exit(unlink(tmp))
+    .eri_create_azure_dir(az_con, src_dir)
+    AzureStor::storage_upload(az_con, tmp, src_file)
+  }
+
+  # --- init; pull/tag use getwd(), so work inside the project dir ---
+  eri_research_init(proj_name, "smoke", "test", "lifecycle smoke",
+                    path = proj_dir, data_con = az_con)
+  withr::defer(tryCatch(
+    AzureStor::delete_storage_dir(az_con, paste0("research/", proj_name), confirm = FALSE),
+    error = function(e) NULL
+  ))
+  withr::local_dir(proj_dir)
+
+  # --- v1: pull and baseline-tag ---
+  upload_src("week,cases\n1,10\n2,12")
+  eri_research_pull(path = src_file, dest = file.path(proj_dir, "data"), data_con = az_con)
+  v1_local   <- file.path(proj_dir, "data", "incidence.csv")
+  v1_content <- readLines(v1_local)
+  expect_true(file.exists(v1_local))
+
+  eri_research_tag("baseline", description = "v1 incidence",
+                   path = proj_dir, data_con = az_con)
+  baseline_tag <- paste0("research/", proj_name, "/tags/baseline/_tag.yaml")
+  expect_true(AzureStor::storage_file_exists(az_con, baseline_tag))
+
+  # --- v2: update upstream, re-pull (archives prior + dedups) ---
+  upload_src("week,cases\n1,3\n2,4")  # different numbers -> results would shift
+  eri_research_pull(path = src_file, dest = file.path(proj_dir, "data"), data_con = az_con)
+
+  manifest <- yaml::read_yaml(file.path(proj_dir, "research.yaml"))
+  recs     <- Filter(function(e) identical(e$azure_path, src_file), manifest$pulled_data)
+  expect_length(recs, 1L)                       # dedup: one record, not two
+  expect_equal(recs[[1]]$update_count, 1L)       # update counted
+  expect_false(is.null(recs[[1]]$archived_prev)) # prior version archived
+
+  archived_file <- file.path(recs[[1]]$archived_prev, "incidence.csv")
+  expect_true(file.exists(archived_file))
+  expect_identical(readLines(archived_file), v1_content)  # archive == v1
+  expect_false(identical(readLines(v1_local), v1_content)) # local == v2
+
+  status <- eri_research_status(path = proj_dir)
+  expect_true(any(status$updates >= 1L, na.rm = TRUE))
+
+  # --- snapshot the refreshed data, re-tag; the original tag is immutable and still resolves ---
+  eri_research_snapshot(label = "post-update", path = proj_dir, data_con = az_con)
+  eri_research_tag("refresh", description = "v2 incidence",
+                   path = proj_dir, data_con = az_con)
+  expect_true(AzureStor::storage_file_exists(
+    az_con, paste0("research/", proj_name, "/tags/refresh/_tag.yaml")
+  ))
+  expect_true(AzureStor::storage_file_exists(az_con, baseline_tag))  # original survives
+})
