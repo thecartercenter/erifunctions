@@ -22,6 +22,11 @@ test_that("eri_research_scaffold creates a full repo skeleton", {
   expect_true(file.exists(file.path(repo, "README.md")))
   expect_true(file.exists(file.path(repo, ".gitignore")))
   expect_true(file.exists(file.path(repo, ".github", "workflows", "ci.yaml")))
+  # CI must restore the geospatial/Azure stack on Linux: PPM binaries (no source build) plus the
+  # system libs sf/AzureStor need at load, else curl/sf/gdal fail to install (issue from PR #149).
+  ci <- readLines(file.path(repo, ".github", "workflows", "ci.yaml"))
+  expect_true(any(grepl("use-public-rspm: true", ci, fixed = TRUE)))
+  expect_true(any(grepl("libgdal-dev", ci, fixed = TRUE)))
   expect_true(file.exists(file.path(repo, "analysis", "workflow.qmd")))
   expect_true(file.exists(file.path(repo, "research.yaml")))
   expect_true(dir.exists(file.path(repo, "data")))
