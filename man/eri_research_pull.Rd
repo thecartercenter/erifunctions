@@ -10,7 +10,8 @@ eri_research_pull(
   data_type = NULL,
   path = NULL,
   dest = NULL,
-  data_con = NULL
+  data_con = NULL,
+  progress = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,9 @@ eri_research_pull(
 \item{dest}{\code{chr} or \code{NULL} Local directory to download files into. Defaults to \verb{data/} inside \code{getwd()}.}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{progress}{\code{lgl} If \code{TRUE}, show a per-file byte progress bar (use for a few large files,
+e.g. a LandScan raster). Default \code{FALSE} uses one compact progress bar across all files.}
 }
 \value{
 Character vector of local file paths downloaded (invisibly).

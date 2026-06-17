@@ -10,7 +10,7 @@
   }
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
-  AzureStor::storage_download(data_con, .ERI_CATALOG_PATH, tmp, overwrite = TRUE)
+  .eri_blob_read(data_con, .ERI_CATALOG_PATH, tmp)
   cat <- yaml::read_yaml(tmp)
   if (is.null(cat$entries)) cat$entries <- list()
   cat
@@ -24,7 +24,7 @@
   yaml::write_yaml(catalog, tmp)
   dir_path <- dirname(.ERI_CATALOG_PATH)
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, tmp, .ERI_CATALOG_PATH)
+  .eri_blob_write(data_con, tmp, .ERI_CATALOG_PATH)
 }
 
 # Resolve data container from arg or env vars.

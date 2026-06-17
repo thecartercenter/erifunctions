@@ -199,10 +199,10 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
     archived_to <- paste0(.ERI_SPATIAL_ARCHIVE_DIR, "/", ts, "/", country, "/adm", level, ".rds")
     tmp_prev    <- tempfile(fileext = ".rds")
     on.exit(unlink(tmp_prev), add = TRUE)
-    AzureStor::storage_download(con, blob_path, tmp_prev, overwrite = TRUE)
+    .eri_blob_read(con, blob_path, tmp_prev)
     .eri_create_azure_dir(con, dirname(archived_to))
     eri_upload(tmp_prev, archived_to, azcontainer = con)
-    cli::cli_alert_info("Archived prior canonical {.val {country}} adm{level} to {.path {archived_to}}.")
+    .eri_say_info("Archived prior canonical {.val {country}} adm{level} to {.path {archived_to}}.")
   }
 
   tmp <- tempfile(fileext = ".rds")
@@ -1000,11 +1000,11 @@ eri_spatial_pop <- function(shapefile, year = NULL, data_con = NULL, fun = "sum"
   if (file.exists(tif_path)) {
     cli::cli_alert_info("Using cached LandScan {year} ({.path {tif_path}}).")
   } else {
-    cli::cli_alert_info("Downloading LandScan {year} from Azure...")
+    cli::cli_alert_info("Downloading LandScan {year} (~100 MB) from Azure...")
     if (in_project) {
-      eri_research_pull(path = blob_path, dest = cache_dir, data_con = con)
+      eri_research_pull(path = blob_path, dest = cache_dir, data_con = con, progress = TRUE)
     } else {
-      AzureStor::storage_download(con, blob_path, tif_path, overwrite = TRUE)
+      .eri_blob_read(con, blob_path, tif_path, progress = TRUE)
     }
   }
 

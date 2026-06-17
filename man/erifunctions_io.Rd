@@ -11,6 +11,7 @@ erifunctions_io(
   azure = TRUE,
   azcontainer = suppressMessages(get_azure_storage_connection()),
   full_names = TRUE,
+  progress = FALSE,
   ...
 )
 }
@@ -38,6 +39,9 @@ Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
 
 \item{full_names}{\code{logical} If \code{io="list"}, include the full reference path. Default \code{TRUE}.}
+
+\item{progress}{\code{logical} Show AzureStor's byte progress bar for the transfer. Default \code{FALSE}
+(suppressed; erifunctions renders its own output). Set \code{TRUE} for a large single read/upload.}
 
 \item{...}{Optional parameters that work with \code{\link[readr:read_delim]{readr::read_delim()}} or \code{\link[readxl:read_excel]{readxl::read_excel()}}.}
 }
