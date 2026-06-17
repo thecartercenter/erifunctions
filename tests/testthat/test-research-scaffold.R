@@ -26,7 +26,8 @@ test_that("eri_research_scaffold creates a full repo skeleton", {
   # system libs sf/AzureStor need at load, else curl/sf/gdal fail to install (issue from PR #149).
   ci <- readLines(file.path(repo, ".github", "workflows", "ci.yaml"))
   expect_true(any(grepl("use-public-rspm: true", ci, fixed = TRUE)))
-  expect_true(any(grepl("libgdal-dev", ci, fixed = TRUE)))
+  expect_true(any(grepl("libgdal-dev", ci, fixed = TRUE)))          # sf
+  expect_true(any(grepl("libcurl4-openssl-dev", ci, fixed = TRUE))) # the lib whose absence failed curl
   expect_true(file.exists(file.path(repo, "analysis", "workflow.qmd")))
   expect_true(file.exists(file.path(repo, "research.yaml")))
   expect_true(dir.exists(file.path(repo, "data")))

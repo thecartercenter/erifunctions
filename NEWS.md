@@ -5,9 +5,9 @@
 - `eri_research_scaffold()`: the generated reproducibility-check workflow now installs the
   geospatial/Azure system libraries (`gdal`/`proj`/`geos`/`udunits`, `curl`/`openssl`) and uses
   Posit Public Package Manager binaries (`use-public-rspm: true`). Previously `renv::restore()` on
-  the Ubuntu runner tried to build `curl` (and `sf`/`terra`/`gdal`) from source with no `-dev`
-  libraries present and failed, so the check was red for any real research project. Validated on
-  the `dr_irs_2026` reference repo.
+  the Ubuntu runner tried to build `curl` (and the `sf` geospatial stack) from source with no
+  `-dev` libraries present and failed, so the check was red for any real research project.
+  Validated on the `dr_irs_2026` reference repo.
 
 ## Research data lifecycle (issue #148, ADR-0009)
 
