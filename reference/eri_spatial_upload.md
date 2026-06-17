@@ -1,12 +1,19 @@
-# Upload an admin boundary shapefile to Azure
+# Upload a new admin boundary shapefile to Azure
 
 Validates and uploads a local shapefile (or any sf-readable format) to
-`data/spatial/{country}/adm{level}.rds` in the `data/` Azure blob.
+the canonical `data/spatial/{country}/adm{level}.rds` in the `data/`
+Azure blob.
 
 ## Usage
 
 ``` r
-eri_spatial_upload(local_path, country, level, data_con = NULL)
+eri_spatial_upload(
+  local_path,
+  country,
+  level,
+  data_con = NULL,
+  overwrite = FALSE
+)
 ```
 
 ## Arguments
@@ -28,6 +35,13 @@ eri_spatial_upload(local_path, country, level, data_con = NULL)
   Azure container object for the `data/` blob. If `NULL`, connects
   automatically.
 
+- overwrite:
+
+  `lgl` If `TRUE`, replace an existing canonical boundary. Default
+  `FALSE` (refuse to overwrite shared data). Prefer
+  [`eri_spatial_promote()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_promote.md)
+  for deliberate replacement.
+
 ## Value
 
 The Azure blob path (invisibly).
@@ -45,6 +59,16 @@ The file is validated before upload:
 
 If validation fails the upload is blocked with a clear error explaining
 what to fix.
+
+The canonical `spatial/` store is **shared cleaned reference data** that
+many users pull for figures, so this function is **overwrite-safe**: it
+refuses to clobber a boundary that already exists. Use this for a
+brand-new boundary. To deliberately *replace* an existing canonical
+boundary from a vetted research-project copy, use
+[`eri_spatial_promote()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_promote.md)
+(which records who promoted what, when). A deliberate `overwrite = TRUE`
+archives the prior canonical version to `spatial/_archive/<timestamp>/`
+first, so the replacement is reversible. See ADR-0009.
 
 ## Examples
 

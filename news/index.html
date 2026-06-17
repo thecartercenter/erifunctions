@@ -47,6 +47,27 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="research-data-lifecycle-issue-adr-development-version">Research data lifecycle (issue <a href="https://github.com/thecartercenter/erifunctions/issues/148" class="external-link">#148</a>, ADR-0009)<a class="anchor" aria-label="anchor" href="#research-data-lifecycle-issue-adr-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/eri_spatial_promote.html">eri_spatial_promote()</a></code> – <strong>new</strong>: the explicit gate for pushing a boundary cleaned in a research project up to the shared canonical <code>spatial/</code> store, recording the promotion (who, what, when, whether it replaced an existing boundary, and where the prior version was archived) in <code>research.yaml</code>. Replacing an existing canonical boundary requires <code>overwrite = TRUE</code>.</li>
+<li>
+<code><a href="../reference/eri_spatial_upload.html">eri_spatial_upload()</a></code> is now <strong>overwrite-safe</strong>: it refuses to clobber an existing canonical boundary (shared cleaned data many users pull for figures) unless <code>overwrite = TRUE</code>, and points to <code><a href="../reference/eri_spatial_promote.html">eri_spatial_promote()</a></code> for deliberate replacement. Reads of the canonical/cached <code>.rds</code> format are now supported alongside shapefiles.</li>
+<li>
+<strong>Canonical overwrites are archived.</strong> A deliberate <code>overwrite = TRUE</code> (via either <code><a href="../reference/eri_spatial_upload.html">eri_spatial_upload()</a></code> or <code><a href="../reference/eri_spatial_promote.html">eri_spatial_promote()</a></code>) first copies the prior canonical boundary to <code>spatial/_archive/&lt;timestamp&gt;/</code>, so replacing shared reference data is reversible (ADR-0009).</li>
+<li>
+<code><a href="../reference/eri_research_status.html">eri_research_status()</a></code> now also reports boundary <strong>promotions</strong> the project has made to canonical (summarised separately from the inbound input table).</li>
+<li>
+<code><a href="../reference/eri_research_status.html">eri_research_status()</a></code> – <strong>new</strong>: a manifest of every input a project depends on (source, <code>pulled_at</code>, update count, whether a prior version was archived) plus output/snapshot/tag counts. <code>check_remote = TRUE</code> flags inputs whose Azure source is newer than the local copy.</li>
+<li>
+<code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code> now does <strong>update-with-archival</strong>: a re-pull moves the prior local version into <code>data/_archive/&lt;timestamp&gt;/</code> and records it, and <strong>dedups</strong> <code>pulled_data</code> (a re-pull of the same source replaces its record instead of appending a duplicate, and collapses any pre-existing duplicates). <code>eri_spatial_load(cache = TRUE)</code> inherits this.</li>
+<li>
+<code><a href="../reference/eri_spatial_pop.html">eri_spatial_pop()</a></code> now <strong>caches the LandScan raster in the project and reuses it</strong> rather than re-downloading ~100 MB on every call; records provenance when run inside a research project.</li>
+<li>
+<code><a href="../reference/eri_landscan_list.html">eri_landscan_list()</a></code> no longer warns when the LandScan directory simply does not exist yet (returns an empty tibble quietly).</li>
+<li>
+<strong>ADLS-safe directory creation is now centralized.</strong> The trailing-slash trim + missing-parent creation previously local to <code>R/research.R</code> (<code>.eri_ensure_azure_dir()</code>) is promoted into the DAL as <code><a href="../reference/dot-eri_create_azure_dir.html">.eri_create_azure_dir()</a></code>; <code>azure_io("create")</code> and every nested-path write site (<code>artifacts.R</code>, <code>catalog.R</code>, <code>odk_registry.R</code>, <code>onboarding.R</code>, <code>cmr.R</code>, <code>templates.R</code>, <code>research.R</code>) now route through it instead of calling <code><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">AzureStor::create_storage_dir()</a></code> directly. Robustness/ consistency fix from the PR <a href="https://github.com/thecartercenter/erifunctions/issues/147" class="external-link">#147</a> review.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="azure-access-zero-config-interactive-auth--adls-gen2-fixes-development-version">Azure access: zero-config interactive auth + ADLS Gen2 fixes<a class="anchor" aria-label="anchor" href="#azure-access-zero-config-interactive-auth--adls-gen2-fixes-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> ships working defaults for interactive (browser) auth, so analysts and epidemiologists configure nothing: <code>app_id</code> defaults to Microsoft’s first-party Azure CLI public client and <code>tenant_id</code> / <code>resource_endpoint</code> to the team’s Entra tenant and the <code>eridev</code> ADLS endpoint. All remain overridable via the existing <code>ERIFUNCTIONS_*</code> env vars; the service-principal secret stays env-only. One Microsoft sign-in covers Azure Storage (and, later, Microsoft Graph).</li>

@@ -401,18 +401,30 @@ Admin boundaries, LandScan population, and spatial joins.
 
 - [`eri_spatial_load()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_load.md)
   : Load admin boundary from Azure
+
 - [`eri_spatial_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_upload.md)
-  : Upload an admin boundary shapefile to Azure
+  : Upload a new admin boundary shapefile to Azure
+
+- [`eri_spatial_promote()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_promote.md)
+  :
+
+  Promote a research-project boundary to the canonical `/spatial` store
+
 - [`eri_spatial_join()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_join.md)
   : Join point data to admin boundaries
+
 - [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
   : Reconcile free-text place names to canonical admin units
+
 - [`eri_spatial_pop()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_pop.md)
   : Extract population from LandScan into spatial polygons
+
 - [`eri_bbox_expand()`](https://thecartercenter.github.io/erifunctions/reference/eri_bbox_expand.md)
   : Expand a bounding box by a distance in metres
+
 - [`eri_landscan_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_landscan_upload.md)
   : Upload a LandScan population raster to Azure
+
 - [`eri_landscan_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_landscan_list.md)
   : List LandScan rasters available in Azure
 
@@ -510,6 +522,8 @@ Scaffold studies, track provenance, manage artifacts, and snapshot data.
   : List all research projects in Azure
 - [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)
   : Pull data from Azure into a research project
+- [`eri_research_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_status.md)
+  : Report the data state of a research project
 - [`eri_research_upload_figure()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_upload_figure.md)
   : Upload a figure to the research project outputs in Azure
 - [`eri_research_upload_output()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_upload_output.md)
