@@ -119,6 +119,11 @@ documented example.
    template as the reference example (this is where the ITS analysis lives).
 5. **(Stretch) figures:** thin helpers on top of `eri_map_*` / `eri_brand_ggplot_theme()` for
    the recurring study figures.
+6. **Epidemiologist documentation** *(done)*: a role-oriented, copy-paste **worked example** of the
+   full research lifecycle on safe public data (`vignettes/epi-research-guide.Rmd`, using
+   `mtcars`), superseding the older `research-workflow` vignette. This also seeds the **task-guide
+   framework** (one guide per user role × task), tracked in [`guides.md`](guides.md) — the live
+   index of which guides exist and which are still missing.
 
 **Verification:** a `test-smoke.R`-style live test (`ERI_SMOKE_TESTS=true`): init → pull IRS
 artifact + incidence + spatial (cached, with provenance) → [analysis runs in the example

@@ -1,5 +1,18 @@
 # erifunctions (development version)
 
+## Documentation: a worked research guide for epidemiologists
+
+- **New article — "A complete research workflow for epidemiologists"**
+  (`vignettes/epi-research-guide.Rmd`). A copy-paste, start-to-finish walkthrough of the whole
+  research lifecycle — scaffold a project, put it under version control with the reproducibility
+  check, add data with metadata, source it, analyse, save outputs and figures, tag a citable
+  version, pause and resume weeks later, take in an updated dataset, and tidy up. It uses the
+  public `mtcars` dataset (initial `am == 0` subset → expanded to the full dataset to simulate
+  new data arriving), so any epidemiologist can run it live on their laptop and delete every
+  resource at the end. Supersedes the older, partly-stale `research-workflow` vignette.
+- **New `docs/guides.md`** — an index of task guides (one per user role × task) tracking what
+  exists and what is still missing, seeding the framework the epi guide is the first of.
+
 ## Console output: clearer, calmer, and tunable
 
 For non-developer users a stack of anonymous progress bars looks like the package has hung. The
