@@ -99,53 +99,33 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
   sf_obj
 }
 
-#### eri_spatial_upload ####
+#### eri_spatial_upload / eri_spatial_promote ####
 
-#' Upload an admin boundary shapefile to Azure
+#' Validate a local admin boundary before it reaches the canonical store.
 #'
-#' Validates and uploads a local shapefile (or any sf-readable format) to
-#' `data/spatial/{country}/adm{level}.rds` in the `data/` Azure blob.
-#'
-#' The file is validated before upload:
-#' - Must have a defined CRS.
-#' - Must have no empty geometries.
-#' - Must contain a column named `adm{level}_name` holding the canonical admin unit names.
-#'
-#' If validation fails the upload is blocked with a clear error explaining what to fix.
-#'
-#' @param local_path `chr` Path to the local shapefile (`.shp`, `.gpkg`, `.geojson`, etc.).
-#' @param country `chr` Country code (e.g. `"dr"`, `"ht"`).
-#' @param level `int` Admin level (0–4).
-#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
-#' @returns The Azure blob path (invisibly).
-#' @examples
-#' \dontrun{
-#' eri_spatial_upload("data/dom_admin_boundaries/dom_admin3.shp", country = "dr", level = 3)
-#' eri_spatial_upload("data/hti_admin_boundaries/hti_admin2.shp", country = "ht", level = 2)
-#' }
-#' @export
-eri_spatial_upload <- function(local_path, country, level, data_con = NULL) {
-  if (!requireNamespace("sf", quietly = TRUE)) {
-    cli::cli_abort("Package {.pkg sf} must be installed to use {.fn eri_spatial_upload}.")
-  }
-
-  level <- suppressWarnings(as.integer(level))
-  if (is.na(level) || level < 0L || level > 4L) {
-    cli::cli_abort("{.arg level} must be an integer between 0 and 4.")
-  }
-
+#' Reads `local_path` as an `sf` object and checks it has a defined CRS, no empty
+#' geometries, and the required `adm{level}_name` column. Aborts with a clear,
+#' actionable error if any check fails. Shared by [eri_spatial_upload()] and
+#' [eri_spatial_promote()].
+#' @keywords internal
+.eri_spatial_validate_boundary <- function(local_path, level, fn = "eri_spatial_upload") {
   if (!file.exists(local_path)) {
     cli::cli_abort("File not found: {.path {local_path}}")
   }
 
+  # `.rds` (the canonical store format, and what eri_spatial_load() caches into a project) is
+  # read directly; any other sf-readable format (shapefile, gpkg, geojson) goes through st_read.
+  reader <- if (grepl("\\.rds$", local_path, ignore.case = TRUE)) readRDS else function(p) sf::st_read(p, quiet = TRUE)
   sf_obj <- tryCatch(
-    sf::st_read(local_path, quiet = TRUE),
+    reader(local_path),
     error = function(e) {
       cli::cli_abort("Could not read {.path {local_path}}: {e$message}")
     }
   )
+  if (!inherits(sf_obj, "sf")) {
+    cli::cli_abort("{.path {local_path}} did not read as an {.cls sf} object (got {.cls {class(sf_obj)[1]}}).")
+  }
 
-  # --- Validation ---
   issues <- list()
 
   if (is.na(sf::st_crs(sf_obj))) {
@@ -176,22 +156,171 @@ eri_spatial_upload <- function(local_path, country, level, data_con = NULL) {
 
   if (length(issues) > 0L) {
     cli::cli_abort(c(
-      "Shapefile validation failed -- upload blocked.",
+      "Shapefile validation failed -- {fn} blocked.",
       unlist(issues)
     ))
   }
+  sf_obj
+}
 
-  # --- Upload ---
-  tmp <- tempfile(fileext = ".rds")
-  withr::defer(unlink(tmp))
-  readr::write_rds(sf_obj, tmp)
-
-  con       <- .eri_spatial_con(data_con)
+#' Write a validated boundary to the canonical `/spatial` store, guarding overwrites.
+#'
+#' Refuses to clobber an existing canonical boundary unless `overwrite = TRUE`,
+#' because `/spatial` is shared cleaned reference data many users pull for figures
+#' (ADR-0009). The escalation message differs by entry point.
+#' @keywords internal
+.eri_spatial_write_canonical <- function(sf_obj, country, level, con, overwrite, via) {
   blob_path <- .eri_spatial_admin_path(country, level)
 
+  if (!isTRUE(overwrite) && eri_file_exists(blob_path, azcontainer = con)) {
+    escalation <- if (identical(via, "eri_spatial_upload")) {
+      c(
+        "i" = "To deliberately replace it, promote a vetted copy with {.fn eri_spatial_promote},",
+        "i" = "or re-run {.fn eri_spatial_upload} with {.code overwrite = TRUE} if you are sure."
+      )
+    } else {
+      c("i" = "Re-run {.fn eri_spatial_promote} with {.code overwrite = TRUE} to confirm the replacement.")
+    }
+    cli::cli_abort(c(
+      "Canonical boundary already exists: {.path {blob_path}}",
+      "x" = "Refusing to overwrite -- {.path spatial/} is shared cleaned data many users pull for figures.",
+      escalation
+    ))
+  }
+
+  tmp <- tempfile(fileext = ".rds")
+  on.exit(unlink(tmp), add = TRUE)
+  readr::write_rds(sf_obj, tmp)
   eri_upload(tmp, blob_path, azcontainer = con)
+  blob_path
+}
+
+#' Upload a new admin boundary shapefile to Azure
+#'
+#' Validates and uploads a local shapefile (or any sf-readable format) to the
+#' canonical `data/spatial/{country}/adm{level}.rds` in the `data/` Azure blob.
+#'
+#' The file is validated before upload:
+#' - Must have a defined CRS.
+#' - Must have no empty geometries.
+#' - Must contain a column named `adm{level}_name` holding the canonical admin unit names.
+#'
+#' If validation fails the upload is blocked with a clear error explaining what to fix.
+#'
+#' The canonical `spatial/` store is **shared cleaned reference data** that many users pull
+#' for figures, so this function is **overwrite-safe**: it refuses to clobber a boundary that
+#' already exists. Use this for a brand-new boundary. To deliberately *replace* an existing
+#' canonical boundary from a vetted research-project copy, use [eri_spatial_promote()] (which
+#' records who promoted what, when). See ADR-0009.
+#'
+#' @param local_path `chr` Path to the local shapefile (`.shp`, `.gpkg`, `.geojson`, etc.).
+#' @param country `chr` Country code (e.g. `"dr"`, `"ht"`).
+#' @param level `int` Admin level (0–4).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @param overwrite `lgl` If `TRUE`, replace an existing canonical boundary. Default `FALSE`
+#'   (refuse to overwrite shared data). Prefer [eri_spatial_promote()] for deliberate replacement.
+#' @returns The Azure blob path (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_spatial_upload("data/dom_admin_boundaries/dom_admin3.shp", country = "dr", level = 3)
+#' eri_spatial_upload("data/hti_admin_boundaries/hti_admin2.shp", country = "ht", level = 2)
+#' }
+#' @export
+eri_spatial_upload <- function(local_path, country, level, data_con = NULL, overwrite = FALSE) {
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg sf} must be installed to use {.fn eri_spatial_upload}.")
+  }
+
+  level <- suppressWarnings(as.integer(level))
+  if (is.na(level) || level < 0L || level > 4L) {
+    cli::cli_abort("{.arg level} must be an integer between 0 and 4.")
+  }
+
+  sf_obj    <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_upload")
+  con       <- .eri_spatial_con(data_con)
+  blob_path <- .eri_spatial_write_canonical(
+    sf_obj, country, level, con, overwrite = overwrite, via = "eri_spatial_upload"
+  )
+
   cli::cli_alert_success(
     "Uploaded {.val {country}} admin level {level} to {.path {blob_path}}."
+  )
+  invisible(blob_path)
+}
+
+#### eri_spatial_promote ####
+
+#' Promote a research-project boundary to the canonical `/spatial` store
+#'
+#' The explicit gate for pushing a boundary you have cleaned in a research project up to the
+#' shared canonical `data/spatial/{country}/adm{level}.rds`, where other users and studies pull
+#' it. Unlike [eri_spatial_upload()] (for brand-new boundaries), `eri_spatial_promote()` is the
+#' deliberate way to *replace* an existing canonical boundary, and it records the promotion in
+#' the project's `research.yaml` for provenance. Replacing an existing boundary still requires an
+#' explicit `overwrite = TRUE` so shared data is never clobbered by accident. See ADR-0009.
+#'
+#' The boundary is validated exactly as in [eri_spatial_upload()] before promotion.
+#'
+#' @param local_path `chr` Path to the local boundary file to promote (typically a cleaned copy
+#'   under the project `data/` directory).
+#' @param country `chr` Country code (e.g. `"dr"`, `"ht"`).
+#' @param level `int` Admin level (0–4).
+#' @param overwrite `lgl` If `TRUE`, replace an existing canonical boundary. Default `FALSE`.
+#' @param path `chr` Local project root (read for `research.yaml` to record provenance). Defaults
+#'   to `getwd()`. If no `research.yaml` is found, the promotion proceeds but is not recorded
+#'   (with a warning).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns The canonical Azure blob path (invisibly).
+#' @examples
+#' \dontrun{
+#' # After cleaning a boundary inside a research project, promote it to canonical.
+#' eri_spatial_promote("data/dr_adm3_cleaned.rds", country = "dr", level = 3, overwrite = TRUE)
+#' }
+#' @export
+eri_spatial_promote <- function(local_path, country, level, overwrite = FALSE,
+                                path = getwd(), data_con = NULL) {
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    cli::cli_abort("Package {.pkg sf} must be installed to use {.fn eri_spatial_promote}.")
+  }
+
+  level <- suppressWarnings(as.integer(level))
+  if (is.na(level) || level < 0L || level > 4L) {
+    cli::cli_abort("{.arg level} must be an integer between 0 and 4.")
+  }
+
+  sf_obj    <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_promote")
+  con       <- .eri_spatial_con(data_con)
+  existed   <- eri_file_exists(.eri_spatial_admin_path(country, level), azcontainer = con)
+  blob_path <- .eri_spatial_write_canonical(
+    sf_obj, country, level, con, overwrite = overwrite, via = "eri_spatial_promote"
+  )
+
+  # Record the promotion in research.yaml when run inside a project (best-effort provenance).
+  yaml_path <- .eri_research_yaml_path(path)
+  if (file.exists(yaml_path)) {
+    manifest <- .eri_research_read_manifest(path)
+    entry <- list(
+      type        = "boundary",
+      country     = country,
+      level       = level,
+      source      = normalizePath(local_path, winslash = "/", mustWork = FALSE),
+      azure_path  = blob_path,
+      replaced    = existed,
+      promoted_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      promoted_by = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+    )
+    if (is.null(manifest$promoted_data)) manifest$promoted_data <- list()
+    manifest$promoted_data <- c(manifest$promoted_data, list(entry))
+    .eri_research_write_manifest(manifest, path)
+  } else {
+    cli::cli_warn(c(
+      "No {.file research.yaml} in {.path {path}} -- promotion was NOT recorded.",
+      "i" = "Run {.fn eri_research_init} first to track promotions for provenance."
+    ))
+  }
+
+  cli::cli_alert_success(
+    "Promoted {.val {country}} admin level {level} to canonical {.path {blob_path}}{if (existed) ' (replaced existing)' else ''}."
   )
   invisible(blob_path)
 }

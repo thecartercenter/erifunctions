@@ -12,25 +12,6 @@
   )
 }
 
-#' Ensure an Azure directory exists, creating any missing parents.
-#'
-#' ADLS Gen2 rejects a trailing slash in directory operations (HTTP 400, "the request URI is
-#' invalid") and does not reliably create intermediate parents, so we strip trailing slashes
-#' and create each level of the path that is missing. On flat blob storage these are cheap
-#' no-ops. Use this instead of a bare `create_storage_dir()` for any nested research path.
-#' @keywords internal
-.eri_ensure_azure_dir <- function(data_con, path) {
-  parts <- strsplit(sub("/+$", "", path), "/", fixed = TRUE)[[1]]
-  parts <- parts[nzchar(parts)]
-  for (i in seq_along(parts)) {
-    level <- paste(parts[seq_len(i)], collapse = "/")
-    if (!AzureStor::storage_dir_exists(data_con, level)) {
-      AzureStor::create_storage_dir(data_con, level)
-    }
-  }
-  invisible(sub("/+$", "", path))
-}
-
 #' @keywords internal
 .eri_research_yaml_path <- function(path) file.path(path, "research.yaml")
 
@@ -132,7 +113,7 @@ eri_research_init <- function(
   .eri_research_write_manifest(manifest, path)
 
   data_con <- .eri_research_con(data_con)
-  .eri_ensure_azure_dir(data_con, azure_path)
+  .eri_create_azure_dir(data_con, azure_path)
 
   cli::cli_alert_success(
     "Research project {.val {project_name}} initialised at {.path {path}}."
@@ -521,7 +502,7 @@ eri_research_upload_figure <- function(
   azure_path <- paste0(manifest$azure_path, "outputs/figs/", filename)
 
   dir_path <- paste0(manifest$azure_path, "outputs/figs")
-  .eri_ensure_azure_dir(data_con, dir_path)
+  .eri_create_azure_dir(data_con, dir_path)
   AzureStor::storage_upload(data_con, local_path, azure_path)
 
   entry <- list(
@@ -574,7 +555,7 @@ eri_research_upload_output <- function(
 
   azure_path <- paste0(manifest$azure_path, "outputs/", filename)
   dir_path   <- paste0(manifest$azure_path, "outputs")
-  .eri_ensure_azure_dir(data_con, dir_path)
+  .eri_create_azure_dir(data_con, dir_path)
   AzureStor::storage_upload(data_con, tmp, azure_path)
 
   entry <- list(
@@ -826,7 +807,7 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
     outputs      = if (is.null(manifest$outputs)) list() else manifest$outputs
   )
 
-  .eri_ensure_azure_dir(data_con, tag_dir)
+  .eri_create_azure_dir(data_con, tag_dir)
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
   yaml::write_yaml(tag_record, tmp)

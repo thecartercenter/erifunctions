@@ -27,9 +27,7 @@
   withr::defer(unlink(tmp))
   yaml::write_yaml(reg, tmp)
   dir_path <- dirname(.ODK_REGISTRY_PATH)
-  if (!AzureStor::storage_dir_exists(data_con, dir_path)) {
-    AzureStor::create_storage_dir(data_con, dir_path)
-  }
+  .eri_create_azure_dir(data_con, dir_path)
   AzureStor::storage_upload(data_con, tmp, .ODK_REGISTRY_PATH)
 }
 

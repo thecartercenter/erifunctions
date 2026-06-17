@@ -18,6 +18,31 @@
 
 #### 1) Utility functions ####
 
+#' Ensure an Azure directory exists, creating any missing parents.
+#'
+#' ADLS Gen2 rejects a trailing slash in directory operations (HTTP 400, "the request URI is
+#' invalid") and does not reliably create intermediate parents, so we strip trailing slashes and
+#' create each level of the path that is missing. On flat blob storage these are cheap no-ops.
+#' This is the canonical directory-creation primitive: [azure_io()]'s `"create"` op and every
+#' nested-path write site (`research.R`, `artifacts.R`, `catalog.R`, `odk_registry.R`,
+#' `onboarding.R`, `cmr.R`, `templates.R`) route through it rather than calling
+#' `AzureStor::create_storage_dir()` directly.
+#' @param azcontainer Azure container object.
+#' @param path `chr` Directory path to ensure exists.
+#' @returns The trimmed path (invisibly).
+#' @keywords internal
+.eri_create_azure_dir <- function(azcontainer, path) {
+  parts <- strsplit(sub("/+$", "", path), "/", fixed = TRUE)[[1]]
+  parts <- parts[nzchar(parts)]
+  for (i in seq_along(parts)) {
+    level <- paste(parts[seq_len(i)], collapse = "/")
+    if (!AzureStor::storage_dir_exists(azcontainer, level)) {
+      AzureStor::create_storage_dir(azcontainer, level)
+    }
+  }
+  invisible(sub("/+$", "", path))
+}
+
 #' Validate connection to Azure
 #'
 #' Generate token which connects to TCC Azure resources and
@@ -394,7 +419,7 @@ azure_io <- function(
   if (io == "create") {
     tryCatch(
       {
-        AzureStor::create_storage_dir(azcontainer, file_loc)
+        .eri_create_azure_dir(azcontainer, file_loc)
         cli::cli_alert_success("Directory created!")
       },
       error = function(e) {

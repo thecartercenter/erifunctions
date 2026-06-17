@@ -2,9 +2,15 @@
 % Please edit documentation in R/spatial.R
 \name{eri_spatial_upload}
 \alias{eri_spatial_upload}
-\title{Upload an admin boundary shapefile to Azure}
+\title{Upload a new admin boundary shapefile to Azure}
 \usage{
-eri_spatial_upload(local_path, country, level, data_con = NULL)
+eri_spatial_upload(
+  local_path,
+  country,
+  level,
+  data_con = NULL,
+  overwrite = FALSE
+)
 }
 \arguments{
 \item{local_path}{\code{chr} Path to the local shapefile (\code{.shp}, \code{.gpkg}, \code{.geojson}, etc.).}
@@ -14,13 +20,16 @@ eri_spatial_upload(local_path, country, level, data_con = NULL)
 \item{level}{\code{int} Admin level (0–4).}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{overwrite}{\code{lgl} If \code{TRUE}, replace an existing canonical boundary. Default \code{FALSE}
+(refuse to overwrite shared data). Prefer \code{\link[=eri_spatial_promote]{eri_spatial_promote()}} for deliberate replacement.}
 }
 \value{
 The Azure blob path (invisibly).
 }
 \description{
-Validates and uploads a local shapefile (or any sf-readable format) to
-\verb{data/spatial/\{country\}/adm\{level\}.rds} in the \verb{data/} Azure blob.
+Validates and uploads a local shapefile (or any sf-readable format) to the
+canonical \verb{data/spatial/\{country\}/adm\{level\}.rds} in the \verb{data/} Azure blob.
 }
 \details{
 The file is validated before upload:
@@ -31,6 +40,12 @@ The file is validated before upload:
 }
 
 If validation fails the upload is blocked with a clear error explaining what to fix.
+
+The canonical \verb{spatial/} store is \strong{shared cleaned reference data} that many users pull
+for figures, so this function is \strong{overwrite-safe}: it refuses to clobber a boundary that
+already exists. Use this for a brand-new boundary. To deliberately \emph{replace} an existing
+canonical boundary from a vetted research-project copy, use \code{\link[=eri_spatial_promote]{eri_spatial_promote()}} (which
+records who promoted what, when). See ADR-0009.
 }
 \examples{
 \dontrun{

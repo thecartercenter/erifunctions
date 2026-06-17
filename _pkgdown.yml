@@ -103,6 +103,7 @@ reference:
   contents:
   - eri_spatial_load
   - eri_spatial_upload
+  - eri_spatial_promote
   - eri_spatial_join
   - eri_spatial_reconcile
   - eri_spatial_pop

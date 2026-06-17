@@ -236,7 +236,7 @@ eri_stage_cmr <- function(country,
                                    filenames   = as.list(basename(src_files$name)))
 
     if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
-      AzureStor::create_storage_dir(data_con, staged_dir)
+      .eri_create_azure_dir(data_con, staged_dir)
       op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir",
                                      path = staged_dir)
     }

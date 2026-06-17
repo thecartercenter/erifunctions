@@ -58,10 +58,11 @@ test_that("eri_onboard_country creates Azure directories", {
   )
 
   eri_onboard_country("uga", "Uganda", "oncho", path = tmp)
-  expect_length(created, 3L)
-  expect_true(any(grepl("raw", created)))
-  expect_true(any(grepl("staged", created)))
-  expect_true(any(grepl("processed", created)))
+  # ADLS-safe creation makes each missing parent level, so the three layer leaves plus their
+  # shared parents (uga, uga/oncho, uga/oncho/surveillance) are all created.
+  expect_true("uga/oncho/surveillance/raw"       %in% created)
+  expect_true("uga/oncho/surveillance/staged"    %in% created)
+  expect_true("uga/oncho/surveillance/processed" %in% created)
   unlink(file.path(tmp, "uga_oncho_schema.yaml"))
 })
 
