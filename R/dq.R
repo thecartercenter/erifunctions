@@ -905,7 +905,7 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
         blob_path  <- paste0(stem, ext)
         local_path <- file.path(tmp_dir, paste0("ref", ext))
         tryCatch(
-          AzureStor::storage_download(azcontainer, blob_path, local_path, overwrite = TRUE),
+          .eri_blob_read(azcontainer, blob_path, local_path),
           error = function(e) NULL
         )
       }

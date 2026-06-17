@@ -43,6 +43,67 @@
   invisible(sub("/+$", "", path))
 }
 
+#### Blob transfer helpers (clean console output) ####
+#
+# AzureStor prints its own byte progress bar for every transfer. In a loop (e.g. snapshotting 17
+# files) these stack into dozens of anonymous bars that look endless and uninformative to a
+# non-developer. These helpers are the single path all uploads/downloads route through: they
+# suppress AzureStor's native bar and let us render clean `cli` output instead. The bar is kept
+# only for a genuinely large single file (`progress = TRUE`, e.g. the ~100 MB LandScan raster),
+# where byte progress reassures the user the transfer is alive.
+
+#' Upload one local file to Azure (native progress bar suppressed unless `progress`).
+#' @keywords internal
+.eri_blob_write <- function(con, src, dest, progress = FALSE) {
+  withr::local_options(azure_storage_progress_bar = isTRUE(progress))
+  AzureStor::storage_upload(con, src, dest)
+  invisible(dest)
+}
+
+#' Download one Azure file to a local path (native progress bar suppressed unless `progress`).
+#' @keywords internal
+.eri_blob_read <- function(con, src, dest, overwrite = TRUE, progress = FALSE) {
+  withr::local_options(azure_storage_progress_bar = isTRUE(progress))
+  AzureStor::storage_download(con, src, dest, overwrite = overwrite)
+  invisible(dest)
+}
+
+#' Transfer many files with a single, informative cli progress bar.
+#'
+#' Replaces a stack of per-file AzureStor bars with one transient bar that names the current file
+#' and shows `i/n`. The caller prints the headline summary afterwards.
+#' @param direction `"upload"` (srcs = local paths, dests = Azure paths) or `"download"`
+#'   (srcs = Azure paths, dests = local paths).
+#' @keywords internal
+.eri_blob_transfer_many <- function(con, srcs, dests, direction = c("upload", "download")) {
+  direction <- match.arg(direction)
+  n <- length(dests)
+  if (n == 0L) return(invisible(dests))
+  withr::local_options(azure_storage_progress_bar = FALSE)
+
+  verb      <- if (direction == "upload") "Uploading" else "Downloading"
+  names_all <- basename(dests)
+  cur_name  <- names_all[[1L]]   # referenced by the format; updated each iteration
+
+  cli::cli_progress_bar(
+    format = paste0(
+      "{cli::pb_spin} ", verb, " {.file {cur_name}} ",
+      "{cli::pb_bar} {cli::pb_current}/{cli::pb_total}"
+    ),
+    total = n, clear = TRUE
+  )
+  for (i in seq_len(n)) {
+    cur_name <- names_all[[i]]
+    if (direction == "upload") {
+      AzureStor::storage_upload(con, srcs[[i]], dests[[i]])
+    } else {
+      AzureStor::storage_download(con, srcs[[i]], dests[[i]], overwrite = TRUE)
+    }
+    cli::cli_progress_update()
+  }
+  invisible(dests)
+}
+
 #' Validate connection to Azure
 #'
 #' Generate token which connects to TCC Azure resources and
@@ -390,6 +451,10 @@ azure_io <- function(
   if (!io %in% opts) {
     stop("io: must be 'read', 'write', 'exists.dir', 'exists.file','create', 'delete' 'delete.dir' 'list' or 'upload'")
   }
+
+  # Suppress AzureStor's per-transfer byte bar for everything routed through the dispatcher;
+  # erifunctions renders its own clean cli output (see .eri_blob_* helpers). Scoped to this call.
+  withr::local_options(azure_storage_progress_bar = FALSE)
 
   if (io == "write" && is.null(obj)) {
     stop("Need to supply an object to be written")
@@ -868,8 +933,8 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
     for (src_path in matching$name) {
       dest_path <- paste0(processed_dir, "/", basename(src_path))
       tmp_file  <- tempfile()
-      AzureStor::storage_download(azcontainer, src_path, tmp_file, overwrite = TRUE)
-      AzureStor::storage_upload(azcontainer, tmp_file, dest_path)
+      .eri_blob_read(azcontainer, src_path, tmp_file)
+      .eri_blob_write(azcontainer, tmp_file, dest_path)
       unlink(tmp_file)
       AzureStor::delete_storage_file(azcontainer, src_path, confirm = FALSE)
       moved <- c(moved, dest_path)
@@ -887,7 +952,7 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
         ),
         error = function(e) invisible(NULL)
       )
-      cli::cli_alert_success("Approved: {.path {basename(src_path)}}")
+      .eri_say_done("Approved: {.path {basename(src_path)}}")
     }
 
     # Human-readable approval record stored alongside the data
@@ -903,11 +968,17 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
     approval_path <- paste0(processed_dir, "/", period, "_approval_log.yaml")
     approval_file <- tempfile(fileext = ".yaml")
     yaml::write_yaml(approval, approval_file)
-    AzureStor::storage_upload(azcontainer, approval_file, approval_path)
+    .eri_blob_write(azcontainer, approval_file, approval_path)
     unlink(approval_file)
     op_log$steps <- .eri_log_step(op_log$steps, "write_approval_log",
                                    path = approval_path)
-    cli::cli_alert_success("Approval log: {.path {approval_path}}")
+    .eri_say_done("Approval log: {.path {approval_path}}")
+    .eri_summary("Approved {.val {period}}", c(
+      Dataset  = sprintf("%s / %s / %s", country, disease, data_type),
+      Files    = sprintf("%d moved to processed", length(moved)),
+      Approver = analyst_id,
+      Location = processed_dir
+    ))
 
     op_log$status <- "success"
     op_log$files  <- as.list(moved)
@@ -1146,13 +1217,13 @@ eri_stage <- function(pipeline, country, disease,
       }
 
       tmp <- tempfile()
-      AzureStor::storage_download(projects_con, src_path, tmp, overwrite = TRUE)
-      AzureStor::storage_upload(data_con, tmp, dest_path)
+      .eri_blob_read(projects_con, src_path, tmp)
+      .eri_blob_write(data_con, tmp, dest_path)
       unlink(tmp)
       staged <- c(staged, dest_path)
       op_log$steps <- .eri_log_step(op_log$steps, "stage_file",
                                      src = src_path, dest = dest_path)
-      cli::cli_alert_success("Staged: {.path {fname}}")
+      .eri_say_done("Staged: {.path {fname}}")
     }
 
     op_log$status <- "success"
@@ -1295,20 +1366,24 @@ eri_ingest <- function(path, country, disease,
     data_dest <- paste0(staged_dir, "/", fname_parquet)
     withr::with_tempfile("parquet_file", fileext = ".parquet", {
       arrow::write_parquet(result$data, parquet_file)
-      AzureStor::storage_upload(data_con, parquet_file, data_dest)
+      .eri_blob_write(data_con, parquet_file, data_dest)
     })
     written      <- c(written, data_dest)
     op_log$steps <- .eri_log_step(op_log$steps, "write_data_blob", dest = data_dest)
-    cli::cli_alert_success("Staged to data blob: {.path {data_dest}}")
+    .eri_say_done("Staged to data blob: {.path {data_dest}}")
 
     proj_dest <- paste0(projects_dir, "/", fname_parquet)
     withr::with_tempfile("parquet_file", fileext = ".parquet", {
       arrow::write_parquet(result$data, parquet_file)
-      AzureStor::storage_upload(projects_con, parquet_file, proj_dest)
+      .eri_blob_write(projects_con, parquet_file, proj_dest)
     })
     written      <- c(written, proj_dest)
     op_log$steps <- .eri_log_step(op_log$steps, "write_projects_blob", dest = proj_dest)
-    cli::cli_alert_success("Written to projects blob: {.path {proj_dest}}")
+    .eri_say_done("Written to projects blob: {.path {proj_dest}}")
+    .eri_summary("Ingested to {.path {staged_dir}}", c(
+      Rows  = format(nrow(result$data), big.mark = ","),
+      Blobs = sprintf("%d written (data + projects)", length(written))
+    ))
 
     op_log$status <- "success"
     op_log$files  <- as.list(written)
@@ -1414,7 +1489,7 @@ eri_ingest <- function(path, country, disease,
 
     log_file <- tempfile(fileext = ".yaml")
     yaml::write_yaml(entry, log_file)
-    AzureStor::storage_upload(data_con, log_file, log_path)
+    .eri_blob_write(data_con, log_file, log_path)
     unlink(log_file)
   }, error = function(e) {
     # Fail silently — session logging must never block analyst workflow
@@ -1453,7 +1528,7 @@ eri_ingest <- function(path, country, disease,
     log_path <- paste0(log_dir, "/", fname)
     log_file <- tempfile(fileext = ".yaml")
     yaml::write_yaml(log_list, log_file)
-    AzureStor::storage_upload(azcontainer, log_file, log_path)
+    .eri_blob_write(azcontainer, log_file, log_path)
     unlink(log_file)
     cli::cli_alert_info("Operation log: {.path {log_path}}")
   }, error = function(e) {

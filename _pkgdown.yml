@@ -34,6 +34,11 @@ reference:
   - eri_sharepoint_connect
   - get_teams_connection
 
+- title: Console output
+  desc: Control how chatty erifunctions is in the console.
+  contents:
+  - eri_verbosity
+
 - title: Reading & writing data
   desc: Read, write, list, and manage files in Azure (and locally).
   contents:

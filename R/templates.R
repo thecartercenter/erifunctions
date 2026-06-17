@@ -42,7 +42,7 @@
   }
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
-  AzureStor::storage_download(data_con, .ERI_TEMPLATE_REGISTRY_PATH, tmp, overwrite = TRUE)
+  .eri_blob_read(data_con, .ERI_TEMPLATE_REGISTRY_PATH, tmp)
   reg <- yaml::read_yaml(tmp)
   if (is.null(reg$entries)) reg$entries <- list()
   reg
@@ -54,7 +54,7 @@
   withr::defer(unlink(tmp))
   yaml::write_yaml(registry, tmp)
   .eri_create_azure_dir(data_con, .ERI_TEMPLATE_AZURE_DIR)
-  AzureStor::storage_upload(data_con, tmp, .ERI_TEMPLATE_REGISTRY_PATH)
+  .eri_blob_write(data_con, tmp, .ERI_TEMPLATE_REGISTRY_PATH)
 }
 
 #### eri_template_list ####
@@ -161,7 +161,7 @@ eri_template_pull <- function(name, dest = getwd(), data_con = NULL) {
   entry     <- azure_match[[1L]]
   az_path   <- paste0(.ERI_TEMPLATE_AZURE_DIR, "/", entry$filename)
   local_out <- file.path(dest, entry$filename)
-  AzureStor::storage_download(con, az_path, local_out, overwrite = TRUE)
+  .eri_blob_read(con, az_path, local_out)
 
   cli::cli_alert_success("Template {.file {entry$filename}} downloaded to {.path {dest}}.")
   invisible(local_out)
@@ -213,7 +213,7 @@ eri_template_upload <- function(local_path, name, description, data_con = NULL) 
   az_path  <- paste0(.ERI_TEMPLATE_AZURE_DIR, "/", filename)
 
   .eri_create_azure_dir(con, .ERI_TEMPLATE_AZURE_DIR)
-  AzureStor::storage_upload(con, local_path, az_path)
+  .eri_blob_write(con, local_path, az_path)
 
   entry <- list(
     name        = name,

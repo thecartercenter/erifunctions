@@ -273,6 +273,8 @@ eri_research_list <- function(data_con = NULL) {
 #' @param path `chr` or `NULL` Explicit Azure blob path to download from. Mutually exclusive with canonical args.
 #' @param dest `chr` or `NULL` Local directory to download files into. Defaults to `data/` inside `getwd()`.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @param progress `lgl` If `TRUE`, show a per-file byte progress bar (use for a few large files,
+#'   e.g. a LandScan raster). Default `FALSE` uses one compact progress bar across all files.
 #' @returns Character vector of local file paths downloaded (invisibly).
 #' @examples
 #' \dontrun{
@@ -289,7 +291,8 @@ eri_research_pull <- function(
     data_type = NULL,
     path      = NULL,
     dest      = NULL,
-    data_con  = NULL
+    data_con  = NULL,
+    progress  = FALSE
 ) {
   has_canonical <- !is.null(country) && !is.null(disease) && !is.null(data_type)
   has_path      <- !is.null(path)
@@ -354,11 +357,16 @@ eri_research_pull <- function(
     cli::cli_alert_info("Archived {length(existing)} prior version{?s} to {.path {archived_to}}.")
   }
 
-  local_paths <- vapply(file_names, function(f) {
-    lpath <- file.path(local_dest, basename(f))
-    AzureStor::storage_download(data_con, f, lpath, overwrite = TRUE)
-    lpath
-  }, character(1L), USE.NAMES = FALSE)
+  local_paths <- file.path(local_dest, basename(file_names))
+  if (isTRUE(progress)) {
+    # Large transfer(s) (e.g. the ~100 MB LandScan raster): keep AzureStor's byte progress bar so
+    # the user can see a long single download is alive.
+    for (i in seq_along(file_names)) {
+      .eri_blob_read(data_con, file_names[[i]], local_paths[[i]], progress = TRUE)
+    }
+  } else {
+    .eri_blob_transfer_many(data_con, file_names, local_paths, direction = "download")
+  }
 
   research_yaml <- file.path(getwd(), "research.yaml")
   if (file.exists(research_yaml)) {
@@ -515,7 +523,7 @@ eri_research_upload_figure <- function(
 
   dir_path <- paste0(manifest$azure_path, "outputs/figs")
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, local_path, azure_path)
+  .eri_blob_write(data_con, local_path, azure_path)
 
   entry <- list(
     type        = "figure",
@@ -568,7 +576,7 @@ eri_research_upload_output <- function(
   azure_path <- paste0(manifest$azure_path, "outputs/", filename)
   dir_path   <- paste0(manifest$azure_path, "outputs")
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, tmp, azure_path)
+  .eri_blob_write(data_con, tmp, azure_path)
 
   entry <- list(
     type        = "object",
@@ -626,15 +634,14 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
   timestamp    <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
   snap_path    <- paste0(manifest$azure_path, "snapshots/", timestamp, "/")
 
-  # Upload each file preserving relative path under data/
-  rel_paths <- character(length(local_files))
-  for (i in seq_along(local_files)) {
-    rel      <- sub(paste0("^", normalizePath(data_dir, winslash = "/"), "/?"), "",
-                    normalizePath(local_files[[i]], winslash = "/"))
-    az_dest  <- paste0(snap_path, rel)
-    AzureStor::storage_upload(data_con, local_files[[i]], az_dest)
-    rel_paths[[i]] <- rel
-  }
+  # Upload each file preserving its path relative to data/, via one clean progress bar.
+  rel_paths <- sub(paste0("^", normalizePath(data_dir, winslash = "/"), "/?"), "",
+                   normalizePath(local_files, winslash = "/"))
+  az_dests  <- paste0(snap_path, rel_paths)
+  .eri_say_info(
+    "Snapshotting {.val {manifest$project_name}} data ({length(local_files)} file{?s})..."
+  )
+  .eri_blob_transfer_many(data_con, local_files, az_dests, direction = "upload")
 
   # Write snapshot manifest to Azure
   snap_manifest <- list(
@@ -647,7 +654,7 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
   yaml::write_yaml(snap_manifest, tmp)
-  AzureStor::storage_upload(data_con, tmp, paste0(snap_path, "_manifest.yaml"))
+  .eri_blob_write(data_con, tmp, paste0(snap_path, "_manifest.yaml"))
 
   # Record in research.yaml
   snap_entry <- list(
@@ -740,6 +747,7 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
 #' @export
 eri_research_tag <- function(label, description = NULL, snapshot = NULL,
                              path = getwd(), data_con = NULL) {
+  `%||%` <- rlang::`%||%`
   if (missing(label) || !is.character(label) || length(label) != 1L || !nzchar(label)) {
     cli::cli_abort("{.arg label} must be a single non-empty string.")
   }
@@ -779,7 +787,7 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
   # Resolve the snapshot to bind (create one if none exist).
   snaps <- if (is.null(manifest$snapshots)) list() else manifest$snapshots
   if (length(snaps) == 0L) {
-    cli::cli_inform("No snapshot found -- creating one to bind to this tag.")
+    .eri_say_info("No snapshot yet -- creating one to bind to this tag.")
     eri_research_snapshot(label = paste0("tag-", label), path = path, data_con = data_con)
     manifest <- .eri_research_read_manifest(path)
     snaps    <- manifest$snapshots
@@ -823,7 +831,8 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
   yaml::write_yaml(tag_record, tmp)
-  AzureStor::storage_upload(data_con, tmp, tag_file)
+  .eri_blob_write(data_con, tmp, tag_file)
+  .eri_say_done("Wrote tag manifest to {.path {tag_file}}.")
 
   tag_entry <- list(
     label       = label,
@@ -835,10 +844,21 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
   if (is.null(manifest$tags)) manifest$tags <- list()
   manifest$tags <- c(manifest$tags, list(tag_entry))
   .eri_research_write_manifest(manifest, path)
+  .eri_say_done("Recorded tag in {.file research.yaml}.")
 
-  cli::cli_alert_success(
-    "Tagged {.val {label}}: snapshot {.val {snap$timestamp}} + code {.val {if (is.na(git$sha)) 'none' else substr(git$sha, 1L, 8L)}}."
-  )
+  n_pull <- length(manifest$pulled_data %||% list())
+  n_art  <- length(manifest$artifacts_used %||% list())
+  n_out  <- length(manifest$outputs %||% list())
+  .eri_summary("Tagged {.val {label}}", c(
+    Snapshot = sprintf("%s (%d file%s)", snap$timestamp, snap$file_count %||% 0L,
+                       if (isTRUE(snap$file_count == 1L)) "" else "s"),
+    Code     = if (is.na(git$sha)) "none (not a git repo)"
+               else paste0(substr(git$sha, 1L, 8L), if (isTRUE(git$dirty)) " (uncommitted changes)" else ""),
+    Inputs   = sprintf("%d pull%s, %d artifact%s", n_pull, if (n_pull == 1L) "" else "s",
+                       n_art, if (n_art == 1L) "" else "s"),
+    Outputs  = sprintf("%d", n_out),
+    Azure    = tag_dir
+  ))
   invisible(tag_file)
 }
 

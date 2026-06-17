@@ -254,13 +254,13 @@ eri_stage_cmr <- function(country,
       }
 
       tmp <- tempfile()
-      AzureStor::storage_download(projects_con, src_path, tmp, overwrite = TRUE)
-      AzureStor::storage_upload(data_con, tmp, dest_path)
+      .eri_blob_read(projects_con, src_path, tmp)
+      .eri_blob_write(data_con, tmp, dest_path)
       unlink(tmp)
       staged       <- c(staged, dest_path)
       op_log$steps <- .eri_log_step(op_log$steps, "stage_file",
                                      src = src_path, dest = dest_path)
-      cli::cli_alert_success("Staged: {.path {fname}}")
+      .eri_say_done("Staged: {.path {fname}}")
     }
 
     op_log$status <- "success"

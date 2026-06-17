@@ -14,7 +14,7 @@
   }
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
-  AzureStor::storage_download(data_con, .ODK_REGISTRY_PATH, tmp, overwrite = TRUE)
+  .eri_blob_read(data_con, .ODK_REGISTRY_PATH, tmp)
   reg <- yaml::read_yaml(tmp)
   if (is.null(reg$forms)) reg$forms <- list()
   reg
@@ -28,7 +28,7 @@
   yaml::write_yaml(reg, tmp)
   dir_path <- dirname(.ODK_REGISTRY_PATH)
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, tmp, .ODK_REGISTRY_PATH)
+  .eri_blob_write(data_con, tmp, .ODK_REGISTRY_PATH)
 }
 
 # Return the data/ blob container, either from the passed object or env vars.

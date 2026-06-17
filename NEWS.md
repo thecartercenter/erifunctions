@@ -1,5 +1,22 @@
 # erifunctions (development version)
 
+## Console output: clearer, calmer, and tunable
+
+For non-developer users a stack of anonymous progress bars looks like the package has hung. The
+console output is overhauled package-wide:
+
+- **One informative progress bar instead of many.** Multi-file transfers (e.g. `eri_research_snapshot()`
+  uploading 17 files, `eri_research_pull()`) now show a single bar that names the current file and
+  its position (`3/17`), rather than a stack of AzureStor's anonymous `|====| 100%` bars. The native
+  per-transfer bar is suppressed everywhere and replaced with `cli` output; it is kept only for a
+  genuinely large single file (e.g. the ~100 MB LandScan raster) so a long download still shows life.
+- **Summary end-caps.** Multi-step operations (`eri_research_tag()`, `eri_approve()`, `eri_ingest()`)
+  finish with a tidy `✔`-titled key/value summary of what happened.
+- **`eri_verbosity()` -- new.** Controls how chatty the console is: `"full"` (default -- step-by-step
+  confirmations and summaries) or `"quiet"` (headline results, warnings, and errors only). Set it for
+  a whole project via `options(erifunctions.verbosity = "quiet")` in `.Rprofile`, per session with
+  `eri_verbosity("quiet")`, or via the `ERIFUNCTIONS_VERBOSITY` environment variable.
+
 ## Fixes
 
 - `eri_research_scaffold()`: the generated reproducibility-check workflow now installs the

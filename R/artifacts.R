@@ -20,7 +20,7 @@
   }
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
-  AzureStor::storage_download(data_con, .ERI_ARTIFACT_REGISTRY_PATH, tmp, overwrite = TRUE)
+  .eri_blob_read(data_con, .ERI_ARTIFACT_REGISTRY_PATH, tmp)
   reg <- yaml::read_yaml(tmp)
   if (is.null(reg$entries)) reg$entries <- list()
   reg
@@ -33,7 +33,7 @@
   yaml::write_yaml(registry, tmp)
   dir_path <- dirname(.ERI_ARTIFACT_REGISTRY_PATH)
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, tmp, .ERI_ARTIFACT_REGISTRY_PATH)
+  .eri_blob_write(data_con, tmp, .ERI_ARTIFACT_REGISTRY_PATH)
 }
 
 #### eri_artifact_upload ####
@@ -87,7 +87,7 @@ eri_artifact_upload <- function(
 
   dir_path <- paste0("artifacts/", type, "/", name)
   .eri_create_azure_dir(data_con, dir_path)
-  AzureStor::storage_upload(data_con, local_path, azure_path)
+  .eri_blob_write(data_con, local_path, azure_path)
 
   entry <- list(
     name        = name,
@@ -229,7 +229,7 @@ eri_artifact_pull <- function(name, dest = getwd(), data_con = NULL) {
 
   if (!dir.exists(dest)) dir.create(dest, recursive = TRUE)
   local_path <- file.path(dest, entry$filename)
-  AzureStor::storage_download(data_con, entry$azure_path, local_path, overwrite = TRUE)
+  .eri_blob_read(data_con, entry$azure_path, local_path)
 
   research_yaml_path <- file.path(getwd(), "research.yaml")
   if (file.exists(research_yaml_path)) {
