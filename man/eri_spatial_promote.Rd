@@ -38,7 +38,9 @@ shared canonical \verb{data/spatial/\{country\}/adm\{level\}.rds}, where other u
 it. Unlike \code{\link[=eri_spatial_upload]{eri_spatial_upload()}} (for brand-new boundaries), \code{eri_spatial_promote()} is the
 deliberate way to \emph{replace} an existing canonical boundary, and it records the promotion in
 the project's \code{research.yaml} for provenance. Replacing an existing boundary still requires an
-explicit \code{overwrite = TRUE} so shared data is never clobbered by accident. See ADR-0009.
+explicit \code{overwrite = TRUE} so shared data is never clobbered by accident, and the prior
+canonical version is first archived to \verb{spatial/_archive/<timestamp>/} so a replacement is
+reversible. See ADR-0009.
 }
 \details{
 The boundary is validated exactly as in \code{\link[=eri_spatial_upload]{eri_spatial_upload()}} before promotion.

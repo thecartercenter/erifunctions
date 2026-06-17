@@ -9,6 +9,7 @@
 \description{
 Refuses to clobber an existing canonical boundary unless \code{overwrite = TRUE},
 because \verb{/spatial} is shared cleaned reference data many users pull for figures
-(ADR-0009). The escalation message differs by entry point.
+(ADR-0009). The escalation message differs by entry point. Returns a list with the canonical
+\code{blob_path}, whether it \code{existed}, and where the prior version was \code{archived_to} (or \code{NULL}).
 }
 \keyword{internal}

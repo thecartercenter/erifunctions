@@ -32,9 +32,14 @@ working copy** — the approval-gate philosophy applied to research inputs.
   caches and reuses the LandScan raster; provenance recorded).
 - **A project-state manifest.** `eri_research_status()` lists every tracked input (source, pulled_at,
   update count, whether a prior version was archived) and optionally flags inputs whose Azure source
-  is newer (`check_remote = TRUE`).
-- **Canonical writes are gated.** `/spatial` is protected: a project boundary reaches canonical only
-  via an explicit `eri_spatial_promote()`, and `eri_spatial_upload()` becomes overwrite-safe. "Bring
+  is newer (`check_remote = TRUE`). It also reports any boundary **promotions** the project has made
+  to canonical (these are outbound, so they are summarised separately from the inbound input table).
+- **Canonical writes are gated and archived.** `/spatial` is protected: a project boundary reaches
+  canonical only via an explicit `eri_spatial_promote()`, and `eri_spatial_upload()` becomes
+  overwrite-safe. A deliberate overwrite of an existing canonical boundary (via either entry point
+  with `overwrite = TRUE`) **archives the prior canonical version to `spatial/_archive/<timestamp>/`
+  first**, so even the highest-stakes write — replacing shared reference data many users pull — is
+  reversible. The promotion (including the archive location) is recorded in `research.yaml`. "Bring
   your own / a subset" data stays in the project and is never pushed to canonical implicitly.
 
 ## Consequences

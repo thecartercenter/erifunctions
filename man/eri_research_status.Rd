@@ -19,7 +19,8 @@ A tibble of tracked inputs (invisibly).
 }
 \description{
 Summarises every input the project depends on -- pulls (with update counts and whether a prior
-version was archived) and artifacts -- plus the output/snapshot/tag counts, from \code{research.yaml}.
+version was archived) and artifacts -- plus the output/snapshot/tag counts and any boundary
+promotions the project has made to the canonical \verb{/spatial} store, from \code{research.yaml}.
 One place to answer "what does this study depend on, and is any of it stale?". With
 \code{check_remote = TRUE}, flags inputs whose Azure source is newer than the local copy.
 }

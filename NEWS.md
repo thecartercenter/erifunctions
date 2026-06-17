@@ -4,12 +4,17 @@
 
 - `eri_spatial_promote()` -- **new**: the explicit gate for pushing a boundary cleaned in a
   research project up to the shared canonical `spatial/` store, recording the promotion (who,
-  what, when, whether it replaced an existing boundary) in `research.yaml`. Replacing an existing
-  canonical boundary requires `overwrite = TRUE`.
+  what, when, whether it replaced an existing boundary, and where the prior version was archived)
+  in `research.yaml`. Replacing an existing canonical boundary requires `overwrite = TRUE`.
 - `eri_spatial_upload()` is now **overwrite-safe**: it refuses to clobber an existing canonical
   boundary (shared cleaned data many users pull for figures) unless `overwrite = TRUE`, and points
   to `eri_spatial_promote()` for deliberate replacement. Reads of the canonical/cached `.rds`
   format are now supported alongside shapefiles.
+- **Canonical overwrites are archived.** A deliberate `overwrite = TRUE` (via either
+  `eri_spatial_upload()` or `eri_spatial_promote()`) first copies the prior canonical boundary to
+  `spatial/_archive/<timestamp>/`, so replacing shared reference data is reversible (ADR-0009).
+- `eri_research_status()` now also reports boundary **promotions** the project has made to canonical
+  (summarised separately from the inbound input table).
 - `eri_research_status()` -- **new**: a manifest of every input a project depends on (source,
   `pulled_at`, update count, whether a prior version was archived) plus output/snapshot/tag counts.
   `check_remote = TRUE` flags inputs whose Azure source is newer than the local copy.

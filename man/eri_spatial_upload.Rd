@@ -45,7 +45,8 @@ The canonical \verb{spatial/} store is \strong{shared cleaned reference data} th
 for figures, so this function is \strong{overwrite-safe}: it refuses to clobber a boundary that
 already exists. Use this for a brand-new boundary. To deliberately \emph{replace} an existing
 canonical boundary from a vetted research-project copy, use \code{\link[=eri_spatial_promote]{eri_spatial_promote()}} (which
-records who promoted what, when). See ADR-0009.
+records who promoted what, when). A deliberate \code{overwrite = TRUE} archives the prior canonical
+version to \verb{spatial/_archive/<timestamp>/} first, so the replacement is reversible. See ADR-0009.
 }
 \examples{
 \dontrun{

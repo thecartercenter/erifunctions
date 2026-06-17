@@ -412,7 +412,8 @@ eri_research_pull <- function(
 #' Report the data state of a research project
 #'
 #' Summarises every input the project depends on -- pulls (with update counts and whether a prior
-#' version was archived) and artifacts -- plus the output/snapshot/tag counts, from `research.yaml`.
+#' version was archived) and artifacts -- plus the output/snapshot/tag counts and any boundary
+#' promotions the project has made to the canonical `/spatial` store, from `research.yaml`.
 #' One place to answer "what does this study depend on, and is any of it stale?". With
 #' `check_remote = TRUE`, flags inputs whose Azure source is newer than the local copy.
 #'
@@ -432,6 +433,7 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   manifest <- .eri_research_read_manifest(path)
   pulls    <- manifest$pulled_data %||% list()
   arts     <- manifest$artifacts_used %||% list()
+  promos   <- manifest$promoted_data %||% list()
 
   inputs <- tibble::tibble(
     kind      = c(rep("pull", length(pulls)), rep("artifact", length(arts))),
@@ -462,9 +464,19 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   cli::cli_h1("Research project: {manifest$project_name} ({manifest$country}/{manifest$disease})")
   cli::cli_inform(c(
     "*" = "{nrow(inputs)} tracked input{?s} ({sum(inputs$kind == 'pull')} pull{?s}, {sum(inputs$kind == 'artifact')} artifact{?s})",
-    "*" = "{length(manifest$outputs %||% list())} output{?s}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}"
+    "*" = "{length(manifest$outputs %||% list())} output{?s}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}, {length(promos)} promotion{?s}"
   ))
   if (nrow(inputs) > 0L) print(inputs)
+  # Promotions are outbound (project -> canonical /spatial), so they are summarised here rather
+  # than mixed into the inbound `inputs` table.
+  if (length(promos) > 0L) {
+    cli::cli_inform("Promotions to canonical:")
+    for (p in promos) {
+      cli::cli_inform(
+        "  {.val {p$country}} adm{p$level} -> {.path {p$azure_path}} ({p$promoted_at}{if (isTRUE(p$replaced)) ', replaced' else ''})"
+      )
+    }
+  }
   invisible(inputs)
 }
 

@@ -2,6 +2,7 @@
 
 .ERI_SPATIAL_ADMIN_ROOT   <- "spatial"
 .ERI_SPATIAL_LANDSCAN_DIR <- "spatial/landscan"
+.ERI_SPATIAL_ARCHIVE_DIR  <- "spatial/_archive"
 
 #' @keywords internal
 .eri_spatial_con <- function(data_con) {
@@ -167,12 +168,14 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
 #'
 #' Refuses to clobber an existing canonical boundary unless `overwrite = TRUE`,
 #' because `/spatial` is shared cleaned reference data many users pull for figures
-#' (ADR-0009). The escalation message differs by entry point.
+#' (ADR-0009). The escalation message differs by entry point. Returns a list with the canonical
+#' `blob_path`, whether it `existed`, and where the prior version was `archived_to` (or `NULL`).
 #' @keywords internal
 .eri_spatial_write_canonical <- function(sf_obj, country, level, con, overwrite, via) {
   blob_path <- .eri_spatial_admin_path(country, level)
+  existed   <- eri_file_exists(blob_path, azcontainer = con)
 
-  if (!isTRUE(overwrite) && eri_file_exists(blob_path, azcontainer = con)) {
+  if (!isTRUE(overwrite) && existed) {
     escalation <- if (identical(via, "eri_spatial_upload")) {
       c(
         "i" = "To deliberately replace it, promote a vetted copy with {.fn eri_spatial_promote},",
@@ -188,11 +191,25 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
     ))
   }
 
+  # Update + archival applied to canonical (ADR-0009): a deliberate overwrite first copies the prior
+  # canonical version into spatial/_archive/<ts>/, so replacing shared reference data is reversible.
+  archived_to <- NULL
+  if (existed) {
+    ts          <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+    archived_to <- paste0(.ERI_SPATIAL_ARCHIVE_DIR, "/", ts, "/", country, "/adm", level, ".rds")
+    tmp_prev    <- tempfile(fileext = ".rds")
+    on.exit(unlink(tmp_prev), add = TRUE)
+    AzureStor::storage_download(con, blob_path, tmp_prev, overwrite = TRUE)
+    .eri_create_azure_dir(con, dirname(archived_to))
+    eri_upload(tmp_prev, archived_to, azcontainer = con)
+    cli::cli_alert_info("Archived prior canonical {.val {country}} adm{level} to {.path {archived_to}}.")
+  }
+
   tmp <- tempfile(fileext = ".rds")
   on.exit(unlink(tmp), add = TRUE)
   readr::write_rds(sf_obj, tmp)
   eri_upload(tmp, blob_path, azcontainer = con)
-  blob_path
+  list(blob_path = blob_path, existed = existed, archived_to = archived_to)
 }
 
 #' Upload a new admin boundary shapefile to Azure
@@ -211,7 +228,8 @@ eri_spatial_load <- function(country, level, data_con = NULL, cache = FALSE, des
 #' for figures, so this function is **overwrite-safe**: it refuses to clobber a boundary that
 #' already exists. Use this for a brand-new boundary. To deliberately *replace* an existing
 #' canonical boundary from a vetted research-project copy, use [eri_spatial_promote()] (which
-#' records who promoted what, when). See ADR-0009.
+#' records who promoted what, when). A deliberate `overwrite = TRUE` archives the prior canonical
+#' version to `spatial/_archive/<timestamp>/` first, so the replacement is reversible. See ADR-0009.
 #'
 #' @param local_path `chr` Path to the local shapefile (`.shp`, `.gpkg`, `.geojson`, etc.).
 #' @param country `chr` Country code (e.g. `"dr"`, `"ht"`).
@@ -236,16 +254,16 @@ eri_spatial_upload <- function(local_path, country, level, data_con = NULL, over
     cli::cli_abort("{.arg level} must be an integer between 0 and 4.")
   }
 
-  sf_obj    <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_upload")
-  con       <- .eri_spatial_con(data_con)
-  blob_path <- .eri_spatial_write_canonical(
+  sf_obj <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_upload")
+  con    <- .eri_spatial_con(data_con)
+  res    <- .eri_spatial_write_canonical(
     sf_obj, country, level, con, overwrite = overwrite, via = "eri_spatial_upload"
   )
 
   cli::cli_alert_success(
-    "Uploaded {.val {country}} admin level {level} to {.path {blob_path}}."
+    "Uploaded {.val {country}} admin level {level} to {.path {res$blob_path}}."
   )
-  invisible(blob_path)
+  invisible(res$blob_path)
 }
 
 #### eri_spatial_promote ####
@@ -257,7 +275,9 @@ eri_spatial_upload <- function(local_path, country, level, data_con = NULL, over
 #' it. Unlike [eri_spatial_upload()] (for brand-new boundaries), `eri_spatial_promote()` is the
 #' deliberate way to *replace* an existing canonical boundary, and it records the promotion in
 #' the project's `research.yaml` for provenance. Replacing an existing boundary still requires an
-#' explicit `overwrite = TRUE` so shared data is never clobbered by accident. See ADR-0009.
+#' explicit `overwrite = TRUE` so shared data is never clobbered by accident, and the prior
+#' canonical version is first archived to `spatial/_archive/<timestamp>/` so a replacement is
+#' reversible. See ADR-0009.
 #'
 #' The boundary is validated exactly as in [eri_spatial_upload()] before promotion.
 #'
@@ -288,10 +308,9 @@ eri_spatial_promote <- function(local_path, country, level, overwrite = FALSE,
     cli::cli_abort("{.arg level} must be an integer between 0 and 4.")
   }
 
-  sf_obj    <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_promote")
-  con       <- .eri_spatial_con(data_con)
-  existed   <- eri_file_exists(.eri_spatial_admin_path(country, level), azcontainer = con)
-  blob_path <- .eri_spatial_write_canonical(
+  sf_obj <- .eri_spatial_validate_boundary(local_path, level, fn = "eri_spatial_promote")
+  con    <- .eri_spatial_con(data_con)
+  res    <- .eri_spatial_write_canonical(
     sf_obj, country, level, con, overwrite = overwrite, via = "eri_spatial_promote"
   )
 
@@ -304,11 +323,12 @@ eri_spatial_promote <- function(local_path, country, level, overwrite = FALSE,
       country     = country,
       level       = level,
       source      = normalizePath(local_path, winslash = "/", mustWork = FALSE),
-      azure_path  = blob_path,
-      replaced    = existed,
+      azure_path  = res$blob_path,
+      replaced    = res$existed,
       promoted_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       promoted_by = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
     )
+    if (!is.null(res$archived_to)) entry$archived_prev <- res$archived_to
     if (is.null(manifest$promoted_data)) manifest$promoted_data <- list()
     manifest$promoted_data <- c(manifest$promoted_data, list(entry))
     .eri_research_write_manifest(manifest, path)
@@ -320,9 +340,9 @@ eri_spatial_promote <- function(local_path, country, level, overwrite = FALSE,
   }
 
   cli::cli_alert_success(
-    "Promoted {.val {country}} admin level {level} to canonical {.path {blob_path}}{if (existed) ' (replaced existing)' else ''}."
+    "Promoted {.val {country}} admin level {level} to canonical {.path {res$blob_path}}{if (res$existed) ' (replaced existing)' else ''}."
   )
-  invisible(blob_path)
+  invisible(res$blob_path)
 }
 
 #### eri_bbox_expand ####
