@@ -14,7 +14,7 @@ current level instead of setting it.}
 The verbosity level, invisibly when setting.
 }
 \description{
-By default erifunctions narrates each step it takes -- confirmations, checklists, and progress
+By default erifunctions narrates each step it takes -- confirmations, summaries, and progress
 bars -- so you can see what it is doing. If you prefer a terser console, switch to \code{"quiet"}:
 headline results, warnings, and errors are still shown, but the step-by-step chatter is hidden.
 }

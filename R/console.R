@@ -2,7 +2,7 @@
 #
 # erifunctions narrates what it is doing so that non-developer users (epidemiologists, data
 # analysts) can follow along and trust that work is happening. Two levels:
-#   "full"  (default) -- per-step confirmations, checklists, and progress on transfers.
+#   "full"  (default) -- per-step confirmations, summaries, and progress on transfers.
 #   "quiet"           -- drops the granular play-by-play; keeps headline results, warnings,
 #                        errors, and live progress on genuinely long transfers.
 #
@@ -29,7 +29,7 @@
 
 #' Control how much erifunctions prints to the console
 #'
-#' By default erifunctions narrates each step it takes -- confirmations, checklists, and progress
+#' By default erifunctions narrates each step it takes -- confirmations, summaries, and progress
 #' bars -- so you can see what it is doing. If you prefer a terser console, switch to `"quiet"`:
 #' headline results, warnings, and errors are still shown, but the step-by-step chatter is hidden.
 #'

@@ -11,6 +11,7 @@ azure_io(
   azcontainer = suppressMessages(get_azure_storage_connection()),
   force_delete = FALSE,
   local_path = NULL,
+  progress = FALSE,
   ...
 )
 }
@@ -40,6 +41,9 @@ of interest. See examples.
 
 \item{local_path}{\code{str} Local file pathway to upload a file to Azure. Default is \code{NULL}.
 This parameter is only required when passing \code{"upload"} in the \code{io} parameter.}
+
+\item{progress}{\code{logical} Show AzureStor's byte progress bar for the transfer. Default \code{FALSE}
+(suppressed). Set \code{TRUE} for a large single read/upload that needs visible feedback.}
 
 \item{...}{Optional parameters that work with \code{\link[readr:read_delim]{readr::read_delim()}}, \code{\link[readxl:read_excel]{readxl::read_excel()}}, or \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}}.}
 }

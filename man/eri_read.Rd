@@ -4,7 +4,7 @@
 \alias{eri_read}
 \title{Read a file}
 \usage{
-eri_read(file_loc, ..., azure = TRUE, azcontainer = NULL)
+eri_read(file_loc, ..., azure = TRUE, azcontainer = NULL, progress = FALSE)
 }
 \arguments{
 \item{file_loc}{\code{str} Path of file.}
@@ -16,6 +16,9 @@ Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 
 \item{azcontainer}{\verb{Azure container} A container object returned by
 \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+
+\item{progress}{\code{logical} Show AzureStor's byte progress bar for the transfer. Default \code{FALSE}
+(suppressed; erifunctions renders its own output). Set \code{TRUE} for a large single read/upload.}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

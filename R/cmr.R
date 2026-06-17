@@ -263,6 +263,10 @@ eri_stage_cmr <- function(country,
       .eri_say_done("Staged: {.path {fname}}")
     }
 
+    .eri_summary("Staged CMR to data blob", c(
+      Files    = sprintf("%d", length(staged)),
+      Location = if (length(staged)) dirname(staged[[1L]]) else "(none)"
+    ))
     op_log$status <- "success"
     op_log$files  <- as.list(staged)
 

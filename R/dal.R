@@ -212,6 +212,8 @@ get_azure_storage_connection <- function(
 #' @param azcontainer `Azure container` A container object returned by
 #' [get_azure_storage_connection()].
 #' @param full_names `logical` If `io="list"`, include the full reference path. Default `TRUE`.
+#' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
+#'   (suppressed; erifunctions renders its own output). Set `TRUE` for a large single read/upload.
 #' @param ... Optional parameters that work with [readr::read_delim()] or [readxl::read_excel()].
 #' @returns Conditional on `io`. If `io` is `"read"`, then it will return a tibble. If `io` is
 #' `"list"`, it will return a list of file names. Otherwise, the function will return `NULL`.
@@ -238,6 +240,7 @@ erifunctions_io <- function(
     azure = TRUE,
     azcontainer = suppressMessages(get_azure_storage_connection()),
     full_names = TRUE,
+    progress = FALSE,
     ...) {
 
   opts <- c("read", "write", "upload", "delete", "delete.dir", "list", "exists.dir", "exists.file", "create.dir")
@@ -302,7 +305,7 @@ erifunctions_io <- function(
 
   if (io == "read") {
     if (azure) {
-      return(azure_io(io = "read", file_loc, azcontainer = azcontainer, ...))
+      return(azure_io(io = "read", file_loc, azcontainer = azcontainer, progress = progress, ...))
     } else {
       if (!grepl(".rds$|.rda$|.csv$|.xlsx$|.xls$|.parquet$|.qs2$|.tif$", file_loc)) {
         stop("At the moment only 'rds' 'rda' 'csv' 'xlsx' 'xls' 'parquet', 'qs2', and 'tif' are supported for reading.")
@@ -359,7 +362,8 @@ erifunctions_io <- function(
 
   if (io == "upload") {
     if (azure) {
-      azure_io(io = "upload", file_loc = file_loc, local_path = obj, azcontainer = azcontainer)
+      azure_io(io = "upload", file_loc = file_loc, local_path = obj, azcontainer = azcontainer,
+               progress = progress)
     } else {
       stop("'upload' io is only valid when azure = TRUE.")
     }
@@ -418,6 +422,8 @@ erifunctions_io <- function(
 #' @param obj `robj` Object to be saved, needed for `"write"`. Defaults to `NULL`.
 #' @param azcontainer Azure container object returned from [get_azure_storage_connection()].
 #' @param force_delete `logical` Use delete io without confirmation prompt. Default `FALSE`.
+#' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
+#'   (suppressed). Set `TRUE` for a large single read/upload that needs visible feedback.
 #' @param local_path `str` Local file pathway to upload a file to Azure. Default is `NULL`.
 #' This parameter is only required when passing `"upload"` in the `io` parameter.
 #' @param ... Optional parameters that work with [readr::read_delim()], [readxl::read_excel()], or [ggplot2::ggsave()].
@@ -443,6 +449,7 @@ azure_io <- function(
     azcontainer = suppressMessages(get_azure_storage_connection()),
     force_delete = FALSE,
     local_path = NULL,
+    progress = FALSE,
     ...) {
 
   opts <- c("read", "write", "delete", "delete.dir",
@@ -454,7 +461,8 @@ azure_io <- function(
 
   # Suppress AzureStor's per-transfer byte bar for everything routed through the dispatcher;
   # erifunctions renders its own clean cli output (see .eri_blob_* helpers). Scoped to this call.
-  withr::local_options(azure_storage_progress_bar = FALSE)
+  # `progress = TRUE` opts a transfer back in (e.g. a large single read/upload that needs feedback).
+  withr::local_options(azure_storage_progress_bar = isTRUE(progress))
 
   if (io == "write" && is.null(obj)) {
     stop("Need to supply an object to be written")
@@ -666,10 +674,11 @@ azure_io <- function(
 #'
 #' @inheritParams erifunctions_io
 #' @export
-eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL) {
+eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL, progress = FALSE) {
   if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
-  erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
+  erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer,
+                  progress = progress, ...)
 }
 
 #' Write an object to a file
@@ -1226,6 +1235,10 @@ eri_stage <- function(pipeline, country, disease,
       .eri_say_done("Staged: {.path {fname}}")
     }
 
+    .eri_summary("Staged to data blob", c(
+      Files    = sprintf("%d", length(staged)),
+      Location = if (length(staged)) dirname(staged[[1L]]) else "(none)"
+    ))
     op_log$status <- "success"
     op_log$files  <- as.list(staged)
 
