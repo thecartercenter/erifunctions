@@ -39,13 +39,13 @@ re-running — exactly the situation you hit when a fresh extract lands months i
 ```{=html}
 <div class="mermaid">
 flowchart LR
-    A["Start a project&lt;br/&gt;(scaffold + GitHub)"] --> B["Add data&lt;br/&gt;+ metadata"]
-    B --> C["Source data&lt;br/&gt;into the project"]
-    C --> D["Analyse&lt;br/&gt;(your code)"]
-    D --> E["Save outputs&lt;br/&gt;+ figures"]
-    E --> F["Tag a version&lt;br/&gt;(citable freeze)"]
-    F -.->|weeks later| G["Resume&lt;br/&gt;+ check status"]
-    G --> H["New data arrives&lt;br/&gt;(re-upload + re-pull)"]
+    A["Start a project"] --> B["Add data + metadata"]
+    B --> C["Source the data"]
+    C --> D["Analyse (your code)"]
+    D --> E["Save outputs + figures"]
+    E --> F["Tag a version"]
+    F -.->|weeks later| G["Resume + check status"]
+    G --> H["New data arrives"]
     H --> D
     F --> Z["Clean up"]
 </div>
