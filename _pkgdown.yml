@@ -15,6 +15,25 @@ template:
     base_font: { google: "Source Sans 3" }
     heading_font: { google: "Source Serif 4" }
     code_font: { google: "Source Code Pro" }
+  # Render Mermaid diagrams in articles. A raw <div class="mermaid"> in the .Rmd passes
+  # through pandoc untouched; this loads Mermaid.js and renders those divs, themed to brand.
+  includes:
+    after_body: |
+      <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: 'base',
+          themeVariables: {
+            primaryColor: '#eaeef4',
+            primaryTextColor: '#001737',
+            primaryBorderColor: '#001737',
+            lineColor: '#00873f',
+            fontFamily: 'Source Sans 3, system-ui, sans-serif'
+          }
+        });
+        mermaid.run();
+      </script>
 
 navbar:
   bg: secondary
