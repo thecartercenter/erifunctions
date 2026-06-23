@@ -36,6 +36,7 @@ We will run a small study twice. First on an **initial dataset** (automatic-tran
 only), then we will simulate **"new data arriving"** by expanding to the full dataset and
 re-running — exactly the situation you hit when a fresh extract lands months into a project.
 
+```{=html}
 <div class="mermaid">
 flowchart LR
     A["Start a project<br/>(scaffold + GitHub)"] --> B["Add data<br/>+ metadata"]
@@ -43,11 +44,12 @@ flowchart LR
     C --> D["Analyse<br/>(your code)"]
     D --> E["Save outputs<br/>+ figures"]
     E --> F["Tag a version<br/>(citable freeze)"]
-    F -. "weeks later" .-> G["Resume<br/>+ check status"]
+    F -.->|weeks later| G["Resume<br/>+ check status"]
     G --> H["New data arrives<br/>(re-upload + re-pull)"]
     H --> D
     F --> Z["Clean up"]
 </div>
+```
 
 The golden rule that shapes everything:
 
