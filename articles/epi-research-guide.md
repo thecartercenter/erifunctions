@@ -26,15 +26,13 @@ We will run a small study twice. First on an **initial dataset**
 arriving”** by expanding to the full dataset and re-running — exactly
 the situation you hit when a fresh extract lands months into a project.
 
-flowchart LR A\["Start a project  
-(scaffold + GitHub)"\] --\> B\["Add data  
-+ metadata"\] B --\> C\["Source data  
-into the project"\] C --\> D\["Analyse  
-(your code)"\] D --\> E\["Save outputs  
-+ figures"\] E --\> F\["Tag a version  
-(citable freeze)"\] F -.-\>\|weeks later\| G\["Resume  
-+ check status"\] G --\> H\["New data arrives  
-(re-upload + re-pull)"\] H --\> D F --\> Z\["Clean up"\]
+flowchart LR A\["Start a project\<br/\>(scaffold + GitHub)"\] --\>
+B\["Add data\<br/\>+ metadata"\] B --\> C\["Source data\<br/\>into the
+project"\] C --\> D\["Analyse\<br/\>(your code)"\] D --\> E\["Save
+outputs\<br/\>+ figures"\] E --\> F\["Tag a version\<br/\>(citable
+freeze)"\] F -.-\>\|weeks later\| G\["Resume\<br/\>+ check status"\] G
+--\> H\["New data arrives\<br/\>(re-upload + re-pull)"\] H --\> D F --\>
+Z\["Clean up"\]
 
 The golden rule that shapes everything:
 
