@@ -36,7 +36,7 @@ We will run a small study twice. First on an **initial dataset** (automatic-tran
 only), then we will simulate **"new data arriving"** by expanding to the full dataset and
 re-running — exactly the situation you hit when a fresh extract lands months into a project.
 
-```mermaid
+<div class="mermaid">
 flowchart LR
     A["Start a project<br/>(scaffold + GitHub)"] --> B["Add data<br/>+ metadata"]
     B --> C["Source data<br/>into the project"]
@@ -47,7 +47,7 @@ flowchart LR
     G --> H["New data arrives<br/>(re-upload + re-pull)"]
     H --> D
     F --> Z["Clean up"]
-```
+</div>
 
 The golden rule that shapes everything:
 
