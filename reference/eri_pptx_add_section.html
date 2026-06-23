@@ -86,7 +86,19 @@
 
 
 
-
-
-  </body></html>
+  <script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#eaeef4',
+      primaryTextColor: '#001737',
+      primaryBorderColor: '#001737',
+      lineColor: '#00873f',
+      fontFamily: 'Source Sans 3, system-ui, sans-serif'
+    }
+  });
+  mermaid.run();
+</script></body></html>
 
