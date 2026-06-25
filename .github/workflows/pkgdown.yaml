@@ -11,6 +11,7 @@ name: pkgdown
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   pkgdown:
@@ -48,3 +49,13 @@ jobs:
           clean: false
           branch: gh-pages
           folder: pkgdown_site
+
+      # The push above is authored by GITHUB_TOKEN, and GitHub suppresses the
+      # implicit legacy Pages build for GITHUB_TOKEN-authored pushes (loop
+      # prevention). Without this, gh-pages updates but the live CDN never
+      # rebuilds. Explicitly request a Pages build so the deploy is reliable.
+      - name: Trigger GitHub Pages build
+        if: github.event_name != 'pull_request'
+        run: gh api --method POST repos/${{ github.repository }}/pages/builds
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
