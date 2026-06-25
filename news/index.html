@@ -22,6 +22,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
@@ -46,6 +47,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-a-worked-odk-central-guide-for-data-analysts-development-version">Documentation: a worked ODK Central guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-a-worked-odk-central-guide-for-data-analysts-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Working with ODK Central”</strong> (<code>vignettes/da-odk-guide.Rmd</code>). A hands-on, run-it-live walkthrough of the full ODK loop for a Data Analyst: connect with <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code>, stand up a practice form, monitor it with <code><a href="../reference/eri_survey_status.html">eri_survey_status()</a></code>, manage collectors with <code><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role()</a></code> / <code><a href="../reference/eri_odk_bulk_users.html">eri_odk_bulk_users()</a></code>, register it, and <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> its submissions into the governed <code>raw → staged → approved</code> pipeline — then clean up. The package now ships a small practice XLSForm (<code>inst/extdata/odk-test-form.xlsx</code>) the reader uploads to a sandbox <code>test</code> project.</li>
+<li>
+<strong><code><a href="../reference/eri_survey_status.html">eri_survey_status()</a></code> fix.</strong> The form-metadata request now sends the <code>X-Extended-Metadata: true</code> header, so <code>total_submissions</code> and <code>last_submission_at</code> are populated. Previously these fields were omitted by ODK Central and <code>total_submissions</code> was always <code>0</code>.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-a-worked-ingest-guide-for-data-analysts-development-version">Documentation: a worked ingest guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-a-worked-ingest-guide-for-data-analysts-development-version"></a></h3>
 <ul><li>

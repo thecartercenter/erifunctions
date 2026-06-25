@@ -6,6 +6,9 @@
   epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
 - [Ingesting a surveillance dataset: raw to approved (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
+- [Working with ODK Central: connect, monitor, and pull form data (for
+  data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
 - [Data Quality
   Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Epidemiological

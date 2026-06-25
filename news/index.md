@@ -2,6 +2,30 @@
 
 ## erifunctions (development version)
 
+### Documentation: a worked ODK Central guide for data analysts
+
+- **New article — “Working with ODK Central”**
+  (`vignettes/da-odk-guide.Rmd`). A hands-on, run-it-live walkthrough of
+  the full ODK loop for a Data Analyst: connect with
+  [`init_odk_connection()`](https://thecartercenter.github.io/erifunctions/reference/init_odk_connection.md),
+  stand up a practice form, monitor it with
+  [`eri_survey_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_survey_status.md),
+  manage collectors with
+  [`update_odk_app_user_role()`](https://thecartercenter.github.io/erifunctions/reference/update_odk_app_user_role.md)
+  /
+  [`eri_odk_bulk_users()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_bulk_users.md),
+  register it, and
+  [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+  its submissions into the governed `raw → staged → approved` pipeline —
+  then clean up. The package now ships a small practice XLSForm
+  (`inst/extdata/odk-test-form.xlsx`) the reader uploads to a sandbox
+  `test` project.
+- **[`eri_survey_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_survey_status.md)
+  fix.** The form-metadata request now sends the
+  `X-Extended-Metadata: true` header, so `total_submissions` and
+  `last_submission_at` are populated. Previously these fields were
+  omitted by ODK Central and `total_submissions` was always `0`.
+
 ### Documentation: a worked ingest guide for data analysts
 
 - **New article — “Ingesting a surveillance dataset: raw to approved”**

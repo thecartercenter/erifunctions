@@ -1,0 +1,406 @@
+# Working with ODK Central: connect, monitor, and pull form data (for data analysts)
+
+**ODK Central** is where field data is born — survey teams collect
+submissions on phones, and they land on an ODK Central server. This is a
+hands-on walkthrough for a **Data Analyst (DA)** of the whole loop:
+connect to ODK Central, stand up a form, **monitor** it, **manage** who
+collects on it, and **pull** its submissions into the governed Carter
+Center data system.
+
+So you can practise safely, you will create a **make-believe form** in a
+sandbox **`test` project** on your ODK Central server, submit a few fake
+records, and work the loop end-to-end — then the final [**Clean
+up**](#clean-up) section removes everything you created.
+
+> **What you need to follow along.** Unlike the other guides, this one
+> talks to a live **ODK Central** server, so you need an ODK Central
+> account and access to a project you can experiment in. If you do not,
+> read along — the steps are the same against any server.
+
+## The golden rule
+
+> **ODK Central is the front door; `erifunctions` brings the data
+> through it into one governed pipeline.** You **register** a form (the
+> registry is the team’s record of which forms are tracked), **sync**
+> its submissions into `{country}/{disease}/odk/raw/`, and from there it
+> flows through the same `raw → staged → processed` lifecycle — with
+> [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+> as the human gate — as every other dataset.
+
+flowchart TD A\["Field teams collect on phones"\] --\> B\["ODK Central
+server"\] B --\> C\["init_odk_connection()"\] C --\> D\["Register the
+form (registry)"\] D --\> E\["Monitor + manage collectors"\] E --\>
+F\["eri_odk_sync() -\> odk/raw/"\] F --\> G\["DQ -\> staged/"\] G --\>
+H\["eri_approve() -\> processed/"\] H --\> Z\["Clean up the sandbox"\]
+
+## Before you start
+
+1.  **R and RStudio** installed.
+
+2.  **The package:**
+
+    ``` r
+
+    install.packages("remotes")
+    remotes::install_github("thecartercenter/erifunctions")
+    ```
+
+3.  **ODK Central credentials.** Store them once in your `.Renviron` so
+    they never end up in your scripts. Open it with
+    `usethis::edit_r_environ()`, add three lines, then **save and
+    restart R**:
+
+        ODK_URL=https://your-odk-server.org/
+        ODK_USER=you@example.org
+        ODK_PASS=your-password
+
+    Everything below reads these automatically — you never type your
+    password into a script.
+
+4.  **Azure access** is zero-config: the first command that needs it
+    opens your browser to sign in (see
+    [`?get_azure_storage_connection`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)).
+
+One comfort setting — leave verbosity at its default `"full"` for this
+walkthrough (that is the step-by-step output shown below):
+
+``` r
+
+library(erifunctions)
+# eri_verbosity("quiet")   # later, to trim to headlines + warnings only
+```
+
+## 1. Begin — create your practice form
+
+### Put a form on the server
+
+The package ships a tiny practice form — a mock vector-surveillance
+“river prospection” survey. Find it on your machine and upload it to a
+**`test`** project in ODK Central:
+
+``` r
+
+system.file("extdata", "odk-test-form.xlsx", package = "erifunctions")
+#> "…/erifunctions/extdata/odk-test-form.xlsx"
+```
+
+In the ODK Central web interface: open (or create) a **`test`** project
+▸ **New** ▸ **Form** ▸ upload that `.xlsx` ▸ **Publish**. Then submit
+**2–3 fake entries**: on the form page click **Submit** (the Enketo web
+form), fill in made-up values, and send. Now there is data to work with.
+
+### Connect
+
+``` r
+
+con <- init_odk_connection()
+#> ✔ Connected to <https://your-odk-server.org/>. Session expires 2026-06-26T20:00:45.542Z.
+```
+
+[`init_odk_connection()`](https://thecartercenter.github.io/erifunctions/reference/init_odk_connection.md)
+reads `ODK_URL` / `ODK_USER` / `ODK_PASS` from your `.Renviron`, signs
+in, and returns a session you pass to the other functions as `con =`.
+
+### Find your project and form
+
+You refer to forms by a **project id** (a number) and a **form id** (a
+string). Discover them:
+
+``` r
+
+list_odk_projects(con = con)
+#> # A tibble: 3 × 3
+#>   project_id project   description
+#>        <int> <chr>     <chr>
+#> 1          5 Uganda    NA
+#> 2          7 Training  NA
+#> 3         11 testing   NA            # ← your sandbox project (your ids will differ)
+```
+
+``` r
+
+list_odk_forms(con = con, project_id = 11)
+#> # A tibble: 1 × 2
+#>   xmlFormId                  name
+#>   <chr>                      <chr>
+#> 1 eri_test_river_prospection ERI Test — River Prospection
+```
+
+So our sandbox is **project `11`**, form
+**`eri_test_river_prospection`**. Keep those handy:
+
+``` r
+
+project_id <- 11
+form_id    <- "eri_test_river_prospection"
+```
+
+## 2. Manage the form
+
+### Monitor submissions
+
+[`eri_survey_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_survey_status.md)
+is your at-a-glance health check — how many submissions, the most recent
+one, and recent activity:
+
+``` r
+
+eri_survey_status(project_id = project_id, form_id = form_id, con = con)
+#> ── Survey Status (1 form) ──────────────────────────────
+#> • eri_test_river_prospection [open] - 3 total, last: 2026-06-25T19:57:33.690Z
+```
+
+It prints a one-line summary, but it is really a tibble — store it to
+see the full metrics (7- and 30-day counts, open/closed state):
+
+``` r
+
+st <- eri_survey_status(project_id = project_id, form_id = form_id, con = con)
+as.data.frame(st)
+#>   project_id project_name                    form_id                    form_name           server_url status total_submissions   last_submission_at submissions_7d submissions_30d
+#> 1         11      testing eri_test_river_prospection ERI Test — River Prospection https://your-odk… open                 3 2026-06-25T19:57:33.690Z              3               3
+```
+
+Called with just `project_id` it reports **every** form in the project;
+with neither argument, every form on every project you can see — handy
+for a Monday-morning sweep across all your surveys.
+
+### Manage who collects: app users
+
+Field staff collect through **app users** — per-project data-collection
+accounts. You can create one and assign it to a form straight from R.
+(These calls change your live project; we remove the demo user in [Clean
+up](#clean-up).)
+
+``` r
+
+# Create an app user (a data collector) in the project.
+new_user <- update_odk_app_user_role(
+  action     = "create",
+  con        = con,
+  project_id = project_id,
+  actor_name = "Demo Collector"
+)
+new_user
+#> $actor_name
+#> [1] "Demo Collector"
+#> $actor_id
+#> [1] 250
+#> $project_id
+#> [1] 11
+```
+
+``` r
+
+# Give that user access to our form. role_id 2 is ODK's "App User" data-collection role.
+update_odk_app_user_role(
+  action     = "assign",
+  con        = con,
+  project_id = project_id,
+  form_id    = form_id,
+  role_id    = 2,
+  actor_id   = new_user$actor_id
+)
+#> [1] TRUE
+```
+
+Check the form’s assignments — your new collector should be listed:
+
+``` r
+
+list_odk_form_users(con = con, project_id = project_id, form_id = form_id)
+```
+
+### Managing a whole team at once
+
+Don’t click through 40 collectors one at a time. Put the actions in a
+CSV with columns `project_id, form_id, action, actor_name` (action is
+`create`, `assign`, or `remove`) and hand it to
+[`eri_odk_bulk_users()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_bulk_users.md).
+Always run it once with `dry_run = TRUE` first — it validates **every**
+row against the live server and reports *all* problems together before
+changing anything:
+
+``` r
+
+eri_odk_bulk_users("collectors.csv", con = con, dry_run = TRUE)
+#> ℹ Fetching project/form metadata for pre-flight...
+#> ✔ Pre-flight passed. 2 rows to process.
+#> ℹ Dry run -- no changes will be made.
+#>   [1] assign "Jane Fieldworker" on eri_test_river_prospection (project 11)
+#>   [2] create "John Fieldworker" on eri_test_river_prospection (project 11)
+```
+
+## 3. Pull the data into the governed pipeline
+
+This is where ODK meets the rest of the system. We use a sandbox
+**country/disease** so it is easy to clean up: `country = "uga"`,
+`disease = "demo"`. (ODK registration requires a real ERI country code —
+`uga`, `ht`, `eth`, … — but the disease is free text, so `demo` keeps
+this clearly a practice run.)
+
+### Register the form
+
+Registering records the form in the shared **ODK registry**
+(`odk/registry.yaml`) — the team’s single source of truth for which
+forms are tracked, and which country/disease each one feeds:
+
+``` r
+
+data_con <- get_azure_storage_connection(storage_name = "data")
+
+eri_odk_register(
+  project_id = project_id,
+  form_id    = form_id,
+  country    = "uga",
+  disease    = "demo",
+  server_url = "https://your-odk-server.org/",
+  data_con   = data_con
+)
+#> ✔ Registered "eri_test_river_prospection" (uga/demo) on <https://your-odk-server.org/>.
+
+eri_odk_list_registered(data_con = data_con)
+#> ℹ 1 registered form.
+#> # A tibble: 1 × 9
+#>   server_url               project_id form_id                    form_display_name … country disease added_by  added_at   last_synced
+#>   <chr>                         <int> <chr>                      <chr>                <chr>   <chr>   <chr>     <chr>      <chr>
+#> 1 https://your-odk-server…         11 eri_test_river_prospection ERI Test — River …   uga     demo    your.name 2026-06-26 NA
+```
+
+### Sync the submissions
+
+[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+downloads every submission and writes it as a typed Parquet file into
+the **raw** layer, then stamps the registry with the sync time:
+
+``` r
+
+eri_odk_sync(project_id = project_id, form_id = form_id, con = con, data_con = data_con)
+#> ℹ Downloading submissions for "eri_test_river_prospection" (uga/demo)...
+#> ℹ Downloaded 3 records from "eri_test_river_prospection".
+#> ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/odk/raw/eri_test_river_prospection.parquet.
+```
+
+Read it back to see what landed. ODK expands the form fields plus its
+own system columns (note the `gps` geopoint is split into
+latitude/longitude/altitude/accuracy):
+
+``` r
+
+raw <- eri_read("uga/demo/odk/raw/eri_test_river_prospection.parquet", azcontainer = data_con)
+names(raw)
+#>  [1] "SubmissionDate"   "start"            "end"              "today"
+#>  [5] "site_name"        "prospection_date" "river_stage"      "blackfly_count"
+#>  [9] "gps-Latitude"     "gps-Longitude"    "gps-Altitude"     "gps-Accuracy"
+#> [13] "collector"        "meta-instanceID"  "KEY"              "SubmitterID"
+#> [17] "SubmitterName"    "AttachmentsPresent" "AttachmentsExpected" "Status"
+#> [21] "ReviewState"      "DeviceID"         "Edits"            "FormVersion"
+```
+
+### Quality-check, stage, and approve
+
+From here the ODK data flows through the **exact same pipeline** as a
+surveillance extract. Quality- check it against a schema with
+[`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+(the **[surveillance ingest
+guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)**
+walks through authoring a schema and reading the flags), write the
+cleaned result to `staged/`, then **approve** it into the canonical
+`processed/` layer:
+
+``` r
+
+# (After any DQ checks.) Stage the data under a reporting period.
+staged_path <- eri_data_path("uga", "demo", "odk", "staged",
+                             "eri_test_river_prospection_2026-06.parquet")
+eri_write(raw, staged_path, azcontainer = data_con)
+```
+
+``` r
+
+eri_approve("uga", "demo", "odk", "2026-06", azcontainer = data_con)
+#> ✔ Catalog: registered eri_test_river_prospection_2026-06.parquet.
+#> ✔ Approved: eri_test_river_prospection_2026-06.parquet
+#> ✔ Approval log: uga/demo/odk/processed/2026-06_approval_log.yaml
+#> ── ✔ Approved "2026-06" ─────────────────────────────────
+#> Dataset: uga / demo / odk
+#> Files: 1 moved to processed
+#> Approver: your.name
+#> Location: uga/demo/odk/processed
+```
+
+Your ODK submissions are now canonical, discoverable in the catalog like
+any other approved dataset:
+
+``` r
+
+eri_catalog_query(country = "uga", disease = "demo", data_con = data_con)
+#> # A tibble: 1 × 12
+#>   path                                  country disease data_type layer     period  …
+#>   <chr>                                 <chr>   <chr>   <chr>     <chr>     <chr>
+#> 1 uga/demo/odk/processed/eri_test_rive… uga     demo    odk       processed 2026-06
+```
+
+## 4. Clean up
+
+Practice run done — remove everything you created so you leave no trace.
+
+``` r
+
+# Remove the demo collector from ODK Central (revoke its form access, then delete the account).
+update_odk_app_user_role(action = "revoke", con = con, project_id = project_id,
+                         form_id = form_id, role_id = 2, actor_id = new_user$actor_id)
+update_odk_app_user_role(action = "delete", con = con, project_id = project_id,
+                         actor_id = new_user$actor_id)
+```
+
+``` r
+
+# Deregister the form (soft-delete: it is marked inactive, keeping the sync history).
+eri_odk_deregister(project_id = project_id, form_id = form_id,
+                   server_url = "https://your-odk-server.org/", data_con = data_con)
+#> ✔ Deregistered "eri_test_river_prospection" (project 11).
+```
+
+``` r
+
+# Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).
+AzureStor::delete_storage_dir(data_con, "uga/demo", recursive = TRUE, confirm = FALSE)
+```
+
+Finally, in the ODK Central web interface, delete the test form (Form ▸
+⋯ ▸ Delete) from your `test` project if you want it gone there too.
+
+> **One thing that intentionally stays:**
+> [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
+> *soft*-deletes — it flips the registry entry to `active: false` rather
+> than erasing it, so the record of what was once tracked (and its sync
+> history) survives for audit. That inactive entry is harmless; it will
+> not show up in
+> [`eri_odk_list_registered()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_list_registered.md).
+
+> **Why we could delete freely here:** the form and its submissions are
+> invented. **Real ODK forms and field submissions are never deleted
+> casually** — they are the primary record of work done in the field.
+> The discipline this guide builds — register, sync to `raw/`,
+> quality-check, and approve through the human gate — is what keeps that
+> real data trustworthy.
+
+## What’s next
+
+You have run the full ODK loop: connect, monitor, manage collectors,
+sync to the governed pipeline, and approve into the canonical layer.
+
+- **Incremental sync** (only the new/edited submissions, rather than
+  re-downloading everything) is on the roadmap (Phase 4) — the registry
+  already reserves a `last_cursor` for it.
+- **Attachments** (photos, GPS traces) come down with
+  [`download_form_attachments()`](https://thecartercenter.github.io/erifunctions/reference/download_form_attachments.md).
+- For the full data-quality and approval mechanics, see the
+  [surveillance ingest
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md);
+  for the whole menu of functions, the
+  [reference](https://thecartercenter.github.io/erifunctions/reference/index.md).
+  The [guide
+  index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
+  tracks what exists and what is coming.
