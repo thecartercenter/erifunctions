@@ -40,7 +40,7 @@ full loop end-to-end and leave no trace.
 
 ```{=html}
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A["Surveillance file arrives"] --> B["Store as-received in raw/"]
     B --> C["Run DQ checks against a schema"]
     C --> D["Fix flags, write cleaned data to staged/"]
