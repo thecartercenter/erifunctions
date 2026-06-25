@@ -28,6 +28,7 @@ site](https://thecartercenter.github.io/erifunctions/articles/):
 | Guide | For |
 |----|----|
 | [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result |
+| [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
 | [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps |
@@ -391,6 +392,8 @@ Register, query, and verify processed-layer data.
 
 - [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md)
   : Register a processed-layer file in the data catalog
+- [`eri_catalog_remove()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_remove.md)
+  : Remove a file's entry from the data catalog
 - [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
   : Query the data catalog
 - [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md)
@@ -616,6 +619,8 @@ CMR.
 
 - [A complete research workflow for
   epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+- [Ingesting a surveillance dataset: raw to approved (for data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
 - [Data Quality
   Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Epidemiological

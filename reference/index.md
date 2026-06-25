@@ -103,6 +103,8 @@ Register, query, and verify processed-layer data.
 
 - [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md)
   : Register a processed-layer file in the data catalog
+- [`eri_catalog_remove()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_remove.md)
+  : Remove a file's entry from the data catalog
 - [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
   : Query the data catalog
 - [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md)

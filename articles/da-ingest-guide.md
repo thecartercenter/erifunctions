@@ -1,0 +1,554 @@
+# Ingesting a surveillance dataset: raw to approved (for data analysts)
+
+This is a hands-on, **start-to-finish walkthrough** of getting a
+surveillance dataset into the Carter Center data system — the daily work
+of a **Data Analyst (DA)**. It is written for domain experts who are
+*not* software developers. Work through it once, in order, and you will
+have done every step a real dataset needs: store the raw file,
+quality-check it, stage it, and **approve** it so the rest of the team
+can trust it.
+
+So you can practise the whole thing safely, we will invent a
+**make-believe country** — *Atlantis* — and make up some malaria
+surveillance data for it. Nothing here touches real country data, and
+the very last section — [**Clean up**](#clean-up) — deletes everything
+you created, so you can run the full loop end-to-end and leave no trace.
+
+> **You can run this for real.** Every command below works against the
+> live Azure system. Because *Atlantis* is a sandbox of your own, you
+> can ingest, break, fix, and approve data without affecting anyone —
+> then wipe it.
+
+## The golden rule
+
+> **Data moves through three layers, and nothing becomes official
+> without your sign-off.** Every dataset travels `raw/` → `staged/` →
+> `processed/`. `raw/` is the file exactly as it arrived. `staged/` is
+> the cleaned, quality-checked version awaiting review. `processed/` is
+> the **canonical data the whole team builds on** — and a file only gets
+> there when *you* call
+> [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
+> That approval is the human gate.
+
+flowchart LR A\["Surveillance file arrives"\] --\> B\["Store as-received
+in raw/"\] B --\> C\["Run DQ checks against a schema"\] C --\> D\["Fix
+flags, write cleaned data to staged/"\] D --\> E\["eri_approve() = your
+sign-off"\] E --\> F\["processed/ + catalog entry"\] F -.-\>\|next
+reporting period\| C F --\> Z\["Clean up the sandbox"\]
+
+## Before you start
+
+You need two things, once:
+
+1.  **R and RStudio** installed on your laptop.
+
+2.  **The package**, installed from the Carter Center repository:
+
+    ``` r
+
+    install.packages("remotes")
+    remotes::install_github("thecartercenter/erifunctions")
+    ```
+
+**Azure access** needs no configuration. The first time a command needs
+Azure, your browser opens and you sign in with your Carter Center
+account; the sign-in is remembered for the rest of the session. (No
+keys, no environment variables — see
+[`?get_azure_storage_connection`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).)
+
+`erifunctions` narrates what it is doing. Load it and leave the
+verbosity at its default `"full"` for this walkthrough — that is the
+step-by-step output shown in the blocks below:
+
+``` r
+
+library(erifunctions)
+
+# The outputs shown in this guide are at the default "full" verbosity.
+# Once you know the steps, eri_verbosity("quiet") trims them to headline
+# results, warnings, and errors only.
+```
+
+## 1. Connect to the data blob and name your sandbox
+
+The surveillance pipeline lives in the **`data` blob**. The reading and
+writing functions
+([`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md),
+[`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md),
+[`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md))
+talk to your *default* connection, so we make one pointed at `data` and
+pass it explicitly everywhere below — that way every step targets the
+right place:
+
+``` r
+
+data_con <- get_azure_storage_connection(storage_name = "data")
+```
+
+Every dataset is identified by four coordinates: **country**,
+**disease**, **data type**, and **layer**. Never hand-type the folder
+paths — let
+[`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
+build the canonical path for you, so every step agrees on where things
+go:
+
+``` r
+
+# Our make-believe country and its malaria surveillance data.
+country   <- "atlantis"
+disease   <- "malaria"
+data_type <- "surveillance"
+
+eri_data_path(country, disease, data_type, "raw")
+#> [1] "atlantis/malaria/surveillance/raw"
+
+eri_data_path(country, disease, data_type, "staged")
+#> [1] "atlantis/malaria/surveillance/staged"
+```
+
+`data_type` must be one of `"surveillance"`, `"cmr"`, or `"odk"`, and
+`layer` one of `"raw"`, `"staged"`, `"processed"` — but **country and
+disease are free text**, which is exactly why we can stand up an
+*atlantis* sandbox next to the real countries without disturbing them.
+
+Create the two folders we will write into (the third, `processed/`, is
+created for us at approval):
+
+``` r
+
+eri_dir_create(eri_data_path(country, disease, data_type, "raw"),    azcontainer = data_con)
+eri_dir_create(eri_data_path(country, disease, data_type, "staged"), azcontainer = data_con)
+#> ✔ Directory created!
+```
+
+## 2. Simulate an as-received extract and store it in `raw/`
+
+In real life a surveillance officer emails you a spreadsheet. Here we
+*make one up* — a tiny line-list of malaria cases, one row per case.
+Notice it is deliberately a little messy, the way real data always is:
+some sex values are in Spanish (`Masculino`/`Femenino`/`M`), and a
+couple of district names are mis-cased or use an old spelling
+(`coralia`, `Nerei City`):
+
+``` r
+
+extract1 <- data.frame(
+  Year     = rep(2024, 10),
+  EpiWeek  = 1:10,
+  District = c("Coralia", "Nerei", "coralia", "Tritonis", "Marisa",
+               "Nerei City", "Coralia", "Nerei", "Tritonis", "Marisa"),
+  Sex      = c("Male", "Female", "Masculino", "Femenino", "M",
+               "Female", "Male", "Female", "Masculino", "Male"),
+  Age      = c(34, 27, 5, 60, 41, 19, 73, 8, 52, 30),
+  stringsAsFactors = FALSE
+)
+head(extract1)
+#>   Year EpiWeek   District       Sex Age
+#> 1 2024       1    Coralia      Male  34
+#> 2 2024       2      Nerei    Female  27
+#> 3 2024       3    coralia Masculino   5
+#> 4 2024       4   Tritonis  Femenino  60
+#> 5 2024       5     Marisa         M  41
+#> 6 2024       6 Nerei City    Female  19
+```
+
+The **first thing** you do with any file is preserve it untouched, so
+there is always a record of what actually arrived. Write it to `raw/`:
+
+``` r
+
+raw_path1 <- eri_data_path(country, disease, data_type, "raw", "atlantis_malaria_2024-01.csv")
+eri_write(extract1, raw_path1, azcontainer = data_con)
+```
+
+`raw/` is your archive of the source. From here on we work toward
+`staged/` — but the original is safe if you ever need to start over.
+
+## 3. Author a data-quality schema
+
+How does `erifunctions` know that `Masculino` should become `Male`, or
+that `Age` cannot be 250? You tell it, once, in a **DQ schema** — a
+small YAML file describing each column: its type, its allowed range or
+allowed values, known fixes, and translations. The schema is the
+contract every future extract for this dataset is checked against.
+
+Open a text editor and save the following as **`atlantis_malaria.yaml`**
+in your working directory. (It is intentionally short — a real schema
+like `dominican_republic_malaria.yaml` has more columns, but the *shape*
+is exactly this.)
+
+``` yaml
+country: atlantis
+disease: malaria
+language: en
+time_grain: weekly
+aggregation: case
+
+temporal:
+  year_col: Year
+  period_col: EpiWeek
+
+preprocessing:
+  - remove_smart_quotes
+  - drop_rows_missing_year
+
+columns:
+  Year:
+    required: true
+    type: numeric
+    aliases: [year, YEAR, Año]
+    range: [2000, 2035]
+
+  EpiWeek:
+    required: true
+    type: numeric
+    aliases: [week, Week, Semana]
+    range: [1, 53]
+
+  District:
+    required: true
+    type: categorical
+    aliases: [district, Distrito]
+    allowed_values: [Coralia, Nerei, Tritonis, Marisa]
+    corrections:
+      coralia: Coralia
+      CORALIA: Coralia
+      "Nerei City": Nerei
+
+  Sex:
+    required: true
+    type: categorical
+    aliases: [sex, SEX, Sexo]
+    allowed_values: [Male, Female]
+    translations:
+      Masculino: Male
+      Femenino: Female
+      M: Male
+      F: Female
+
+  Age:
+    required: true
+    type: numeric
+    aliases: [age, AGE, Edad]
+    range: [0, 120]
+```
+
+Read it slowly — each block is a rule:
+
+| Block | What it does | DQ result |
+|----|----|----|
+| `aliases` | accepts other column names (e.g. a Spanish `Edad`) and renames them | quietly renamed |
+| `type` + `range` | coerces to the type, then flags values outside `[min, max]` | **flag** for you to review |
+| `allowed_values` | flags anything not on the list | **flag** for you to review |
+| `corrections` | auto-replaces known bad spellings with the canonical value | **auto-fixed**, logged |
+| `translations` | auto-maps synonyms (e.g. `Masculino` → `Male`) | **auto-fixed**, logged |
+
+The distinction that matters: **corrections and translations are applied
+for you and recorded; flags are problems only *you* can resolve.**
+
+Now publish the schema to Azure so
+[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+can find it. It looks for `schemas/<country>_<disease>.yaml`, so the
+filename matters:
+
+``` r
+
+eri_upload("atlantis_malaria.yaml", "schemas/atlantis_malaria.yaml", azcontainer = data_con)
+```
+
+## 4. Run the data-quality checks
+
+Load your raw file back from `raw/`, load the schema, and run the
+checks.
+[`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+applies every rule in the schema and hands back the cleaned data plus
+two ledgers — what it *fixed*, and what it wants *you* to look at:
+
+``` r
+
+raw1    <- eri_read(raw_path1, azcontainer = data_con)
+schema  <- load_dq_schema("atlantis", "malaria", azcontainer = data_con)
+
+result1 <- run_dq_checks(raw1, schema)
+#> ✔ DQ checks complete: 6 corrections, 0 flags for review.
+```
+
+Print the result for the full report:
+
+``` r
+
+result1
+#> ── Data Quality Report ──────────────────────────────────────────────
+#> Shape: 10 rows x 5 columns
+#>
+#> ── Automated Corrections (6 total) ──
+#> • "Sex": 4 corrections (translation)
+#> • "District": 2 corrections (correction)
+#>
+#> ── Flags Requiring Review (0 total) ──
+#> ✔ No flags.
+```
+
+Six things were fixed automatically and **nothing needs your review** —
+a clean extract. You can always see exactly *what* was changed in the
+`$log` ledger:
+
+``` r
+
+result1$log
+#> # A tibble: 6 × 6
+#>     row column   original_value corrected_value rule        action
+#>   <int> <chr>    <chr>          <chr>           <chr>       <chr>
+#> 1     3 Sex      Masculino      Male            translation corrected
+#> 2     9 Sex      Masculino      Male            translation corrected
+#> 3     4 Sex      Femenino       Female          translation corrected
+#> 4     5 Sex      M              Male            translation corrected
+#> 5     3 District coralia        Coralia         correction  corrected
+#> 6     6 District Nerei City     Nerei           correction  corrected
+```
+
+The cleaned data lives in `result1$data` — Spanish sexes mapped to
+`Male`/`Female`, district names canonicalised. **That** is what we
+stage.
+
+## 5. Write the cleaned data to `staged/`
+
+`staged/` holds DQ-checked data that is awaiting your approval. We store
+it as **parquet** (compact, typed, fast). Give the file a name that
+contains the reporting period — you will use that period to approve it
+in the next step:
+
+``` r
+
+staged_path1 <- eri_data_path(country, disease, data_type, "staged",
+                              "atlantis_malaria_2024-01.parquet")
+eri_write(result1$data, staged_path1, azcontainer = data_con)
+```
+
+Nothing is official yet. The data is checked and parked, but it will not
+appear as canonical until you sign off.
+
+## 6. Approve it into `processed/`
+
+This is the gate.
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+finds every staged file whose name contains the period you give it,
+moves it to `processed/`, writes a human-readable **approval log** (who
+approved what, and when), and **registers the file in the data catalog**
+so teammates can discover it:
+
+``` r
+
+eri_approve(country, disease, data_type, "2024-01", azcontainer = data_con)
+#> ✔ Catalog: registered atlantis_malaria_2024-01.parquet.
+#> ✔ Approved: atlantis_malaria_2024-01.parquet
+#> ✔ Approval log: atlantis/malaria/surveillance/processed/2024-01_approval_log.yaml
+#> ── ✔ Approved "2024-01" ─────────────────────────────────
+#> Dataset: atlantis / malaria / surveillance
+#> Files: 1 moved to processed
+#> Approver: your.name
+#> Location: atlantis/malaria/surveillance/processed
+#> ℹ Operation log: atlantis/malaria/surveillance/logs/20240115_142233_eri_approve_2024-01.yaml
+```
+
+The catalog is the team’s index of canonical data. Confirm your dataset
+is now in it:
+
+``` r
+
+eri_catalog_query(country = "atlantis", data_con = data_con)
+#> # A tibble: 1 × 12
+#>   path                          country disease data_type layer  period  file_format …
+#>   <chr>                         <chr>   <chr>   <chr>     <chr>  <chr>   <chr>
+#> 1 atlantis/malaria/surveillan…  atlantis malaria surveill… proce… 2024-01 parquet
+```
+
+And read the canonical file straight back, exactly as any teammate
+would:
+
+``` r
+
+processed_path1 <- eri_data_path(country, disease, data_type, "processed",
+                                 "atlantis_malaria_2024-01.parquet")
+official <- eri_read(processed_path1, azcontainer = data_con)
+nrow(official)   # 10 approved cases
+```
+
+That is the whole loop: **raw → DQ → staged → approved.**
+
+## 7. A second extract arrives — this time with errors
+
+The next reporting file lands, and real data is rarely clean. This one
+has two genuine problems an analyst must judge: an `Age` of **250**
+(impossible), and a district **`Atlantica`** that is not one of our four
+(a typo, or a new district the schema does not know yet):
+
+``` r
+
+extract2 <- data.frame(
+  Year     = rep(2024, 10),
+  EpiWeek  = 11:20,
+  District = c("Coralia", "Atlantica", "Nerei", "Tritonis", "Marisa",
+               "coralia", "Nerei", "Coralia", "Tritonis", "Marisa"),
+  Sex      = c("Male", "Female", "Masculino", "Female", "M",
+               "Female", "Male", "Femenino", "Male", "Female"),
+  Age      = c(34, 27, 250, 60, 41, 19, 73, 8, 52, 30),
+  stringsAsFactors = FALSE
+)
+```
+
+Archive it to `raw/`, then run the same checks:
+
+``` r
+
+raw_path2 <- eri_data_path(country, disease, data_type, "raw", "atlantis_malaria_2024-02.csv")
+eri_write(extract2, raw_path2, azcontainer = data_con)
+
+raw2    <- eri_read(raw_path2, azcontainer = data_con)
+result2 <- run_dq_checks(raw2, schema)
+#> ✔ DQ checks complete: 4 corrections, 2 flags for review.
+
+result2
+#> ── Data Quality Report ──────────────────────────────────────────────
+#> Shape: 10 rows x 5 columns
+#>
+#> ── Automated Corrections (4 total) ──
+#> • "Sex": 3 corrections (translation)
+#> • "District": 1 correction (correction)
+#>
+#> ── Flags Requiring Review (2 total) ──
+#> ! Value not in allowed_values list: 1 row [District]
+#> ! Value outside expected range [0, 120]: 1 row [Age]
+```
+
+This time there are **two flags**. The schema fixed what it safely
+could, but it will not guess about an age of 250 or an unknown district
+— those are *your* call. Look at exactly which rows:
+
+``` r
+
+result2$flags
+#> # A tibble: 2 × 4
+#>     row column   value     issue
+#>   <int> <chr>    <chr>     <chr>
+#> 1     3 Age      250       Value outside expected range [0, 120]
+#> 2     2 District Atlantica Value not in allowed_values list
+```
+
+You investigate (call the surveillance officer, check the source form)
+and decide: the age was a data-entry slip for **25**, and `Atlantica` is
+really **Marisa**. Fix them in the cleaned data, then re-run the checks
+to confirm a clean bill of health:
+
+``` r
+
+fixed <- result2$data
+fixed$Age[3]      <- 25
+fixed$District[2] <- "Marisa"
+
+result2b <- run_dq_checks(fixed, schema)
+#> ✔ DQ checks complete: 0 corrections, 0 flags for review.
+```
+
+> **Why not just edit the schema?** If `Atlantica` were a *real* new
+> district, the right fix is to add it to `allowed_values` and re-upload
+> the schema — then every future extract accepts it. Use a
+> correction/translation for genuine fixes; use a flag-then-edit only
+> for one-off data errors like the impossible age.
+
+Now stage and approve the corrected second period, exactly as before:
+
+``` r
+
+staged_path2 <- eri_data_path(country, disease, data_type, "staged",
+                              "atlantis_malaria_2024-02.parquet")
+eri_write(result2b$data, staged_path2, azcontainer = data_con)
+
+eri_approve(country, disease, data_type, "2024-02", azcontainer = data_con)
+#> ✔ Catalog: registered atlantis_malaria_2024-02.parquet.
+#> ✔ Approved: atlantis_malaria_2024-02.parquet
+#> ── ✔ Approved "2024-02" ─────────────────────────────────
+#> Dataset: atlantis / malaria / surveillance
+#> Files: 1 moved to processed
+#> Approver: your.name
+#> Location: atlantis/malaria/surveillance/processed
+```
+
+You now have **two approved periods** in the catalog for *atlantis*,
+each with its own approval log recording that you signed off and when.
+
+> **Going further: cross-period anomalies.** Range and allowed-value
+> checks catch bad *cells*. To catch a suspicious *trend* — a district
+> whose case count suddenly triples — see
+> [`add_anomaly_pct_change()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_pct_change.md),
+> which you can chain onto a
+> [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+> result once you have several periods stacked together.
+
+## 8. Clean up
+
+You ran this for practice, so remove everything it created and leave no
+trace. This deletes the whole *atlantis* sandbox (all three layers and
+the logs), the schema, and the catalog entries:
+
+``` r
+
+# Delete the entire sandbox namespace (raw + staged + processed + logs).
+# recursive = TRUE is required to delete a non-empty directory; confirm = FALSE
+# skips the interactive prompt.
+AzureStor::delete_storage_dir(data_con, "atlantis", recursive = TRUE, confirm = FALSE)
+
+# Delete the schema you published.
+AzureStor::delete_storage_file(data_con, "schemas/atlantis_malaria.yaml", confirm = FALSE)
+
+# Remove the two catalog entries (the catalog is shared, so tidy up after yourself).
+eri_catalog_remove("atlantis/malaria/surveillance/processed/atlantis_malaria_2024-01.parquet",
+                   data_con = data_con)
+eri_catalog_remove("atlantis/malaria/surveillance/processed/atlantis_malaria_2024-02.parquet",
+                   data_con = data_con)
+#> ✔ Catalog: removed atlantis_malaria_2024-01.parquet.
+#> ✔ Catalog: removed atlantis_malaria_2024-02.parquet.
+```
+
+Confirm nothing of yours remains, then delete the local files:
+
+``` r
+
+eri_catalog_query(country = "atlantis", data_con = data_con)
+#> No catalog entries match the specified filters.
+
+unlink("atlantis_malaria.yaml")   # the local schema file
+```
+
+> **Why we could delete freely here:** *Atlantis* is invented and its
+> data is fake. **Real Carter Center surveillance data is different** —
+> approved country data must never be deleted casually, copied off
+> Azure, or committed to git. The discipline this guide builds — raw
+> kept untouched, DQ before staging, and a human approval gate before
+> anything becomes canonical — is exactly what keeps protected data
+> trustworthy. When in doubt, ask before you delete.
+
+## What’s next
+
+You have now done the full DA ingest loop: store raw, quality-check
+against a schema, fix what only a human can, stage, and **approve** into
+the canonical layer — twice, including a messy extract.
+
+**In production, for a *registered* country** (like `dr` or `ht`), one
+call —
+[`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+— does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot and
+also mirrors the result to the legacy pipeline. We did each step by hand
+here so you could run it on a sandbox of your own and *see* every layer.
+Once you are comfortable,
+[`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+is the fast path;
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+— your sign-off — is always the same human gate at the end.
+
+This is one of a planned set of short, task-oriented guides — **one for
+each common job** an analyst or epidemiologist does. See [the guide
+index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
+for what exists today and what is coming, and the
+[reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
+for the full menu of functions grouped by purpose.

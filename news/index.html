@@ -21,6 +21,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
+    <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
@@ -45,6 +46,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-a-worked-ingest-guide-for-data-analysts-development-version">Documentation: a worked ingest guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-a-worked-ingest-guide-for-data-analysts-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Ingesting a surveillance dataset: raw to approved”</strong> (<code>vignettes/da-ingest-guide.Rmd</code>). A copy-paste, hands-on walkthrough of the core Data Analyst job: take a dataset through the <code>raw/</code> → <code>staged/</code> → <code>processed/</code> pipeline, with <code><a href="../reference/eri_approve.html">eri_approve()</a></code> as the human gate. The reader stands up a make-believe country (<em>Atlantis</em>) as a private sandbox, invents a small malaria line-list, <strong>authors its DQ schema</strong>, runs <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>, stages and approves it — then handles a <strong>second extract seeded with errors</strong> (an impossible age and an unknown district) to learn the difference between auto-corrections and review flags, before deleting the whole sandbox. Runs live on any laptop and leaves no trace. Flips the matching row in <code>docs/guides.md</code> to shipped.</li>
+<li>
+<strong><code><a href="../reference/eri_catalog_remove.html">eri_catalog_remove()</a></code> – new.</strong> Deletes a file’s entry from the data catalog (<code>_catalog/data_catalog.yaml</code>) by path — the inverse of <code><a href="../reference/eri_catalog_register.html">eri_catalog_register()</a></code>, for when a processed file has been deleted or superseded. (Used by the new guide’s clean-up step.)</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-a-worked-research-guide-for-epidemiologists-development-version">Documentation: a worked research guide for epidemiologists<a class="anchor" aria-label="anchor" href="#documentation-a-worked-research-guide-for-epidemiologists-development-version"></a></h3>
 <ul><li>
