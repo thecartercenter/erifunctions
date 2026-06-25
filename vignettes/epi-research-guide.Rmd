@@ -38,7 +38,7 @@ re-running — exactly the situation you hit when a fresh extract lands months i
 
 ```{=html}
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A["Start a project"] --> B["Add data + metadata"]
     B --> C["Source the data"]
     C --> D["Analyse (your code)"]
