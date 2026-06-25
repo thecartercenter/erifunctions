@@ -64,6 +64,49 @@ test_that("single-form scope returns 1-row survey_status with correct columns", 
                      "server_url", "status", "total_submissions",
                      "last_submission_at", "submissions_7d", "submissions_30d")
   expect_true(all(expected_cols %in% names(result)))
+  # total / last come from the (extended) form metadata
+  expect_equal(result$total_submissions, 42L)
+  expect_equal(result$last_submission_at, "2026-05-01T10:00:00Z")
+})
+
+# ---------------------------------------------------------------------------
+# Test 1b: the form-metadata request asks for extended metadata, so ODK Central
+# includes the submissions count / lastSubmission (otherwise total is always 0).
+# ---------------------------------------------------------------------------
+
+test_that("form metadata request sends the X-Extended-Metadata header", {
+  headers_by_call <- list()
+  call_n <- 0L
+
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) {
+      call_n <<- call_n + 1L
+      cfg <- list(...)$config
+      headers_by_call[[call_n]] <<- if (!is.null(cfg)) cfg$headers else character(0)
+      fake_resp(url)
+    },
+    http_error  = function(resp, ...) FALSE,
+    status_code = function(resp, ...) 200L,
+    content = function(resp, ...) {
+      switch(call_n,
+        `1` = list(name = "P"),
+        `2` = list(name = "F", xmlFormId = "f", state = "open",
+                   submissions = 5L, lastSubmission = "2026-06-01T00:00:00Z"),
+        `3` = list(),
+        list()
+      )
+    },
+    .package = "httr"
+  )
+
+  withr::with_envvar(
+    list(ODK_URL = "https://odk.example.org/", ODK_TOKEN = "tok"),
+    eri_survey_status(project_id = 1L, form_id = "f")
+  )
+
+  # Call 2 is the form-metadata GET (call 1 = project meta, call 3 = submissions).
+  expect_true("X-Extended-Metadata" %in% names(headers_by_call[[2]]))
+  expect_equal(unname(headers_by_call[[2]][["X-Extended-Metadata"]]), "true")
 })
 
 # ---------------------------------------------------------------------------

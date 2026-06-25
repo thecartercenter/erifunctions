@@ -52,6 +52,7 @@ articles:
   contents:
   - epi-research-guide
   - da-ingest-guide
+  - da-odk-guide
   - dq-pipeline
   - epi-analytics
   - spatial-workflow
