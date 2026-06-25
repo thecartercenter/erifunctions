@@ -1,5 +1,20 @@
 # erifunctions (development version)
 
+## Documentation: a worked ingest guide for data analysts
+
+- **New article — "Ingesting a surveillance dataset: raw to approved"**
+  (`vignettes/da-ingest-guide.Rmd`). A copy-paste, hands-on walkthrough of the core Data Analyst
+  job: take a dataset through the `raw/` → `staged/` → `processed/` pipeline, with `eri_approve()`
+  as the human gate. The reader stands up a make-believe country (*Atlantis*) as a private sandbox,
+  invents a small malaria line-list, **authors its DQ schema**, runs `run_dq_checks()`, stages and
+  approves it — then handles a **second extract seeded with errors** (an impossible age and an
+  unknown district) to learn the difference between auto-corrections and review flags, before
+  deleting the whole sandbox. Runs live on any laptop and leaves no trace. Flips the matching row in
+  `docs/guides.md` to shipped.
+- **`eri_catalog_remove()` -- new.** Deletes a file's entry from the data catalog
+  (`_catalog/data_catalog.yaml`) by path — the inverse of `eri_catalog_register()`, for when a
+  processed file has been deleted or superseded. (Used by the new guide's clean-up step.)
+
 ## Documentation: a worked research guide for epidemiologists
 
 - **New article — "A complete research workflow for epidemiologists"**

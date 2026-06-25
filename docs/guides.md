@@ -20,7 +20,7 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 |------|------|-------|--------|
 | Epidemiologist | Run a research study end-to-end (start → version → source data → analyse → tag → resume → handle new data → clean up) | [`epi-research-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | ✅ Shipped |
 | Data Analyst | Run a monthly country report | _planned_ | ⬜ Missing |
-| Data Analyst | Ingest → stage → approve a surveillance dataset | _planned_ | ⬜ Missing |
+| Data Analyst | Ingest → stage → approve a surveillance dataset | [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | ✅ Shipped |
 | Data Analyst | Onboard a new country / disease / data type | _planned_ | ⬜ Missing |
 | Data Analyst | Triage the error / DQ log backlog | _planned_ | ⬜ Missing (function gap — Phase 5 `eri_logs()`) |
 | Epidemiologist | Reconcile free-text localities to admin units for sourcing | _planned_ (see the [spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) vignette for now) | ⬜ Missing |
