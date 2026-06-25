@@ -116,6 +116,46 @@ eri_catalog_register <- function(
   invisible(entry)
 }
 
+#### eri_catalog_remove ####
+
+#' Remove a file's entry from the data catalog
+#'
+#' Deletes the catalog entry whose `path` matches, from `_catalog/data_catalog.yaml`
+#' in the `data/` Azure blob. This is the inverse of [eri_catalog_register()] — use
+#' it when a processed file has been deleted or superseded and should no longer
+#' appear in the catalog. Removing the catalog entry does **not** delete the
+#' underlying blob.
+#'
+#' @param path `chr` Blob path of the entry to remove (e.g.
+#'   `"dr/malaria/surveillance/processed/2024_W01.parquet"`).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns `TRUE` if an entry was removed, `FALSE` if no entry matched (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_catalog_remove("atlantis/malaria/surveillance/processed/2024-W01.parquet")
+#' }
+#' @export
+eri_catalog_remove <- function(path, data_con = NULL) {
+  data_con <- .eri_catalog_con(data_con)
+  catalog  <- .eri_catalog_read(data_con)
+
+  if (length(catalog$entries) == 0L) {
+    cli::cli_inform("Catalog is empty -- nothing to remove.")
+    return(invisible(FALSE))
+  }
+
+  matches <- vapply(catalog$entries, function(e) identical(e$path, path), logical(1L))
+  if (!any(matches)) {
+    cli::cli_warn("No catalog entry found for {.path {path}}.")
+    return(invisible(FALSE))
+  }
+
+  catalog$entries <- catalog$entries[!matches]
+  .eri_catalog_write(catalog, data_con)
+  cli::cli_alert_success("Catalog: removed {.path {basename(path)}}.")
+  invisible(TRUE)
+}
+
 #### eri_catalog_query ####
 
 #' Query the data catalog

@@ -213,6 +213,52 @@ test_that("eri_catalog_verify updates last_verified_at for existing entries", {
   expect_false(is.na(stored$entries[[1]]$last_verified_at))
 })
 
+# --- remove -------------------------------------------------------------------
+
+test_that("eri_catalog_remove deletes the matching entry by path", {
+  e1 <- make_entry(path = "atlantis/malaria/surveillance/processed/keep.parquet")
+  e2 <- make_entry(path = "atlantis/malaria/surveillance/processed/drop.parquet",
+                   period = "2024-02")
+  stored <- make_catalog(e1, e2)
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
+    storage_dir_exists  = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      stored <<- yaml::read_yaml(src)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  out <- eri_catalog_remove("atlantis/malaria/surveillance/processed/drop.parquet")
+  expect_true(out)
+  expect_length(stored$entries, 1L)
+  expect_equal(stored$entries[[1]]$path, e1$path)
+})
+
+test_that("eri_catalog_remove returns FALSE when no entry matches", {
+  e1 <- make_entry(path = "atlantis/malaria/surveillance/processed/keep.parquet")
+  stored <- make_catalog(e1)
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  expect_false(suppressWarnings(eri_catalog_remove("nope/not/here.parquet")))
+  expect_length(stored$entries, 1L)
+})
+
 # --- eri_approve integration --------------------------------------------------
 
 test_that("eri_approve calls eri_catalog_register for each moved file", {

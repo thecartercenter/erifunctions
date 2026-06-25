@@ -51,6 +51,7 @@ articles:
   navbar: Workflows
   contents:
   - epi-research-guide
+  - da-ingest-guide
   - dq-pipeline
   - epi-analytics
   - spatial-workflow
@@ -114,6 +115,7 @@ reference:
   desc: Register, query, and verify processed-layer data.
   contents:
   - eri_catalog_register
+  - eri_catalog_remove
   - eri_catalog_query
   - eri_catalog_verify
 
