@@ -30,7 +30,7 @@ you created, so you can run the full loop end-to-end and leave no trace.
 > [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
 > That approval is the human gate.
 
-flowchart LR A\["Surveillance file arrives"\] --\> B\["Store as-received
+flowchart TD A\["Surveillance file arrives"\] --\> B\["Store as-received
 in raw/"\] B --\> C\["Run DQ checks against a schema"\] C --\> D\["Fix
 flags, write cleaned data to staged/"\] D --\> E\["eri_approve() = your
 sign-off"\] E --\> F\["processed/ + catalog entry"\] F -.-\>\|next

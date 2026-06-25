@@ -114,7 +114,7 @@ only gets there when <em>you</em> call <a href="../reference/eri_approve.html"><
 That approval is the human gate.</p>
 </blockquote>
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A["Surveillance file arrives"] --&gt; B["Store as-received in raw/"]
     B --&gt; C["Run DQ checks against a schema"]
     C --&gt; D["Fix flags, write cleaned data to staged/"]

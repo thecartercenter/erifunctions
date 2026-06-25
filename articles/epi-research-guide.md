@@ -26,7 +26,7 @@ We will run a small study twice. First on an **initial dataset**
 arriving”** by expanding to the full dataset and re-running — exactly
 the situation you hit when a fresh extract lands months into a project.
 
-flowchart LR A\["Start a project"\] --\> B\["Add data + metadata"\] B
+flowchart TD A\["Start a project"\] --\> B\["Add data + metadata"\] B
 --\> C\["Source the data"\] C --\> D\["Analyse (your code)"\] D --\>
 E\["Save outputs + figures"\] E --\> F\["Tag a version"\] F -.-\>\|weeks
 later\| G\["Resume + check status"\] G --\> H\["New data arrives"\] H
