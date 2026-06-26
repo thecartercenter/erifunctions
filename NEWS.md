@@ -1,5 +1,22 @@
 # erifunctions (development version)
 
+## Error & data-quality log triage (Phase 5)
+
+- **`eri_logs()` -- new.** Reads the structured operation logs (written by `eri_ingest()`,
+  `eri_approve()`, `eri_stage()`, `eri_odk_sync()`, …) and the new data-quality logs across
+  `{country}/{disease}/{data_type}/logs/` in the `data/` blob, and returns them as a triage backlog
+  tibble. Filter by `status` (`"error"`, `"needs_review"`, …), `operation`, `analyst`, or `since`;
+  scope to one dataset or scan the whole system. Because the logs live in Azure, the backlog is shared
+  — a teammate can see exactly what failed and pick up where you left off.
+- **`eri_dq_log()` -- new.** Persists `run_dq_checks()`'s `$flags` to the log backlog so data-quality
+  issues are durable and discoverable, not just in-session. `eri_ingest()` now calls it automatically
+  after its DQ checks.
+- **`eri_logs_resolve()` -- new.** Marks a log entry handled (records who/when/note in a `triage`
+  block) so it drops off the open backlog without deleting the record.
+- **New article — "Triaging the error & data-quality log backlog"** (`vignettes/da-logs-guide.Rmd`)
+  walks the workflow on the `atlantis` sandbox. Closes the last open Data Analyst row in
+  `docs/guides.md` (previously blocked on the `eri_logs()` function gap).
+
 ## Documentation: an onboarding guide for data analysts
 
 - **New article — "Onboarding a new country, disease, or data type"**

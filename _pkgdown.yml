@@ -55,6 +55,7 @@ articles:
   - da-onboard-guide
   - da-ingest-guide
   - da-odk-guide
+  - da-logs-guide
   - dq-pipeline
   - epi-analytics
   - spatial-workflow
@@ -121,6 +122,13 @@ reference:
   - eri_catalog_remove
   - eri_catalog_query
   - eri_catalog_verify
+
+- title: Logs & triage
+  desc: Persist data-quality flags and triage the error / DQ log backlog.
+  contents:
+  - eri_dq_log
+  - eri_logs
+  - eri_logs_resolve
 
 - title: ODK
   desc: Register forms, sync submissions, monitor surveys, and manage users.
