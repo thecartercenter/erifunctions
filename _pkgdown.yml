@@ -50,6 +50,7 @@ articles:
 - title: Workflows
   navbar: Workflows
   contents:
+  - connections-guide
   - epi-research-guide
   - da-ingest-guide
   - da-odk-guide
