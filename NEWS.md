@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Documentation: an Epidemiologist anomaly-detection guide
+
+- **New article — "Catching anomalies in a new surveillance extract"** (`vignettes/epi-dq-guide.Rmd`).
+  A run-it-live, offline walkthrough of the anomaly detectors for epidemiologists: after
+  `run_dq_checks()`, chain `add_anomaly_pct_change()` (case spikes), `add_anomaly_gaps()` (missing
+  reporting weeks), `add_anomaly_consistency()` (cross-field rules), and `add_anomaly_spatial()`
+  (unrecognized admin names) on a synthetic multi-period extract, and interpret each flag. Complements
+  the `dq-pipeline.Rmd` reference (which documents the schema + detector mechanics).
+
 ## Documentation: an Epidemiologist locality-reconciliation guide
 
 - **New article — "Reconciling free-text localities to admin units"**
