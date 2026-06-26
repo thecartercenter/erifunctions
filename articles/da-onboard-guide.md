@@ -194,25 +194,31 @@ light to use it.
 
 **Case Management Reports (CMR)** are the monthly Excel returns from
 country programs. Onboarding one writes a CMR schema template and (when
-you pass `diseases =`) the CMR folders. Dry-run it first:
+you pass `create_dirs = TRUE`) the CMR folders. CMR lives under the
+combined **`rblf`** disease code (RB + LF — the programmes these reports
+cover), matching where
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
+and
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+put it. Dry-run it first:
 
 ``` r
 
-eri_onboard_cmr("atlantis", "Atlantis", diseases = c("malaria"), dry_run = TRUE)
+eri_onboard_cmr("atlantis", "Atlantis", create_dirs = TRUE, dry_run = TRUE)
 #> ℹ Dry run -- nothing will be written or created.
 #>   Would write: atlantis_cmr_schema.yaml
-#>     Would create: atlantis/malaria/cmr/raw/
-#>     Would create: atlantis/malaria/cmr/staged/
-#>     Would create: atlantis/malaria/cmr/processed/
+#>     Would create: atlantis/rblf/cmr/raw/
+#>     Would create: atlantis/rblf/cmr/staged/
+#>     Would create: atlantis/rblf/cmr/processed/
 ```
 
 Then for real:
 
 ``` r
 
-eri_onboard_cmr("atlantis", "Atlantis", diseases = c("malaria"))
+eri_onboard_cmr("atlantis", "Atlantis", create_dirs = TRUE)
 #> ✔ CMR schema template written to atlantis_cmr_schema.yaml.
-#> ✔ CMR Azure directories created for: malaria.
+#> ✔ CMR Azure directories created under atlantis/rblf/cmr/.
 #> ℹ Next steps:
 #>   1. Open atlantis_cmr_schema.yaml and uncomment the sheets your country uses.
 #>   2. Match field_code_prefix to the #tag_ row in your CMR Excel file.
@@ -282,7 +288,7 @@ and the local schema files:
 
 con <- get_azure_storage_connection(storage_name = "data")
 
-# Deletes atlantis/malaria/surveillance/* and atlantis/malaria/cmr/* in one go.
+# Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go.
 AzureStor::delete_storage_dir(con, "atlantis", recursive = TRUE, confirm = FALSE)
 
 # Remove the local schema templates.

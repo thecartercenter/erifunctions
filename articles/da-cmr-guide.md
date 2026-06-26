@@ -118,14 +118,12 @@ LF for lymphatic filariasis, the two programmes these reports cover.
 Only the registered RB-expansion countries — `eth`, `nga`, `sdn`, `ssd`,
 `uga`, `mad`, `tcd` — can be staged.)
 
-> **Heads-up on the `rblf` coordinate.** Registered RB-expansion CMR
-> always uses `disease = "rblf"` (so the paths are
-> `{country}/rblf/cmr/…` and you approve with
-> `eri_approve(country, "rblf", "cmr", period)`). If you scaffold a
-> brand-new country’s CMR with
-> [`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md),
-> you choose its disease folder — match it to how that country’s data is
-> filed.
+> **Heads-up on the `rblf` coordinate.** CMR always uses
+> `disease = "rblf"` — the combined RB + LF programme code — so the
+> paths are `{country}/rblf/cmr/…` and you approve with
+> `eri_approve(country, "rblf", "cmr", period)`. Scaffolding a new
+> country’s CMR with `eri_onboard_cmr(create_dirs = TRUE)` creates those
+> same `{country}/rblf/cmr/` folders.
 
 ## 3. Parse each sheet
 

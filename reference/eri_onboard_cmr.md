@@ -12,7 +12,7 @@ eri_onboard_cmr(
   country_code,
   country_name,
   language = "en",
-  diseases = NULL,
+  create_dirs = FALSE,
   path = getwd(),
   data_con = NULL,
   dry_run = FALSE
@@ -33,10 +33,16 @@ eri_onboard_cmr(
 
   `chr` CMR template language (`"en"` or `"fr"`). Default `"en"`.
 
-- diseases:
+- create_dirs:
 
-  `chr` vector Disease codes for which to create CMR blob directories.
-  If `NULL`, no Azure directories are created.
+  `lgl` If `TRUE`, create the canonical CMR Azure directories
+  `{country_code}/rblf/cmr/{raw,staged,processed}/` in the `data/` blob
+  – the location
+  [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+  and
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  use. CMR for the RB-expansion programmes is filed under the combined
+  `rblf` code (RB + LF), not per disease. Default `FALSE`.
 
 - path:
 
@@ -46,7 +52,7 @@ eri_onboard_cmr(
 - data_con:
 
   Azure container for the `data/` blob. If `NULL`, connects
-  automatically. Ignored when `dry_run = TRUE` or `diseases` is `NULL`.
+  automatically. Ignored when `dry_run = TRUE` or `create_dirs = FALSE`.
 
 - dry_run:
 
@@ -62,7 +68,7 @@ mode).
 
 ``` r
 if (FALSE) { # \dontrun{
-eri_onboard_cmr("uga", "Uganda", diseases = c("oncho", "lf"))
+eri_onboard_cmr("uga", "Uganda", create_dirs = TRUE)
 eri_onboard_cmr("tcd", "Chad", language = "fr", dry_run = TRUE)
 } # }
 ```

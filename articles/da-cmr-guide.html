@@ -223,13 +223,13 @@ reports cover. Only the registered RB-expansion countries —
 <code>uga</code>, <code>mad</code>, <code>tcd</code> — can be
 staged.)</p>
 <blockquote>
-<p><strong>Heads-up on the <code>rblf</code> coordinate.</strong>
-Registered RB-expansion CMR always uses <code>disease = "rblf"</code>
-(so the paths are <code>{country}/rblf/cmr/…</code> and you approve with
-<code>eri_approve(country, "rblf", "cmr", period)</code>). If you
-scaffold a brand-new country’s CMR with <code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code>,
-you choose its disease folder — match it to how that country’s data is
-filed.</p>
+<p><strong>Heads-up on the <code>rblf</code> coordinate.</strong> CMR
+always uses <code>disease = "rblf"</code> — the combined RB + LF
+programme code — so the paths are <code>{country}/rblf/cmr/…</code> and
+you approve with
+<code>eri_approve(country, "rblf", "cmr", period)</code>. Scaffolding a
+new country’s CMR with <code>eri_onboard_cmr(create_dirs = TRUE)</code>
+creates those same <code>{country}/rblf/cmr/</code> folders.</p>
 </blockquote>
 </div>
 <div class="section level2">

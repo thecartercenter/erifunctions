@@ -279,20 +279,23 @@ green light to use it.</p>
 </h2>
 <p><strong>Case Management Reports (CMR)</strong> are the monthly Excel
 returns from country programs. Onboarding one writes a CMR schema
-template and (when you pass <code>diseases =</code>) the CMR folders.
-Dry-run it first:</p>
+template and (when you pass <code>create_dirs = TRUE</code>) the CMR
+folders. CMR lives under the combined <strong><code>rblf</code></strong>
+disease code (RB + LF — the programmes these reports cover), matching
+where <a href="da-cmr-guide.html"><code>eri_stage_cmr()</code></a> and
+<code><a href="../reference/eri_approve.html">eri_approve()</a></code> put it. Dry-run it first:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, diseases <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"malaria"</span><span class="op">)</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, create_dirs <span class="op">=</span> <span class="cn">TRUE</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Dry run -- nothing will be written or created.</span></span>
 <span><span class="co">#&gt;   Would write: atlantis_cmr_schema.yaml</span></span>
-<span><span class="co">#&gt;     Would create: atlantis/malaria/cmr/raw/</span></span>
-<span><span class="co">#&gt;     Would create: atlantis/malaria/cmr/staged/</span></span>
-<span><span class="co">#&gt;     Would create: atlantis/malaria/cmr/processed/</span></span></code></pre></div>
+<span><span class="co">#&gt;     Would create: atlantis/rblf/cmr/raw/</span></span>
+<span><span class="co">#&gt;     Would create: atlantis/rblf/cmr/staged/</span></span>
+<span><span class="co">#&gt;     Would create: atlantis/rblf/cmr/processed/</span></span></code></pre></div>
 <p>Then for real:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, diseases <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"malaria"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, create_dirs <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ CMR schema template written to atlantis_cmr_schema.yaml.</span></span>
-<span><span class="co">#&gt; ✔ CMR Azure directories created for: malaria.</span></span>
+<span><span class="co">#&gt; ✔ CMR Azure directories created under atlantis/rblf/cmr/.</span></span>
 <span><span class="co">#&gt; ℹ Next steps:</span></span>
 <span><span class="co">#&gt;   1. Open atlantis_cmr_schema.yaml and uncomment the sheets your country uses.</span></span>
 <span><span class="co">#&gt;   2. Match field_code_prefix to the #tag_ row in your CMR Excel file.</span></span>
@@ -359,7 +362,7 @@ namespace and the local schema files:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Deletes atlantis/malaria/surveillance/* and atlantis/malaria/cmr/* in one go.</span></span>
+<span><span class="co"># Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go.</span></span>
 <span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"atlantis"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Remove the local schema templates.</span></span>
