@@ -25,7 +25,7 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 | Data Analyst | Onboard a new country / disease / data type | [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | ✅ Shipped |
 | Data Analyst | Triage the error / DQ log backlog | [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | ✅ Shipped |
 | Epidemiologist | Reconcile free-text localities to admin units for sourcing | [`epi-reconcile-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | ✅ Shipped |
-| Epidemiologist | Run the DQ pipeline on a new extract | _planned_ (see the [DQ pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) vignette for now) | ⬜ Missing |
+| Epidemiologist | Run the DQ pipeline on a new extract | [`epi-dq-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html) | ✅ Shipped |
 | Either | Authenticate and connect to Azure / ODK / SharePoint / Teams | [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | ✅ Shipped |
 
 ## Adding a guide
