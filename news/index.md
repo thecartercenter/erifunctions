@@ -2,6 +2,24 @@
 
 ## erifunctions (development version)
 
+### Documentation: an Epidemiologist anomaly-detection guide
+
+- **New article — “Catching anomalies in a new surveillance extract”**
+  (`vignettes/epi-dq-guide.Rmd`). A run-it-live, offline walkthrough of
+  the anomaly detectors for epidemiologists: after
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md),
+  chain
+  [`add_anomaly_pct_change()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_pct_change.md)
+  (case spikes),
+  [`add_anomaly_gaps()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_gaps.md)
+  (missing reporting weeks),
+  [`add_anomaly_consistency()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_consistency.md)
+  (cross-field rules), and
+  [`add_anomaly_spatial()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_spatial.md)
+  (unrecognized admin names) on a synthetic multi-period extract, and
+  interpret each flag. Complements the `dq-pipeline.Rmd` reference
+  (which documents the schema + detector mechanics).
+
 ### Documentation: an Epidemiologist locality-reconciliation guide
 
 - **New article — “Reconciling free-text localities to admin units”**

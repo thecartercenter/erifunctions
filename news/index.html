@@ -26,6 +26,7 @@
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
     <li><a class="dropdown-item" href="../articles/epi-reconcile-guide.html">Reconciling free-text localities to admin units (for epidemiologists)</a></li>
@@ -51,6 +52,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-an-epidemiologist-anomaly-detection-guide-development-version">Documentation: an Epidemiologist anomaly-detection guide<a class="anchor" aria-label="anchor" href="#documentation-an-epidemiologist-anomaly-detection-guide-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Catching anomalies in a new surveillance extract”</strong> (<code>vignettes/epi-dq-guide.Rmd</code>). A run-it-live, offline walkthrough of the anomaly detectors for epidemiologists: after <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>, chain <code><a href="../reference/add_anomaly_pct_change.html">add_anomaly_pct_change()</a></code> (case spikes), <code><a href="../reference/add_anomaly_gaps.html">add_anomaly_gaps()</a></code> (missing reporting weeks), <code><a href="../reference/add_anomaly_consistency.html">add_anomaly_consistency()</a></code> (cross-field rules), and <code><a href="../reference/add_anomaly_spatial.html">add_anomaly_spatial()</a></code> (unrecognized admin names) on a synthetic multi-period extract, and interpret each flag. Complements the <code>dq-pipeline.Rmd</code> reference (which documents the schema + detector mechanics).</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-an-epidemiologist-locality-reconciliation-guide-development-version">Documentation: an Epidemiologist locality-reconciliation guide<a class="anchor" aria-label="anchor" href="#documentation-an-epidemiologist-locality-reconciliation-guide-development-version"></a></h3>
 <ul><li>

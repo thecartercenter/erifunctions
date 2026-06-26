@@ -15,6 +15,8 @@
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
 - [Triaging the error & data-quality log backlog (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
+- [Catching anomalies in a new surveillance extract (for
+  epidemiologists)](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md):
 - [Data Quality
   Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Epidemiological

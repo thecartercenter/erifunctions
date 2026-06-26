@@ -36,6 +36,7 @@ site](https://thecartercenter.github.io/erifunctions/articles/):
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
 | [Reconciling localities to admin units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review) |
+| [Catching anomalies in a new extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html) | Epidemiologists QC-ing an extract for spikes, missing weeks, and cross-field/spatial anomalies before analysis |
 | [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps |
 | [SharePoint workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html) | Sharing files via SharePoint and posting to Teams |
 | [Adding a new program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html) | Onboarding a new country, disease, or data type |
