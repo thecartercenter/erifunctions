@@ -2,6 +2,22 @@
 
 ## erifunctions (development version)
 
+### Documentation: a monthly CMR upload guide for data analysts
+
+- **New article — “Uploading and processing a monthly country report
+  (CMR)”** (`vignettes/da-cmr-guide.Rmd`). The Data Analyst monthly job:
+  upload a filed CMR Excel to the `projects` blob,
+  [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+  it into `staged/`, parse each sheet with
+  [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
+  (by its machine-readable `#field-code` row — language-neutral, so it
+  parses English and French templates alike), and
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  it into `processed/`. The parsing step is run live on a new bundled
+  synthetic example report (`inst/extdata/cmr-example.xlsx`); the Azure
+  steps are shown as representative output. **Completes the
+  `docs/guides.md` role × task matrix.**
+
 ### Documentation: an Epidemiologist anomaly-detection guide
 
 - **New article — “Catching anomalies in a new surveillance extract”**

@@ -10,6 +10,8 @@
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md):
 - [Ingesting a surveillance dataset: raw to approved (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
+- [Uploading and processing a monthly country report (CMR) (for data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md):
 - [Working with ODK Central: connect, monitor, and pull form data (for
   data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):

@@ -1,0 +1,244 @@
+# Uploading and processing a monthly country report (CMR) (for data analysts)
+
+Every month, country programmes file a **Case Management Report (CMR)**
+— a filled Excel template of treatment, training, and survey numbers.
+This guide, for a **Data Analyst**, walks the monthly job: take that
+incoming Excel, **upload** it to Azure, **stage** it, **parse** each
+sheet, and **approve** it into the governed data system.
+
+The trick that makes it manageable: every CMR template has a row of
+**machine-readable field codes** (`#rbtrt_year`, `#rbtrt_treated`, …).
+Those codes are identical across countries *and languages*, so one
+function parses an English Ugandan template and a French Chadian one
+exactly the same way.
+
+> **The golden rule is the same as every other dataset.** The report
+> moves `projects/ (as filed)` → `staged/` → `processed/`, and nothing
+> becomes canonical until you
+> [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+> it. This is the CMR sibling of the [surveillance ingest
+> guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md).
+
+flowchart TD A\["Country files the monthly CMR Excel"\] --\> B\["Upload
+to the projects blob"\] B --\> C\["eri_stage_cmr(): projects -\>
+staged/"\] C --\> D\["eri_ingest_cmr(): parse each sheet by its \#field
+codes"\] D --\> E\["Review the numbers"\] E --\> F\["eri_approve():
+staged -\> processed/ + catalog"\]
+
+## Before you start
+
+- `remotes::install_github("thecartercenter/erifunctions")`.
+- **Azure access** for the upload / stage / approve steps (zero-config
+  browser sign-in — see the [connections
+  guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)).
+  The **parsing** step
+  ([`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md))
+  is offline — it just reads a local Excel file.
+
+``` r
+
+library(erifunctions)
+```
+
+> **A note on the examples below.** The upload, stage, and approve steps
+> run against the live Azure `projects`/`data` blobs and real,
+> registered countries — so the outputs for those are shown as
+> illustrations rather than run here. The **parsing** step is run for
+> real on a small **synthetic** example report that ships with the
+> package, so its output is exactly what you’ll see.
+
+## 1. Where the report comes in
+
+A filled monthly template lands in the **`projects` blob**, under a
+per-country, per-period folder. The period is a six-digit `YYYYMM`:
+
+    projects: health-rb-country-expansion-dev/raw/filled_templates/{country}/{period}/{file}.xlsx
+    e.g.      …/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx
+
+Often this upload happens through Azure Storage Explorer or SharePoint,
+but you can also do it from R. Connect to the `projects` blob and upload
+the file to that path:
+
+``` r
+
+# Connect to the projects blob explicitly (the same blob eri_stage_cmr reads from).
+projects_con <- get_azure_storage_connection(storage_name = "projects")
+
+eri_upload(
+  "uga_cmr_2024_06.xlsx",
+  "health-rb-country-expansion-dev/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx",
+  azcontainer = projects_con
+)
+# (uploads the file; no console output)
+```
+
+### What the template looks like
+
+Every CMR sheet has the same shape — a few rows of human-readable
+headers, then the **field-code row**, then the data:
+
+| Excel row | Contents |
+|----|----|
+| 1–4 | Title, group headers, human-readable column names |
+| **5** | **`#field codes`** (e.g. `#rbtrt_year`, `#rbtrt_adm1`, `#rbtrt_treated`) — the parsing anchor |
+| 6+ | The monthly numbers |
+
+That row 5 is what makes the whole thing work, as you’ll see in §3.
+
+## 2. Stage it
+
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+pulls the filed Excel(s) out of the `projects` blob and copies them into
+the governed `data` blob’s `staged/` layer, ready for review. Give it
+the country and the period:
+
+``` r
+
+eri_stage_cmr("uga", "202406")
+#> ✔ Staged: uga_cmr_2024_06.xlsx
+#> ── ✔ Staged CMR to data blob ──────────────────────────────
+#> Files: 1
+#> Location: uga/rblf/cmr/staged
+#> ℹ Operation log: uga/rblf/cmr/logs/20240705_141500_eri_stage_cmr_202406.yaml
+```
+
+Omit the period and it stages the **most recent** one for you, and says
+so:
+
+``` r
+
+eri_stage_cmr("uga")
+#> ℹ No period specified; staging most recent: 202406
+#> ✔ Staged: uga_cmr_2024_06.xlsx
+#> …
+```
+
+(CMR data lives under the `rblf` disease folder — RB for onchocerciasis,
+LF for lymphatic filariasis, the two programmes these reports cover.
+Only the registered RB-expansion countries — `eth`, `nga`, `sdn`, `ssd`,
+`uga`, `mad`, `tcd` — can be staged.)
+
+> **Heads-up on the `rblf` coordinate.** Registered RB-expansion CMR
+> always uses `disease = "rblf"` (so the paths are
+> `{country}/rblf/cmr/…` and you approve with
+> `eri_approve(country, "rblf", "cmr", period)`). If you scaffold a
+> brand-new country’s CMR with
+> [`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md),
+> you choose its disease folder — match it to how that country’s data is
+> filed.
+
+## 3. Parse each sheet
+
+Now the offline heart of the job. First, see which sheets this country’s
+template has:
+
+``` r
+
+schema <- load_cmr_schema("uga")
+names(schema$sheets)
+#> [1] "RB Treatment"  "SCH Treatment" "LF MMDP"       "CDD Training"
+#> [5] "CS Training"   "MMDP Training" "Surveys"
+```
+
+Then read a sheet with
+[`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md).
+It reads from **row 5** (the field codes), keeps only the `#`-coded
+columns, drops the template’s blank spacer rows, and — when you pass
+`country` — tags each row with it. (We use the package’s bundled
+synthetic example here; in real work you’d point at your staged file.)
+
+``` r
+
+report <- system.file("extdata", "cmr-example.xlsx", package = "erifunctions")
+
+rb <- eri_ingest_cmr(report, sheet = "RB Treatment", country = "uga")
+#> ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.
+
+rb
+#> # A tibble: 3 × 7
+#>   country `#rbtrt_year` `#rbtrt_month` `#rbtrt_adm1` `#rbtrt_adm2` `#rbtrt_target` `#rbtrt_treated`
+#>   <chr>   <chr>         <chr>          <chr>         <chr>         <chr>           <chr>
+#> 1 uga     2024          06             Central       Kampala       12000           11400
+#> 2 uga     2024          06             Western       Mbarara       8000            7600
+#> 3 uga     2024          06             Eastern       Soroti        6000            5800
+```
+
+Each sheet is its own programme, parsed the same way:
+
+``` r
+
+sch <- eri_ingest_cmr(report, sheet = "SCH Treatment", country = "uga")
+#> ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.
+```
+
+The column names *are* the field codes — stable identifiers you can rely
+on across every monthly file. This is the moment to eyeball the numbers
+(treated vs target, missing districts) before you sign off.
+
+> **Same codes, any language.** The field codes (`#rbtrt_…`) are
+> language-neutral, so the *same*
+> [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
+> parses a French template too. For a French file, the sheet is named in
+> French (e.g. `"Oncho Traitement"`) — pass the **canonical slug** and
+> the country, and the schema’s `sheet_aliases` resolves it:
+>
+> ``` r
+>
+> eri_ingest_cmr("tcd_cmr_2024_06.xlsx", sheet = "rb_treatment", country = "tcd")
+> #> ✔ CMR sheet "Oncho Traitement": 24 data rows, 6 field codes.
+> ```
+
+## 4. Approve it
+
+Once the numbers look right, promote the staged report to the canonical
+`processed/` layer with the same human gate every dataset passes
+through. CMR uses `disease = "rblf"` and `data_type = "cmr"`:
+
+``` r
+
+eri_approve("uga", "rblf", "cmr", "202406")
+#> ✔ Catalog: registered uga_cmr_2024_06.xlsx.
+#> ✔ Approved: uga_cmr_2024_06.xlsx
+#> ✔ Approval log: uga/rblf/cmr/processed/202406_approval_log.yaml
+#> ── ✔ Approved "202406" ─────────────────────────────────
+#> Dataset: uga / rblf / cmr
+#> Files: 1 moved to processed
+#> Approver: your.name
+#> Location: uga/rblf/cmr/processed
+#> ℹ Operation log: uga/rblf/cmr/logs/20240705_141500_eri_approve_202406.yaml
+```
+
+The month’s report is now canonical and discoverable in the catalog like
+any other approved dataset:
+
+``` r
+
+eri_catalog_query(country = "uga", data_type = "cmr")
+#> # A tibble: 1 × 12
+#>   path                                country disease data_type layer     period …
+#>   <chr>                               <chr>   <chr>   <chr>     <chr>     <chr>
+#> 1 uga/rblf/cmr/processed/uga_cmr_202… uga     rblf    cmr       processed 202406
+```
+
+That’s the monthly loop: **upload → stage → parse → approve.**
+
+## What’s next
+
+- **A new country files its first report?** Its CMR schema (which
+  sheets, which field codes) has to exist first — see the CMR section of
+  the [onboarding
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
+  ([`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md)).
+- The [surveillance ingest
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+  covers the same `raw → staged → approved` gate for line-list data, and
+  the data-catalog mechanics in more depth.
+
+> **Real reports are not practice data.** The monthly CMR files are
+> protected country data — staged and approved through this pipeline,
+> never deleted or moved casually. (The example here is synthetic, which
+> is the only reason we could pass it around freely.)
+
+See the [guide
+index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
+for the full set of guides.

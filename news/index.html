@@ -24,6 +24,7 @@
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
@@ -52,6 +53,12 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-a-monthly-cmr-upload-guide-for-data-analysts-development-version">Documentation: a monthly CMR upload guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-a-monthly-cmr-upload-guide-for-data-analysts-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Uploading and processing a monthly country report (CMR)”</strong> (<code>vignettes/da-cmr-guide.Rmd</code>). The Data Analyst monthly job: upload a filed CMR Excel to the <code>projects</code> blob, <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> it into <code>staged/</code>, parse each sheet with <code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> (by its machine-readable <code>#field-code</code> row — language-neutral, so it parses English and French templates alike), and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> it into <code>processed/</code>. The parsing step is run live on a new bundled synthetic example report (<code>inst/extdata/cmr-example.xlsx</code>); the Azure steps are shown as representative output. <strong>Completes the <code>docs/guides.md</code> role × task matrix.</strong>
+</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-an-epidemiologist-anomaly-detection-guide-development-version">Documentation: an Epidemiologist anomaly-detection guide<a class="anchor" aria-label="anchor" href="#documentation-an-epidemiologist-anomaly-detection-guide-development-version"></a></h3>
 <ul><li>
