@@ -13,6 +13,8 @@
 - [Working with ODK Central: connect, monitor, and pull form data (for
   data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
+- [Triaging the error & data-quality log backlog (for data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
 - [Data Quality
   Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Epidemiological

@@ -2,6 +2,39 @@
 
 ## erifunctions (development version)
 
+### Error & data-quality log triage (Phase 5)
+
+- **[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+  – new.** Reads the structured operation logs (written by
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md),
+  [`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md),
+  [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md),
+  …) and the new data-quality logs across
+  `{country}/{disease}/{data_type}/logs/` in the `data/` blob, and
+  returns them as a triage backlog tibble. Filter by `status`
+  (`"error"`, `"needs_review"`, …), `operation`, `analyst`, or `since`;
+  scope to one dataset or scan the whole system. Because the logs live
+  in Azure, the backlog is shared — a teammate can see exactly what
+  failed and pick up where you left off.
+- **[`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
+  – new.** Persists
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)’s
+  `$flags` to the log backlog so data-quality issues are durable and
+  discoverable, not just in-session.
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  now calls it automatically after its DQ checks.
+- **[`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+  – new.** Marks a log entry handled (records who/when/note in a
+  `triage` block) so it drops off the open backlog without deleting the
+  record.
+- **New article — “Triaging the error & data-quality log backlog”**
+  (`vignettes/da-logs-guide.Rmd`) walks the workflow on the `atlantis`
+  sandbox. Closes the last open Data Analyst row in `docs/guides.md`
+  (previously blocked on the
+  [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+  function gap).
+
 ### Documentation: an onboarding guide for data analysts
 
 - **New article — “Onboarding a new country, disease, or data type”**

@@ -25,6 +25,7 @@
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
@@ -49,6 +50,17 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="error--data-quality-log-triage-phase-development-version">Error &amp; data-quality log triage (Phase 5)<a class="anchor" aria-label="anchor" href="#error--data-quality-log-triage-phase-development-version"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_logs.html">eri_logs()</a></code> – new.</strong> Reads the structured operation logs (written by <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>, <code><a href="../reference/eri_approve.html">eri_approve()</a></code>, <code><a href="../reference/eri_stage.html">eri_stage()</a></code>, <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code>, …) and the new data-quality logs across <code>{country}/{disease}/{data_type}/logs/</code> in the <code>data/</code> blob, and returns them as a triage backlog tibble. Filter by <code>status</code> (<code>"error"</code>, <code>"needs_review"</code>, …), <code>operation</code>, <code>analyst</code>, or <code>since</code>; scope to one dataset or scan the whole system. Because the logs live in Azure, the backlog is shared — a teammate can see exactly what failed and pick up where you left off.</li>
+<li>
+<strong><code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code> – new.</strong> Persists <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>’s <code>$flags</code> to the log backlog so data-quality issues are durable and discoverable, not just in-session. <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> now calls it automatically after its DQ checks.</li>
+<li>
+<strong><code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code> – new.</strong> Marks a log entry handled (records who/when/note in a <code>triage</code> block) so it drops off the open backlog without deleting the record.</li>
+<li>
+<strong>New article — “Triaging the error &amp; data-quality log backlog”</strong> (<code>vignettes/da-logs-guide.Rmd</code>) walks the workflow on the <code>atlantis</code> sandbox. Closes the last open Data Analyst row in <code>docs/guides.md</code> (previously blocked on the <code><a href="../reference/eri_logs.html">eri_logs()</a></code> function gap).</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-an-onboarding-guide-for-data-analysts-development-version">Documentation: an onboarding guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-an-onboarding-guide-for-data-analysts-development-version"></a></h3>
 <ul><li>

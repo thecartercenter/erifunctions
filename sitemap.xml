@@ -7,6 +7,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/connections-guide.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html</loc></url>
@@ -69,6 +70,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_create.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_exists.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_epidemic_curve.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_epiweek_date.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_epiweek_range.html</loc></url>
@@ -83,6 +85,8 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_lf_status_map.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_lf_tas_summary.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_list.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_logs.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_map_choropleth.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_map_incidence.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_map_inset.html</loc></url>

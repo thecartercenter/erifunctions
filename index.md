@@ -32,6 +32,7 @@ site](https://thecartercenter.github.io/erifunctions/articles/):
 | [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
 | [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |
 | [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows |
+| [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) |
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
 | [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps |

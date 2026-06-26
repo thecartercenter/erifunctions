@@ -110,6 +110,17 @@ Register, query, and verify processed-layer data.
 - [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md)
   : Verify that catalog entries still exist in Azure
 
+## Logs & triage
+
+Persist data-quality flags and triage the error / DQ log backlog.
+
+- [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
+  : Persist data-quality flags to the log backlog
+- [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+  : List the operation / DQ log backlog for triage
+- [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+  : Mark a log entry as handled
+
 ## ODK
 
 Register forms, sync submissions, monitor surveys, and manage users.

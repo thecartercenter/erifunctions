@@ -5,6 +5,7 @@ articles:
   adding-a-program: adding-a-program.html
   connections-guide: connections-guide.html
   da-ingest-guide: da-ingest-guide.html
+  da-logs-guide: da-logs-guide.html
   da-odk-guide: da-odk-guide.html
   da-onboard-guide: da-onboard-guide.html
   dq-pipeline: dq-pipeline.html
@@ -12,7 +13,7 @@ articles:
   epi-research-guide: epi-research-guide.html
   sharepoint-workflow: sharepoint-workflow.html
   spatial-workflow: spatial-workflow.html
-last_built: 2026-06-26T14:46Z
+last_built: 2026-06-26T18:26Z
 urls:
   reference: https://thecartercenter.github.io/erifunctions/reference
   article: https://thecartercenter.github.io/erifunctions/articles
