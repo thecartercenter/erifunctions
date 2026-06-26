@@ -1,0 +1,316 @@
+# Onboarding a new country, disease, or data type (for data analysts)
+
+Before any data can flow through `erifunctions`, the **space for it has
+to exist**: a data-quality schema that describes the data, and the
+`raw → staged → processed` folders it will move through. This guide is
+for a **Data Analyst** standing up that space for a new country,
+disease, or data type. It is the **prequel** to the
+[ingest](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+and
+[ODK](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
+guides — do this once, and those workflows have somewhere to land.
+
+We will practise on a make-believe country — **Atlantis** — so you can
+run every step and then delete it. Each `eri_onboard_*` function also
+has a **dry-run** mode, so you can always look before you touch
+anything.
+
+> **You can run this for real.** The commands work against the live
+> Azure system; the final [**Clean up**](#clean-up) removes everything
+> you created. Real onboarding follows the exact same steps with a real
+> country name.
+
+## The golden rule
+
+> **Onboarding scaffolds; it doesn’t finish for you.** `erifunctions`
+> writes you a **schema template** with the standard structure and
+> `TODO` markers, and creates the Azure folders. *You* fill in the
+> disease-specific details, **validate** the schema, and submit it to
+> the package. Nothing is guessed — the template is a correct starting
+> point you complete.
+
+flowchart TD A\["Onboard: scaffold schema + folders"\] --\> B\["Fill in
+the TODO columns"\] B --\> C\["eri_schema_validate()"\] C --\> D\["Space
+is ready"\] D --\> E\["Ingest data / sync ODK"\] E --\> F\["DQ -\> stage
+-\> approve"\] D --\> Z\["Clean up the sandbox"\]
+
+## Before you start
+
+1.  **R and RStudio** installed.
+2.  **The package** —
+    `remotes::install_github("thecartercenter/erifunctions")`.
+3.  **Azure access** — zero-config browser sign-in; see the [connections
+    guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
+    if this is your first time.
+
+``` r
+
+library(erifunctions)
+```
+
+## 1. Look before you leap: the dry run
+
+Every onboarding command takes `dry_run = TRUE`, which **prints exactly
+what it would do** and changes nothing. Always start here:
+
+``` r
+
+eri_onboard_country("atlantis", "Atlantis", "malaria", dry_run = TRUE)
+#> ℹ Dry run -- nothing will be written or created.
+#>   Would write: atlantis_malaria_schema.yaml
+#>   Would create Azure directories:
+#>     atlantis/malaria/surveillance/raw
+#>     atlantis/malaria/surveillance/staged
+#>     atlantis/malaria/surveillance/processed
+```
+
+That is the whole footprint: one local schema file, and the three-layer
+folders in Azure. No surprises.
+
+## 2. Onboard a surveillance country/disease
+
+[`eri_onboard_country()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_country.md)
+is for **surveillance** data (case-level or weekly reporting). The
+arguments are the **country code**, the **full country name**, and the
+**disease**:
+
+``` r
+
+eri_onboard_country("atlantis", "Atlantis", "malaria")
+#> ✔ Schema template written to atlantis_malaria_schema.yaml.
+#> ✔ Created 3 Azure directories.
+#> ℹ Next steps:
+#>   1. Open atlantis_malaria_schema.yaml and fill in the TODO sections.
+#>   2. Run eri_schema_validate('atlantis_malaria_schema.yaml') to check your edits.
+#>   3. Submit the schema via a pull request to add it to the package:
+#>      inst/schemas/atlantis_malaria.yaml
+#>   4. Register any ODK forms with eri_odk_register().
+#>   5. Pin the package version in your project: renv::snapshot().
+```
+
+It did two things: wrote a local schema template, and created
+`atlantis/malaria/surveillance/{raw, staged,processed}/` in the data
+blob.
+
+### Fill in the template
+
+Open `atlantis_malaria_schema.yaml`. It is a **correct, structured
+starting point** — the standard sections are there, with `TODO` markers
+where your data is unique. Here it is **trimmed for readability** (your
+actual file also lists `aliases:` for each column and a few commented
+options like `time_grain` and `admin1_name_field`):
+
+``` yaml
+country: Atlantis
+disease: malaria
+language: en
+
+admin:
+  admin1_col: Admin1
+  admin2_col: Admin2
+  admin1_spatial: spatial/atlantis/atlantis_admin1.shp
+  admin2_spatial: spatial/atlantis/atlantis_admin2.shp
+
+temporal:
+  year_col: Year
+  period_col: EpiWeek
+  max_gap: 2
+
+preprocessing:
+  - remove_smart_quotes
+  - drop_rows_missing_year
+
+columns:
+  Year:
+    required: true
+    type: numeric
+    range: [2000, 2035]
+  EpiWeek:
+    required: true
+    type: numeric
+    range: [1, 53]
+  Admin1:
+    required: true
+    type: categorical
+    # TODO: add allowed_values (list of valid admin1 names)
+  Admin2:
+    required: true
+    type: character
+
+  # TODO: add your disease-specific columns here
+  # CasesConfirmed:
+  #   required: false
+  #   type: numeric
+  #   range: [0, 1000000]
+
+consistency:
+  # TODO: add cross-field rules here
+```
+
+The schema structure — `columns` with
+`type`/`required`/`range`/`allowed_values`, the `temporal` block,
+`consistency` rules — is exactly what the data-quality engine reads. The
+[ingest
+guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+shows what each rule *does* when data runs through it.
+
+### Validate your edits
+
+[`eri_schema_validate()`](https://thecartercenter.github.io/erifunctions/reference/eri_schema_validate.md)
+checks the **structure** — required sections, valid column types, and
+that temporal/consistency rules reference columns that actually exist.
+Run it on the file you just edited:
+
+``` r
+
+eri_schema_validate("atlantis_malaria_schema.yaml")
+#> ✔ Schema 'atlantis_malaria_schema.yaml' is valid.
+#> # A tibble: 0 × 3
+#> # ℹ 3 variables: issue_type <chr>, field <chr>, message <chr>
+```
+
+An **empty tibble means it’s valid**. When something is off, you get a
+row per problem. Say you fat- finger two of the column types to `numbr`:
+
+``` r
+
+eri_schema_validate("atlantis_malaria_schema.yaml")
+#> ⚠ 2 issues found in 'atlantis_malaria_schema.yaml':
+#> ✖ Column 'Year' has invalid type 'numbr'. Valid: numeric, character, categorical, date.
+#> ✖ Column 'EpiWeek' has invalid type 'numbr'. Valid: numeric, character, categorical, date.
+
+# The returned tibble pinpoints each issue:
+#> # A tibble: 2 × 3
+#>   issue_type    field                message
+#>   <chr>         <chr>                <chr>
+#> 1 invalid_value columns.Year.type    Column 'Year' has invalid type 'numbr'. Valid: numeric, …
+#> 2 invalid_value columns.EpiWeek.type Column 'EpiWeek' has invalid type 'numbr'. Valid: numeric, …
+```
+
+Fix the schema and re-run until you get the clean ✔. That is the green
+light to use it.
+
+## 3. Onboard a CMR country
+
+**Case Management Reports (CMR)** are the monthly Excel returns from
+country programs. Onboarding one writes a CMR schema template and (when
+you pass `diseases =`) the CMR folders. Dry-run it first:
+
+``` r
+
+eri_onboard_cmr("atlantis", "Atlantis", diseases = c("malaria"), dry_run = TRUE)
+#> ℹ Dry run -- nothing will be written or created.
+#>   Would write: atlantis_cmr_schema.yaml
+#>     Would create: atlantis/malaria/cmr/raw/
+#>     Would create: atlantis/malaria/cmr/staged/
+#>     Would create: atlantis/malaria/cmr/processed/
+```
+
+Then for real:
+
+``` r
+
+eri_onboard_cmr("atlantis", "Atlantis", diseases = c("malaria"))
+#> ✔ CMR schema template written to atlantis_cmr_schema.yaml.
+#> ✔ CMR Azure directories created for: malaria.
+#> ℹ Next steps:
+#>   1. Open atlantis_cmr_schema.yaml and uncomment the sheets your country uses.
+#>   2. Match field_code_prefix to the #tag_ row in your CMR Excel file.
+#>   3. Submit via pull request to: inst/schemas/cmr/atlantis.yaml
+#>   4. Test ingestion with eri_ingest_cmr('your_file.xlsx', country = 'atlantis').
+```
+
+A CMR template ships with the common report sheets commented out —
+uncomment the ones your country files, and make each sheet’s
+`field_code_prefix` match the `#tag_` row in the Excel file. Then test
+with
+[`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md).
+
+## 4. Onboard an NTD disease (MDA + prevalence)
+
+For an **NTD treatment/survey program**,
+[`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)
+scaffolds the two schemas that pattern needs — **MDA** (mass drug
+administration) and **prevalence**. Note the argument order here is
+**disease first, then country**:
+
+``` r
+
+eri_onboard_disease("schisto", "atlantis")
+#> ✔ Schema skeleton written to atlantis_schisto_mda.yaml.
+#> ✔ Schema skeleton written to atlantis_schisto_prevalence.yaml.
+#> ℹ Next steps:
+#>   1. Open each file and fill in the TODO sections.
+#>   2. Run eri_schema_validate('<path>') to check your edits.
+#>   3. Submit via pull request to inst/schemas/.
+```
+
+These are **local-only** templates (no Azure folders) — an MDA schema
+with `year`, `round`, `target_pop`, `treated`, and a `TODO` for the
+geographic unit, and a matching prevalence schema. Fill, validate, and
+submit them exactly as in §2.
+
+> **Contributing the schema to the package — and disease analytics.**
+> Submitting your finished schema via pull request, the
+> schema-validation test, and adding disease-specific analytics
+> functions are covered in depth in the [**Adding a new
+> program**](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md)
+> vignette. This guide gets the space stood up; that one gets your
+> schema merged.
+
+## 5. The space is ready
+
+Once your schema validates and the folders exist, the
+country/disease/data-type is **live in the system**. You can now:
+
+- **Ingest a surveillance dataset** → the [ingest
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md).
+- **Pull from ODK Central** → the [ODK
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
+  (register a form for it, then sync).
+- **Make the schema official** → submit it to `inst/schemas/` via pull
+  request so the whole team’s
+  [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+  finds it.
+
+## 6. Clean up
+
+Practice run — remove everything you created. Delete the Azure namespace
+and the local schema files:
+
+``` r
+
+con <- get_azure_storage_connection(storage_name = "data")
+
+# Deletes atlantis/malaria/surveillance/* and atlantis/malaria/cmr/* in one go.
+AzureStor::delete_storage_dir(con, "atlantis", recursive = TRUE, confirm = FALSE)
+
+# Remove the local schema templates.
+unlink(c("atlantis_malaria_schema.yaml", "atlantis_cmr_schema.yaml",
+         "atlantis_schisto_mda.yaml", "atlantis_schisto_prevalence.yaml"))
+```
+
+> **Why deleting was fine here:** *Atlantis* is invented. **A real
+> onboarded country is not torn down casually** — once data lands in it,
+> those folders are the home of real surveillance records. There is
+> deliberately no one-click “un-onboard” command; removing a real space
+> is a considered, manual act.
+
+## What’s next
+
+You have stood up a new space three ways — surveillance, CMR, and an NTD
+program — and validated the schemas. The data guides take it from here:
+
+- [Ingesting a surveillance
+  dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+- [Working with ODK
+  Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
+- [Adding a new
+  program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md)
+  — contribute your schema to the package.
+
+See the [guide
+index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
+for the full set, and the
+[reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
+for every function grouped by purpose.

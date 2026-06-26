@@ -22,6 +22,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
     <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
+    <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
@@ -48,6 +49,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-an-onboarding-guide-for-data-analysts-development-version">Documentation: an onboarding guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-an-onboarding-guide-for-data-analysts-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Onboarding a new country, disease, or data type”</strong> (<code>vignettes/da-onboard-guide.Rmd</code>). The prequel to the ingest and ODK guides: how a Data Analyst stands up the DQ schema + <code>raw/staged/processed</code> folders for a new program before any data flows. Covers all three scaffolding paths — <code><a href="../reference/eri_onboard_country.html">eri_onboard_country()</a></code> (surveillance), <code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code> (CMR), and <code><a href="../reference/eri_onboard_disease.html">eri_onboard_disease()</a></code> (NTD MDA + prevalence) — plus the <code>dry_run</code> preview and <code><a href="../reference/eri_schema_validate.html">eri_schema_validate()</a></code> (valid + a broken→fixed example), on the <code>atlantis</code> sandbox. Complements the existing “Adding a new program” vignette (which covers contributing a finished schema to the package).</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-a-connections--authentication-guide-development-version">Documentation: a connections &amp; authentication guide<a class="anchor" aria-label="anchor" href="#documentation-a-connections--authentication-guide-development-version"></a></h3>
 <ul><li>

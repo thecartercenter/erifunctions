@@ -2,6 +2,24 @@
 
 ## erifunctions (development version)
 
+### Documentation: an onboarding guide for data analysts
+
+- **New article — “Onboarding a new country, disease, or data type”**
+  (`vignettes/da-onboard-guide.Rmd`). The prequel to the ingest and ODK
+  guides: how a Data Analyst stands up the DQ schema +
+  `raw/staged/processed` folders for a new program before any data
+  flows. Covers all three scaffolding paths —
+  [`eri_onboard_country()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_country.md)
+  (surveillance),
+  [`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md)
+  (CMR), and
+  [`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)
+  (NTD MDA + prevalence) — plus the `dry_run` preview and
+  [`eri_schema_validate()`](https://thecartercenter.github.io/erifunctions/reference/eri_schema_validate.md)
+  (valid + a broken→fixed example), on the `atlantis` sandbox.
+  Complements the existing “Adding a new program” vignette (which covers
+  contributing a finished schema to the package).
+
 ### Documentation: a connections & authentication guide
 
 - **New article — “Connecting to Azure, ODK Central, SharePoint, and

@@ -6,6 +6,8 @@
   Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md):
 - [A complete research workflow for
   epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+- [Onboarding a new country, disease, or data type (for data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md):
 - [Ingesting a surveillance dataset: raw to approved (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
 - [Working with ODK Central: connect, monitor, and pull form data (for
