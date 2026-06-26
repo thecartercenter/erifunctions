@@ -527,13 +527,16 @@ eri_onboard_cmr <- function(
 
   if (isTRUE(create_dirs)) {
     data_con <- .onboarding_resolve_con(data_con)
-    tryCatch(
+    created  <- tryCatch(
       .onboarding_create_azure_dirs(country_code, "rblf", data_con, data_types = "cmr"),
       error = function(e) {
         cli::cli_warn("Could not create CMR directories: {conditionMessage(e)}")
+        character(0)
       }
     )
-    cli::cli_alert_success("CMR Azure directories created under {.path {cmr_dir}/}.")
+    if (length(created) > 0L) {
+      cli::cli_alert_success("CMR Azure directories created under {.path {cmr_dir}/}.")
+    }
   }
 
   cli::cli_inform(c(

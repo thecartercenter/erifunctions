@@ -102,7 +102,7 @@ test_that("eri_onboard_cmr create_dirs makes the canonical rblf/cmr directories"
     .onboarding_create_azure_dirs = function(country_code, disease, data_con,
                                              data_types = "surveillance") {
       captured <<- list(disease = disease, data_types = data_types)
-      character(0)
+      paste(country_code, disease, data_types, c("raw", "staged", "processed"), sep = "/")
     },
     .package = "erifunctions"
   )
@@ -111,6 +111,21 @@ test_that("eri_onboard_cmr create_dirs makes the canonical rblf/cmr directories"
   # CMR is filed under the combined rblf code, matching eri_stage_cmr / eri_approve.
   expect_equal(captured$disease, "rblf")
   expect_equal(captured$data_types, "cmr")
+  unlink(out)
+})
+
+test_that("eri_onboard_cmr does not touch Azure when create_dirs is FALSE (default)", {
+  tmp    <- tempdir()
+  called <- FALSE
+
+  local_mocked_bindings(
+    get_azure_storage_connection  = function(...) "mock_con",
+    .onboarding_create_azure_dirs = function(...) { called <<- TRUE; character(0) },
+    .package = "erifunctions"
+  )
+
+  out <- eri_onboard_cmr("uga", "Uganda", path = tmp)   # create_dirs defaults to FALSE
+  expect_false(called)
   unlink(out)
 })
 
