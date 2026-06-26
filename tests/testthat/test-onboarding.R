@@ -93,6 +93,27 @@ test_that("eri_onboard_cmr writes a YAML file with correct structure", {
   unlink(out_path)
 })
 
+test_that("eri_onboard_cmr create_dirs makes the canonical rblf/cmr directories", {
+  tmp <- tempdir()
+  captured <- NULL
+
+  local_mocked_bindings(
+    .onboarding_resolve_con = function(...) "mock_con",
+    .onboarding_create_azure_dirs = function(country_code, disease, data_con,
+                                             data_types = "surveillance") {
+      captured <<- list(disease = disease, data_types = data_types)
+      character(0)
+    },
+    .package = "erifunctions"
+  )
+
+  out <- eri_onboard_cmr("uga", "Uganda", create_dirs = TRUE, path = tmp)
+  # CMR is filed under the combined rblf code, matching eri_stage_cmr / eri_approve.
+  expect_equal(captured$disease, "rblf")
+  expect_equal(captured$data_types, "cmr")
+  unlink(out)
+})
+
 test_that("eri_onboard_cmr uses french_cmr template for language fr", {
   tmp <- tempdir()
 

@@ -1,5 +1,13 @@
 # erifunctions (development version)
 
+## Fix: `eri_onboard_cmr()` creates the canonical `rblf/cmr/` directories
+
+- `eri_onboard_cmr()` now creates CMR Azure directories at `{country}/rblf/cmr/{raw,staged,processed}/`
+  — the location `eri_stage_cmr()` and `eri_approve()` actually use — instead of per-disease folders
+  like `{country}/{disease}/cmr/`, which never matched the pipeline. The `diseases` argument is
+  replaced by `create_dirs` (logical): CMR for the RB-expansion programmes is filed under the combined
+  `rblf` code (RB + LF), not split by disease.
+
 ## Documentation: a monthly CMR upload guide for data analysts
 
 - **New article — "Uploading and processing a monthly country report (CMR)"**
