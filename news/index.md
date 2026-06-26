@@ -2,6 +2,18 @@
 
 ## erifunctions (development version)
 
+### Documentation: an Epidemiologist locality-reconciliation guide
+
+- **New article — “Reconciling free-text localities to admin units”**
+  (`vignettes/epi-reconcile-guide.Rmd`). A run-it-live walkthrough of
+  [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+  for epidemiologists: match messy place names to canonical admin units
+  offline, geocode the residual (keyless OpenStreetMap), and interpret
+  the trust-guarded `reconcile_status` (`matched` / `geocoded` /
+  `geocoded_review` / `unresolved`). Fills the gap that
+  `spatial-workflow.Rmd` left — that vignette never covered
+  reconciliation.
+
 ### Error & data-quality log triage (Phase 5)
 
 - **[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)

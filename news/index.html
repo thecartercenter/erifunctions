@@ -28,6 +28,7 @@
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-reconcile-guide.html">Reconciling free-text localities to admin units (for epidemiologists)</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
     <li><a class="dropdown-item" href="../articles/sharepoint-workflow.html">SharePoint Workflow</a></li>
     <li><a class="dropdown-item" href="../articles/adding-a-program.html">Adding a New NTD Program</a></li>
@@ -50,6 +51,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-an-epidemiologist-locality-reconciliation-guide-development-version">Documentation: an Epidemiologist locality-reconciliation guide<a class="anchor" aria-label="anchor" href="#documentation-an-epidemiologist-locality-reconciliation-guide-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Reconciling free-text localities to admin units”</strong> (<code>vignettes/epi-reconcile-guide.Rmd</code>). A run-it-live walkthrough of <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> for epidemiologists: match messy place names to canonical admin units offline, geocode the residual (keyless OpenStreetMap), and interpret the trust-guarded <code>reconcile_status</code> (<code>matched</code> / <code>geocoded</code> / <code>geocoded_review</code> / <code>unresolved</code>). Fills the gap that <code>spatial-workflow.Rmd</code> left — that vignette never covered reconciliation.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="error--data-quality-log-triage-phase-development-version">Error &amp; data-quality log triage (Phase 5)<a class="anchor" aria-label="anchor" href="#error--data-quality-log-triage-phase-development-version"></a></h3>
 <ul><li>

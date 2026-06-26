@@ -19,6 +19,8 @@
   Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Epidemiological
   Analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md):
+- [Reconciling free-text localities to admin units (for
+  epidemiologists)](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md):
 - [Spatial
   Workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md):
 - [SharePoint
