@@ -471,29 +471,32 @@ eri_onboard_country <- function(
 #' @param country_code `chr` Short country code (e.g. `"uga"`).
 #' @param country_name `chr` Full country name (e.g. `"Uganda"`).
 #' @param language `chr` CMR template language (`"en"` or `"fr"`). Default `"en"`.
-#' @param diseases `chr` vector Disease codes for which to create CMR blob directories.
-#'   If `NULL`, no Azure directories are created.
+#' @param create_dirs `lgl` If `TRUE`, create the canonical CMR Azure directories
+#'   `{country_code}/rblf/cmr/{raw,staged,processed}/` in the `data/` blob -- the
+#'   location [eri_stage_cmr()] and [eri_approve()] use. CMR for the RB-expansion
+#'   programmes is filed under the combined `rblf` code (RB + LF), not per disease.
+#'   Default `FALSE`.
 #' @param path `chr` Directory to write the schema YAML into. Default is the current
 #'   working directory.
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
-#'   Ignored when `dry_run = TRUE` or `diseases` is `NULL`.
+#'   Ignored when `dry_run = TRUE` or `create_dirs = FALSE`.
 #' @param dry_run `lgl` If `TRUE`, print a plan but do not write files or create Azure
 #'   directories. Default `FALSE`.
 #' @returns Invisibly, the path to the written schema file (or `NULL` in dry-run mode).
 #' @examples
 #' \dontrun{
-#' eri_onboard_cmr("uga", "Uganda", diseases = c("oncho", "lf"))
+#' eri_onboard_cmr("uga", "Uganda", create_dirs = TRUE)
 #' eri_onboard_cmr("tcd", "Chad", language = "fr", dry_run = TRUE)
 #' }
 #' @export
 eri_onboard_cmr <- function(
     country_code,
     country_name,
-    language  = "en",
-    diseases  = NULL,
-    path      = getwd(),
-    data_con  = NULL,
-    dry_run   = FALSE
+    language    = "en",
+    create_dirs = FALSE,
+    path        = getwd(),
+    data_con    = NULL,
+    dry_run     = FALSE
 ) {
   country_code <- tolower(trimws(country_code))
   language     <- tolower(trimws(language))
@@ -503,17 +506,16 @@ eri_onboard_cmr <- function(
 
   schema_filename <- paste0(country_code, "_cmr_schema.yaml")
   schema_path     <- file.path(path, schema_filename)
+  cmr_dir         <- paste(country_code, "rblf", "cmr", sep = "/")
 
   if (dry_run) {
     cli::cli_inform(c(
       "i" = "Dry run -- nothing will be written or created.",
       " " = "Would write: {.path {schema_path}}"
     ))
-    if (!is.null(diseases)) {
-      for (dis in diseases) {
-        for (layer in c("raw", "staged", "processed")) {
-          cli::cli_inform("    Would create: {.path {country_code}/{dis}/cmr/{layer}/}")
-        }
+    if (isTRUE(create_dirs)) {
+      for (layer in c("raw", "staged", "processed")) {
+        cli::cli_inform("    Would create: {.path {cmr_dir}/{layer}/}")
       }
     }
     return(invisible(NULL))
@@ -523,17 +525,18 @@ eri_onboard_cmr <- function(
   writeLines(yaml_content, schema_path)
   cli::cli_alert_success("CMR schema template written to {.path {schema_path}}.")
 
-  if (!is.null(diseases) && length(diseases) > 0L) {
+  if (isTRUE(create_dirs)) {
     data_con <- .onboarding_resolve_con(data_con)
-    for (dis in diseases) {
-      tryCatch(
-        .onboarding_create_azure_dirs(country_code, dis, data_con, data_types = "cmr"),
-        error = function(e) {
-          cli::cli_warn("Could not create CMR dirs for {dis}: {conditionMessage(e)}")
-        }
-      )
+    created  <- tryCatch(
+      .onboarding_create_azure_dirs(country_code, "rblf", data_con, data_types = "cmr"),
+      error = function(e) {
+        cli::cli_warn("Could not create CMR directories: {conditionMessage(e)}")
+        character(0)
+      }
+    )
+    if (length(created) > 0L) {
+      cli::cli_alert_success("CMR Azure directories created under {.path {cmr_dir}/}.")
     }
-    cli::cli_alert_success("CMR Azure directories created for: {.val {diseases}}.")
   }
 
   cli::cli_inform(c(

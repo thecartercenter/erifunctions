@@ -8,7 +8,7 @@ eri_onboard_cmr(
   country_code,
   country_name,
   language = "en",
-  diseases = NULL,
+  create_dirs = FALSE,
   path = getwd(),
   data_con = NULL,
   dry_run = FALSE
@@ -21,14 +21,17 @@ eri_onboard_cmr(
 
 \item{language}{\code{chr} CMR template language (\code{"en"} or \code{"fr"}). Default \code{"en"}.}
 
-\item{diseases}{\code{chr} vector Disease codes for which to create CMR blob directories.
-If \code{NULL}, no Azure directories are created.}
+\item{create_dirs}{\code{lgl} If \code{TRUE}, create the canonical CMR Azure directories
+\verb{\{country_code\}/rblf/cmr/\{raw,staged,processed\}/} in the \verb{data/} blob -- the
+location \code{\link[=eri_stage_cmr]{eri_stage_cmr()}} and \code{\link[=eri_approve]{eri_approve()}} use. CMR for the RB-expansion
+programmes is filed under the combined \code{rblf} code (RB + LF), not per disease.
+Default \code{FALSE}.}
 
 \item{path}{\code{chr} Directory to write the schema YAML into. Default is the current
 working directory.}
 
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.
-Ignored when \code{dry_run = TRUE} or \code{diseases} is \code{NULL}.}
+Ignored when \code{dry_run = TRUE} or \code{create_dirs = FALSE}.}
 
 \item{dry_run}{\code{lgl} If \code{TRUE}, print a plan but do not write files or create Azure
 directories. Default \code{FALSE}.}
@@ -43,7 +46,7 @@ locally, then submit it to the package via a pull request when ready.
 }
 \examples{
 \dontrun{
-eri_onboard_cmr("uga", "Uganda", diseases = c("oncho", "lf"))
+eri_onboard_cmr("uga", "Uganda", create_dirs = TRUE)
 eri_onboard_cmr("tcd", "Chad", language = "fr", dry_run = TRUE)
 }
 }
