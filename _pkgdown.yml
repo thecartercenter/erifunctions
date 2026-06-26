@@ -52,6 +52,7 @@ articles:
   contents:
   - connections-guide
   - epi-research-guide
+  - da-onboard-guide
   - da-ingest-guide
   - da-odk-guide
   - dq-pipeline

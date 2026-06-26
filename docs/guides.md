@@ -22,7 +22,7 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 | Data Analyst | Run a monthly country report | _planned_ | ⬜ Missing |
 | Data Analyst | Ingest → stage → approve a surveillance dataset | [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | ✅ Shipped |
 | Data Analyst | Work with ODK Central (connect → monitor → manage → pull) | [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | ✅ Shipped |
-| Data Analyst | Onboard a new country / disease / data type | _planned_ | ⬜ Missing |
+| Data Analyst | Onboard a new country / disease / data type | [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | ✅ Shipped |
 | Data Analyst | Triage the error / DQ log backlog | _planned_ | ⬜ Missing (function gap — Phase 5 `eri_logs()`) |
 | Epidemiologist | Reconcile free-text localities to admin units for sourcing | _planned_ (see the [spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) vignette for now) | ⬜ Missing |
 | Epidemiologist | Run the DQ pipeline on a new extract | _planned_ (see the [DQ pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) vignette for now) | ⬜ Missing |
