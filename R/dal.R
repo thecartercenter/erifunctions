@@ -1398,6 +1398,13 @@ eri_ingest <- function(path, country, disease,
       Blobs = sprintf("%d written (data + projects)", length(written))
     ))
 
+    # Persist the DQ flags to the log backlog so they are durable and triageable
+    # via eri_logs() / eri_logs_resolve(). Never let a logging hiccup break ingest.
+    tryCatch(
+      eri_dq_log(result, country, disease, "surveillance", data_con = data_con),
+      error = function(e) cli::cli_alert_warning("Could not log DQ flags: {conditionMessage(e)}")
+    )
+
     op_log$status <- "success"
     op_log$files  <- as.list(written)
 
