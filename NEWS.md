@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Documentation: a connections & authentication guide
+
+- **New article — "Connecting to Azure, ODK Central, SharePoint, and Teams"**
+  (`vignettes/connections-guide.Rmd`). The single reference for every external connection
+  `erifunctions` makes: how to authenticate to each service, a "confirm it works" check per service,
+  one consolidated `.Renviron` template, brief automation/CI (service-principal / token / webhook)
+  callouts, and a troubleshooting table. The role guides now point here instead of each re-explaining
+  auth.
+
 ## Documentation: a worked ODK Central guide for data analysts
 
 - **New article — "Working with ODK Central"** (`vignettes/da-odk-guide.Rmd`). A hands-on, run-it-live

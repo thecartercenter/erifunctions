@@ -26,7 +26,7 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 | Data Analyst | Triage the error / DQ log backlog | _planned_ | ⬜ Missing (function gap — Phase 5 `eri_logs()`) |
 | Epidemiologist | Reconcile free-text localities to admin units for sourcing | _planned_ (see the [spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) vignette for now) | ⬜ Missing |
 | Epidemiologist | Run the DQ pipeline on a new extract | _planned_ (see the [DQ pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) vignette for now) | ⬜ Missing |
-| Either | Authenticate and connect to Azure / ODK / SharePoint | _planned_ | ⬜ Missing |
+| Either | Authenticate and connect to Azure / ODK / SharePoint / Teams | [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | ✅ Shipped |
 
 ## Adding a guide
 
