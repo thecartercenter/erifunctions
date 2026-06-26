@@ -27,6 +27,7 @@ site](https://thecartercenter.github.io/erifunctions/articles/):
 
 | Guide | For |
 |----|----|
+| [Connecting to Azure, ODK, SharePoint & Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | Everyone — how to authenticate to each service and confirm it works (start here) |
 | [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result |
 | [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
 | [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |

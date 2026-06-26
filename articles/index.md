@@ -2,6 +2,8 @@
 
 ### Workflows
 
+- [Connecting to Azure, ODK Central, SharePoint, and
+  Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md):
 - [A complete research workflow for
   epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
 - [Ingesting a surveillance dataset: raw to approved (for data

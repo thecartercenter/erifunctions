@@ -20,6 +20,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
+    <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
@@ -47,6 +48,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="documentation-a-connections--authentication-guide-development-version">Documentation: a connections &amp; authentication guide<a class="anchor" aria-label="anchor" href="#documentation-a-connections--authentication-guide-development-version"></a></h3>
+<ul><li>
+<strong>New article — “Connecting to Azure, ODK Central, SharePoint, and Teams”</strong> (<code>vignettes/connections-guide.Rmd</code>). The single reference for every external connection <code>erifunctions</code> makes: how to authenticate to each service, a “confirm it works” check per service, one consolidated <code>.Renviron</code> template, brief automation/CI (service-principal / token / webhook) callouts, and a troubleshooting table. The role guides now point here instead of each re-explaining auth.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="documentation-a-worked-odk-central-guide-for-data-analysts-development-version">Documentation: a worked ODK Central guide for data analysts<a class="anchor" aria-label="anchor" href="#documentation-a-worked-odk-central-guide-for-data-analysts-development-version"></a></h3>
 <ul><li>
