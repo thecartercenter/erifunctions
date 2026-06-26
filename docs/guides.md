@@ -19,7 +19,7 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 | Role | Task | Guide | Status |
 |------|------|-------|--------|
 | Epidemiologist | Run a research study end-to-end (start → version → source data → analyse → tag → resume → handle new data → clean up) | [`epi-research-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | ✅ Shipped |
-| Data Analyst | Run a monthly country report | _planned_ | ⬜ Missing |
+| Data Analyst | Upload & process a monthly country report (CMR) | [`da-cmr-guide`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | ✅ Shipped |
 | Data Analyst | Ingest → stage → approve a surveillance dataset | [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | ✅ Shipped |
 | Data Analyst | Work with ODK Central (connect → monitor → manage → pull) | [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | ✅ Shipped |
 | Data Analyst | Onboard a new country / disease / data type | [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | ✅ Shipped |
