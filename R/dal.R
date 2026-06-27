@@ -844,27 +844,51 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #' #> "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
 #' @export
 eri_data_path <- function(country, disease, data_source, data_type, layer, filename = NULL) {
-  model        <- .eri_data_model()
-  valid_layers <- .eri_layers()
+  model         <- .eri_data_model()
+  valid_layers  <- .eri_layers()
+  known_sources <- names(model$data_sources)
 
-  # Legacy 4-axis form: eri_data_path(country, disease, data_source, layer[, filename]).
-  # Layers are a closed set and a `data_type` measure is never a layer, so a fourth
-  # argument that is a layer keyword means the call omits the measure.
-  if (!missing(data_type) && data_type %in% valid_layers) {
-    if (!missing(layer)) filename <- layer   # the 5th positional was actually the filename
-    layer     <- data_type
-    data_type <- NULL                        # legacy form carries no measure
-  } else if (missing(layer)) {
+  # Capture which arguments were actually supplied before any reassignment.
+  src_missing   <- missing(data_source)
+  type_missing  <- missing(data_type)
+  layer_missing <- missing(layer)
+
+  # Legacy NAMED form: the old 3rd parameter was *named* `data_type` but held the
+  # source, e.g. eri_data_path(country, disease, data_type = "cmr", layer = "staged").
+  # If `data_source` is absent and the (old-named) `data_type` holds a known source,
+  # remap it; otherwise the source is genuinely missing.
+  if (src_missing) {
+    if (!type_missing && data_type %in% known_sources) {
+      data_source  <- data_type
+      type_missing <- TRUE          # the measure is absent in the legacy form
+    } else {
+      cli::cli_abort(c(
+        "{.arg data_source} is required.",
+        "i" = "Path form: eri_data_path(country, disease, data_source, data_type, layer)."
+      ))
+    }
+  }
+
+  # Legacy POSITIONAL form: eri_data_path(country, disease, data_source, layer[, filename]).
+  # Layers are a closed set and a `data_type` measure is never a layer keyword, so a
+  # fourth positional that is a layer means the call omits the measure.
+  if (!type_missing && data_type %in% valid_layers) {
+    if (!layer_missing) filename <- layer   # the 5th positional was actually the filename
+    layer         <- data_type
+    layer_missing <- FALSE
+    type_missing  <- TRUE
+  } else if (layer_missing) {
     cli::cli_abort(c(
       "{.arg layer} is required.",
       "i" = "Path form: eri_data_path(country, disease, data_source, data_type, layer)."
     ))
   }
+  data_type <- if (type_missing) NULL else data_type
 
   if (!layer %in% valid_layers) {
     cli::cli_abort("{.arg layer} must be one of {.val {valid_layers}}, not {.val {layer}}.")
   }
-  .eri_check_axis("data_source", data_source, names(model$data_sources))
+  .eri_check_axis("data_source", data_source, known_sources)
   if (!is.null(data_type)) {
     .eri_check_axis("data_type", data_type, names(model$data_types))
   }

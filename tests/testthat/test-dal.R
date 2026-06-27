@@ -72,6 +72,21 @@ test_that("eri_data_path warns (does not error) on an unregistered axis value", 
   )
 })
 
+test_that("eri_data_path resolves the legacy named form (data_type = <source>)", {
+  # old callers named the source with the previous 3rd-param name `data_type=`
+  expect_equal(
+    eri_data_path(country = "uga", disease = "oncho", data_type = "cmr", layer = "staged"),
+    "uga/oncho/cmr/staged"
+  )
+})
+
+test_that("eri_data_path errors clearly when data_source is genuinely missing", {
+  expect_error(
+    eri_data_path(country = "uga", disease = "oncho", data_type = "case", layer = "staged"),
+    "data_source"
+  )
+})
+
 test_that("eri_data_path rejects invalid layer", {
   expect_error(
     eri_data_path("dr", "malaria", "surveillance", "archive"),

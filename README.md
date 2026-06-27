@@ -177,7 +177,8 @@ eri_catalog_verify()
 | `eri_upload(local_path, file_loc)` | Upload any local file to Azure |
 | `eri_list(file_loc)` | List files in an Azure directory |
 | `eri_file_exists(file_loc)` | Check whether a file exists |
-| `eri_data_path(country, disease, data_type, layer)` | Build a canonical blob path |
+| `eri_data_path(country, disease, data_source, data_type, layer)` | Build a canonical blob path |
+| `eri_data_model()` | Show the known `data_source` / `data_type` / `format` values |
 
 ### Data pipeline
 
