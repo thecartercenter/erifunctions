@@ -404,3 +404,15 @@ test_that("dq_report truncates the example list with a '+N more' suffix", {
   out <- gsub("[[:space:]]+", " ", paste(cli::cli_fmt(dq_report(result)), collapse = " "))
   expect_true(grepl("+3 more", out, fixed = TRUE))   # 6 rows, 3 shown
 })
+
+test_that("load_dq_schema error enumerates available bundled schemas", {
+  expect_error(
+    load_dq_schema("dr", "nonexistent_disease", azcontainer = NULL),
+    "Available bundled schemas"
+  )
+  # the helpful list includes the real key the user is probably after
+  expect_error(
+    load_dq_schema("dr", "nonexistent_disease", azcontainer = NULL),
+    "dr_malaria_case"
+  )
+})

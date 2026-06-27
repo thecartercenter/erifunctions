@@ -1,5 +1,18 @@
 # erifunctions (development version)
 
+## Fix: friendlier schema discovery and an accurate research-function reference
+
+- `load_dq_schema()` now **lists the available bundled schema keys** when it cannot find the one you
+  asked for — so `load_dq_schema("dr", "malaria")` points you to `dr_malaria_case` instead of a bare
+  "No schema found." error.
+- The README's research-projects reference now includes `eri_research_scaffold()`,
+  `eri_research_status()`, and `eri_research_tag()` (previously omitted) and clarifies
+  `eri_research_scaffold()` (a new standalone project *repository*, ADR-0006) vs `eri_research_init()`
+  (initialise a project in the current directory).
+- The DQ guide names the `disease` argument in `load_dq_schema()` examples and notes that the schema
+  key (e.g. `malaria_case`) is distinct from the layer-path `data_type`. Fresh-user findings (#176).
+  (The deeper `data_type`-vs-schema-key vocabulary unification is tracked in #175.)
+
 ## Improvement: `dq_report()` shows the offending values, not just counts
 
 - The "Flags Requiring Review" section now prints up to three example offending values with their row

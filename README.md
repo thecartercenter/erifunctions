@@ -227,14 +227,21 @@ eri_catalog_verify()
 
 | Function | What it does |
 |---|---|
-| `eri_research_init(project_name, country, disease, description)` | Scaffold a new research project locally and in Azure |
+| `eri_research_scaffold(name, country, disease, description)` | Create a **standalone research-project repository** (ADR-0006) at `dest/name/` — a full repo skeleton that depends on erifunctions |
+| `eri_research_init(project_name, country, disease, description)` | Initialise a research project **in the current directory** (local `data/`/`figs/`/`outputs/` + `research.yaml`, registered in Azure) |
 | `eri_research_resume()` | Re-read `research.yaml` and print session summary |
+| `eri_research_status(check_remote)` | Report what data the project depends on and whether any of it is stale |
 | `eri_research_log(note)` | Append a timestamped lab notebook entry to `research.yaml` |
 | `eri_research_list()` | List all research projects in Azure |
 | `eri_research_pull(country, disease, data_type)` | Pull canonical or reference data into the project with provenance |
 | `eri_research_upload_figure(local_path, caption)` | Upload a figure to Azure outputs and record in manifest |
 | `eri_research_upload_output(obj, filename)` | Serialize and upload an R object to Azure outputs |
 | `eri_research_snapshot(label)` | Freeze the local `data/` directory to a timestamped Azure snapshot |
+| `eri_research_tag(label, description)` | Freeze a reproducible, citable version of the project (tag + optional snapshot) |
+
+`eri_research_scaffold()` vs `eri_research_init()`: **scaffold** stands up a new, separate project
+*repository* (the ADR-0006 way — its own git repo); **init** initialises a project in a directory you
+are already in. Most new studies start with `eri_research_scaffold()`.
 
 ### Template management
 

@@ -934,10 +934,15 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 #' in the `data` Azure container (or in `inst/schemas/` locally).
 #' The container name is read from `ERIFUNCTIONS_DATA_STORAGE_NAME` (default `"data"`).
 #'
+#' `country` and `disease` are simply the two halves of that filename stem. The
+#' bundled set currently mixes conventions (e.g. `dr_malaria_case`,
+#' `dominican_republic_malaria`, `ht_lf_tas`), so when a name is not found the
+#' error lists every available bundled schema to copy from.
+#'
 #' @param country `str` Country identifier matching the schema filename prefix
-#'   (e.g., `"dominican_republic"`, `"haiti"`).
-#' @param disease `str` Disease name matching the schema filename suffix
-#'   (e.g., `"malaria"`).
+#'   (e.g., `"dr"`, `"dominican_republic"`, `"haiti"`).
+#' @param disease `str` Disease/schema key matching the schema filename suffix
+#'   (e.g., `"malaria_case"`, `"lf_tas"`).
 #' @param azcontainer Azure container object from [get_azure_storage_connection()].
 #'   Defaults to the `data` container via `ERIFUNCTIONS_DATA_STORAGE_NAME`.
 #'   Pass `NULL` to use only the locally bundled schema files.
@@ -975,7 +980,24 @@ load_dq_schema <- function(
 
   local_path <- system.file(schema_path, package = "erifunctions")
   if (!nzchar(local_path)) {
-    cli::cli_abort("No schema found for {.val {country}}/{.val {disease}}.")
+    schema_dir <- system.file("schemas", package = "erifunctions")
+    available  <- if (nzchar(schema_dir)) {
+      sort(sub("\\.ya?ml$", "", list.files(schema_dir, pattern = "\\.ya?ml$")))
+    } else {
+      character()
+    }
+    msg <- c(
+      "No schema found for {.val {country}}/{.val {disease}}.",
+      "i" = "Looked for a bundled schema named {.file {basename(schema_path)}}."
+    )
+    if (length(available)) {
+      msg <- c(msg, "i" = paste(
+        "Available bundled schemas: {.val {available}}.",
+        "Pass the {.arg country}/{.arg disease} that make up one",
+        "(e.g. {.code load_dq_schema(\"dr\", \"malaria_case\")})."
+      ))
+    }
+    cli::cli_abort(msg)
   }
   yaml::read_yaml(local_path)
 }

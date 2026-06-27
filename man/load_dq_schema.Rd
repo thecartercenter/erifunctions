@@ -13,10 +13,10 @@ load_dq_schema(
 }
 \arguments{
 \item{country}{\code{str} Country identifier matching the schema filename prefix
-(e.g., \code{"dominican_republic"}, \code{"haiti"}).}
+(e.g., \code{"dr"}, \code{"dominican_republic"}, \code{"haiti"}).}
 
-\item{disease}{\code{str} Disease name matching the schema filename suffix
-(e.g., \code{"malaria"}).}
+\item{disease}{\code{str} Disease/schema key matching the schema filename suffix
+(e.g., \code{"malaria_case"}, \code{"lf_tas"}).}
 
 \item{azcontainer}{Azure container object from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.
 Defaults to the \code{data} container via \code{ERIFUNCTIONS_DATA_STORAGE_NAME}.
@@ -33,6 +33,11 @@ falls back to the schema bundled with the package.
 Schema files are YAML documents stored at \verb{schemas/<country>_<disease>.yaml}
 in the \code{data} Azure container (or in \verb{inst/schemas/} locally).
 The container name is read from \code{ERIFUNCTIONS_DATA_STORAGE_NAME} (default \code{"data"}).
+
+\code{country} and \code{disease} are simply the two halves of that filename stem. The
+bundled set currently mixes conventions (e.g. \code{dr_malaria_case},
+\code{dominican_republic_malaria}, \code{ht_lf_tas}), so when a name is not found the
+error lists every available bundled schema to copy from.
 }
 \examples{
 \dontrun{
