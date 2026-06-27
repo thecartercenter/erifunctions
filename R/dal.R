@@ -319,7 +319,7 @@ erifunctions_io <- function(
         cli::cli_li(obj_names)
         return(invisible())
       } else if (endsWith(file_loc, ".csv")) {
-        return(readr::read_csv(file_loc))
+        return(readr::read_csv(file_loc, show_col_types = FALSE))
       } else if (endsWith(file_loc, ".qs2")) {
         return(qs2::qs_read(file_loc))
       } else if (endsWith(file_loc, ".xlsx") || endsWith(file_loc, ".xls")) {
@@ -397,7 +397,9 @@ erifunctions_io <- function(
     }
   }
 
-  return(NULL)
+  # Side-effecting ops (write/upload/delete/create.dir/delete.dir) fall through to
+  # here; return invisibly so they don't print a stray `NULL` in scripts/Rscript.
+  return(invisible(NULL))
 }
 
 #' Helper function to read and write key data to the Azure environment
@@ -535,7 +537,7 @@ azure_io <- function(
 
     if (endsWith(file_loc, ".csv")) {
 
-      return(suppressWarnings(AzureStor::storage_read_csv(azcontainer, file_loc, ...)))
+      return(suppressMessages(suppressWarnings(AzureStor::storage_read_csv(azcontainer, file_loc, ...))))
 
     } else if (endsWith(file_loc, ".rda")) {
 
