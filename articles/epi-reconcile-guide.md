@@ -175,13 +175,37 @@ Three different outcomes for the three residual rows:
 - **`Zzqxborough Nowhere` → `unresolved`.** The geocoder returned
   nothing. No coordinates, nothing changed.
 
+You don’t have to take “Cambridge/Middlesex” on faith.
+[`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+returns the admin units the geocoded point actually fell into as
+`geocoded_<admin_col>` columns — so a flagged row tells you *exactly*
+what it disagreed with, with no manual
+[`sf::st_join()`](https://r-spatial.github.io/sf/reference/st_join.html)
+to re-derive it:
+
+``` r
+
+result[result$reconcile_status == "geocoded_review",
+       c("locality", "county", "geocoded_adm3_name", "geocoded_adm2_name")]
+#> # A tibble: 1 × 4
+#>   locality county  geocoded_adm3_name geocoded_adm2_name
+#>   <chr>    <chr>   <chr>              <chr>
+#> 1 MIT      Suffolk Cambridge          Middlesex
+```
+
+Your `county` is still **Suffolk** (untouched — the trust guard never
+overwrote it), but `geocoded_adm2_name` shows the point landed in
+**Middlesex**. That side-by-side is the whole conflict, ready for you to
+confirm or fix. (These columns are `NA` for `matched`, `unresolved`, and
+outside-polygon rows.)
+
 ## 4. What the statuses mean — and what to do
 
 | `reconcile_status` | What happened | What you do |
 |----|----|----|
 | `matched` | Name matched the boundary (offline) | Trust it — canonical name assigned |
 | `geocoded` | Geocoded **and** the admin parents agree with your data | Trust it — canonical name + coordinates assigned |
-| `geocoded_review` | Geocoded, but the assigned admin unit **disagrees** with your claim (or the service flagged low confidence) | **Inspect.** Coordinates kept; names left untouched. Confirm or fix before using |
+| `geocoded_review` | Geocoded, but the assigned admin unit **disagrees** with your claim (or the service flagged low confidence) | **Inspect** the `geocoded_*` columns to see what it disagreed with. Coordinates kept; names left untouched. Confirm or fix before using |
 | `unresolved` | No match, and either no geocode result **or** a point that fell outside every boundary (such rows may still carry coordinates) | Chase the source, or exclude with a note |
 
 The golden habit: **`matched` and `geocoded` are safe to roll up;

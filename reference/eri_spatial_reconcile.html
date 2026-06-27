@@ -149,7 +149,13 @@ that fall outside every polygon still record their coordinates).</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble: <code>data</code> with <code>loc_cols</code> replaced by their canonical values
 where confidently reconciled (originals kept where unresolved or flagged
-<code>"geocoded_review"</code>), plus the two <code>coord_cols</code> and <code>status_col</code>.</p>
+<code>"geocoded_review"</code>), plus the two <code>coord_cols</code>, the <code>status_col</code>, and one
+<code>geocoded_&lt;admin_col&gt;</code> column per <code>admin_cols</code> level. The <code>geocoded_*</code> columns
+hold the admin units the geocoded point fell into (point-in-polygon), filled
+for every geocoded row that landed inside a polygon – including
+<code>"geocoded_review"</code> rows – so you can see <em>what</em> a flagged row disagreed with
+(and resolve it) without re-running the spatial join yourself. They are <code>NA</code>
+for string-matched, unresolved, and outside-polygon rows.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

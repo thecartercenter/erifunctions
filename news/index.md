@@ -2,6 +2,18 @@
 
 ## erifunctions (development version)
 
+### Improvement: `eri_spatial_reconcile()` surfaces the geocoded admin unit for review
+
+- The function now returns one `geocoded_<admin_col>` column per admin
+  level, holding the admin units the geocoded point fell into
+  (point-in-polygon). They are filled for every geocoded row that landed
+  inside a polygon — **including `geocoded_review` rows** — so a flagged
+  row shows *exactly* what its geocoded location disagreed with, and you
+  can resolve it without re-running a spatial join by hand. (`NA` for
+  `matched`, `unresolved`, and outside-polygon rows.) Fixes a fresh-user
+  red-team finding
+  ([\#174](https://github.com/thecartercenter/erifunctions/issues/174)).
+
 ### Improvement: a one-time warning when `ERI_ANALYST_ID` is unset
 
 - Governed actions (approve, ingest, ODK sync, catalog/registry writes,

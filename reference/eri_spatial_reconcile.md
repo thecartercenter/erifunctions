@@ -91,7 +91,14 @@ eri_spatial_reconcile(
 
 A tibble: `data` with `loc_cols` replaced by their canonical values
 where confidently reconciled (originals kept where unresolved or flagged
-`"geocoded_review"`), plus the two `coord_cols` and `status_col`.
+`"geocoded_review"`), plus the two `coord_cols`, the `status_col`, and
+one `geocoded_<admin_col>` column per `admin_cols` level. The
+`geocoded_*` columns hold the admin units the geocoded point fell into
+(point-in-polygon), filled for every geocoded row that landed inside a
+polygon – including `"geocoded_review"` rows – so you can see *what* a
+flagged row disagreed with (and resolve it) without re-running the
+spatial join yourself. They are `NA` for string-matched, unresolved, and
+outside-polygon rows.
 
 ## Details
 
