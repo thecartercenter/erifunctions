@@ -275,7 +275,9 @@ eri_catalog_verify <- function(data_con = NULL) {
 
   if (length(catalog$entries) == 0L) {
     cli::cli_inform("Catalog is empty -- nothing to verify.")
-    return(eri_catalog_query(data_con = data_con))
+    # Reuse the typed empty tibble from query, but suppress its own info line
+    # so verify prints a single, unambiguous message.
+    return(suppressMessages(eri_catalog_query(data_con = data_con)))
   }
 
   now <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
