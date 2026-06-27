@@ -12,6 +12,7 @@ download_odk_form(
   project_id,
   form_id,
   attachments = FALSE,
+  tables = FALSE,
   data_con = NULL
 )
 ```
@@ -46,10 +47,21 @@ download_odk_form(
 
   `lgl` Include attachment metadata columns
 
+- tables:
+
+  `lgl` If `TRUE`, return a **named list** of every table in the export
+  – the main submission table first, then one child table per repeat
+  group (ODK Central exports each repeat as a separate CSV, linked to
+  the parent by a `PARENT_KEY` column). Child tables follow in
+  alphabetical order of their CSV name, not the form-defined order. If
+  `FALSE` (default), return only the main submission table as a single
+  tibble.
+
 - data_con:
 
   Azure container for operation logging; `NULL` skips logging
 
 ## Value
 
-`tibble` of all submissions
+A `tibble` of submissions, or – when `tables = TRUE` – a named list of
+tibbles (one per export table, main table first).

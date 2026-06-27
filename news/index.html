@@ -54,6 +54,16 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="feature-odk-forms-with-repeat-groups-are-now-captured-in-full-development-version">Feature: ODK forms with repeat groups are now captured in full<a class="anchor" aria-label="anchor" href="#feature-odk-forms-with-repeat-groups-are-now-captured-in-full-development-version"></a></h3>
+<ul><li>ODK Central exports a form with <strong>repeat groups</strong> as multiple tables — a parent table (one row per submission) plus one child table per repeat group, linked by <code>PARENT_KEY</code> → the parent’s <code>KEY</code>. Previously <code><a href="../reference/download_odk_form.html">download_odk_form()</a></code> read only the parent CSV and <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> wrote a single Parquet, so <strong>repeat data was silently dropped</strong>.</li>
+<li>
+<code><a href="../reference/download_odk_form.html">download_odk_form()</a></code> gains a <code>tables</code> argument. The default (<code>tables = FALSE</code>) is unchanged — it returns the parent table as a single tibble. With <code>tables = TRUE</code> it returns a <strong>named list of every table</strong> in the export (parent first, named by each table’s CSV).</li>
+<li>
+<code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> now writes <strong>one Parquet per table</strong> to <code>{country}/{disease}/odk/raw/</code> — single- table forms are unchanged (still exactly one Parquet); repeat forms produce <code>{form_id}.parquet</code> plus <code>{form_id}-{repeat}.parquet</code> for each repeat group.</li>
+<li>
+<strong>New bundled XLSForm</strong> <code>inst/extdata/odk-test-form-repeat.xlsx</code> (a river-prospection form with a repeated <code>larva_sample</code> group) and a new <strong>“Forms with repeat groups”</strong> section in the ODK guide (<code>vignettes/da-odk-guide.Rmd</code>) showing the parent/child tables, the <code>PARENT_KEY</code> join, and the one-Parquet-per-table sync.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fix-eri_onboard_cmr-creates-the-canonical-rblfcmr-directories-development-version">Fix: <code>eri_onboard_cmr()</code> creates the canonical <code>rblf/cmr/</code> directories<a class="anchor" aria-label="anchor" href="#fix-eri_onboard_cmr-creates-the-canonical-rblfcmr-directories-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code> now creates CMR Azure directories at <code>{country}/rblf/cmr/{raw,staged,processed}/</code> — the location <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> actually use — instead of per-disease folders like <code>{country}/{disease}/cmr/</code>, which never matched the pipeline. The <code>diseases</code> argument is replaced by <code>create_dirs</code> (logical): CMR for the RB-expansion programmes is filed under the combined <code>rblf</code> code (RB + LF), not split by disease.</li>

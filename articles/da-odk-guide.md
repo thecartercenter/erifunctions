@@ -297,6 +297,11 @@ names(raw)
 #> [21] "ReviewState"      "DeviceID"         "Edits"            "FormVersion"
 ```
 
+This practice form is **flat** — one row per submission — so it lands as
+a single table in one Parquet. Most real forms have *repeat groups* and
+come down as several tables; [section 4](#repeat-groups) shows how to
+pull and sync those.
+
 ### Quality-check, stage, and approve
 
 From here the ODK data flows through the **exact same pipeline** as a
@@ -341,7 +346,155 @@ eri_catalog_query(country = "uga", disease = "demo", data_con = data_con)
 #> 1 uga/demo/odk/processed/eri_test_rive… uga     demo    odk       processed 2026-06
 ```
 
-## 4. Clean up
+## 4. Forms with repeat groups
+
+The form above was deliberately simple — one row per submission, one
+table. Most real ODK forms have **repeat groups**: a section the
+enumerator fills in *more than once per submission* — several larvae
+sampled at one site, several household members in one visit, several
+nets given to one household. ODK Central exports each repeat group as
+its **own table**, so a form with one repeat comes down as **two**
+tables:
+
+- a **parent** table — one row per submission (named `{form_id}`), and
+- a **child** table — one row per repeat instance (named
+  `{form_id}-{repeat_name}`), linked back to its parent by a
+  `PARENT_KEY` column whose value matches the parent row’s `KEY`.
+
+`erifunctions` captures all of them — nothing is silently dropped.
+
+### Upload the repeat practice form
+
+A second bundled XLSForm has a repeated `larva_sample` group (blackfly
+species + larva count) under each river-prospection site:
+
+``` r
+
+repeat_xlsx <- system.file("extdata", "odk-test-form-repeat.xlsx", package = "erifunctions")
+```
+
+Upload it to your `test` project exactly as before (**New ▸ Form**, then
+publish). Submit two or three entries — and for each one, use the **＋
+Add** button inside the *Larva sample* group to record **two or three
+samples** before sending. Those extra samples are what populate the
+child table.
+
+### Pull every table
+
+Pass `tables = TRUE` to
+[`download_odk_form()`](https://thecartercenter.github.io/erifunctions/reference/download_odk_form.md)
+to get **all** of the form’s tables back as a named list instead of just
+the parent:
+
+``` r
+
+repeat_form_id <- "eri_test_river_repeat"
+
+tabs <- download_odk_form(project_id = project_id, form_id = repeat_form_id,
+                          con = con, tables = TRUE)
+#> ✔ Connected to <https://your-odk-server.org/>. Session expires 2026-06-28T02:21:49Z.
+#> ℹ Downloaded 2 tables from "eri_test_river_repeat":
+#> • "eri_test_river_repeat": 3 records
+#> • "eri_test_river_repeat-larva_sample": 7 records
+
+names(tabs)
+#> [1] "eri_test_river_repeat"              "eri_test_river_repeat-larva_sample"
+```
+
+The **parent** table holds one row per submission — the site fields plus
+ODK’s system columns, including the `KEY` that uniquely identifies each
+submission:
+
+``` r
+
+names(tabs[["eri_test_river_repeat"]])
+#>  [1] "SubmissionDate"     "start"               "end"                 "today"
+#>  [5] "site_name"          "prospection_date"    "river_stage"         "collector"
+#>  [9] "meta-instanceID"    "KEY"                 "SubmitterID"         "SubmitterName"
+#> [13] "AttachmentsPresent" "AttachmentsExpected" "Status"              "ReviewState"
+#> [17] "DeviceID"           "Edits"               "FormVersion"
+```
+
+The **child** table holds one row per larva sample. Its `PARENT_KEY`
+points back to the parent’s `KEY`:
+
+``` r
+
+tabs[["eri_test_river_repeat-larva_sample"]]
+#> # A tibble: 7 × 4
+#>   species    larva_count PARENT_KEY                                KEY
+#>   <chr>            <dbl> <chr>                                     <chr>
+#> 1 s_neavei             3 uuid:b3ce44d7-6666-4889-91dc-7f0f3bc426ee uuid:b3ce44d7-6666-4889-91dc-7f0…
+#> 2 s_neavei             3 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…
+#> 3 s_damnosum           4 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…
+#> 4 other                4 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…
+#> 5 s_damnosum           3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…
+#> 6 other                3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…
+#> 7 s_neavei             3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…
+```
+
+Here three submissions produced seven samples — submission `5e70e2a3…`
+was sampled three times, `621e3b01…` three times, and `b3ce44d7…` once.
+
+### Sync writes one Parquet per table
+
+[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+handles repeat forms automatically. Register the form first (just as in
+[section 3](#pull)), then sync — it writes **each** table to its own
+Parquet in the `raw/` layer:
+
+``` r
+
+eri_odk_sync(project_id = project_id, form_id = repeat_form_id, con = con, data_con = data_con)
+#> ℹ Downloading submissions for "eri_test_river_repeat" (uga/demo)...
+#> ℹ Downloaded 2 tables from "eri_test_river_repeat":
+#> • "eri_test_river_repeat": 3 records
+#> • "eri_test_river_repeat-larva_sample": 7 records
+#> ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/odk/raw/'.
+```
+
+You now have two files in `raw/` — a flat form would have left exactly
+one:
+
+    uga/demo/odk/raw/eri_test_river_repeat.parquet                # parent: 3 submissions
+    uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet   # child:  7 samples
+
+### Rejoin them for analysis
+
+The tables are kept separate on purpose — that is the faithful, lossless
+shape of the data. When you want one flat table (one row per sample,
+carrying its site context), join the child to the parent on `PARENT_KEY`
+= `KEY`:
+
+``` r
+
+parent  <- eri_read("uga/demo/odk/raw/eri_test_river_repeat.parquet", azcontainer = data_con)
+samples <- eri_read("uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet",
+                    azcontainer = data_con)
+
+flat <- dplyr::left_join(
+  samples,
+  dplyr::select(parent, KEY, site_name, prospection_date, river_stage),
+  by = c("PARENT_KEY" = "KEY")
+)
+flat
+#> # A tibble: 7 × 7
+#>   species    larva_count PARENT_KEY                     KEY   site_name prospection_date river_stage
+#>   <chr>            <dbl> <chr>                          <chr> <chr>     <date>           <chr>
+#> 1 s_neavei             3 uuid:b3ce44d7-6666-4889-91dc-… uuid… ds        2026-06-09       medium
+#> 2 s_neavei             3 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium
+#> 3 s_damnosum           4 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium
+#> 4 other                4 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium
+#> 5 s_damnosum           3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium
+#> 6 other                3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium
+#> 7 s_neavei             3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium
+```
+
+Each table then flows through the same quality-check → stage →
+**approve** gate as any other extract. Approve the parent and its
+repeats together so they stay in step.
+
+## 5. Clean up
 
 Practice run done — remove everything you created so you leave no trace.
 
@@ -360,6 +513,11 @@ update_odk_app_user_role(action = "delete", con = con, project_id = project_id,
 eri_odk_deregister(project_id = project_id, form_id = form_id,
                    server_url = "https://your-odk-server.org/", data_con = data_con)
 #> ✔ Deregistered "eri_test_river_prospection" (project 11).
+
+# If you also tried the repeat form in section 4, deregister it too.
+eri_odk_deregister(project_id = project_id, form_id = "eri_test_river_repeat",
+                   server_url = "https://your-odk-server.org/", data_con = data_con)
+#> ✔ Deregistered "eri_test_river_repeat" (project 11).
 ```
 
 ``` r

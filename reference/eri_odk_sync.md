@@ -1,8 +1,12 @@
 # Sync an ODK form's submissions to Azure
 
-Downloads all submissions for a registered ODK form and writes them as a
-Parquet file to `data/{country}/{disease}/odk/raw/{form_id}.parquet` in
-the Azure `data/` container. The registry entry's `last_synced`
+Downloads all submissions for a registered ODK form and writes them as
+Parquet file(s) into `data/{country}/{disease}/odk/raw/` in the Azure
+`data/` container. Forms with **repeat groups** (most real forms) export
+multiple tables – the main submission table plus one child table per
+repeat group – and each is written as its own Parquet
+(`{form_id}.parquet`, `{form_id}-{repeat}.parquet`, ...); a flat form
+writes a single `{form_id}.parquet`. The registry entry's `last_synced`
 timestamp is updated on success.
 
 ## Usage
@@ -46,7 +50,8 @@ eri_odk_sync(
 
 ## Value
 
-The downloaded tibble (invisibly), or `invisible(NULL)` when zero
+Invisibly, the downloaded tibble (single-table forms) or a named list of
+tibbles (forms with repeat groups); `invisible(NULL)` when zero
 submissions are found.
 
 ## Examples

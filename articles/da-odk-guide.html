@@ -362,6 +362,10 @@ latitude/longitude/altitude/accuracy):</p>
 <span><span class="co">#&gt; [13] "collector"        "meta-instanceID"  "KEY"              "SubmitterID"</span></span>
 <span><span class="co">#&gt; [17] "SubmitterName"    "AttachmentsPresent" "AttachmentsExpected" "Status"</span></span>
 <span><span class="co">#&gt; [21] "ReviewState"      "DeviceID"         "Edits"            "FormVersion"</span></span></code></pre></div>
+<p>This practice form is <strong>flat</strong> — one row per submission
+— so it lands as a single table in one Parquet. Most real forms have
+<em>repeat groups</em> and come down as several tables; <a href="#repeat-groups">section 4</a> shows how to pull and sync
+those.</p>
 </div>
 <div class="section level3">
 <h3 id="quality-check-stage-and-approve">Quality-check, stage, and approve<a class="anchor" aria-label="anchor" href="#quality-check-stage-and-approve"></a>
@@ -398,22 +402,161 @@ like any other approved dataset:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="clean-up">4. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
+<h2 id="repeat-groups">4. Forms with repeat groups<a class="anchor" aria-label="anchor" href="#repeat-groups"></a>
+</h2>
+<p>The form above was deliberately simple — one row per submission, one
+table. Most real ODK forms have <strong>repeat groups</strong>: a
+section the enumerator fills in <em>more than once per submission</em> —
+several larvae sampled at one site, several household members in one
+visit, several nets given to one household. ODK Central exports each
+repeat group as its <strong>own table</strong>, so a form with one
+repeat comes down as <strong>two</strong> tables:</p>
+<ul>
+<li>a <strong>parent</strong> table — one row per submission (named
+<code>{form_id}</code>), and</li>
+<li>a <strong>child</strong> table — one row per repeat instance (named
+<code>{form_id}-{repeat_name}</code>), linked back to its parent by a
+<code>PARENT_KEY</code> column whose value matches the parent row’s
+<code>KEY</code>.</li>
+</ul>
+<p><code>erifunctions</code> captures all of them — nothing is silently
+dropped.</p>
+<div class="section level3">
+<h3 id="upload-the-repeat-practice-form">Upload the repeat practice form<a class="anchor" aria-label="anchor" href="#upload-the-repeat-practice-form"></a>
+</h3>
+<p>A second bundled XLSForm has a repeated <code>larva_sample</code>
+group (blackfly species + larva count) under each river-prospection
+site:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">repeat_xlsx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"odk-test-form-repeat.xlsx"</span>, package <span class="op">=</span> <span class="st">"erifunctions"</span><span class="op">)</span></span></code></pre></div>
+<p>Upload it to your <code>test</code> project exactly as before
+(<strong>New ▸ Form</strong>, then publish). Submit two or three entries
+— and for each one, use the <strong>＋ Add</strong> button inside the
+<em>Larva sample</em> group to record <strong>two or three
+samples</strong> before sending. Those extra samples are what populate
+the child table.</p>
+</div>
+<div class="section level3">
+<h3 id="pull-every-table">Pull every table<a class="anchor" aria-label="anchor" href="#pull-every-table"></a>
+</h3>
+<p>Pass <code>tables = TRUE</code> to <code><a href="../reference/download_odk_form.html">download_odk_form()</a></code>
+to get <strong>all</strong> of the form’s tables back as a named list
+instead of just the parent:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">repeat_form_id</span> <span class="op">&lt;-</span> <span class="st">"eri_test_river_repeat"</span></span>
+<span></span>
+<span><span class="va">tabs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/download_odk_form.html">download_odk_form</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">repeat_form_id</span>,</span>
+<span>                          con <span class="op">=</span> <span class="va">con</span>, tables <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Connected to &lt;https://your-odk-server.org/&gt;. Session expires 2026-06-28T02:21:49Z.</span></span>
+<span><span class="co">#&gt; ℹ Downloaded 2 tables from "eri_test_river_repeat":</span></span>
+<span><span class="co">#&gt; • "eri_test_river_repeat": 3 records</span></span>
+<span><span class="co">#&gt; • "eri_test_river_repeat-larva_sample": 7 records</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">tabs</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "eri_test_river_repeat"              "eri_test_river_repeat-larva_sample"</span></span></code></pre></div>
+<p>The <strong>parent</strong> table holds one row per submission — the
+site fields plus ODK’s system columns, including the <code>KEY</code>
+that uniquely identifies each submission:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">tabs</span><span class="op">[[</span><span class="st">"eri_test_river_repeat"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1] "SubmissionDate"     "start"               "end"                 "today"</span></span>
+<span><span class="co">#&gt;  [5] "site_name"          "prospection_date"    "river_stage"         "collector"</span></span>
+<span><span class="co">#&gt;  [9] "meta-instanceID"    "KEY"                 "SubmitterID"         "SubmitterName"</span></span>
+<span><span class="co">#&gt; [13] "AttachmentsPresent" "AttachmentsExpected" "Status"              "ReviewState"</span></span>
+<span><span class="co">#&gt; [17] "DeviceID"           "Edits"               "FormVersion"</span></span></code></pre></div>
+<p>The <strong>child</strong> table holds one row per larva sample. Its
+<code>PARENT_KEY</code> points back to the parent’s
+<code>KEY</code>:</p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tabs</span><span class="op">[[</span><span class="st">"eri_test_river_repeat-larva_sample"</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="co">#&gt; # A tibble: 7 × 4</span></span>
+<span><span class="co">#&gt;   species    larva_count PARENT_KEY                                KEY</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;            &lt;dbl&gt; &lt;chr&gt;                                     &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 s_neavei             3 uuid:b3ce44d7-6666-4889-91dc-7f0f3bc426ee uuid:b3ce44d7-6666-4889-91dc-7f0…</span></span>
+<span><span class="co">#&gt; 2 s_neavei             3 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…</span></span>
+<span><span class="co">#&gt; 3 s_damnosum           4 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…</span></span>
+<span><span class="co">#&gt; 4 other                4 uuid:5e70e2a3-382a-4269-838c-e3dbd14e3dbe uuid:5e70e2a3-382a-4269-838c-e3d…</span></span>
+<span><span class="co">#&gt; 5 s_damnosum           3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span>
+<span><span class="co">#&gt; 6 other                3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span>
+<span><span class="co">#&gt; 7 s_neavei             3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span></code></pre></div>
+<p>Here three submissions produced seven samples — submission
+<code>5e70e2a3…</code> was sampled three times, <code>621e3b01…</code>
+three times, and <code>b3ce44d7…</code> once.</p>
+</div>
+<div class="section level3">
+<h3 id="sync-writes-one-parquet-per-table">Sync writes one Parquet per table<a class="anchor" aria-label="anchor" href="#sync-writes-one-parquet-per-table"></a>
+</h3>
+<p><code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> handles repeat forms automatically.
+Register the form first (just as in <a href="#pull">section 3</a>), then
+sync — it writes <strong>each</strong> table to its own Parquet in the
+<code>raw/</code> layer:</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_sync.html">eri_odk_sync</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">repeat_form_id</span>, con <span class="op">=</span> <span class="va">con</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ Downloading submissions for "eri_test_river_repeat" (uga/demo)...</span></span>
+<span><span class="co">#&gt; ℹ Downloaded 2 tables from "eri_test_river_repeat":</span></span>
+<span><span class="co">#&gt; • "eri_test_river_repeat": 3 records</span></span>
+<span><span class="co">#&gt; • "eri_test_river_repeat-larva_sample": 7 records</span></span>
+<span><span class="co">#&gt; ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/odk/raw/'.</span></span></code></pre></div>
+<p>You now have two files in <code>raw/</code> — a flat form would have
+left exactly one:</p>
+<pre><code><span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">odk</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat.parquet</span>                <span class="co"># parent: 3 submissions</span></span>
+<span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">odk</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat</span><span class="op">-</span><span class="va">larva_sample.parquet</span>   <span class="co"># child:  7 samples</span></span></code></pre>
+</div>
+<div class="section level3">
+<h3 id="rejoin-them-for-analysis">Rejoin them for analysis<a class="anchor" aria-label="anchor" href="#rejoin-them-for-analysis"></a>
+</h3>
+<p>The tables are kept separate on purpose — that is the faithful,
+lossless shape of the data. When you want one flat table (one row per
+sample, carrying its site context), join the child to the parent on
+<code>PARENT_KEY</code> = <code>KEY</code>:</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">parent</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/odk/raw/eri_test_river_repeat.parquet"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet"</span>,</span>
+<span>                    azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">flat</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
+<span>  <span class="va">samples</span>,</span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">parent</span>, <span class="va">KEY</span>, <span class="va">site_name</span>, <span class="va">prospection_date</span>, <span class="va">river_stage</span><span class="op">)</span>,</span>
+<span>  by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PARENT_KEY"</span> <span class="op">=</span> <span class="st">"KEY"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">flat</span></span>
+<span><span class="co">#&gt; # A tibble: 7 × 7</span></span>
+<span><span class="co">#&gt;   species    larva_count PARENT_KEY                     KEY   site_name prospection_date river_stage</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;            &lt;dbl&gt; &lt;chr&gt;                          &lt;chr&gt; &lt;chr&gt;     &lt;date&gt;           &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 s_neavei             3 uuid:b3ce44d7-6666-4889-91dc-… uuid… ds        2026-06-09       medium</span></span>
+<span><span class="co">#&gt; 2 s_neavei             3 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium</span></span>
+<span><span class="co">#&gt; 3 s_damnosum           4 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium</span></span>
+<span><span class="co">#&gt; 4 other                4 uuid:5e70e2a3-382a-4269-838c-… uuid… ld        2026-06-08       medium</span></span>
+<span><span class="co">#&gt; 5 s_damnosum           3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium</span></span>
+<span><span class="co">#&gt; 6 other                3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium</span></span>
+<span><span class="co">#&gt; 7 s_neavei             3 uuid:621e3b01-4825-43c5-9cf3-… uuid… a         2026-06-25       medium</span></span></code></pre></div>
+<p>Each table then flows through the same quality-check → stage →
+<strong>approve</strong> gate as any other extract. Approve the parent
+and its repeats together so they stay in step.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="clean-up">5. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
 <p>Practice run done — remove everything you created so you leave no
 trace.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Remove the demo collector from ODK Central (revoke its form access, then delete the account).</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"revoke"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         form_id <span class="op">=</span> <span class="va">form_id</span>, role_id <span class="op">=</span> <span class="fl">2</span>, actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"delete"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Deregister the form (soft-delete: it is marked inactive, keeping the sync history).</span></span>
 <span><span class="fu"><a href="../reference/eri_odk_deregister.html">eri_odk_deregister</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
 <span>                   server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Deregistered "eri_test_river_prospection" (project 11).</span></span></code></pre></div>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; ✔ Deregistered "eri_test_river_prospection" (project 11).</span></span>
+<span></span>
+<span><span class="co"># If you also tried the repeat form in section 4, deregister it too.</span></span>
+<span><span class="fu"><a href="../reference/eri_odk_deregister.html">eri_odk_deregister</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="st">"eri_test_river_repeat"</span>,</span>
+<span>                   server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Deregistered "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
 <span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">data_con</span>, <span class="st">"uga/demo"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, in the ODK Central web interface, delete the test form (Form

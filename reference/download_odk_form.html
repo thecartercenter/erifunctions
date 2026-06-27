@@ -65,6 +65,7 @@
 <span>  <span class="va">project_id</span>,</span>
 <span>  <span class="va">form_id</span>,</span>
 <span>  attachments <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  tables <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -97,13 +98,23 @@
 <dd><p><code>lgl</code> Include attachment metadata columns</p></dd>
 
 
+<dt id="arg-tables">tables<a class="anchor" aria-label="anchor" href="#arg-tables"></a></dt>
+<dd><p><code>lgl</code> If <code>TRUE</code>, return a <strong>named list</strong> of every table in the
+export – the main submission table first, then one child table per repeat
+group (ODK Central exports each repeat as a separate CSV, linked to the
+parent by a <code>PARENT_KEY</code> column). Child tables follow in alphabetical order
+of their CSV name, not the form-defined order. If <code>FALSE</code> (default), return
+only the main submission table as a single tibble.</p></dd>
+
+
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container for operation logging; <code>NULL</code> skips logging</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>tibble</code> of all submissions</p>
+    <p>A <code>tibble</code> of submissions, or – when <code>tables = TRUE</code> – a named list
+of tibbles (one per export table, main table first).</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
