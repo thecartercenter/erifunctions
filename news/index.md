@@ -2,6 +2,22 @@
 
 ## erifunctions (development version)
 
+### Docs: one vocabulary for addressing data and schemas
+
+- A new README section (“How data is addressed”) names the four path
+  axes — `country` / `disease` / `data_type` / `layer` — and clarifies
+  that a DQ **schema key** (e.g. `malaria_case`, passed to
+  [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md))
+  is *not* a `data_type`.
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)’s
+  error now says so explicitly when a schema key is passed where a
+  `data_type` belongs. This is Phase 1 of
+  [ADR-0011](https://thecartercenter.github.io/erifunctions/news/docs/adr/0011-unified-schema-naming.md);
+  the bundled schema names will be unified to one convention in a
+  follow-up
+  ([\#175](https://github.com/thecartercenter/erifunctions/issues/175)).
+  Fixes the user-facing half of a fresh-user red-team finding.
+
 ### Improvement: `eri_spatial_reconcile()` surfaces the geocoded admin unit for review
 
 - The function now returns one `geocoded_<admin_col>` column per admin

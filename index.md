@@ -121,6 +121,40 @@ All data lives in the `data/` Azure blob under a standard path:
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 is the explicit human gate. Nothing reaches `processed/` without it.
 
+### How data is addressed (vocabulary)
+
+A path has **four independent parts**, and it helps to keep them
+straight:
+
+| Part | What it is | Examples |
+|----|----|----|
+| `country` | the country | `dr`, `ht`, `uga` |
+| `disease` | the program | `malaria`, `lf`, `oncho` |
+| `data_type` | **how the data arrives / its storage category** | `surveillance`, `cmr`, `odk` |
+| `layer` | pipeline stage | `raw`, `staged`, `processed` |
+
+A common stumble: **a DQ schema key is *not* the `data_type`.**
+`load_dq_schema(country, disease)` takes a **schema key** in its
+`disease` slot — e.g. `"malaria_case"` — which is finer-grained than the
+program. So the case-level malaria schema validates data stored at
+`dr/malaria/**surveillance**/…`:
+
+``` r
+
+schema <- load_dq_schema("dr", "malaria_case")                    # a schema key
+path   <- eri_data_path("dr", "malaria", "surveillance", "processed")  # data_type = surveillance
+#>        "dr/malaria/surveillance/processed"
+```
+
+> **Heads up:** the bundled schema-key names are currently inconsistent
+> (some prefixed by country code, some by full country name, some
+> carrying survey-type suffixes like `_case`/`_mda`/`_tas`). A unified
+> naming convention is planned — see
+> [ADR-0011](https://thecartercenter.github.io/erifunctions/docs/adr/0011-unified-schema-naming.md).
+> Until then, if
+> [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+> can’t find a key it lists every available one to copy from.
+
 ### Data catalog
 
 Every file promoted by
