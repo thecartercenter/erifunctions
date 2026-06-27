@@ -63,9 +63,10 @@ The detailed key list and the exact `load_dq_schema()` signature (keep two-arg v
 ## Consequences
 
 - **Easier:** one mental model — `country / disease / data_type / layer` for paths, and a predictable
-  `{code}_{disease}[_{variant}]` schema key that *declares* its `data_type`. A fresh analyst can go
-  from a QC'd extract to its approved location without insider knowledge, which is the exact gap that
-  motivated this ADR.
+  schema **filename** `{country_code}_{disease}[_{variant}].yaml` (the country code comes from the
+  separate `country` argument; the key slot is `{disease}[_{variant}]`) whose contents *declare* their
+  `data_type`. A fresh analyst can go from a QC'd extract to its approved location without insider
+  knowledge, which is the exact gap that motivated this ADR.
 - **Harder / accepted:** Phase 2 is a breaking rename of bundled assets. We accept a one-release
   deprecation window and the churn of updating guides + the two internal callers. Doing it now (little
   real data, two callers) is deliberately cheaper than doing it later.
