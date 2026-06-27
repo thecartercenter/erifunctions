@@ -39,7 +39,10 @@ Maintainer-clarified domain reality:
 > **Refinement (same day, during Phase-2 implementation):** the third lane was first written as `odk`.
 > Working the real schemas with the maintainer showed it is better modelled as **`research`** (the
 > nature) with **`odk` a collection `format`** (the tool) — exactly parallel to `programmatic` + `cmr` —
-> and with an optional/flexible measure. The decision below reads in those terms.
+> and with an optional/flexible measure. The decision below reads in those terms. This is a deliberate
+> *same-day, pre-implementation* in-place refinement (nothing had been built against the `odk`-lane
+> wording yet), not a post-hoc rewrite of a settled decision — the append-only ADR convention still
+> holds for any later change, which would supersede this ADR instead.
 
 The overloaded axis is also why the bundled schemas are tangled (four naming conventions), why
 `eri_ingest()` is hard-coupled to a legacy pipeline registry and a `projects`-blob dual-write (so it

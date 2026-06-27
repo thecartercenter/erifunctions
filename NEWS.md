@@ -12,6 +12,9 @@
   `"lf_tas"` — **still resolves** via an alias to the new name, so existing callers keep working.
 - DR and HT malaria each keep **both** a `case` and an `aggregate` surveillance schema (they are distinct,
   not duplicates). Part of the #175 migration (ADR-0012).
+- *Deferred to phase 4:* the `eri_onboard_*` scaffolders and the `adding-a-program` / `epi-analytics` /
+  `da-ingest` guides still emit/teach the old `{country}_{disease}_{type}` names; they keep working via
+  the alias shim and are swept to the four-part identity with the rest of the docs/onboarding pass.
 
 ## Feature: five-axis data addressing — `data_source` vs `data_type` (ADR-0012, #175 phase 1)
 

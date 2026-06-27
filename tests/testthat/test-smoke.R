@@ -50,7 +50,7 @@ test_that("smoke [analyst]: eri_list returns files from a known processed path",
 
 test_that("smoke [analyst]: load_dq_schema and run_dq_checks work on sample data", {
   .smoke_skip()
-  schema <- load_dq_schema("dr", "malaria")
+  schema <- load_dq_schema("dr", "malaria", "surveillance", "aggregate")
   expect_type(schema, "list")
 
   sample <- tibble::tibble(
