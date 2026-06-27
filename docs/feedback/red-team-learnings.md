@@ -56,6 +56,26 @@ Status legend: ⬜ open · 🔧 in progress · ✅ fixed. Update when a fix land
 | [#177](https://github.com/thecartercenter/erifunctions/issues/177) | F12,F14 | Guides flag non-sandboxable/web-only steps; `eri_list()` output |
 | [#178](https://github.com/thecartercenter/erifunctions/issues/178) | F13 | `dq_report()` surface offending value/row |
 
+### Resolution (all shipped 2026-06-27)
+
+Every issue from the first run was fixed and merged — findings F1–F14 are **resolved** (future runs
+should treat them as closed and only re-flag a regression):
+
+| Issue | PR | Outcome |
+|-------|----|---------|
+| #170 | #180 | Guides clean up via `eri_dir_delete()`/`eri_delete()` (6 vignettes) |
+| #172 | #181 | `eri_read()` quietened; side-effecting writers `invisible()`; red-✔ confirmed an stderr artifact, not a bug |
+| #173 | #182 | `eri_catalog_query()` "no match" vs "empty catalog" |
+| #178 | #183 | `dq_report()` shows example offending values + `result$flags` pointer |
+| #176 | #184 | `load_dq_schema()` enumerates valid keys; README research reference synced |
+| #177 | #185 | ODK/CMR non-sandboxable steps flagged; `eri_list()` `full_names` noted |
+| #171 | #186 | One-time `ERI_ANALYST_ID`-unset warning; identity centralised in `.eri_analyst_id()` |
+| #174 | #187 | `eri_spatial_reconcile()` returns `geocoded_*` admin units for review rows |
+| #175 | #188 | **Phase 1** (docs + `eri_data_path` error + ADR-0011); **Phase 2** schema-naming rename still open under #175 |
+
+Every PR passed the `review-agent` and CI; review nits were folded in before merge. The only
+carried-forward item is the **#175 Phase 2** schema-naming migration (ADR-0011).
+
 ## Durable lessons / patterns
 
 - **The API and guides are strong; the friction is at the edges.** Both fresh users completed their
