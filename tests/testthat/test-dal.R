@@ -48,10 +48,42 @@ test_that("eri_data_path appends filename when provided", {
   )
 })
 
-test_that("eri_data_path rejects invalid data_type", {
-  expect_error(
-    eri_data_path("dr", "malaria", "invalid_type", "staged"),
+test_that("eri_data_path builds 5-axis paths (data_source + data_type)", {
+  expect_equal(
+    eri_data_path("dr", "malaria", "surveillance", "case", "staged"),
+    "dr/malaria/surveillance/case/staged"
+  )
+  expect_equal(
+    eri_data_path("uga", "oncho", "programmatic", "treatment", "raw", "2024_06.parquet"),
+    "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
+  )
+})
+
+test_that("eri_data_path warns (does not error) on an unregistered axis value", {
+  # extensibility: unknown data_source/data_type warns so new data is never blocked
+  expect_warning(
+    p <- eri_data_path("dr", "malaria", "newchannel", "staged"),
+    "data_source"
+  )
+  expect_equal(p, "dr/malaria/newchannel/staged")
+  expect_warning(
+    eri_data_path("dr", "malaria", "surveillance", "newmeasure", "processed"),
     "data_type"
+  )
+})
+
+test_that("eri_data_path resolves the legacy named form (data_type = <source>)", {
+  # old callers named the source with the previous 3rd-param name `data_type=`
+  expect_equal(
+    eri_data_path(country = "uga", disease = "oncho", data_type = "cmr", layer = "staged"),
+    "uga/oncho/cmr/staged"
+  )
+})
+
+test_that("eri_data_path errors clearly when data_source is genuinely missing", {
+  expect_error(
+    eri_data_path(country = "uga", disease = "oncho", data_type = "case", layer = "staged"),
+    "data_source"
   )
 })
 

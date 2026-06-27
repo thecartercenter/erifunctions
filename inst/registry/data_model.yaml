@@ -1,0 +1,40 @@
+# Data-addressing model registry (ADR-0012).
+#
+# The five axes of a canonical path: data/{country}/{disease}/{data_source}/{data_type}/{layer}/
+#   - data_source = the channel/nature of the data (how it arrives)
+#   - data_type   = the measure (what it captures)
+#   - format      = the input shape of a data_source (provenance metadata)
+#
+# This registry lists the KNOWN values so functions can validate against it. It is
+# deliberately extensible: onboarding a new source/measure/format adds an entry here
+# (no core-code edit), and an unregistered value *warns* rather than errors, so the
+# system never blocks new data — it just nudges you to register it.
+
+data_sources:
+  surveillance: "Direct disease-output feed (e.g. a Ministry-of-Health surveillance system)."
+  programmatic: "Programmatic activity/coverage data (country-team CMR, MoH MDA feeds); spans diseases."
+  odk:          "Study survey instruments collected via ODK Central."
+  # Transitional (ADR-0012 migration): the legacy `cmr` source token still resolves
+  # so existing paths don't warn; it is replaced by `programmatic` (format: cmr) and
+  # removed at the Phase-3 cutover.
+  cmr:          "(transitional) Legacy CMR source token; migrating to `programmatic` + format: cmr."
+
+data_types:
+  case:       "Individual case records (one row per patient)."
+  aggregate:  "Aggregated counts (one row per place/period)."
+  treatment:  "MDA / treatment coverage (target & treated)."
+  mmdp:       "Morbidity management & disability prevention (e.g. LF hydrocele/lymphoedema)."
+  training:   "Programmatic training activity (CDD / CS / MMDP)."
+  survey:     "Programmatic survey (examined / positive)."
+  tas:        "Transmission assessment survey (LF)."
+  prevalence: "Prevalence survey (e.g. Kato-Katz, skin snip)."
+  entomology: "Vector / entomological surveillance (e.g. larval prospection)."
+
+formats:
+  cmr:      "Country Monitoring Report Excel template (a programmatic input format)."
+  moh_feed: "A direct Ministry-of-Health data feed (a programmatic input format that is not a CMR)."
+
+layers:
+  - raw
+  - staged
+  - processed

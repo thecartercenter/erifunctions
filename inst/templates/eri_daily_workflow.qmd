@@ -121,10 +121,11 @@ first (e.g. with `eri_read()`), check for obvious issues, then call
 ```{r review-staged, eval=FALSE}
 # Preview what is staged before approving.
 staged_path <- eri_data_path(
-  country   = "uga",       # <-- replace
-  disease   = "oncho",     # <-- replace
-  data_type = "cmr",       # <-- replace (cmr, odk, etc.)
-  layer     = "staged"
+  country     = "uga",         # <-- replace
+  disease     = "oncho",       # <-- replace
+  data_source = "programmatic",# <-- replace (surveillance, programmatic, odk)
+  data_type   = "treatment",   # <-- replace (the measure: case, treatment, tas, ...)
+  layer       = "staged"
 )
 staged_data <- eri_read(staged_path, azcontainer = az_con)
 head(staged_data)

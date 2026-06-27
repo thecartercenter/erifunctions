@@ -816,42 +816,84 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Constructs a canonical blob storage path following the erifunctions
-#' three-layer data model: `{country}/{disease}/{data_type}/{layer}/`.
-#' Use this instead of hard-coding path strings to ensure consistency
-#' across all pipeline steps.
+#' Constructs a canonical blob storage path following the erifunctions five-axis
+#' data model (ADR-0012): `{country}/{disease}/{data_source}/{data_type}/{layer}/`,
+#' where `data_source` is the channel (how the data arrives) and `data_type` is the
+#' measure (what it captures). Use this instead of hard-coding path strings.
 #'
-#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"ug"`).
+#' The legacy four-axis form `eri_data_path(country, disease, data_source, layer[,
+#' filename])` is still accepted during the ADR-0012 migration and builds a
+#' measure-less `{country}/{disease}/{data_source}/{layer}/` path — detected because
+#' its fourth argument is a `layer` keyword (a `data_type` measure never is).
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
-#' @param data_type `str` Data input type: `"surveillance"`, `"cmr"`, or `"odk"`.
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`, `"odk"`
+#'   (extensible — see [eri_data_model()]; unknown values warn).
+#' @param data_type `str` The measure: `"case"`, `"aggregate"`, `"treatment"`,
+#'   `"tas"`, ... (extensible; unknown values warn).
 #' @param layer `str` Pipeline layer: `"raw"`, `"staged"`, or `"processed"`.
 #' @param filename `str` Optional filename to append. If `NULL` (default), returns
 #'   the directory path only.
 #' @returns A character string with the canonical blob path.
 #' @examples
-#' eri_data_path("dr", "malaria", "surveillance", "staged")
-#' #> "dr/malaria/surveillance/staged"
+#' eri_data_path("dr", "malaria", "surveillance", "case", "staged")
+#' #> "dr/malaria/surveillance/case/staged"
 #'
-#' eri_data_path("dr", "malaria", "surveillance", "raw", "2024_dr_malaria.parquet")
-#' #> "dr/malaria/surveillance/raw/2024_dr_malaria.parquet"
+#' eri_data_path("uga", "oncho", "programmatic", "treatment", "raw", "2024_06.parquet")
+#' #> "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
 #' @export
-eri_data_path <- function(country, disease, data_type, layer, filename = NULL) {
-  valid_types  <- c("surveillance", "cmr", "odk")
-  valid_layers <- c("raw", "staged", "processed")
+eri_data_path <- function(country, disease, data_source, data_type, layer, filename = NULL) {
+  model         <- .eri_data_model()
+  valid_layers  <- .eri_layers()
+  known_sources <- names(model$data_sources)
 
-  if (!data_type %in% valid_types) {
+  # Capture which arguments were actually supplied before any reassignment.
+  src_missing   <- missing(data_source)
+  type_missing  <- missing(data_type)
+  layer_missing <- missing(layer)
+
+  # Legacy NAMED form: the old 3rd parameter was *named* `data_type` but held the
+  # source, e.g. eri_data_path(country, disease, data_type = "cmr", layer = "staged").
+  # If `data_source` is absent and the (old-named) `data_type` holds a known source,
+  # remap it; otherwise the source is genuinely missing.
+  if (src_missing) {
+    if (!type_missing && data_type %in% known_sources) {
+      data_source  <- data_type
+      type_missing <- TRUE          # the measure is absent in the legacy form
+    } else {
+      cli::cli_abort(c(
+        "{.arg data_source} is required.",
+        "i" = "Path form: eri_data_path(country, disease, data_source, data_type, layer)."
+      ))
+    }
+  }
+
+  # Legacy POSITIONAL form: eri_data_path(country, disease, data_source, layer[, filename]).
+  # Layers are a closed set and a `data_type` measure is never a layer keyword, so a
+  # fourth positional that is a layer means the call omits the measure.
+  if (!type_missing && data_type %in% valid_layers) {
+    if (!layer_missing) filename <- layer   # the 5th positional was actually the filename
+    layer         <- data_type
+    layer_missing <- FALSE
+    type_missing  <- TRUE
+  } else if (layer_missing) {
     cli::cli_abort(c(
-      "{.arg data_type} must be one of {.val {valid_types}}, not {.val {data_type}}.",
-      "i" = "{.arg data_type} is the storage-layer category (how the data arrives), not a DQ schema key like {.val malaria_case}. The program goes in {.arg disease} (e.g. {.val malaria})."
+      "{.arg layer} is required.",
+      "i" = "Path form: eri_data_path(country, disease, data_source, data_type, layer)."
     ))
   }
+  data_type <- if (type_missing) NULL else data_type
+
   if (!layer %in% valid_layers) {
-    cli::cli_abort(
-      "{.arg layer} must be one of {.val {valid_layers}}, not {.val {layer}}."
-    )
+    cli::cli_abort("{.arg layer} must be one of {.val {valid_layers}}, not {.val {layer}}.")
+  }
+  .eri_check_axis("data_source", data_source, known_sources)
+  if (!is.null(data_type)) {
+    .eri_check_axis("data_type", data_type, names(model$data_types))
   }
 
-  parts <- c(country, disease, data_type, layer)
+  parts <- c(country, disease, data_source, data_type, layer)
   if (!is.null(filename)) parts <- c(parts, filename)
   paste(parts, collapse = "/")
 }
