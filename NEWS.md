@@ -4,9 +4,11 @@
 
 - Governed actions (approve, ingest, ODK sync, catalog/registry writes, research operations, log
   resolution) stamp the **shared audit trail** with the analyst's identity. When `ERI_ANALYST_ID` is
-  unset, erifunctions still falls back to the OS username — but now **warns once per session** so you
-  know approvals and logs will be attributed to that fallback rather than your analyst id. Identity
-  resolution is centralised in a single internal helper. Fixes a fresh-user red-team finding (#171).
+  unset **or empty**, erifunctions still falls back to the OS username — but now **warns once per
+  session** so you know approvals and logs will be attributed to that fallback rather than your
+  analyst id. (Previously an explicitly-empty `ERI_ANALYST_ID` would have stamped an empty actor;
+  it now falls back too.) Identity resolution is centralised in a single internal helper. Fixes a
+  fresh-user red-team finding (#171).
 
 ## Docs: flag the steps you can't rehearse on a sandbox
 
