@@ -7,7 +7,9 @@ the `staged/` directory whose names contain `period`, moves them to
 `processed/`, and writes a YAML approval log alongside them.
 
 Analyst identity is read from the `ERI_ANALYST_ID` environment variable,
-falling back to `Sys.info()[["user"]]` if unset.
+falling back to `Sys.info()[["user"]]` if it is unset or empty (in which
+case a one-time warning is emitted so the fallback attribution is not
+silent).
 
 An operation log capturing every step (including errors) is always
 written to `{country}/{disease}/{data_type}/logs/` in the data

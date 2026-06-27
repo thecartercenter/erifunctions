@@ -54,6 +54,10 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="improvement-a-one-time-warning-when-eri_analyst_id-is-unset-development-version">Improvement: a one-time warning when <code>ERI_ANALYST_ID</code> is unset<a class="anchor" aria-label="anchor" href="#improvement-a-one-time-warning-when-eri_analyst_id-is-unset-development-version"></a></h3>
+<ul><li>Governed actions (approve, ingest, ODK sync, catalog/registry writes, research operations, log resolution) stamp the <strong>shared audit trail</strong> with the analyst’s identity. When <code>ERI_ANALYST_ID</code> is unset <strong>or empty</strong>, erifunctions still falls back to the OS username — but now <strong>warns once per session</strong> so you know approvals and logs will be attributed to that fallback rather than your analyst id. (Previously an explicitly-empty <code>ERI_ANALYST_ID</code> would have stamped an empty actor; it now falls back too.) Identity resolution is centralised in a single internal helper. Fixes a fresh-user red-team finding (<a href="https://github.com/thecartercenter/erifunctions/issues/171" class="external-link">#171</a>).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="docs-flag-the-steps-you-cant-rehearse-on-a-sandbox-development-version">Docs: flag the steps you can’t rehearse on a sandbox<a class="anchor" aria-label="anchor" href="#docs-flag-the-steps-you-cant-rehearse-on-a-sandbox-development-version"></a></h3>
 <ul><li>The ODK guide now says up front that creating the project, uploading the form, and submitting practice entries happen in the ODK Central <strong>web interface</strong>, not in R.</li>
 <li>The CMR guide spells out that there is <strong>no throwaway-sandbox path</strong> for <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> / approve (they require a registered RB-expansion country); only the parsing step is hands-on.</li>
