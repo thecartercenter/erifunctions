@@ -113,6 +113,43 @@ test_that("eri_catalog_query returns empty typed tibble when catalog is empty", 
   expect_true("last_verified_at" %in% names(out))
 })
 
+test_that("eri_catalog_query: empty catalog with no filters reports 'no entries yet'", {
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  expect_message(eri_catalog_query(), "no entries yet")
+})
+
+test_that("eri_catalog_query: a no-match filter reports 'no match', not an empty catalog", {
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  # Empty catalog + a filter: must NOT imply the shared catalog was wiped.
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  expect_message(eri_catalog_query(country = "atlantis"), "match the specified filters")
+
+  # Non-empty catalog + a filter that matches nothing: same message.
+  stored <- make_catalog(make_entry(country = "uga",
+                                     path = "uga/oncho/surveillance/processed/f1.parquet"))
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
+    .package = "AzureStor"
+  )
+  expect_message(eri_catalog_query(country = "atlantis"), "match the specified filters")
+})
+
 test_that("eri_catalog_query filters by country", {
   e1 <- make_entry(country = "uga", path = "uga/oncho/surveillance/processed/f1.parquet")
   e2 <- make_entry(country = "nga", disease = "lf", path = "nga/lf/surveillance/processed/f2.parquet")

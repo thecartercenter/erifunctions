@@ -208,11 +208,6 @@ eri_catalog_query <- function(
     last_verified_at = character()
   )
 
-  if (length(catalog$entries) == 0L) {
-    cli::cli_inform("Catalog is empty.")
-    return(empty_result)
-  }
-
   entries <- catalog$entries
 
   if (!is.null(country))
@@ -227,7 +222,15 @@ eri_catalog_query <- function(
     entries <- Filter(function(e) identical(e$period, period), entries)
 
   if (length(entries) == 0L) {
-    cli::cli_inform("No catalog entries match the specified filters.")
+    # Distinguish "your filter matched nothing" from "the whole catalog is empty"
+    # so a filtered query never implies the shared catalog was wiped.
+    any_filter <- !is.null(country) || !is.null(disease) ||
+      !is.null(data_type) || !is.null(layer) || !is.null(period)
+    if (any_filter) {
+      cli::cli_inform("No catalog entries match the specified filters.")
+    } else {
+      cli::cli_inform("The data catalog has no entries yet.")
+    }
     return(empty_result)
   }
 
