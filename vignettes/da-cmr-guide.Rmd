@@ -53,8 +53,10 @@ library(erifunctions)
 
 > **A note on the examples below.** The upload, stage, and approve steps run against the live Azure
 > `projects`/`data` blobs and real, registered countries — so the outputs for those are shown as
-> illustrations rather than run here. The **parsing** step is run for real on a small **synthetic**
-> example report that ships with the package, so its output is exactly what you'll see.
+> illustrations rather than run here. Unlike the surveillance and ODK guides, there is **no
+> throwaway-sandbox path** for stage/approve: `eri_stage_cmr()` only accepts a registered RB-expansion
+> country (it rejects a made-up one). The **parsing** step *is* run for real on a small **synthetic**
+> example report that ships with the package, so that output is exactly what you'll see.
 
 ## 1. Where the report comes in {#arrives}
 
