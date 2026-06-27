@@ -607,14 +607,17 @@ delete.</p>
 against a schema, fix what only a human can, stage, and
 <strong>approve</strong> into the canonical layer — twice, including a
 messy extract.</p>
-<p><strong>In production, for a <em>registered</em> country</strong>
-(like <code>dr</code> or <code>ht</code>), one call — <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a> — does
-the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot and also
-mirrors the result to the legacy pipeline. We did each step by hand here
-so you could run it on a sandbox of your own and <em>see</em> every
-layer. Once you are comfortable, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast
-path; <code><a href="../reference/eri_approve.html">eri_approve()</a></code> — your sign-off — is always the same
-human gate at the end.</p>
+<p>One call — <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a> — does
+the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
+<strong>any</strong> data including the sandbox you just built (it takes
+the same <code>country</code> / <code>disease</code> /
+<code>data_source</code> you have been using). We did each step by hand
+here so you could <em>see</em> every layer; once you are comfortable,
+<code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast path, and
+<code><a href="../reference/eri_approve.html">eri_approve()</a></code> — your sign-off — is always the same human
+gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
+passing <code>mirror_pipeline = "hsp-mal"</code> also mirrors the output
+to the old <code>projects</code> blob — off by default.)</em></p>
 <p>This is one of a planned set of short, task-oriented guides —
 <strong>one for each common job</strong> an analyst or epidemiologist
 does. See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">the

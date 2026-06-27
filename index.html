@@ -398,8 +398,8 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <td>Pull pipeline output from projects blob into staged</td>
 </tr>
 <tr>
-<td><code>eri_ingest(path, country, disease)</code></td>
-<td>DQ-check a local file and dual-write to both blobs</td>
+<td><code>eri_ingest(path, country, disease, data_source, data_type)</code></td>
+<td>DQ-check a local file and stage it (sandbox-runnable; opt-in <code>mirror_pipeline</code>)</td>
 </tr>
 <tr>
 <td><code>eri_trigger(pipeline, country, disease)</code></td>

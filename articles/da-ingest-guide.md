@@ -536,17 +536,19 @@ You have now done the full DA ingest loop: store raw, quality-check
 against a schema, fix what only a human can, stage, and **approve** into
 the canonical layer — twice, including a messy extract.
 
-**In production, for a *registered* country** (like `dr` or `ht`), one
-call —
+One call —
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
-— does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot and
-also mirrors the result to the legacy pipeline. We did each step by hand
-here so you could run it on a sandbox of your own and *see* every layer.
-Once you are comfortable,
+— does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
+**any** data including the sandbox you just built (it takes the same
+`country` / `disease` / `data_source` you have been using). We did each
+step by hand here so you could *see* every layer; once you are
+comfortable,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
-is the fast path;
+is the fast path, and
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
-— your sign-off — is always the same human gate at the end.
+— your sign-off — is always the same human gate at the end. *(For the
+legacy `hsp-mal` cutover, passing `mirror_pipeline = "hsp-mal"` also
+mirrors the output to the old `projects` blob — off by default.)*
 
 This is one of a planned set of short, task-oriented guides — **one for
 each common job** an analyst or epidemiologist does. See [the guide

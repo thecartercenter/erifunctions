@@ -2,6 +2,21 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_ingest()` is a general, sandbox-runnable ingest core (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 3a)
+
+- [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  no longer requires the `hsp-mal` pipeline registry or a registered
+  country, and no longer *forces* a write to the legacy `projects` blob.
+  It reads, DQ-checks, and stages to
+  `data/{country}/{disease}/{data_source}/staged/` on **any** data — so
+  the guides can finally teach it on a throwaway sandbox. Signature:
+  `eri_ingest(path, country, disease, data_source = "surveillance", data_type = "aggregate", …)`.
+- The legacy `projects`-blob dual-write is now the **opt-in
+  `mirror_pipeline`** argument (default `NULL`); legacy callers pass
+  `mirror_pipeline = "hsp-mal"`. The `.eri_schema_country_map` hack is
+  retired (schemas are code-prefixed now). These mirror bits are
+  transitional and removed at the Phase-3 hsp-mal cutover.
+
 ### Feature: DQ schemas keyed by `(country, disease, data_source, data_type)` (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 2)
 
 - Bundled schemas are renamed to

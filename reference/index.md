@@ -58,8 +58,7 @@ Read, write, list, and manage files in Azure (and locally).
 Ingest, stage, approve, and trigger surveillance and CMR pipelines.
 
 - [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
-  **\[experimental\]** : Ingest a local surveillance file and write
-  cleaned output to both blob targets
+  **\[experimental\]** : Ingest a local data file: DQ-check and stage it
 - [`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md)
   **\[experimental\]** : Stage intermediate pipeline output into the
   data/ blob
