@@ -92,6 +92,7 @@ reference:
   - eri_delete
   - eri_dir_delete
   - eri_data_path
+  - eri_data_model
   - erifunctions_io
   - azure_io
 

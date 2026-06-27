@@ -1,5 +1,19 @@
 # erifunctions (development version)
 
+## Feature: five-axis data addressing — `data_source` vs `data_type` (ADR-0012, #175 phase 1)
+
+- The canonical path gains a measure axis:
+  `data/{country}/{disease}/{data_source}/{data_type}/{layer}/`. `data_source` is the **channel**
+  (`surveillance`, `programmatic`, `odk`); `data_type` is the **measure** (`case`, `aggregate`,
+  `treatment`, `tas`, …). See [ADR-0012](docs/adr/0012-source-measure-data-model.md).
+- `eri_data_path()` now takes `(country, disease, data_source, data_type, layer, filename)`. The legacy
+  four-axis form `eri_data_path(country, disease, data_source, layer)` still resolves during the
+  migration (detected because its fourth argument is a `layer` keyword), so existing callers keep
+  working.
+- New `eri_data_model()` shows the registry of known `data_source` / `data_type` / `format` values. The
+  axes are **extensible**: an unregistered value *warns* rather than errors, so onboarding a new
+  source/measure never blocks data — first step of the ADR-0012 migration that will close #175.
+
 ## Docs: one vocabulary for addressing data and schemas
 
 - A new README section ("How data is addressed") names the four path axes — `country` / `disease` /

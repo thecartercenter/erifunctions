@@ -4,14 +4,18 @@
 \alias{eri_data_path}
 \title{Build a canonical blob path in the data/ container}
 \usage{
-eri_data_path(country, disease, data_type, layer, filename = NULL)
+eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 }
 \arguments{
-\item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}, \code{"ug"}).}
+\item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}, \code{"uga"}).}
 
 \item{disease}{\code{str} Disease name (e.g. \code{"malaria"}, \code{"lf"}, \code{"oncho"}).}
 
-\item{data_type}{\code{str} Data input type: \code{"surveillance"}, \code{"cmr"}, or \code{"odk"}.}
+\item{data_source}{\code{str} The channel: \code{"surveillance"}, \code{"programmatic"}, \code{"odk"}
+(extensible — see \code{\link[=eri_data_model]{eri_data_model()}}; unknown values warn).}
+
+\item{data_type}{\code{str} The measure: \code{"case"}, \code{"aggregate"}, \code{"treatment"},
+\code{"tas"}, ... (extensible; unknown values warn).}
 
 \item{layer}{\code{str} Pipeline layer: \code{"raw"}, \code{"staged"}, or \code{"processed"}.}
 
@@ -24,15 +28,19 @@ A character string with the canonical blob path.
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Constructs a canonical blob storage path following the erifunctions
-three-layer data model: \verb{\{country\}/\{disease\}/\{data_type\}/\{layer\}/}.
-Use this instead of hard-coding path strings to ensure consistency
-across all pipeline steps.
+Constructs a canonical blob storage path following the erifunctions five-axis
+data model (ADR-0012): \verb{\{country\}/\{disease\}/\{data_source\}/\{data_type\}/\{layer\}/},
+where \code{data_source} is the channel (how the data arrives) and \code{data_type} is the
+measure (what it captures). Use this instead of hard-coding path strings.
+
+The legacy four-axis form \code{eri_data_path(country, disease, data_source, layer[, filename])} is still accepted during the ADR-0012 migration and builds a
+measure-less \verb{\{country\}/\{disease\}/\{data_source\}/\{layer\}/} path — detected because
+its fourth argument is a \code{layer} keyword (a \code{data_type} measure never is).
 }
 \examples{
-eri_data_path("dr", "malaria", "surveillance", "staged")
-#> "dr/malaria/surveillance/staged"
+eri_data_path("dr", "malaria", "surveillance", "case", "staged")
+#> "dr/malaria/surveillance/case/staged"
 
-eri_data_path("dr", "malaria", "surveillance", "raw", "2024_dr_malaria.parquet")
-#> "dr/malaria/surveillance/raw/2024_dr_malaria.parquet"
+eri_data_path("uga", "oncho", "programmatic", "treatment", "raw", "2024_06.parquet")
+#> "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
 }

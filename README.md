@@ -123,30 +123,27 @@ data/{country}/{disease}/{data_type}/{layer}/
 
 ### How data is addressed (vocabulary)
 
-A path has **four independent parts**, and it helps to keep them straight:
+A path has **five independent axes** ([ADR-0012](docs/adr/0012-source-measure-data-model.md)) — the key
+is that **how the data arrives (`data_source`) is separate from what it measures (`data_type`)**:
 
-| Part | What it is | Examples |
+| Axis | What it is | Examples |
 |---|---|---|
 | `country` | the country | `dr`, `ht`, `uga` |
-| `disease` | the program | `malaria`, `lf`, `oncho` |
-| `data_type` | **how the data arrives / its storage category** | `surveillance`, `cmr`, `odk` |
+| `disease` | the disease | `malaria`, `lf`, `oncho` |
+| `data_source` | **the channel — how it arrives** | `surveillance`, `programmatic`, `odk` |
+| `data_type` | **the measure — what it captures** | `case`, `aggregate`, `treatment`, `tas` |
 | `layer` | pipeline stage | `raw`, `staged`, `processed` |
 
-A common stumble: **a DQ schema key is _not_ the `data_type`.** `load_dq_schema(country, disease)`
-takes a **schema key** in its `disease` slot — e.g. `"malaria_case"` — which is finer-grained than the
-program. So the case-level malaria schema validates data stored at `dr/malaria/**surveillance**/…`:
-
 ```r
-schema <- load_dq_schema("dr", "malaria_case")                    # a schema key
-path   <- eri_data_path("dr", "malaria", "surveillance", "processed")  # data_type = surveillance
-#>        "dr/malaria/surveillance/processed"
+path <- eri_data_path("dr", "malaria", "surveillance", "case", "processed")
+#>      "dr/malaria/surveillance/case/processed"
 ```
 
-> **Heads up:** the bundled schema-key names are currently inconsistent (some prefixed by country
-> code, some by full country name, some carrying survey-type suffixes like `_case`/`_mda`/`_tas`).
-> A unified naming convention is planned — see
-> [ADR-0011](docs/adr/0011-unified-schema-naming.md). Until then, if `load_dq_schema()` can't find a
-> key it lists every available one to copy from.
+One source can carry many measures (a CMR yields `treatment` + `mmdp` + `survey`; the same source +
+disease is `case` in one country, `aggregate` in another). `data_source` and `data_type` are
+**extensible** — `eri_data_model()` lists the known values, and an unregistered one *warns* rather than
+errors so new data is never blocked. (The schema set is keyed by `country` / `disease` / `data_source` /
+`data_type`; the legacy four-axis path form and schema names are being migrated under #175.)
 
 ### Data catalog
 
