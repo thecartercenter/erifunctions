@@ -288,8 +288,10 @@ and the local schema files:
 
 con <- get_azure_storage_connection(storage_name = "data")
 
-# Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go.
-AzureStor::delete_storage_dir(con, "atlantis", recursive = TRUE, confirm = FALSE)
+# Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go,
+# recursively — the in-package path, so you stay in erifunctions instead of
+# dropping to raw AzureStor / Storage Explorer.
+eri_dir_delete("atlantis", azcontainer = con)
 
 # Remove the local schema templates.
 unlink(c("atlantis_malaria_schema.yaml", "atlantis_cmr_schema.yaml",

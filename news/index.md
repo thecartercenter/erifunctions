@@ -2,6 +2,21 @@
 
 ## erifunctions (development version)
 
+### Docs: guides clean up with `eri_dir_delete()`/`eri_delete()`, not raw AzureStor
+
+- Every guide’s “Clean up” section now tears down its sandbox with the
+  exported
+  [`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md)
+  /
+  [`eri_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_delete.md)
+  instead of
+  [`AzureStor::delete_storage_dir()`](https://rdrr.io/pkg/AzureStor/man/generics.html)
+  / `delete_storage_file()`. This keeps an analyst inside `erifunctions`
+  for the one operation most likely to send them to Azure Storage
+  Explorer, rather than dropping to raw blob calls. Fixes the fresh-user
+  red-team’s top finding
+  ([\#170](https://github.com/thecartercenter/erifunctions/issues/170)).
+
 ### Feature: ODK forms with repeat groups are now captured in full
 
 - ODK Central exports a form with **repeat groups** as multiple tables —

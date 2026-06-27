@@ -616,12 +616,10 @@ all snapshots and tags, and the artifact:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># recursive = TRUE is required to delete a non-empty directory in Azure;</span></span>
-<span><span class="co"># confirm = FALSE just skips the interactive prompt.</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"research/mtcars_study"</span>,</span>
-<span>                              recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"artifacts/study_data/mtcars_study_data"</span>,</span>
-<span>                              recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># eri_dir_delete() removes a non-empty directory recursively in one call — the</span></span>
+<span><span class="co"># in-package path, so cleanup stays in erifunctions instead of raw AzureStor.</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"research/mtcars_study"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"artifacts/study_data/mtcars_study_data"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span></code></pre></div>
 <p>Confirm nothing of yours remains, then delete the local folder:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_research_list.html">eri_research_list</a></span><span class="op">(</span><span class="op">)</span>       <span class="co"># mtcars_study should be gone</span></span>

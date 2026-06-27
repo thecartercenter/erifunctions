@@ -204,7 +204,8 @@ deletes its logs too):
 ``` r
 
 con <- get_azure_storage_connection(storage_name = "data")
-AzureStor::delete_storage_dir(con, "atlantis", recursive = TRUE, confirm = FALSE)
+# eri_dir_delete() removes the namespace (logs and all) recursively, in-package.
+eri_dir_delete("atlantis", azcontainer = con)
 ```
 
 > **Real logs are not disposable.** The error and data-quality trail

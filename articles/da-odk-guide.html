@@ -558,7 +558,8 @@ trace.</p>
 <span><span class="co">#&gt; ✔ Deregistered "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">data_con</span>, <span class="st">"uga/demo"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"uga/demo"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, in the ODK Central web interface, delete the test form (Form
 ▸ ⋯ ▸ Delete) from your <code>test</code> project if you want it gone
 there too.</p>

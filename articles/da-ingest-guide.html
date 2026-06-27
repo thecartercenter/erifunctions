@@ -567,12 +567,12 @@ no trace. This deletes the whole <em>atlantis</em> sandbox (all three
 layers and the logs), the schema, and the catalog entries:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the entire sandbox namespace (raw + staged + processed + logs).</span></span>
-<span><span class="co"># recursive = TRUE is required to delete a non-empty directory; confirm = FALSE</span></span>
-<span><span class="co"># skips the interactive prompt.</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">data_con</span>, <span class="st">"atlantis"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># eri_dir_delete() removes a non-empty directory recursively in one call; using</span></span>
+<span><span class="co"># the erifunctions helpers (not raw AzureStor) keeps every step in the package.</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Delete the schema you published.</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_file</a></span><span class="op">(</span><span class="va">data_con</span>, <span class="st">"schemas/atlantis_malaria.yaml"</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_delete.html">eri_delete</a></span><span class="op">(</span><span class="st">"schemas/atlantis_malaria.yaml"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Remove the two catalog entries (the catalog is shared, so tidy up after yourself).</span></span>
 <span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/processed/atlantis_malaria_2024-01.parquet"</span>,</span>

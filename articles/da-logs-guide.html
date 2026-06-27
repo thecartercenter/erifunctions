@@ -259,7 +259,8 @@ guesswork.</p>
 namespace (this deletes its logs too):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
-<span><span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_dir</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"atlantis"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="co"># eri_dir_delete() removes the namespace (logs and all) recursively, in-package.</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
 <p><strong>Real logs are not disposable.</strong> The error and
 data-quality trail across real countries is how the team debugs the

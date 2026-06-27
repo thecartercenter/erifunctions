@@ -523,7 +523,8 @@ eri_odk_deregister(project_id = project_id, form_id = "eri_test_river_repeat",
 ``` r
 
 # Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).
-AzureStor::delete_storage_dir(data_con, "uga/demo", recursive = TRUE, confirm = FALSE)
+# eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.
+eri_dir_delete("uga/demo", azcontainer = data_con)
 ```
 
 Finally, in the ODK Central web interface, delete the test form (Form ▸
