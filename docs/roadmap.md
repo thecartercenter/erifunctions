@@ -175,7 +175,10 @@ catalog updated atomically. Re-run against the real June CMR + malaria files onc
 ## Phase 4 — ODK live pilot (Uganda survey)
 
 Developed against existing synced ODK submissions (simulation); validated against the live
-Uganda form once it launches. Exercises register/sync/status and fills two named gaps:
+Uganda form once it launches. Exercises register/sync/status and fills two named gaps.
+Forms with **repeat groups** now sync as a relational set of tables in `raw/`
+([ADR-0010](adr/0010-odk-repeat-group-tables.md)), which the cleaning-rules layer, edit
+tracking, and dashboard below all build on:
 - **Live cleaning-rules layer**: versioned, declarative cleaning applied *on read* for
   dashboards while `raw/` stays pristine — distinct from the slow `approve` gate. New
   `cleaning_rules` concept layered on the DQ schema engine (`R/dq.R`).

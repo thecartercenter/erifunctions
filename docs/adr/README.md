@@ -45,3 +45,6 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0005](0005-pull-then-process.md) | Pull-then-process with provenance | Accepted |
 | [0006](0006-research-projects-as-repos.md) | Research projects as separate template-generated repos | Accepted |
 | [0007](0007-research-aware-spatial-sourcing.md) | Research-aware spatial sourcing via a `cache` flag | Accepted |
+| [0008](0008-baked-azure-auth-defaults.md) | Baked-in Azure auth defaults; interactive AAD as the zero-config default | Accepted |
+| [0009](0009-research-data-lifecycle.md) | Research-data lifecycle: Azure is the source, the project is the versioned working copy | Accepted |
+| [0010](0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables, approved together | Accepted |
