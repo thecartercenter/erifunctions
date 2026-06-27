@@ -85,7 +85,9 @@ result
 #> ✔ No corrections applied.
 #>
 #> ── Flags Requiring Review (1 total) ──
-#> ! Value not in allowed_values list: 1 row [species]
+#> ! Value not in allowed_values list: 1 row [species] (e.g. P.vivax (row 4))
+#>
+#> ℹ See `result$flags` for the full row-level detail.
 ```
 
 One flag — a mistyped species. Useful, but it tells you nothing about
