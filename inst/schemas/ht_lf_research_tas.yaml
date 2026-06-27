@@ -1,6 +1,8 @@
 country: ht
 disease: lf
+data_source: research
 data_type: tas
+format: odk
 version: "1.0"
 description: "Haiti LF TAS individual antigen test result (one row per person)"
 language: fr

@@ -1,5 +1,7 @@
-country: dominican_republic
+country: dr
 disease: malaria
+data_source: surveillance
+data_type: aggregate
 language: es
 time_grain: weekly
 aggregation: case

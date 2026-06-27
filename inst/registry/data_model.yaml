@@ -13,11 +13,12 @@
 data_sources:
   surveillance: "Direct disease-output feed (e.g. a Ministry-of-Health surveillance system)."
   programmatic: "Programmatic activity/coverage data (country-team CMR, MoH MDA feeds); spans diseases."
-  odk:          "Study survey instruments collected via ODK Central."
-  # Transitional (ADR-0012 migration): the legacy `cmr` source token still resolves
-  # so existing paths don't warn; it is replaced by `programmatic` (format: cmr) and
-  # removed at the Phase-3 cutover.
+  research:     "Research surveys/studies (household or community level); DA-managed, flexible measure."
+  # Transitional (ADR-0012 migration): legacy source tokens still resolve so existing
+  # paths don't warn. `cmr` -> `programmatic` (format: cmr); `odk` -> `research`
+  # (format: odk). Both are removed at the Phase-3 cutover.
   cmr:          "(transitional) Legacy CMR source token; migrating to `programmatic` + format: cmr."
+  odk:          "(transitional) Legacy ODK source token; migrating to `research` + format: odk."
 
 data_types:
   case:       "Individual case records (one row per patient)."
@@ -33,6 +34,7 @@ data_types:
 formats:
   cmr:      "Country Monitoring Report Excel template (a programmatic input format)."
   moh_feed: "A direct Ministry-of-Health data feed (a programmatic input format that is not a CMR)."
+  odk:      "ODK Central survey instrument (a research collection format)."
 
 layers:
   - raw

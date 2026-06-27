@@ -1,5 +1,7 @@
-country: haiti
+country: ht
 disease: malaria
+data_source: surveillance
+data_type: aggregate
 language: fr
 time_grain: monthly
 aggregation: count

@@ -153,7 +153,7 @@ test_that("eri_schema_validate errors on missing file", {
 })
 
 test_that("eri_schema_validate returns empty tibble for valid schema", {
-  path <- system.file("schemas/dominican_republic_malaria.yaml", package = "erifunctions")
+  path <- system.file("schemas/dr_malaria_surveillance_aggregate.yaml", package = "erifunctions")
   skip_if(nchar(path) == 0, "bundled schema not found")
   result <- eri_schema_validate(path)
   expect_s3_class(result, "tbl_df")
@@ -274,27 +274,28 @@ test_that("eri_onboard_disease errors on unsupported data_type", {
 
 # --- bundled schemas for new programs -----------------------------------------
 
+# ADR-0012 identity: (country, disease, data_source, data_type)
 new_schemas <- list(
-  c("ug",      "rb_mda"),
-  c("ug",      "rb_prevalence"),
-  c("schisto", "mda"),
-  c("schisto", "prevalence"),
-  c("sth",     "mda"),
-  c("sth",     "prevalence")
+  c("uga",    "oncho",   "programmatic", "treatment"),
+  c("uga",    "oncho",   "research",     "prevalence"),
+  c("global", "schisto", "programmatic", "treatment"),
+  c("global", "schisto", "research",     "prevalence"),
+  c("global", "sth",     "programmatic", "treatment"),
+  c("global", "sth",     "research",     "prevalence")
 )
 
 for (s in new_schemas) {
   local({
-    ctry <- s[[1L]]; dis <- s[[2L]]
-    test_that(paste0("load_dq_schema('", ctry, "', '", dis, "') loads without error"), {
-      result <- load_dq_schema(ctry, dis, azcontainer = NULL)
+    co <- s[[1L]]; di <- s[[2L]]; ds <- s[[3L]]; dt <- s[[4L]]
+    stem <- paste(co, di, ds, dt, sep = "_")
+    test_that(paste0("load_dq_schema loads ", stem), {
+      result <- load_dq_schema(co, di, ds, dt, azcontainer = NULL)
       expect_type(result, "list")
       expect_true(!is.null(result$disease))
     })
-    test_that(paste0("eri_schema_validate passes for ", ctry, "_", dis), {
-      path <- system.file(paste0("schemas/", ctry, "_", dis, ".yaml"),
-                          package = "erifunctions")
-      skip_if(nchar(path) == 0L, paste("schema file not found:", ctry, dis))
+    test_that(paste0("eri_schema_validate passes for ", stem), {
+      path <- system.file(paste0("schemas/", stem, ".yaml"), package = "erifunctions")
+      skip_if(nchar(path) == 0L, paste("schema file not found:", stem))
       result <- suppressWarnings(eri_schema_validate(path))
       expect_s3_class(result, "tbl_df")
       expect_equal(nrow(result), 0L)

@@ -1,5 +1,6 @@
 country: ht
 disease: malaria
+data_source: surveillance
 data_type: case
 version: "1.0"
 description: "Haiti malaria case data (aggregated, one row per commune per week)"

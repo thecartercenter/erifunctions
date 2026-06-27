@@ -1,6 +1,7 @@
-country: ug
-disease: rb
-data_type: mda
+country: uga
+disease: oncho
+data_source: programmatic
+data_type: treatment
 version: "1.0"
 description: "Uganda river blindness (onchocerciasis) MDA coverage -- APOC community-directed treatment (CDT)"
 language: en

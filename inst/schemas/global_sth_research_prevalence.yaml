@@ -1,6 +1,8 @@
 country: global
 disease: sth
+data_source: research
 data_type: prevalence
+format: odk
 version: "1.0"
 description: "STH prevalence survey -- Kato-Katz; species breakdown (hookworm, Ascaris, Trichuris)"
 language: en

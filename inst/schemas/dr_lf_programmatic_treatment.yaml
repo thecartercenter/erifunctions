@@ -1,6 +1,7 @@
 country: dr
 disease: lf
-data_type: mda
+data_source: programmatic
+data_type: treatment
 version: "1.0"
 description: "Dominican Republic LF MDA coverage (one row per EU per round)"
 language: es

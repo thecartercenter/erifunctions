@@ -925,43 +925,83 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 
 #### 4) Public API ####
 
+# Alias map from a legacy schema stem ({country}_{key}) to its new ADR-0012
+# canonical name ({country}_{disease}_{data_source}_{data_type}). Lets the legacy
+# two-argument load_dq_schema() form (and old filenames) keep resolving during the
+# migration.
+#' @keywords internal
+.eri_schema_aliases <- c(
+  dr_malaria_case            = "dr_malaria_surveillance_case",
+  dominican_republic_malaria = "dr_malaria_surveillance_aggregate",
+  ht_malaria_case            = "ht_malaria_surveillance_case",
+  haiti_malaria              = "ht_malaria_surveillance_aggregate",
+  dr_lf_mda                  = "dr_lf_programmatic_treatment",
+  dr_lf_tas                  = "dr_lf_research_tas",
+  ht_lf_mda                  = "ht_lf_programmatic_treatment",
+  ht_lf_tas                  = "ht_lf_research_tas",
+  oepa_oncho_mda             = "oepa_oncho_programmatic_treatment",
+  oepa_oncho_prevalence      = "oepa_oncho_research_prevalence",
+  ug_rb_mda                  = "uga_oncho_programmatic_treatment",
+  ug_rb_prevalence           = "uga_oncho_research_prevalence",
+  schisto_mda                = "global_schisto_programmatic_treatment",
+  schisto_prevalence         = "global_schisto_research_prevalence",
+  sth_mda                    = "global_sth_programmatic_treatment",
+  sth_prevalence             = "global_sth_research_prevalence"
+)
+
+#' @keywords internal
+.eri_schema_alias <- function(stem) {
+  if (stem %in% names(.eri_schema_aliases)) .eri_schema_aliases[[stem]] else stem
+}
+
 #' Load a DQ schema
 #'
-#' Loads a disease surveillance data quality schema from Azure blob storage, or
-#' falls back to the schema bundled with the package.
+#' Loads a data quality schema for a `(country, disease, data_source, data_type)`
+#' identity (ADR-0012) from Azure blob storage, falling back to the bundled copy.
+#' Schema files live at
+#' `schemas/{country}_{disease}_{data_source}_{data_type}.yaml`; for `research` the
+#' `data_type` (measure) is optional. When a schema is not found the error lists
+#' every available bundled schema.
 #'
-#' Schema files are YAML documents stored at `schemas/<country>_<disease>.yaml`
-#' in the `data` Azure container (or in `inst/schemas/` locally).
-#' The container name is read from `ERIFUNCTIONS_DATA_STORAGE_NAME` (default `"data"`).
+#' The legacy two-argument form `load_dq_schema(country, key)` — where `key` was a
+#' combined `{disease}_{measure}` string like `"malaria_case"` or `"lf_tas"` — still
+#' resolves during the migration via an alias to the new name.
 #'
-#' `country` and `disease` are simply the two halves of that filename stem. The
-#' bundled set currently mixes conventions (e.g. `dr_malaria_case`,
-#' `dominican_republic_malaria`, `ht_lf_tas`), so when a name is not found the
-#' error lists every available bundled schema to copy from.
-#'
-#' @param country `str` Country identifier matching the schema filename prefix
-#'   (e.g., `"dr"`, `"dominican_republic"`, `"haiti"`).
-#' @param disease `str` Disease/schema key matching the schema filename suffix
-#'   (e.g., `"malaria_case"`, `"lf_tas"`).
+#' @param country `str` Country code (e.g. `"dr"`, `"uga"`).
+#' @param disease `str` Disease (e.g. `"malaria"`, `"lf"`). In the legacy
+#'   two-argument form this slot held a combined schema key.
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"`. `NULL` (default) selects the legacy two-argument form.
+#' @param data_type `str` The measure (e.g. `"case"`, `"treatment"`, `"tas"`);
+#'   optional for `research`.
 #' @param azcontainer Azure container object from [get_azure_storage_connection()].
-#'   Defaults to the `data` container via `ERIFUNCTIONS_DATA_STORAGE_NAME`.
 #'   Pass `NULL` to use only the locally bundled schema files.
 #' @returns A named list representing the parsed YAML schema.
 #' @examples
 #' \dontrun{
-#' schema <- load_dq_schema("dominican_republic", "malaria")
-#' schema <- load_dq_schema("haiti", "malaria")
+#' schema <- load_dq_schema("dr", "malaria", "surveillance", "case")
+#' schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment")
 #' }
 #' @export
 load_dq_schema <- function(
     country,
     disease,
+    data_source = NULL,
+    data_type   = NULL,
     azcontainer = suppressMessages(
       get_azure_storage_connection(
         storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
       )
     )) {
-  schema_path <- paste0("schemas/", country, "_", disease, ".yaml")
+  if (is.null(data_source)) {
+    # Legacy form: `disease` holds a combined {disease}_{measure} key; alias the
+    # old stem to its new canonical name.
+    stem <- .eri_schema_alias(paste0(country, "_", disease))
+  } else {
+    parts <- c(country, disease, data_source, data_type)
+    stem  <- paste(parts[nzchar(parts)], collapse = "_")
+  }
+  schema_path <- paste0("schemas/", stem, ".yaml")
 
   if (!is.null(azcontainer)) {
     result <- tryCatch({
@@ -987,14 +1027,13 @@ load_dq_schema <- function(
       character()
     }
     msg <- c(
-      "No schema found for {.val {country}}/{.val {disease}}.",
-      "i" = "Looked for a bundled schema named {.file {basename(schema_path)}}."
+      "No schema found for {.file {basename(schema_path)}}.",
+      "i" = "Identity: country/disease/data_source/data_type (ADR-0012)."
     )
     if (length(available)) {
       msg <- c(msg, "i" = paste(
         "Available bundled schemas: {.val {available}}.",
-        "Pass the {.arg country}/{.arg disease} that make up one",
-        "(e.g. {.code load_dq_schema(\"dr\", \"malaria_case\")})."
+        "Call e.g. {.code load_dq_schema(\"dr\", \"malaria\", \"surveillance\", \"case\")}."
       ))
     }
     cli::cli_abort(msg)
