@@ -513,6 +513,8 @@ test_that("eri_spatial_reconcile matches exactly without geocoding", {
   expect_equal(out$loc, "Jínova")           # replaced in place with canonical
   expect_equal(out$cases, 3L)               # untouched columns preserved
   expect_true(all(is.na(c(out$longitude, out$latitude))))
+  # string-matched rows were never geocoded, so the geocoded_* columns are NA
+  expect_true(all(is.na(c(out$geocoded_adm4_name, out$geocoded_adm3_name, out$geocoded_adm2_name))))
 })
 
 test_that("eri_spatial_reconcile scopes matching by coarser levels", {
@@ -552,6 +554,7 @@ test_that("eri_spatial_reconcile geocodes the unmatched and assigns admin units"
   expect_equal(out$loc, "Jínova")           # assigned by point-in-polygon
   expect_equal(out$longitude, 0.5)
   expect_equal(out$latitude, 0.5)
+  expect_equal(out$geocoded_adm4_name, "Jínova")   # also surfaced explicitly
 })
 
 test_that("eri_spatial_reconcile marks geocoded-but-outside points unresolved", {
@@ -611,6 +614,10 @@ test_that("eri_spatial_reconcile flags a parent-inconsistent geocode for review"
   out <- eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols)
   expect_equal(out$reconcile_status, "geocoded_review")
   expect_equal(out$mun, "San Juan")    # claimed parent kept, not overwritten
+  # ...but the geocoder's opinion is now surfaced so the review is actionable:
+  expect_equal(out$geocoded_adm4_name, "Jínova")
+  expect_equal(out$geocoded_adm3_name, "Juan de Herrera")  # the disagreeing unit
+  expect_equal(out$geocoded_adm2_name, "San Juan")
 })
 
 test_that("eri_spatial_reconcile resolves a boundary point to a single row", {

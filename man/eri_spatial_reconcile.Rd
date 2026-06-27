@@ -55,7 +55,13 @@ that fall outside every polygon still record their coordinates).}
 \value{
 A tibble: \code{data} with \code{loc_cols} replaced by their canonical values
 where confidently reconciled (originals kept where unresolved or flagged
-\code{"geocoded_review"}), plus the two \code{coord_cols} and \code{status_col}.
+\code{"geocoded_review"}), plus the two \code{coord_cols}, the \code{status_col}, and one
+\verb{geocoded_<admin_col>} column per \code{admin_cols} level. The \verb{geocoded_*} columns
+hold the admin units the geocoded point fell into (point-in-polygon), filled
+for every geocoded row that landed inside a polygon -- including
+\code{"geocoded_review"} rows -- so you can see \emph{what} a flagged row disagreed with
+(and resolve it) without re-running the spatial join yourself. They are \code{NA}
+for string-matched, unresolved, and outside-polygon rows.
 }
 \description{
 A thin, opt-in \strong{data-sourcing} helper that maps messy, free-text locality
