@@ -29,10 +29,11 @@ download_odk_form(
 \item{attachments}{\code{lgl} Include attachment metadata columns}
 
 \item{tables}{\code{lgl} If \code{TRUE}, return a \strong{named list} of every table in the
-export -- the main submission table plus one child table per repeat group
-(ODK Central exports each repeat as a separate CSV, linked to the parent by
-a \code{PARENT_KEY} column). If \code{FALSE} (default), return only the main
-submission table as a single tibble.}
+export -- the main submission table first, then one child table per repeat
+group (ODK Central exports each repeat as a separate CSV, linked to the
+parent by a \code{PARENT_KEY} column). Child tables follow in alphabetical order
+of their CSV name, not the form-defined order. If \code{FALSE} (default), return
+only the main submission table as a single tibble.}
 
 \item{data_con}{Azure container for operation logging; \code{NULL} skips logging}
 }
