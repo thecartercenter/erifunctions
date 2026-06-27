@@ -45,6 +45,9 @@ Read, write, list, and manage files in Azure (and locally).
 - [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
   **\[experimental\]** : Build a canonical blob path in the data/
   container
+- [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
+  **\[experimental\]** : Show the data-addressing model: known sources,
+  measures and formats
 - [`erifunctions_io()`](https://thecartercenter.github.io/erifunctions/reference/erifunctions_io.md)
   **\[experimental\]** : erifunctions i/o handler
 - [`azure_io()`](https://thecartercenter.github.io/erifunctions/reference/azure_io.md)

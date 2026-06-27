@@ -3,29 +3,45 @@
 **\[experimental\]**
 
 Constructs a canonical blob storage path following the erifunctions
-three-layer data model: `{country}/{disease}/{data_type}/{layer}/`. Use
-this instead of hard-coding path strings to ensure consistency across
-all pipeline steps.
+five-axis data model (ADR-0012):
+`{country}/{disease}/{data_source}/{data_type}/{layer}/`, where
+`data_source` is the channel (how the data arrives) and `data_type` is
+the measure (what it captures). Use this instead of hard-coding path
+strings.
+
+The legacy four-axis form
+`eri_data_path(country, disease, data_source, layer[, filename])` is
+still accepted during the ADR-0012 migration and builds a measure-less
+`{country}/{disease}/{data_source}/{layer}/` path — detected because its
+fourth argument is a `layer` keyword (a `data_type` measure never is).
 
 ## Usage
 
 ``` r
-eri_data_path(country, disease, data_type, layer, filename = NULL)
+eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 ```
 
 ## Arguments
 
 - country:
 
-  `str` Country code (e.g. `"dr"`, `"ht"`, `"ug"`).
+  `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
 
 - disease:
 
   `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
 
+- data_source:
+
+  `str` The channel: `"surveillance"`, `"programmatic"`, `"odk"`
+  (extensible — see
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md);
+  unknown values warn).
+
 - data_type:
 
-  `str` Data input type: `"surveillance"`, `"cmr"`, or `"odk"`.
+  `str` The measure: `"case"`, `"aggregate"`, `"treatment"`, `"tas"`,
+  ... (extensible; unknown values warn).
 
 - layer:
 
@@ -43,11 +59,11 @@ A character string with the canonical blob path.
 ## Examples
 
 ``` r
-eri_data_path("dr", "malaria", "surveillance", "staged")
-#> [1] "dr/malaria/surveillance/staged"
-#> "dr/malaria/surveillance/staged"
+eri_data_path("dr", "malaria", "surveillance", "case", "staged")
+#> [1] "dr/malaria/surveillance/case/staged"
+#> "dr/malaria/surveillance/case/staged"
 
-eri_data_path("dr", "malaria", "surveillance", "raw", "2024_dr_malaria.parquet")
-#> [1] "dr/malaria/surveillance/raw/2024_dr_malaria.parquet"
-#> "dr/malaria/surveillance/raw/2024_dr_malaria.parquet"
+eri_data_path("uga", "oncho", "programmatic", "treatment", "raw", "2024_06.parquet")
+#> [1] "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
+#> "uga/oncho/programmatic/treatment/raw/2024_06.parquet"
 ```
