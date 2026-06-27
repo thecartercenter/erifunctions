@@ -1308,35 +1308,40 @@ eri_stage <- function(pipeline, country, disease,
   invisible(staged)
 }
 
-#' Ingest a local surveillance file and write cleaned output to both blob targets
+#' Ingest a local data file: DQ-check and stage it
 #'
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' The primary analyst entry point for surveillance ingestion. Reads a raw local
-#' Excel file, runs all DQ checks via [run_dq_checks()], then dual-writes the
-#' cleaned parquet output to:
-#' 1. `projects/{project_folder}/intermediate/{country_subfolder}/` — mirrors the
-#'    GHA pipeline output for side-by-side comparison.
-#' 2. `data/{country}/{disease}/surveillance/staged/` — feeds [eri_approve()].
+#' The general analyst ingest entry point. Reads a raw local file, runs all DQ
+#' checks via [run_dq_checks()], prints the flags, and writes the cleaned parquet
+#' to `data/{country}/{disease}/{data_source}/staged/` — feeding [eri_approve()].
+#' It runs on **any** data, including a throwaway sandbox: there is no
+#' pipeline-registry or country gate by default.
 #'
-#' DQ flags are printed to the console immediately after checks complete so the
-#' analyst can review issues before calling [eri_approve()].
+#' The legacy `projects`-blob dual-write (the hsp-mal cutover comparison) is an
+#' **opt-in** mirror: pass `mirror_pipeline = "hsp-mal"` to additionally mirror the
+#' cleaned output to `projects/{project_folder}/intermediate/{country_subfolder}/`.
+#' This is transitional and removed at the Phase-3 cutover (ADR-0012).
 #'
-#' @param path `str` Local path to the raw Excel file to ingest.
+#' @param path `str` Local path to the raw file to ingest.
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`).
-#' @param pipeline `str` Registry entry that controls which `project_folder` and
-#'   `country_map` are used for the projects blob write. Default `"hsp-mal"`.
-#' @param schema Named list returned by [load_dq_schema()]. If `NULL` (default),
-#'   auto-loaded for the given country and disease.
-#' @param projects_con Azure container object for the `projects` blob. If `NULL`
-#'   (default), connects automatically using [get_azure_storage_connection()].
-#' @param data_con Azure container object for the `data` blob. If `NULL`
-#'   (default), connects using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#' @param data_source `str` The channel (`"surveillance"`, `"programmatic"`,
+#'   `"research"`). Default `"surveillance"`.
+#' @param data_type `str` The measure used to select the DQ schema (e.g.
+#'   `"aggregate"`, `"case"`). Default `"aggregate"`.
+#' @param schema Named list from [load_dq_schema()]. If `NULL` (default), loaded
+#'   for `(country, disease, data_source, data_type)`.
+#' @param data_con Azure container for the `data` blob. If `NULL` (default),
+#'   connects using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#' @param mirror_pipeline `str` or `NULL` If set (e.g. `"hsp-mal"`), also mirror the
+#'   cleaned output to the legacy `projects` blob via that pipeline registry entry.
+#'   Default `NULL` (no mirror; sandbox-safe).
+#' @param projects_con Azure container for the `projects` blob; used only when
+#'   `mirror_pipeline` is set. If `NULL`, connects automatically.
 #'
-#' @returns Invisibly, the `dq_result` object so the analyst can inspect
-#'   `$data`, `$log`, and `$flags`.
+#' @returns Invisibly, the `dq_result` object (`$data`, `$log`, `$flags`).
 #' @examples
 #' \dontrun{
 #' result <- eri_ingest("data/raw/dr_malaria_2024W01.xlsx", "dr", "malaria")
@@ -1345,32 +1350,36 @@ eri_stage <- function(pipeline, country, disease,
 #' }
 #' @export
 eri_ingest <- function(path, country, disease,
-                       pipeline     = "hsp-mal",
-                       schema       = NULL,
-                       projects_con = NULL,
-                       data_con     = NULL) {
+                       data_source = "surveillance",
+                       data_type   = "aggregate",
+                       schema      = NULL,
+                       data_con    = NULL,
+                       mirror_pipeline = NULL,
+                       projects_con = NULL) {
   .eri_log_session()
 
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
   }
 
-  reg <- .eri_pipeline_registry[[pipeline]]
-  if (is.null(reg)) {
-    known <- paste(names(.eri_pipeline_registry), collapse = ", ")
-    cli::cli_abort(c(
-      "Unknown pipeline {.val {pipeline}}.",
-      "i" = "Registered pipelines: {known}."
-    ))
-  }
-
-  subfolder <- reg$country_map[[country]]
-  if (is.null(subfolder)) {
-    known_countries <- paste(names(reg$country_map), collapse = ", ")
-    cli::cli_abort(c(
-      "Country {.val {country}} is not registered for pipeline {.val {pipeline}}.",
-      "i" = "Registered countries: {known_countries}."
-    ))
+  # Validate the optional legacy projects-blob mirror up front (fail fast, no I/O).
+  mirror <- NULL
+  if (!is.null(mirror_pipeline)) {
+    reg <- .eri_pipeline_registry[[mirror_pipeline]]
+    if (is.null(reg)) {
+      cli::cli_abort(c(
+        "Unknown pipeline {.val {mirror_pipeline}}.",
+        "i" = "Registered pipelines: {paste(names(.eri_pipeline_registry), collapse = ', ')}."
+      ))
+    }
+    subfolder <- reg$country_map[[country]]
+    if (is.null(subfolder)) {
+      cli::cli_abort(c(
+        "Country {.val {country}} is not registered for pipeline {.val {mirror_pipeline}}.",
+        "i" = "Registered countries: {paste(names(reg$country_map), collapse = ', ')}."
+      ))
+    }
+    mirror <- list(reg = reg, subfolder = subfolder)
   }
 
   if (is.null(data_con)) {
@@ -1380,13 +1389,9 @@ eri_ingest <- function(path, country, disease,
       )
     )
   }
-  if (is.null(projects_con)) {
-    projects_con <- suppressMessages(get_azure_storage_connection())
-  }
 
   if (is.null(schema)) {
-    schema_country <- .eri_schema_country_map[[country]] %||% country
-    schema <- load_dq_schema(schema_country, disease, azcontainer = data_con)
+    schema <- load_dq_schema(country, disease, data_source, data_type, azcontainer = data_con)
   }
 
   raw_data <- eri_read(path, azure = FALSE)
@@ -1399,16 +1404,16 @@ eri_ingest <- function(path, country, disease,
   dq_report(result)
 
   fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
-  staged_dir    <- eri_data_path(country, disease, "surveillance", "staged")
-  projects_dir  <- paste0(reg$project_folder, "/intermediate/", subfolder)
-  log_dir       <- paste(c(country, disease, "surveillance", "logs"), collapse = "/")
+  staged_dir    <- eri_data_path(country, disease, data_source, "staged")
+  log_dir       <- paste(c(country, disease, data_source, "logs"), collapse = "/")
 
   op_log <- list(
     operation  = "eri_ingest",
     analyst    = .eri_analyst_id(),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-    parameters = list(path = path, country = country,
-                      disease = disease, pipeline = pipeline),
+    parameters = list(path = path, country = country, disease = disease,
+                      data_source = data_source, data_type = data_type,
+                      mirror_pipeline = mirror_pipeline),
     status     = "in_progress",
     steps      = list(),
     error      = NULL,
@@ -1434,23 +1439,31 @@ eri_ingest <- function(path, country, disease,
     op_log$steps <- .eri_log_step(op_log$steps, "write_data_blob", dest = data_dest)
     .eri_say_done("Staged to data blob: {.path {data_dest}}")
 
-    proj_dest <- paste0(projects_dir, "/", fname_parquet)
-    withr::with_tempfile("parquet_file", fileext = ".parquet", {
-      arrow::write_parquet(result$data, parquet_file)
-      .eri_blob_write(projects_con, parquet_file, proj_dest)
-    })
-    written      <- c(written, proj_dest)
-    op_log$steps <- .eri_log_step(op_log$steps, "write_projects_blob", dest = proj_dest)
-    .eri_say_done("Written to projects blob: {.path {proj_dest}}")
+    # Optional legacy projects-blob mirror (transitional; removed at the Phase-3 cutover).
+    if (!is.null(mirror)) {
+      if (is.null(projects_con)) {
+        projects_con <- suppressMessages(get_azure_storage_connection())
+      }
+      proj_dest <- paste0(mirror$reg$project_folder, "/intermediate/",
+                          mirror$subfolder, "/", fname_parquet)
+      withr::with_tempfile("parquet_file", fileext = ".parquet", {
+        arrow::write_parquet(result$data, parquet_file)
+        .eri_blob_write(projects_con, parquet_file, proj_dest)
+      })
+      written      <- c(written, proj_dest)
+      op_log$steps <- .eri_log_step(op_log$steps, "mirror_projects_blob", dest = proj_dest)
+      .eri_say_done("Mirrored to projects blob: {.path {proj_dest}}")
+    }
+
     .eri_summary("Ingested to {.path {staged_dir}}", c(
       Rows  = format(nrow(result$data), big.mark = ","),
-      Blobs = sprintf("%d written (data + projects)", length(written))
+      Blobs = sprintf("%d written", length(written))
     ))
 
     # Persist the DQ flags to the log backlog so they are durable and triageable
     # via eri_logs() / eri_logs_resolve(). Never let a logging hiccup break ingest.
     tryCatch(
-      eri_dq_log(result, country, disease, "surveillance", data_con = data_con),
+      eri_dq_log(result, country, disease, data_source, data_con = data_con),
       error = function(e) cli::cli_alert_warning("Could not log DQ flags: {conditionMessage(e)}")
     )
 
@@ -1500,12 +1513,6 @@ eri_ingest <- function(path, country, disease,
       "tcd" = "tcd"
     )
   )
-)
-
-# Maps short country codes to bundled schema country names
-.eri_schema_country_map <- list(
-  "dr" = "dominican_republic",
-  "ht" = "haiti"
 )
 
 #' Resolve the analyst identity for governed actions and audit logs

@@ -2,55 +2,62 @@
 % Please edit documentation in R/dal.R
 \name{eri_ingest}
 \alias{eri_ingest}
-\title{Ingest a local surveillance file and write cleaned output to both blob targets}
+\title{Ingest a local data file: DQ-check and stage it}
 \usage{
 eri_ingest(
   path,
   country,
   disease,
-  pipeline = "hsp-mal",
+  data_source = "surveillance",
+  data_type = "aggregate",
   schema = NULL,
-  projects_con = NULL,
-  data_con = NULL
+  data_con = NULL,
+  mirror_pipeline = NULL,
+  projects_con = NULL
 )
 }
 \arguments{
-\item{path}{\code{str} Local path to the raw Excel file to ingest.}
+\item{path}{\code{str} Local path to the raw file to ingest.}
 
 \item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}).}
 
 \item{disease}{\code{str} Disease name (e.g. \code{"malaria"}).}
 
-\item{pipeline}{\code{str} Registry entry that controls which \code{project_folder} and
-\code{country_map} are used for the projects blob write. Default \code{"hsp-mal"}.}
+\item{data_source}{\code{str} The channel (\code{"surveillance"}, \code{"programmatic"},
+\code{"research"}). Default \code{"surveillance"}.}
 
-\item{schema}{Named list returned by \code{\link[=load_dq_schema]{load_dq_schema()}}. If \code{NULL} (default),
-auto-loaded for the given country and disease.}
+\item{data_type}{\code{str} The measure used to select the DQ schema (e.g.
+\code{"aggregate"}, \code{"case"}). Default \code{"aggregate"}.}
 
-\item{projects_con}{Azure container object for the \code{projects} blob. If \code{NULL}
-(default), connects automatically using \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+\item{schema}{Named list from \code{\link[=load_dq_schema]{load_dq_schema()}}. If \code{NULL} (default), loaded
+for \verb{(country, disease, data_source, data_type)}.}
 
-\item{data_con}{Azure container object for the \code{data} blob. If \code{NULL}
-(default), connects using \code{ERIFUNCTIONS_DATA_STORAGE_NAME}.}
+\item{data_con}{Azure container for the \code{data} blob. If \code{NULL} (default),
+connects using \code{ERIFUNCTIONS_DATA_STORAGE_NAME}.}
+
+\item{mirror_pipeline}{\code{str} or \code{NULL} If set (e.g. \code{"hsp-mal"}), also mirror the
+cleaned output to the legacy \code{projects} blob via that pipeline registry entry.
+Default \code{NULL} (no mirror; sandbox-safe).}
+
+\item{projects_con}{Azure container for the \code{projects} blob; used only when
+\code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}
 }
 \value{
-Invisibly, the \code{dq_result} object so the analyst can inspect
-\verb{$data}, \verb{$log}, and \verb{$flags}.
+Invisibly, the \code{dq_result} object (\verb{$data}, \verb{$log}, \verb{$flags}).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-The primary analyst entry point for surveillance ingestion. Reads a raw local
-Excel file, runs all DQ checks via \code{\link[=run_dq_checks]{run_dq_checks()}}, then dual-writes the
-cleaned parquet output to:
-\enumerate{
-\item \verb{projects/\{project_folder\}/intermediate/\{country_subfolder\}/} — mirrors the
-GHA pipeline output for side-by-side comparison.
-\item \verb{data/\{country\}/\{disease\}/surveillance/staged/} — feeds \code{\link[=eri_approve]{eri_approve()}}.
-}
+The general analyst ingest entry point. Reads a raw local file, runs all DQ
+checks via \code{\link[=run_dq_checks]{run_dq_checks()}}, prints the flags, and writes the cleaned parquet
+to \verb{data/\{country\}/\{disease\}/\{data_source\}/staged/} — feeding \code{\link[=eri_approve]{eri_approve()}}.
+It runs on \strong{any} data, including a throwaway sandbox: there is no
+pipeline-registry or country gate by default.
 
-DQ flags are printed to the console immediately after checks complete so the
-analyst can review issues before calling \code{\link[=eri_approve]{eri_approve()}}.
+The legacy \code{projects}-blob dual-write (the hsp-mal cutover comparison) is an
+\strong{opt-in} mirror: pass \code{mirror_pipeline = "hsp-mal"} to additionally mirror the
+cleaned output to \verb{projects/\{project_folder\}/intermediate/\{country_subfolder\}/}.
+This is transitional and removed at the Phase-3 cutover (ADR-0012).
 }
 \examples{
 \dontrun{
