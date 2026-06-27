@@ -2,6 +2,24 @@
 
 ## erifunctions (development version)
 
+### Fix: cleaner console output from `eri_read()` and the file-writing helpers
+
+- [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
+  no longer prints `readr`’s column-specification block when reading a
+  CSV (it now reads with `show_col_types = FALSE` / suppresses the
+  message on both the local and Azure paths), so a read no longer erupts
+  with engine noise in the middle of a pipeline.
+- The side-effecting helpers
+  ([`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md),
+  [`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md),
+  [`eri_dir_create()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_create.md),
+  [`eri_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_delete.md),
+  [`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md))
+  now return **invisibly**, so scripted / `Rscript` runs no longer print
+  stray `NULL` lines between steps. Both fixes come from the fresh-user
+  red-team
+  ([\#172](https://github.com/thecartercenter/erifunctions/issues/172)).
+
 ### Docs: guides clean up with `eri_dir_delete()`/`eri_delete()`, not raw AzureStor
 
 - Every guide’s “Clean up” section now tears down its sandbox with the
