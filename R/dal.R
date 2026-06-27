@@ -537,6 +537,9 @@ azure_io <- function(
 
     if (endsWith(file_loc, ".csv")) {
 
+      # suppressMessages (rather than show_col_types = FALSE) silences readr's
+      # column-spec dump without risking a duplicate-arg clash: storage_read_csv()
+      # forwards `...` to readr, so a caller may already pass show_col_types here.
       return(suppressMessages(suppressWarnings(AzureStor::storage_read_csv(azcontainer, file_loc, ...))))
 
     } else if (endsWith(file_loc, ".rda")) {
