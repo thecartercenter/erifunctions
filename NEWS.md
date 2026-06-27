@@ -1,5 +1,15 @@
 # erifunctions (development version)
 
+## Improvement: a one-time warning when `ERI_ANALYST_ID` is unset
+
+- Governed actions (approve, ingest, ODK sync, catalog/registry writes, research operations, log
+  resolution) stamp the **shared audit trail** with the analyst's identity. When `ERI_ANALYST_ID` is
+  unset **or empty**, erifunctions still falls back to the OS username — but now **warns once per
+  session** so you know approvals and logs will be attributed to that fallback rather than your
+  analyst id. (Previously an explicitly-empty `ERI_ANALYST_ID` would have stamped an empty actor;
+  it now falls back too.) Identity resolution is centralised in a single internal helper. Fixes a
+  fresh-user red-team finding (#171).
+
 ## Docs: flag the steps you can't rehearse on a sandbox
 
 - The ODK guide now says up front that creating the project, uploading the form, and submitting

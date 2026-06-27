@@ -865,7 +865,8 @@ eri_data_path <- function(country, disease, data_type, layer, filename = NULL) {
 #' and writes a YAML approval log alongside them.
 #'
 #' Analyst identity is read from the `ERI_ANALYST_ID` environment variable,
-#' falling back to `Sys.info()[["user"]]` if unset.
+#' falling back to `Sys.info()[["user"]]` if it is unset or empty (in which case a
+#' one-time warning is emitted so the fallback attribution is not silent).
 #'
 #' An operation log capturing every step (including errors) is always written to
 #' `{country}/{disease}/{data_type}/logs/` in the data container, regardless of
@@ -897,7 +898,7 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
     )
   }
 
-  analyst_id    <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst_id    <- .eri_analyst_id()
   staged_dir    <- eri_data_path(country, disease, data_type, "staged")
   processed_dir <- eri_data_path(country, disease, data_type, "processed")
   log_dir       <- paste(c(country, disease, data_type, "logs"), collapse = "/")
@@ -1177,7 +1178,7 @@ eri_stage <- function(pipeline, country, disease,
 
   op_log <- list(
     operation  = "eri_stage",
-    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    analyst    = .eri_analyst_id(),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(pipeline = pipeline, country = country,
                       disease = disease, pattern = pattern),
@@ -1361,7 +1362,7 @@ eri_ingest <- function(path, country, disease,
 
   op_log <- list(
     operation  = "eri_ingest",
-    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    analyst    = .eri_analyst_id(),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(path = path, country = country,
                       disease = disease, pipeline = pipeline),
@@ -1464,6 +1465,28 @@ eri_ingest <- function(path, country, disease,
   "ht" = "haiti"
 )
 
+#' Resolve the analyst identity for governed actions and audit logs
+#'
+#' Returns `ERI_ANALYST_ID` when set. When it is not, falls back to the operating
+#' system username and warns **once per R session** (via
+#' `options(erifunctions.warned_analyst_id)`) so the analyst knows the shared
+#' audit trail will be stamped with that fallback rather than their identity.
+#' @keywords internal
+.eri_analyst_id <- function() {
+  id <- Sys.getenv("ERI_ANALYST_ID", unset = "")
+  if (nzchar(id)) return(id)
+
+  fallback <- Sys.info()[["user"]]
+  if (!isTRUE(getOption("erifunctions.warned_analyst_id"))) {
+    options(erifunctions.warned_analyst_id = TRUE)
+    cli::cli_warn(c(
+      "!" = "{.envvar ERI_ANALYST_ID} is not set; governed actions will be logged as {.val {fallback}}.",
+      "i" = "Set it in your {.file .Renviron} so approvals and logs carry your analyst identity."
+    ))
+  }
+  fallback
+}
+
 #' Write a one-time session access entry to the data/ container
 #'
 #' Fires at most once per R session via `options(erifunctions.session_logged)`.
@@ -1494,7 +1517,7 @@ eri_ingest <- function(path, country, disease,
       Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
     )
 
-    analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+    analyst  <- .eri_analyst_id()
     ts_file  <- format(Sys.time(), "%Y%m%d_%H%M%S", tz = "UTC")
     slug     <- gsub("[^A-Za-z0-9]", "_", analyst)
     log_dir  <- "logs/_access"

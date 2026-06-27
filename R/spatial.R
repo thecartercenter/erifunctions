@@ -326,7 +326,7 @@ eri_spatial_promote <- function(local_path, country, level, overwrite = FALSE,
       azure_path  = res$blob_path,
       replaced    = res$existed,
       promoted_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-      promoted_by = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+      promoted_by = .eri_analyst_id()
     )
     if (!is.null(res$archived_to)) entry$archived_prev <- res$archived_to
     if (is.null(manifest$promoted_data)) manifest$promoted_data <- list()

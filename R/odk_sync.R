@@ -38,7 +38,7 @@ eri_odk_sync <- function(
     overwrite = TRUE
 ) {
   data_con <- .odk_data_con(data_con)
-  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst  <- .eri_analyst_id()
 
   reg      <- .odk_registry_read(data_con)
   entry    <- .odk_sync_find_entry(reg, project_id, form_id)

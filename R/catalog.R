@@ -98,7 +98,7 @@ eri_catalog_register <- function(
     data_con  = NULL
 ) {
   data_con <- .eri_catalog_con(data_con)
-  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst  <- .eri_analyst_id()
   catalog  <- .eri_catalog_read(data_con)
 
   entry    <- .eri_catalog_entry(path, country, disease, data_type, layer,

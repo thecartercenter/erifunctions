@@ -209,7 +209,7 @@ download_odk_form <- function(
         form_id    = form_id,
         project_id = project_id,
         n_records  = main_n,
-        analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+        analyst    = .eri_analyst_id(),
         timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
       ),
       data_con,
