@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Docs: flag the steps you can't rehearse on a sandbox
+
+- The ODK guide now says up front that creating the project, uploading the form, and submitting
+  practice entries happen in the ODK Central **web interface**, not in R.
+- The CMR guide spells out that there is **no throwaway-sandbox path** for `eri_stage_cmr()` /
+  approve (they require a registered RB-expansion country); only the parsing step is hands-on.
+- The connections guide notes that `eri_list()`'s `name` column holds the **full path** and that
+  `full_names = FALSE` returns just the leaf filenames. Fresh-user findings (#177).
+
 ## Fix: friendlier schema discovery and an accurate research-function reference
 
 - `load_dq_schema()` now **lists the available bundled schema keys** when it cannot find the one you
