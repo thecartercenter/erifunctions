@@ -2,6 +2,18 @@
 
 ## erifunctions (development version)
 
+### Fix: `eri_catalog_query()` no longer says “Catalog is empty” for a no-match filter
+
+- A filtered
+  [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
+  that matches nothing now reports *“No catalog entries match the
+  specified filters”* — even when the catalog itself happens to have no
+  entries — instead of the old *“Catalog is empty.”*, which could make a
+  filtered lookup look like it had wiped the shared catalog. An
+  unfiltered query on a truly empty catalog now reads *“The data catalog
+  has no entries yet.”* Fixes a fresh-user red-team finding
+  ([\#173](https://github.com/thecartercenter/erifunctions/issues/173)).
+
 ### Fix: cleaner console output from `eri_read()` and the file-writing helpers
 
 - [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
