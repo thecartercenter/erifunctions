@@ -1103,7 +1103,8 @@ dq_report <- function(result) {
         # sees *what* to fix without digging into result$flags.
         k    <- min(3L, n)
         val  <- sub$value[seq_len(k)]
-        val[is.na(val) | val == ""] <- "<NA>"
+        val[is.na(val)] <- "<NA>"
+        val[val == ""]  <- "<empty>"
         ex   <- paste0(val, " (row ", sub$row[seq_len(k)], ")", collapse = "; ")
         more <- if (n > k) paste0(", +", n - k, " more") else ""
         cli::cli_bullets(c("!" = "{issue}: {n} row{?s} [{cols}] (e.g. {ex}{more})"))
