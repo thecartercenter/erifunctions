@@ -181,6 +181,7 @@ If you ran this in the sandbox, remove the `atlantis` namespace (this deletes it
 
 ```{r cleanup}
 con <- get_azure_storage_connection(storage_name = "data")
+# eri_dir_delete() removes the namespace (logs and all) recursively, in-package.
 eri_dir_delete("atlantis", azcontainer = con)
 ```
 

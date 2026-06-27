@@ -3,10 +3,9 @@
 ## Docs: guides clean up with `eri_dir_delete()`/`eri_delete()`, not raw AzureStor
 
 - Every guide's "Clean up" section now tears down its sandbox with the exported `eri_dir_delete()` /
-  `eri_delete()` instead of `AzureStor::delete_storage_dir()` / `delete_storage_file()`. These keep an
+  `eri_delete()` instead of `AzureStor::delete_storage_dir()` / `delete_storage_file()`. This keeps an
   analyst inside `erifunctions` for the one operation most likely to send them to Azure Storage
-  Explorer, and they record the delete in the session log (the raw AzureStor calls do not). Fixes the
-  fresh-user red-team's top finding (#170).
+  Explorer, rather than dropping to raw blob calls. Fixes the fresh-user red-team's top finding (#170).
 
 ## Feature: ODK forms with repeat groups are now captured in full
 

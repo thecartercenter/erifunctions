@@ -262,8 +262,9 @@ Practice run — remove everything you created. Delete the Azure namespace and t
 ```{r cleanup}
 con <- get_azure_storage_connection(storage_name = "data")
 
-# Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go
-# (recursive, and logged in your erifunctions session trail).
+# Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go,
+# recursively — the in-package path, so you stay in erifunctions instead of
+# dropping to raw AzureStor / Storage Explorer.
 eri_dir_delete("atlantis", azcontainer = con)
 
 # Remove the local schema templates.

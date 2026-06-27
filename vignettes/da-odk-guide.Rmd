@@ -472,7 +472,7 @@ eri_odk_deregister(project_id = project_id, form_id = "eri_test_river_repeat",
 
 ```{r cleanup-azure}
 # Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).
-# eri_dir_delete() removes it recursively and logs the delete in your session trail.
+# eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.
 eri_dir_delete("uga/demo", azcontainer = data_con)
 ```
 
