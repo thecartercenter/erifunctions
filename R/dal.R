@@ -840,9 +840,10 @@ eri_data_path <- function(country, disease, data_type, layer, filename = NULL) {
   valid_layers <- c("raw", "staged", "processed")
 
   if (!data_type %in% valid_types) {
-    cli::cli_abort(
-      "{.arg data_type} must be one of {.val {valid_types}}, not {.val {data_type}}."
-    )
+    cli::cli_abort(c(
+      "{.arg data_type} must be one of {.val {valid_types}}, not {.val {data_type}}.",
+      "i" = "{.arg data_type} is the storage-layer category (how the data arrives), not a DQ schema key like {.val malaria_case}. The program goes in {.arg disease} (e.g. {.val malaria})."
+    ))
   }
   if (!layer %in% valid_layers) {
     cli::cli_abort(

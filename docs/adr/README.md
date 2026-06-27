@@ -48,3 +48,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0008](0008-baked-azure-auth-defaults.md) | Baked-in Azure auth defaults; interactive AAD as the zero-config default | Accepted |
 | [0009](0009-research-data-lifecycle.md) | Research-data lifecycle: Azure is the source, the project is the versioned working copy | Accepted |
 | [0010](0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables, approved together | Accepted |
+| [0011](0011-unified-schema-naming.md) | One vocabulary for addressing data and schemas (unified schema naming) | Accepted (phased) |
