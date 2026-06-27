@@ -1,6 +1,7 @@
 country: oepa
 disease: oncho
-data_type: mda
+data_source: programmatic
+data_type: treatment
 version: "1.0"
 description: "OEPA onchocerciasis MDA coverage (one row per focus per round)"
 language: es

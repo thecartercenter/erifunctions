@@ -567,7 +567,7 @@ eri_onboard_cmr <- function(
 #' eri_schema_validate("uga_oncho_schema.yaml")
 #'
 #' # Validate a bundled schema
-#' eri_schema_validate(system.file("schemas/dominican_republic_malaria.yaml",
+#' eri_schema_validate(system.file("schemas/dr_malaria_surveillance_aggregate.yaml",
 #'                                  package = "erifunctions"))
 #' }
 #' @export

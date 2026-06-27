@@ -410,9 +410,25 @@ test_that("load_dq_schema error enumerates available bundled schemas", {
     load_dq_schema("dr", "nonexistent_disease", azcontainer = NULL),
     "Available bundled schemas"
   )
-  # the helpful list includes the real key the user is probably after
+  # the helpful list includes the real (renamed) schema the user is probably after
   expect_error(
     load_dq_schema("dr", "nonexistent_disease", azcontainer = NULL),
-    "dr_malaria_case"
+    "dr_malaria_surveillance_case"
   )
+})
+
+test_that("load_dq_schema resolves the ADR-0012 identity and legacy aliases", {
+  # new (country, disease, data_source, data_type) identity
+  s1 <- load_dq_schema("dr", "malaria", "surveillance", "case", azcontainer = NULL)
+  expect_equal(s1$data_source, "surveillance")
+  expect_equal(s1$data_type, "case")
+  # research lane (optional/flexible measure)
+  s2 <- load_dq_schema("dr", "lf", "research", "tas", azcontainer = NULL)
+  expect_equal(s2$data_source, "research")
+  expect_equal(s2$format, "odk")
+  # legacy two-argument form aliases old keys to the new files
+  expect_equal(load_dq_schema("dr", "malaria_case", azcontainer = NULL)$data_type, "case")
+  expect_equal(load_dq_schema("schisto", "mda", azcontainer = NULL)$data_type, "treatment")
+  expect_equal(load_dq_schema("haiti", "malaria", azcontainer = NULL)$data_type, "aggregate")
+  expect_equal(load_dq_schema("ht", "malaria_case", azcontainer = NULL)$data_type, "case")
 })

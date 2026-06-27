@@ -1,6 +1,8 @@
-country: ug
-disease: rb
+country: uga
+disease: oncho
+data_source: research
 data_type: prevalence
+format: odk
 version: "1.0"
 description: "Uganda river blindness (onchocerciasis) prevalence survey -- nodule palpation and skin snip"
 language: en

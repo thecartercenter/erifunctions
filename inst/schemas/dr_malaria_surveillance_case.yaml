@@ -1,5 +1,6 @@
 country: dr
-disease: malaria_case
+disease: malaria
+data_source: surveillance
 data_type: case
 version: "1.0"
 description: "Dominican Republic individual malaria case record (one row per patient)"

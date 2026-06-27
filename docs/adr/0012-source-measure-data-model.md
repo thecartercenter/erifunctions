@@ -29,9 +29,20 @@ Maintainer-clarified domain reality:
   diseases** (split per disease on ingest). A country-team **CMR** is one *input format* of this source;
   Haiti's MoH LF-MDA feed lands here too **without** being a CMR. The input format is recorded, not the
   axis.
-- **`odk`** — study survey instruments (`tas`, `prevalence`, `entomology`); launched and live-monitored
-  off raw, then the DA cleans them into a **final analytic dataset that lives in the central store**
-  (processed), which the Epi sources for studies. ODK **is** in the governed pipeline.
+- **`research`** — research surveys/studies (household or community level), collected via ODK or other
+  tools — so **ODK is a `format`, not the lane**. Launched and live-monitored off raw, then the DA
+  cleans them into a **final analytic dataset in the central store** (processed) that the Epi sources for
+  studies. Research **is** in the governed pipeline; its `data_type` measure is **optional/flexible** (a
+  DA tags `tas` / `prevalence` / `household_survey` / … or omits it), since these don't emit a fixed
+  measure the way surveillance and programmatic do.
+
+> **Refinement (same day, during Phase-2 implementation):** the third lane was first written as `odk`.
+> Working the real schemas with the maintainer showed it is better modelled as **`research`** (the
+> nature) with **`odk` a collection `format`** (the tool) — exactly parallel to `programmatic` + `cmr` —
+> and with an optional/flexible measure. The decision below reads in those terms. This is a deliberate
+> *same-day, pre-implementation* in-place refinement (nothing had been built against the `odk`-lane
+> wording yet), not a post-hoc rewrite of a settled decision — the append-only ADR convention still
+> holds for any later change, which would supersede this ADR instead.
 
 The overloaded axis is also why the bundled schemas are tangled (four naming conventions), why
 `eri_ingest()` is hard-coupled to a legacy pipeline registry and a `projects`-blob dual-write (so it
@@ -45,14 +56,14 @@ Address governed data by **five orthogonal axes**, separating **source** from **
 data/{country}/{disease}/{data_source}/{data_type}/{layer}/
         dr    /  malaria /  surveillance /   case    / processed
         ht    /   lf     /  programmatic /  treatment/ staged
-        dr    /   lf     /     odk       /    tas    / raw
+        dr    /   lf     /    research   /    tas    / raw
 ```
 
 | Axis | Meaning | Examples |
 |---|---|---|
 | `country` | country code | dr, ht, eth, uga |
 | `disease` | the disease | malaria, oncho, lf, sch, sth |
-| `data_source` | **channel / nature** | surveillance, programmatic, odk |
+| `data_source` | **channel / nature** | surveillance, programmatic, research |
 | `data_type` | **the measure** | case, aggregate, treatment, mmdp, training, survey, tas, prevalence, entomology |
 | `layer` | pipeline stage | raw, staged, processed |
 
@@ -61,14 +72,17 @@ data/{country}/{disease}/{data_source}/{data_type}/{layer}/
    feed. `format` is **recorded metadata validated against the same registry** as the axes (not
    free-text), so it cannot become a fourth drift axis; its exact contract is settled at implementation.
 2. **`data_type` is the measure**, first-class and in the path. One `(country, disease, data_source)`
-   may hold several measures.
+   may hold several measures. For **`research`** the measure is **optional and flexible** — the path
+   may be `…/research/{layer}/` (no measure) or `…/research/{tag}/{layer}/`; the registry warns rather
+   than errors on a new tag so DAs are never blocked managing heterogeneous surveys.
 3. **Schema identity = `(country, disease, data_source, data_type)`**; the YAML carries
    `country`/`disease`/`data_source`/`data_type`/`format`.
 4. **All sources flow `raw → staged → processed`.** A CMR ingest **splits** each sheet to its
-   `disease`+`measure` (`RB Treatment` → `uga/oncho/programmatic/treatment`). An ODK form's full
+   `disease`+`measure` (`RB Treatment` → `uga/oncho/programmatic/treatment`). A `research` form's full
    relational set (parent + repeat tables, [ADR-0010](0010-odk-repeat-group-tables.md)) lives under a
-   single `…/{disease}/odk/{data_type}/` namespace, with the **measure assigned at the form (parent)
-   level**; `raw`/`staged` preserve ADR-0010's lossless table set and joins stay **downstream, never on
+   single `…/{disease}/research/{data_type?}/` namespace (`format: odk`), with the **measure assigned at
+   the form (parent) level** (or omitted); `raw`/`staged` preserve ADR-0010's lossless table set and
+   joins stay **downstream, never on
    ingest**, so the DA's cleaned `processed` analytic dataset is exactly that deliberate downstream
    join. The combined `rblf` code and `.eri_schema_country_map` are retired.
 5. **`data_source` and `data_type` are extensible by data, not code.** Validation is driven by a small

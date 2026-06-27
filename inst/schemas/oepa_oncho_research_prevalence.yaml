@@ -1,6 +1,8 @@
 country: oepa
 disease: oncho
+data_source: research
 data_type: prevalence
+format: odk
 version: "1.0"
 description: "OEPA onchocerciasis prevalence survey (one row per person examined)"
 language: es

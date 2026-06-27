@@ -193,7 +193,7 @@ eri_catalog_verify()
 
 | Function | What it does |
 |---|---|
-| `load_dq_schema(country, disease)` | Load a bundled YAML DQ schema |
+| `load_dq_schema(country, disease, data_source, data_type)` | Load a bundled YAML DQ schema |
 | `run_dq_checks(data, schema)` | Run all schema-driven checks; returns a `dq_result` |
 | `dq_report(result)` | Print a summary of flags and corrections |
 | `add_anomaly_pct_change(data, value_col, period_col)` | Flag period-over-period spikes |
