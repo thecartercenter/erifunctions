@@ -66,6 +66,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0008](adr/0008-baked-azure-auth-defaults.md) | Bake non-secret auth constants into the package; default to interactive AAD auth | Zero-config login (Phase 2 precondition, brought forward) |
 | [0009](adr/0009-research-data-lifecycle.md) | Azure is the source, the research project the versioned working copy; pulls archive + dedup, canonical writes gated | Reproducible research inputs (Phase 1) |
 | [0010](adr/0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables (one Parquet per export table), approved together | ODK repeat-form fidelity (Phase 4) |
+| [0012](adr/0012-source-measure-data-model.md) | Address data by 5 axes splitting data_source (channel) from data_type (measure); general ingest core + legacy adapters | Coherent data-addressing model (#175); supersedes ADR-0011 |
 
 ---
 
@@ -167,6 +168,10 @@ against existing Azure data as a simulation; validated against real uploads when
 - Define written **cutover criteria** (N consecutive periods of equivalence) as an ADR.
 - Harden `eri_ingest_cmr()` / `eri_stage()`; fold DQ failures into the log-triage surface
   (Phase 5).
+- **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates from
+  the general ingest core: the `projects`-blob dual-write (now the opt-in `mirror_pipeline` parameter),
+  `.eri_pipeline_registry`, `.eri_schema_country_map`, and the `rblf` combined code all come out at the
+  cutover, leaving `eri_ingest()` purely general over the 5-axis model.
 
 **Verification:** simulation run ingests an Azure-sourced (anomaly-injected) file both ways;
 `eri_compare()` reports parity or precise deltas; approval promotes with token identity;

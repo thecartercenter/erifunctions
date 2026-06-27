@@ -1,6 +1,7 @@
 # ADR-0011 — One vocabulary for addressing data and schemas
 
-- **Status:** Accepted (phased — interim docs shipped; rename to follow)
+- **Status:** Superseded by [ADR-0012](0012-source-measure-data-model.md) (Phase 1 docs shipped in
+  PR #188; the Phase 2 rename is replaced by ADR-0012's source/measure model)
 - **Date:** 2026-06-27
 
 ## Context
