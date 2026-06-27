@@ -69,6 +69,11 @@ eri_list("", azcontainer = data_con)
 #> …
 ```
 
+The `name` column holds the **full path** from the container root (so a
+deeper listing like `eri_list("uga/demo/odk/raw", …)` returns
+`uga/demo/odk/raw/<file>` names); pass `full_names = FALSE` for just the
+leaf filenames.
+
 > **For automation / CI (headless).** A scheduled job has no browser.
 > Set a **service principal** — `ERIFUNCTIONS_SP_CLIENT_ID` and
 > `ERIFUNCTIONS_SP_CLIENT_SECRET` in the environment (or pass

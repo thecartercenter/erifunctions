@@ -133,9 +133,13 @@ flowchart TD
 approve steps run against the live Azure
 <code>projects</code>/<code>data</code> blobs and real, registered
 countries — so the outputs for those are shown as illustrations rather
-than run here. The <strong>parsing</strong> step is run for real on a
-small <strong>synthetic</strong> example report that ships with the
-package, so its output is exactly what you’ll see.</p>
+than run here. Unlike the surveillance and ODK guides, there is
+<strong>no throwaway-sandbox path</strong> for stage/approve:
+<code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> only accepts a registered RB-expansion
+country (it rejects a made-up one). The <strong>parsing</strong> step
+<em>is</em> run for real on a small <strong>synthetic</strong> example
+report that ships with the package, so that output is exactly what
+you’ll see.</p>
 </blockquote>
 </div>
 <div class="section level2">

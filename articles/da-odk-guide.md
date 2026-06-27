@@ -72,6 +72,12 @@ library(erifunctions)
 
 ## 1. Begin — create your practice form
 
+> **Heads up — this first step happens in your browser, not in R.**
+> Creating the `test` project, uploading the form, and submitting
+> practice entries are all done in the ODK Central **web interface**.
+> `erifunctions` takes over from *Connect* (below) once there is data on
+> the server.
+
 ### Put a form on the server
 
 The package ships a tiny practice form — a mock vector-surveillance

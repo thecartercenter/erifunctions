@@ -193,6 +193,11 @@ work is in <code>"data"</code>.</p>
 <span><span class="co">#&gt; 2 ht          NA TRUE  2026-02-01 14:30:51</span></span>
 <span><span class="co">#&gt; 3 uga         NA TRUE  2026-03-22 11:05:18</span></span>
 <span><span class="co">#&gt; …</span></span></code></pre></div>
+<p>The <code>name</code> column holds the <strong>full path</strong>
+from the container root (so a deeper listing like
+<code>eri_list("uga/demo/odk/raw", …)</code> returns
+<code>uga/demo/odk/raw/&lt;file&gt;</code> names); pass
+<code>full_names = FALSE</code> for just the leaf filenames.</p>
 <blockquote>
 <p><strong>For automation / CI (headless).</strong> A scheduled job has
 no browser. Set a <strong>service principal</strong> —

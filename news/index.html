@@ -54,6 +54,12 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="docs-flag-the-steps-you-cant-rehearse-on-a-sandbox-development-version">Docs: flag the steps you can’t rehearse on a sandbox<a class="anchor" aria-label="anchor" href="#docs-flag-the-steps-you-cant-rehearse-on-a-sandbox-development-version"></a></h3>
+<ul><li>The ODK guide now says up front that creating the project, uploading the form, and submitting practice entries happen in the ODK Central <strong>web interface</strong>, not in R.</li>
+<li>The CMR guide spells out that there is <strong>no throwaway-sandbox path</strong> for <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> / approve (they require a registered RB-expansion country); only the parsing step is hands-on.</li>
+<li>The connections guide notes that <code><a href="../reference/eri_list.html">eri_list()</a></code>’s <code>name</code> column holds the <strong>full path</strong> and that <code>full_names = FALSE</code> returns just the leaf filenames. Fresh-user findings (<a href="https://github.com/thecartercenter/erifunctions/issues/177" class="external-link">#177</a>).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fix-friendlier-schema-discovery-and-an-accurate-research-function-reference-development-version">Fix: friendlier schema discovery and an accurate research-function reference<a class="anchor" aria-label="anchor" href="#fix-friendlier-schema-discovery-and-an-accurate-research-function-reference-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> now <strong>lists the available bundled schema keys</strong> when it cannot find the one you asked for — so <code>load_dq_schema("dr", "malaria")</code> points you to <code>dr_malaria_case</code> instead of a bare “No schema found.” error.</li>
