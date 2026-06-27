@@ -39,8 +39,9 @@ Parquet per ODK export table — and that set is the unit that moves through the
    relationship.
 
 3. **A form's tables are approved as a set, for one period.** When this raw set is staged and approved
-   (the same `raw → staged → processed` gate, ADR-0005, CLAUDE.md core model), the parent and all its
-   children move **together** — you never approve a parent without its children, or vice versa.
+   (the same `raw → staged → processed` human gate — CLAUDE.md core model, with approver integrity per
+   ADR-0003), the parent and all its children move **together** — you never approve a parent without
+   its children, or vice versa.
    Referential integrity (every `PARENT_KEY` resolves to an approved parent `KEY`) is a property the
    approval gate preserves; the catalog records the set as belonging to one form/period.
 
@@ -76,8 +77,8 @@ Parquet per ODK export table — and that set is the unit that moves through the
 ## References
 
 - PR #168 — repeat-group capture (`download_odk_form(tables=)`, multi-table `eri_odk_sync()`).
-- ADR-0005 (pull-then-process) and CLAUDE.md "Core model" — the `raw → staged → processed` gate this
-  set travels through.
+- CLAUDE.md "Core model" — the `raw → staged → processed` human gate this set travels through;
+  ADR-0003 — approver identity/integrity at that gate.
 - ADR-0002 — YAML metadata concurrency rules the catalog/registry follow.
 - `docs/roadmap.md` Phase 4 — ODK live pilot (cleaning rules, edit tracking, dashboard) built on this
   shape.
