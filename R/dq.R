@@ -975,7 +975,20 @@ load_dq_schema <- function(
 
   local_path <- system.file(schema_path, package = "erifunctions")
   if (!nzchar(local_path)) {
-    cli::cli_abort("No schema found for {.val {country}}/{.val {disease}}.")
+    schema_dir <- system.file("schemas", package = "erifunctions")
+    available  <- sort(sub("\\.ya?ml$", "", list.files(schema_dir, pattern = "\\.ya?ml$")))
+    msg <- c(
+      "No schema found for {.val {country}}/{.val {disease}}.",
+      "i" = "Looked for a bundled schema named {.file {basename(schema_path)}}."
+    )
+    if (length(available)) {
+      msg <- c(msg, "i" = paste(
+        "Available bundled schemas: {.val {available}}.",
+        "Pass the {.arg country}/{.arg disease} that make up one",
+        "(e.g. {.code load_dq_schema(\"dr\", \"malaria_case\")})."
+      ))
+    }
+    cli::cli_abort(msg)
   }
   yaml::read_yaml(local_path)
 }
