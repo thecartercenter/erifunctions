@@ -186,7 +186,7 @@ eri_catalog_verify()
 |---|---|
 | `eri_approve(country, disease, data_type, period)` | Promote staged files to processed (human gate) |
 | `eri_stage(pipeline, country, disease)` | Pull pipeline output from projects blob into staged |
-| `eri_ingest(path, country, disease)` | DQ-check a local file and dual-write to both blobs |
+| `eri_ingest(path, country, disease, data_source, data_type)` | DQ-check a local file and stage it (sandbox-runnable; opt-in `mirror_pipeline`) |
 | `eri_trigger(pipeline, country, disease)` | Dispatch a GitHub Actions pipeline |
 
 ### Data quality

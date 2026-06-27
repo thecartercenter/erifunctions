@@ -270,38 +270,37 @@ test_that("eri_stage_cmr selects most recent period when period = NULL", {
 test_that("eri_ingest errors when file does not exist", {
   expect_error(
     eri_ingest("nonexistent/path/file.xlsx", "dr", "malaria",
-               projects_con = structure(list(), class = "mock"),
-               data_con     = structure(list(), class = "mock")),
+               data_con = structure(list(), class = "mock")),
     "File not found"
   )
 })
 
-test_that("eri_ingest errors clearly for unknown pipeline", {
+test_that("eri_ingest errors clearly for an unknown mirror pipeline (opt-in only)", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  # the pipeline registry is only consulted when mirror_pipeline is set; the error
+  # fires up front, before any Azure I/O
   expect_error(
     eri_ingest(tmp, "dr", "malaria",
-               pipeline     = "nonexistent-pipeline",
-               projects_con = structure(list(), class = "mock"),
-               data_con     = structure(list(), class = "mock")),
+               mirror_pipeline = "nonexistent-pipeline",
+               data_con        = structure(list(), class = "mock")),
     "Unknown pipeline"
   )
 })
 
-test_that("eri_ingest errors clearly for unregistered country", {
+test_that("eri_ingest errors for a country not registered to the mirror pipeline", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   writexl::write_xlsx(tibble::tibble(x = 1), tmp)
   expect_error(
     eri_ingest(tmp, "zz", "malaria",
-               projects_con = structure(list(), class = "mock"),
-               data_con     = structure(list(), class = "mock")),
+               mirror_pipeline = "hsp-mal",
+               data_con        = structure(list(), class = "mock")),
     "not registered"
   )
 })
 
-test_that(".eri_schema_country_map maps dr and ht correctly", {
-  expect_equal(.eri_schema_country_map[["dr"]], "dominican_republic")
-  expect_equal(.eri_schema_country_map[["ht"]], "haiti")
+test_that("eri_ingest no longer needs .eri_schema_country_map (retired)", {
+  expect_false(exists(".eri_schema_country_map", where = asNamespace("erifunctions")))
 })
 
 #### Tests for eri_approve error paths (no Azure needed) ####
