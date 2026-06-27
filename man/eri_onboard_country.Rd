@@ -11,7 +11,8 @@ eri_onboard_country(
   language = "en",
   path = getwd(),
   data_con = NULL,
-  dry_run = FALSE
+  dry_run = FALSE,
+  data_type = "aggregate"
 )
 }
 \arguments{
@@ -31,6 +32,10 @@ Ignored when \code{dry_run = TRUE}.}
 
 \item{dry_run}{\code{lgl} If \code{TRUE}, print a plan but do not write files or create Azure
 directories. Default \code{FALSE}.}
+
+\item{data_type}{\code{chr} The surveillance measure for the schema identity (ADR-0012),
+e.g. \code{"aggregate"} or \code{"case"}. Default \code{"aggregate"}. Sets the schema filename
+\verb{\{country\}_\{disease\}_surveillance_\{data_type\}.yaml}.}
 }
 \value{
 Invisibly, the path to the written schema file (or \code{NULL} in dry-run mode).
