@@ -208,7 +208,7 @@ eri_template_upload <- function(local_path, name, description, data_con = NULL) 
   }
 
   con      <- .eri_template_con(data_con)
-  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst  <- .eri_analyst_id()
   filename <- basename(local_path)
   az_path  <- paste0(.ERI_TEMPLATE_AZURE_DIR, "/", filename)
 

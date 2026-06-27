@@ -203,7 +203,7 @@ eri_stage_cmr <- function(country,
 
   op_log <- list(
     operation  = "eri_stage_cmr",
-    analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
+    analyst    = .eri_analyst_id(),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(country = country, period = period),
     status     = "in_progress",

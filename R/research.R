@@ -94,7 +94,7 @@ eri_research_init <- function(
     if (!dir.exists(d)) dir.create(d, recursive = TRUE)
   }
 
-  analyst <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst <- .eri_analyst_id()
   manifest <- list(
     project_name   = project_name,
     country        = country,
@@ -516,7 +516,7 @@ eri_research_upload_figure <- function(
   }
   manifest  <- .eri_research_read_manifest(path)
   data_con  <- .eri_research_con(data_con)
-  analyst   <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst   <- .eri_analyst_id()
 
   filename   <- basename(local_path)
   azure_path <- paste0(manifest$azure_path, "outputs/figs/", filename)
@@ -567,7 +567,7 @@ eri_research_upload_output <- function(
 ) {
   manifest  <- .eri_research_read_manifest(path)
   data_con  <- .eri_research_con(data_con)
-  analyst   <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst   <- .eri_analyst_id()
 
   tmp <- tempfile(fileext = ".qs2")
   withr::defer(unlink(tmp))
@@ -616,7 +616,7 @@ eri_research_upload_output <- function(
 #' @export
 eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL) {
   manifest <- .eri_research_read_manifest(path)
-  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst  <- .eri_analyst_id()
 
   data_dir <- file.path(path, "data")
   if (!dir.exists(data_dir)) {
@@ -752,7 +752,7 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
     cli::cli_abort("{.arg label} must be a single non-empty string.")
   }
   manifest <- .eri_research_read_manifest(path)
-  analyst  <- Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]])
+  analyst  <- .eri_analyst_id()
   data_con <- .eri_research_con(data_con)
 
   tag_dir  <- paste0(manifest$azure_path, "tags/", label, "/")
