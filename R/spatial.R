@@ -610,7 +610,13 @@ eri_spatial_join <- function(data, lat_col, lon_col, shapefile, admin_cols = NUL
 #' @param ... Passed to [tidygeocoder::geocode()] (e.g. `min_time`, `api_options`).
 #' @returns A tibble: `data` with `loc_cols` replaced by their canonical values
 #'   where confidently reconciled (originals kept where unresolved or flagged
-#'   `"geocoded_review"`), plus the two `coord_cols` and `status_col`.
+#'   `"geocoded_review"`), plus the two `coord_cols`, the `status_col`, and one
+#'   `geocoded_<admin_col>` column per `admin_cols` level. The `geocoded_*` columns
+#'   hold the admin units the geocoded point fell into (point-in-polygon), filled
+#'   for every geocoded row that landed inside a polygon -- including
+#'   `"geocoded_review"` rows -- so you can see *what* a flagged row disagreed with
+#'   (and resolve it) without re-running the spatial join yourself. They are `NA`
+#'   for string-matched, unresolved, and outside-polygon rows.
 #' @examples
 #' \dontrun{
 #' dr_loc <- eri_spatial_load("dr", level = 4, cache = TRUE)
@@ -663,7 +669,11 @@ eri_spatial_reconcile <- function(data,
   if (length(coord_cols) != 2L) {
     cli::cli_abort("{.arg coord_cols} must be a length-2 character vector (longitude, latitude).")
   }
-  reserved <- c(coord_cols, status_col)
+  # Geocoded point-in-polygon admin units are returned in their own columns so the
+  # analyst can see where a geocode landed without the trust guard overwriting the
+  # names they supplied.
+  geocoded_cols <- paste0("geocoded_", admin_cols)
+  reserved <- c(coord_cols, status_col, geocoded_cols)
   clash    <- intersect(reserved, names(data))
   if (length(clash) > 0L) {
     cli::cli_abort(c(
@@ -709,6 +719,9 @@ eri_spatial_reconcile <- function(data,
   res$.lat     <- NA_real_
   res$.status  <- NA_character_
   res$.partial <- NA
+  # Where the geocoded point actually fell (point-in-polygon), per admin level.
+  geo_out <- paste0(".geo_", admin_cols)
+  for (k in seq_len(n_lvl)) res[[geo_out[k]]] <- NA_character_
 
   matched <- !is.na(match_idx)
   for (k in seq_len(n_lvl)) {
@@ -765,6 +778,13 @@ eri_spatial_reconcile <- function(data,
           jrow <- ord[i]
           if (is.na(jrow) || is.na(jr[[admin_cols[1L]]][jrow])) next  # outside all polygons
 
+          # Record where the geocoded point landed (all admin levels) for every
+          # polygon hit -- trusted *and* flagged -- so a geocoded_review row can be
+          # inspected without re-running the point-in-polygon by hand.
+          for (k in seq_len(n_lvl)) {
+            res[[geo_out[k]]][rk] <- as.character(jr[[admin_cols[k]]][jrow])
+          }
+
           # Any coarser level disagreeing with the analyst's claim flags the row.
           consistent <- TRUE
           if (n_lvl > 1L) {
@@ -801,7 +821,8 @@ eri_spatial_reconcile <- function(data,
   out[[coord_cols[1L]]] <- out$.lon
   out[[coord_cols[2L]]] <- out$.lat
   out[[status_col]]     <- out$.status
-  out <- out[, setdiff(names(out), c(canon_out, ".lon", ".lat", ".status", ".partial")), drop = FALSE]
+  for (k in seq_len(n_lvl)) out[[geocoded_cols[k]]] <- out[[geo_out[k]]]
+  out <- out[, setdiff(names(out), c(canon_out, geo_out, ".lon", ".lat", ".status", ".partial")), drop = FALSE]
 
   n_keys <- nrow(keys)
   n_m    <- sum(res$.status == "matched")
