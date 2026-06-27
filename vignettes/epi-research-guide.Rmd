@@ -471,12 +471,10 @@ Azure. This deletes the project folder, all snapshots and tags, and the artifact
 ```{r cleanup}
 con <- get_azure_storage_connection(storage_name = "data")
 
-# recursive = TRUE is required to delete a non-empty directory in Azure;
-# confirm = FALSE just skips the interactive prompt.
-AzureStor::delete_storage_dir(con, "research/mtcars_study",
-                              recursive = TRUE, confirm = FALSE)
-AzureStor::delete_storage_dir(con, "artifacts/study_data/mtcars_study_data",
-                              recursive = TRUE, confirm = FALSE)
+# eri_dir_delete() removes a non-empty directory recursively in one call — the
+# in-package path, so cleanup stays in erifunctions instead of raw AzureStor.
+eri_dir_delete("research/mtcars_study", azcontainer = con)
+eri_dir_delete("artifacts/study_data/mtcars_study_data", azcontainer = con)
 ```
 
 Confirm nothing of yours remains, then delete the local folder:

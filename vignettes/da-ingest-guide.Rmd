@@ -444,12 +444,12 @@ You ran this for practice, so remove everything it created and leave no trace. T
 
 ```{r cleanup}
 # Delete the entire sandbox namespace (raw + staged + processed + logs).
-# recursive = TRUE is required to delete a non-empty directory; confirm = FALSE
-# skips the interactive prompt.
-AzureStor::delete_storage_dir(data_con, "atlantis", recursive = TRUE, confirm = FALSE)
+# eri_dir_delete() removes a non-empty directory recursively in one call; using
+# the erifunctions helpers (not raw AzureStor) keeps every step in the package.
+eri_dir_delete("atlantis", azcontainer = data_con)
 
 # Delete the schema you published.
-AzureStor::delete_storage_file(data_con, "schemas/atlantis_malaria.yaml", confirm = FALSE)
+eri_delete("schemas/atlantis_malaria.yaml", azcontainer = data_con)
 
 # Remove the two catalog entries (the catalog is shared, so tidy up after yourself).
 eri_catalog_remove("atlantis/malaria/surveillance/processed/atlantis_malaria_2024-01.parquet",
