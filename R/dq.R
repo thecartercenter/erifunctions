@@ -1096,10 +1096,21 @@ dq_report <- function(result) {
     if (nrow(row_flags) > 0) {
       by_issue <- sort(table(row_flags$issue), decreasing = TRUE)
       for (issue in names(by_issue)) {
-        n    <- by_issue[[issue]]
-        cols <- paste(unique(row_flags$column[row_flags$issue == issue]), collapse = ", ")
-        cli::cli_bullets(c("!" = "{issue}: {n} row{?s} [{cols}]"))
+        sub  <- row_flags[row_flags$issue == issue, ]
+        n    <- nrow(sub)
+        cols <- paste(unique(sub$column), collapse = ", ")
+        # Show up to 3 offending values with their row numbers, so the analyst
+        # sees *what* to fix without digging into result$flags.
+        k    <- min(3L, n)
+        val  <- sub$value[seq_len(k)]
+        val[is.na(val)] <- "<NA>"
+        val[val == ""]  <- "<empty>"
+        ex   <- paste0(val, " (row ", sub$row[seq_len(k)], ")", collapse = "; ")
+        more <- if (n > k) paste0(", +", n - k, " more") else ""
+        cli::cli_bullets(c("!" = "{issue}: {n} row{?s} [{cols}] (e.g. {ex}{more})"))
       }
+      cli::cli_text("")
+      cli::cli_alert_info("See {.code result$flags} for the full row-level detail.")
     }
   }
 

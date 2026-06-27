@@ -1,5 +1,13 @@
 # erifunctions (development version)
 
+## Improvement: `dq_report()` shows the offending values, not just counts
+
+- The "Flags Requiring Review" section now prints up to three example offending values with their row
+  numbers for each issue — e.g. `not in allowed_values: 2 rows [species] (e.g. P.vivax (row 4);
+  P.ovale (row 2))` — with a `+N more` suffix when there are more, and a closing pointer to
+  `result$flags` for the full row-level detail. Previously it printed only a count and column, so an
+  analyst had to open `result$flags` to see *what* to fix. Fixes a fresh-user red-team finding (#178).
+
 ## Fix: `eri_catalog_query()` no longer says "Catalog is empty" for a no-match filter
 
 - A filtered `eri_catalog_query()` that matches nothing now reports *"No catalog entries match the

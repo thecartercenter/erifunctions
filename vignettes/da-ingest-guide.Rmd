@@ -378,8 +378,10 @@ result2
 #> • "District": 1 correction (correction)
 #>
 #> ── Flags Requiring Review (2 total) ──
-#> ! Value not in allowed_values list: 1 row [District]
-#> ! Value outside expected range [0, 120]: 1 row [Age]
+#> ! Value not in allowed_values list: 1 row [District] (e.g. Atlantica (row 2))
+#> ! Value outside expected range [0, 120]: 1 row [Age] (e.g. 250 (row 3))
+#>
+#> ℹ See `result$flags` for the full row-level detail.
 ```
 
 This time there are **two flags**. The schema fixed what it safely could, but it will not guess about

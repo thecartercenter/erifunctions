@@ -366,3 +366,41 @@ test_that("add_anomaly_spatial skips admin2 when name_field not in schema", {
   expect_equal(call_count, 1L)
   expect_equal(nrow(out), 0L)
 })
+
+test_that("dq_report surfaces example offending values and points to result$flags", {
+  result <- list(
+    data = tibble::tibble(a = 1:10),
+    log  = tibble::tibble(row = integer(), column = character(), original_value = character(),
+                          corrected_value = character(), rule = character(), action = character()),
+    flags = tibble::tibble(
+      row    = c(4L, 2L),
+      column = c("species", "species"),
+      value  = c("P.vivax", "P.ovale"),
+      issue  = c("not in allowed_values", "not in allowed_values")
+    )
+  )
+
+  # collapse + squash whitespace so a wrapped line never splits a token
+  out <- gsub("[[:space:]]+", " ", paste(cli::cli_fmt(dq_report(result)), collapse = " "))
+
+  expect_true(grepl("P.vivax", out, fixed = TRUE))        # the offending value
+  expect_true(grepl("row 4",   out, fixed = TRUE))        # and its row number
+  expect_true(grepl("result$flags", out, fixed = TRUE))   # pointer to detail
+})
+
+test_that("dq_report truncates the example list with a '+N more' suffix", {
+  result <- list(
+    data = tibble::tibble(a = 1:10),
+    log  = tibble::tibble(row = integer(), column = character(), original_value = character(),
+                          corrected_value = character(), rule = character(), action = character()),
+    flags = tibble::tibble(
+      row    = 1:6,
+      column = rep("epiweek", 6),
+      value  = as.character(60:65),
+      issue  = rep("out of range", 6)
+    )
+  )
+
+  out <- gsub("[[:space:]]+", " ", paste(cli::cli_fmt(dq_report(result)), collapse = " "))
+  expect_true(grepl("+3 more", out, fixed = TRUE))   # 6 rows, 3 shown
+})
