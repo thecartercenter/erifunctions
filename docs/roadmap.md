@@ -64,6 +64,8 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0006](adr/0006-research-projects-as-repos.md) | Research projects are separate repos generated from a template, depending on erifunctions | "How to organise Epi analysis code?" |
 | [0007](adr/0007-research-aware-spatial-sourcing.md) | Research-aware spatial sourcing: a `cache` flag on `eri_spatial_load()` delegating to `eri_research_pull()` | Reproducible spatial inputs (Phase 1) |
 | [0008](adr/0008-baked-azure-auth-defaults.md) | Bake non-secret auth constants into the package; default to interactive AAD auth | Zero-config login (Phase 2 precondition, brought forward) |
+| [0009](adr/0009-research-data-lifecycle.md) | Azure is the source, the research project the versioned working copy; pulls archive + dedup, canonical writes gated | Reproducible research inputs (Phase 1) |
+| [0010](adr/0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables (one Parquet per export table), approved together | ODK repeat-form fidelity (Phase 4) |
 
 ---
 
@@ -175,7 +177,10 @@ catalog updated atomically. Re-run against the real June CMR + malaria files onc
 ## Phase 4 — ODK live pilot (Uganda survey)
 
 Developed against existing synced ODK submissions (simulation); validated against the live
-Uganda form once it launches. Exercises register/sync/status and fills two named gaps:
+Uganda form once it launches. Exercises register/sync/status and fills two named gaps.
+Forms with **repeat groups** now sync as a relational set of tables in `raw/`
+([ADR-0010](adr/0010-odk-repeat-group-tables.md)), which the cleaning-rules layer, edit
+tracking, and dashboard below all build on:
 - **Live cleaning-rules layer**: versioned, declarative cleaning applied *on read* for
   dashboards while `raw/` stays pristine — distinct from the slow `approve` gate. New
   `cleaning_rules` concept layered on the DQ schema engine (`R/dq.R`).
