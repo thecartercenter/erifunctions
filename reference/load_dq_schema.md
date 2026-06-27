@@ -1,7 +1,11 @@
 # Load a DQ schema
 
-Loads a disease surveillance data quality schema from Azure blob
-storage, or falls back to the schema bundled with the package.
+Loads a data quality schema for a
+`(country, disease, data_source, data_type)` identity (ADR-0012) from
+Azure blob storage, falling back to the bundled copy. Schema files live
+at `schemas/{country}_{disease}_{data_source}_{data_type}.yaml`; for
+`research` the `data_type` (measure) is optional. When a schema is not
+found the error lists every available bundled schema.
 
 ## Usage
 
@@ -9,6 +13,8 @@ storage, or falls back to the schema bundled with the package.
 load_dq_schema(
   country,
   disease,
+  data_source = NULL,
+  data_type = NULL,
   azcontainer = suppressMessages(get_azure_storage_connection(storage_name =
     Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")))
 )
@@ -18,19 +24,27 @@ load_dq_schema(
 
 - country:
 
-  `str` Country identifier matching the schema filename prefix (e.g.,
-  `"dr"`, `"dominican_republic"`, `"haiti"`).
+  `str` Country code (e.g. `"dr"`, `"uga"`).
 
 - disease:
 
-  `str` Disease/schema key matching the schema filename suffix (e.g.,
-  `"malaria_case"`, `"lf_tas"`).
+  `str` Disease (e.g. `"malaria"`, `"lf"`). In the legacy two-argument
+  form this slot held a combined schema key.
+
+- data_source:
+
+  `str` The channel: `"surveillance"`, `"programmatic"`, `"research"`.
+  `NULL` (default) selects the legacy two-argument form.
+
+- data_type:
+
+  `str` The measure (e.g. `"case"`, `"treatment"`, `"tas"`); optional
+  for `research`.
 
 - azcontainer:
 
   Azure container object from
   [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).
-  Defaults to the `data` container via `ERIFUNCTIONS_DATA_STORAGE_NAME`.
   Pass `NULL` to use only the locally bundled schema files.
 
 ## Value
@@ -39,21 +53,16 @@ A named list representing the parsed YAML schema.
 
 ## Details
 
-Schema files are YAML documents stored at
-`schemas/<country>_<disease>.yaml` in the `data` Azure container (or in
-`inst/schemas/` locally). The container name is read from
-`ERIFUNCTIONS_DATA_STORAGE_NAME` (default `"data"`).
-
-`country` and `disease` are simply the two halves of that filename stem.
-The bundled set currently mixes conventions (e.g. `dr_malaria_case`,
-`dominican_republic_malaria`, `ht_lf_tas`), so when a name is not found
-the error lists every available bundled schema to copy from.
+The legacy two-argument form `load_dq_schema(country, key)` — where
+`key` was a combined `{disease}_{measure}` string like `"malaria_case"`
+or `"lf_tas"` — still resolves during the migration via an alias to the
+new name.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-schema <- load_dq_schema("dominican_republic", "malaria")
-schema <- load_dq_schema("haiti", "malaria")
+schema <- load_dq_schema("dr", "malaria", "surveillance", "case")
+schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment")
 } # }
 ```

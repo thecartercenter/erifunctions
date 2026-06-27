@@ -34,9 +34,12 @@ eri_data_model()
 #>   surveillance system).
 #> • programmatic -- Programmatic activity/coverage data (country-team CMR, MoH
 #>   MDA feeds); spans diseases.
-#> • odk -- Study survey instruments collected via ODK Central.
+#> • research -- Research surveys/studies (household or community level);
+#>   DA-managed, flexible measure.
 #> • cmr -- (transitional) Legacy CMR source token; migrating to `programmatic` +
 #>   format: cmr.
+#> • odk -- (transitional) Legacy ODK source token; migrating to `research` +
+#>   format: odk.
 #> 
 #> ── data_type (the measure / what it captures) ──
 #> 
@@ -57,6 +60,7 @@ eri_data_model()
 #>   format).
 #> • moh_feed -- A direct Ministry-of-Health data feed (a programmatic input
 #>   format that is not a CMR).
+#> • odk -- ODK Central survey instrument (a research collection format).
 #> 
 #> ── layer ──
 #> 
