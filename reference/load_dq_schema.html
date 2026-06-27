@@ -75,12 +75,12 @@ falls back to the schema bundled with the package.</p>
 
 <dl><dt id="arg-country">country<a class="anchor" aria-label="anchor" href="#arg-country"></a></dt>
 <dd><p><code>str</code> Country identifier matching the schema filename prefix
-(e.g., <code>"dominican_republic"</code>, <code>"haiti"</code>).</p></dd>
+(e.g., <code>"dr"</code>, <code>"dominican_republic"</code>, <code>"haiti"</code>).</p></dd>
 
 
 <dt id="arg-disease">disease<a class="anchor" aria-label="anchor" href="#arg-disease"></a></dt>
-<dd><p><code>str</code> Disease name matching the schema filename suffix
-(e.g., <code>"malaria"</code>).</p></dd>
+<dd><p><code>str</code> Disease/schema key matching the schema filename suffix
+(e.g., <code>"malaria_case"</code>, <code>"lf_tas"</code>).</p></dd>
 
 
 <dt id="arg-azcontainer">azcontainer<a class="anchor" aria-label="anchor" href="#arg-azcontainer"></a></dt>
@@ -98,6 +98,10 @@ Pass <code>NULL</code> to use only the locally bundled schema files.</p></dd>
     <p>Schema files are YAML documents stored at <code>schemas/&lt;country&gt;_&lt;disease&gt;.yaml</code>
 in the <code>data</code> Azure container (or in <code>inst/schemas/</code> locally).
 The container name is read from <code>ERIFUNCTIONS_DATA_STORAGE_NAME</code> (default <code>"data"</code>).</p>
+<p><code>country</code> and <code>disease</code> are simply the two halves of that filename stem. The
+bundled set currently mixes conventions (e.g. <code>dr_malaria_case</code>,
+<code>dominican_republic_malaria</code>, <code>ht_lf_tas</code>), so when a name is not found the
+error lists every available bundled schema to copy from.</p>
     </div>
 
     <div class="section level2">

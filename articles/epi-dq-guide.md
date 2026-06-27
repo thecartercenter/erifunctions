@@ -44,7 +44,10 @@ and a **missing week** — the kinds of thing a real extract hides:
 
 ``` r
 
-schema <- load_dq_schema("dr", "malaria_case", azcontainer = NULL)
+# The `disease` argument is the *schema key* (here "malaria_case", the case-level
+# malaria schema) — more specific than the "malaria" program in the country table,
+# and separate from the layer-path data_type (surveillance/cmr/odk).
+schema <- load_dq_schema("dr", disease = "malaria_case", azcontainer = NULL)
 
 # A tiny helper to make `n` identical case rows for a province/week.
 mk <- function(province, week, n, species = "P. vivax") {

@@ -19,12 +19,12 @@ load_dq_schema(
 - country:
 
   `str` Country identifier matching the schema filename prefix (e.g.,
-  `"dominican_republic"`, `"haiti"`).
+  `"dr"`, `"dominican_republic"`, `"haiti"`).
 
 - disease:
 
-  `str` Disease name matching the schema filename suffix (e.g.,
-  `"malaria"`).
+  `str` Disease/schema key matching the schema filename suffix (e.g.,
+  `"malaria_case"`, `"lf_tas"`).
 
 - azcontainer:
 
@@ -43,6 +43,11 @@ Schema files are YAML documents stored at
 `schemas/<country>_<disease>.yaml` in the `data` Azure container (or in
 `inst/schemas/` locally). The container name is read from
 `ERIFUNCTIONS_DATA_STORAGE_NAME` (default `"data"`).
+
+`country` and `disease` are simply the two halves of that filename stem.
+The bundled set currently mixes conventions (e.g. `dr_malaria_case`,
+`dominican_republic_malaria`, `ht_lf_tas`), so when a name is not found
+the error lists every available bundled schema to copy from.
 
 ## Examples
 

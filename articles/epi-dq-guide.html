@@ -133,7 +133,10 @@ epiweeks, one row per case. It has three planted problems — a species
 typo, a <strong>case spike</strong>, and a <strong>missing week</strong>
 — the kinds of thing a real extract hides:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"dr"</span>, <span class="st">"malaria_case"</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># The `disease` argument is the *schema key* (here "malaria_case", the case-level</span></span>
+<span><span class="co"># malaria schema) — more specific than the "malaria" program in the country table,</span></span>
+<span><span class="co"># and separate from the layer-path data_type (surveillance/cmr/odk).</span></span>
+<span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria_case"</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># A tiny helper to make `n` identical case rows for a province/week.</span></span>
 <span><span class="va">mk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">province</span>, <span class="va">week</span>, <span class="va">n</span>, <span class="va">species</span> <span class="op">=</span> <span class="st">"P. vivax"</span><span class="op">)</span> <span class="op">{</span></span>

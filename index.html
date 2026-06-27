@@ -573,12 +573,20 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 </tr></thead>
 <tbody>
 <tr>
+<td><code>eri_research_scaffold(name, country, disease, description)</code></td>
+<td>Create a <strong>standalone research-project repository</strong> (ADR-0006) at <code>dest/name/</code> — a full repo skeleton that depends on erifunctions</td>
+</tr>
+<tr>
 <td><code>eri_research_init(project_name, country, disease, description)</code></td>
-<td>Scaffold a new research project locally and in Azure</td>
+<td>Initialise a research project <strong>in the current directory</strong> (local <code>data/</code>/<code>figs/</code>/<code>outputs/</code> + <code>research.yaml</code>, registered in Azure)</td>
 </tr>
 <tr>
 <td><code><a href="reference/eri_research_resume.html">eri_research_resume()</a></code></td>
 <td>Re-read <code>research.yaml</code> and print session summary</td>
+</tr>
+<tr>
+<td><code>eri_research_status(check_remote)</code></td>
+<td>Report what data the project depends on and whether any of it is stale</td>
 </tr>
 <tr>
 <td><code>eri_research_log(note)</code></td>
@@ -605,8 +613,13 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <td><code>eri_research_snapshot(label)</code></td>
 <td>Freeze the local <code>data/</code> directory to a timestamped Azure snapshot</td>
 </tr>
+<tr>
+<td><code>eri_research_tag(label, description)</code></td>
+<td>Freeze a reproducible, citable version of the project (tag + optional snapshot)</td>
+</tr>
 </tbody>
 </table>
+<p><code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> vs <code><a href="reference/eri_research_init.html">eri_research_init()</a></code>: <strong>scaffold</strong> stands up a new, separate project <em>repository</em> (the ADR-0006 way — its own git repo); <strong>init</strong> initialises a project in a directory you are already in. Most new studies start with <code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="template-management">Template management<a class="anchor" aria-label="anchor" href="#template-management"></a>
