@@ -27,14 +27,19 @@ automatically using \verb{ERIFUNCTIONS_*} environment variables.}
 Defaults to \code{TRUE}.}
 }
 \value{
-The downloaded tibble (invisibly), or \code{invisible(NULL)} when zero
+Invisibly, the downloaded tibble (single-table forms) or a named list
+of tibbles (forms with repeat groups); \code{invisible(NULL)} when zero
 submissions are found.
 }
 \description{
-Downloads all submissions for a registered ODK form and writes them as a
-Parquet file to \verb{data/\{country\}/\{disease\}/odk/raw/\{form_id\}.parquet} in the
-Azure \verb{data/} container.  The registry entry's \code{last_synced} timestamp is
-updated on success.
+Downloads all submissions for a registered ODK form and writes them as
+Parquet file(s) into \verb{data/\{country\}/\{disease\}/odk/raw/} in the Azure \verb{data/}
+container. Forms with \strong{repeat groups} (most real forms) export multiple
+tables -- the main submission table plus one child table per repeat group --
+and each is written as its own Parquet (\verb{\{form_id\}.parquet},
+\verb{\{form_id\}-\{repeat\}.parquet}, ...); a flat form writes a single
+\verb{\{form_id\}.parquet}. The registry entry's \code{last_synced} timestamp is updated
+on success.
 }
 \examples{
 \dontrun{

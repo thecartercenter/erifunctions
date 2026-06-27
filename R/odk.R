@@ -132,8 +132,15 @@ list_odk_forms <- function(
 #' @param project_id `int` Project ID from [list_odk_projects()]
 #' @param form_id `chr` Form ID from [list_odk_forms()]
 #' @param attachments `lgl` Include attachment metadata columns
+#' @param tables `lgl` If `TRUE`, return a **named list** of every table in the
+#'   export -- the main submission table first, then one child table per repeat
+#'   group (ODK Central exports each repeat as a separate CSV, linked to the
+#'   parent by a `PARENT_KEY` column). Child tables follow in alphabetical order
+#'   of their CSV name, not the form-defined order. If `FALSE` (default), return
+#'   only the main submission table as a single tibble.
 #' @param data_con Azure container for operation logging; `NULL` skips logging
-#' @returns `tibble` of all submissions
+#' @returns A `tibble` of submissions, or -- when `tables = TRUE` -- a named list
+#'   of tibbles (one per export table, main table first).
 #' @importFrom utils URLencode URLdecode unzip
 #' @export
 download_odk_form <- function(
@@ -143,6 +150,7 @@ download_odk_form <- function(
     project_id,
     form_id,
     attachments = FALSE,
+    tables      = FALSE,
     data_con    = NULL
 ) {
   creds       <- .odk_creds(con, url, auth)
@@ -168,10 +176,31 @@ download_odk_form <- function(
   .odk_check_response(resp, paste0("download_odk_form(", form_id, ")"))
 
   unzip(tmp_zip, exdir = tmp_dir)
-  csv_path <- file.path(tmp_dir, paste0(URLdecode(enc_form_id), ".csv"))
-  out <- suppressWarnings(readr::read_csv(csv_path, show_col_types = FALSE))
+  form_name <- URLdecode(enc_form_id)
+  main_csv  <- file.path(tmp_dir, paste0(form_name, ".csv"))
 
-  cli::cli_alert_info("Downloaded {nrow(out)} record{?s} from {.val {URLdecode(enc_form_id)}}.")
+  if (isTRUE(tables)) {
+    csvs    <- list.files(tmp_dir, pattern = "\\.csv$", full.names = TRUE)
+    is_main <- basename(csvs) == basename(main_csv)
+    csvs    <- c(csvs[is_main], sort(csvs[!is_main]))   # main first, repeats after
+    out     <- lapply(csvs, function(p)
+      suppressWarnings(readr::read_csv(p, show_col_types = FALSE)))
+    names(out) <- tools::file_path_sans_ext(basename(csvs))
+
+    if (length(out) == 1L) {
+      cli::cli_alert_info("Downloaded {nrow(out[[1L]])} record{?s} from {.val {form_name}}.")
+    } else {
+      cli::cli_alert_info("Downloaded {length(out)} tables from {.val {form_name}}:")
+      for (nm in names(out)) {
+        cli::cli_bullets(c("*" = "{.val {nm}}: {nrow(out[[nm]])} record{?s}"))
+      }
+    }
+    main_n <- nrow(out[[1L]])
+  } else {
+    out    <- suppressWarnings(readr::read_csv(main_csv, show_col_types = FALSE))
+    main_n <- nrow(out)
+    cli::cli_alert_info("Downloaded {nrow(out)} record{?s} from {.val {form_name}}.")
+  }
 
   if (!is.null(data_con)) {
     .eri_write_log(
@@ -179,7 +208,7 @@ download_odk_form <- function(
         operation  = "download_odk_form",
         form_id    = form_id,
         project_id = project_id,
-        n_records  = nrow(out),
+        n_records  = main_n,
         analyst    = Sys.getenv("ERI_ANALYST_ID", unset = Sys.info()[["user"]]),
         timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
       ),

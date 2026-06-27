@@ -1,5 +1,22 @@
 # erifunctions (development version)
 
+## Feature: ODK forms with repeat groups are now captured in full
+
+- ODK Central exports a form with **repeat groups** as multiple tables — a parent table (one row per
+  submission) plus one child table per repeat group, linked by `PARENT_KEY` → the parent's `KEY`.
+  Previously `download_odk_form()` read only the parent CSV and `eri_odk_sync()` wrote a single
+  Parquet, so **repeat data was silently dropped**.
+- `download_odk_form()` gains a `tables` argument. The default (`tables = FALSE`) is unchanged — it
+  returns the parent table as a single tibble. With `tables = TRUE` it returns a **named list of every
+  table** in the export (parent first, named by each table's CSV).
+- `eri_odk_sync()` now writes **one Parquet per table** to `{country}/{disease}/odk/raw/` — single-
+  table forms are unchanged (still exactly one Parquet); repeat forms produce
+  `{form_id}.parquet` plus `{form_id}-{repeat}.parquet` for each repeat group.
+- **New bundled XLSForm** `inst/extdata/odk-test-form-repeat.xlsx` (a river-prospection form with a
+  repeated `larva_sample` group) and a new **"Forms with repeat groups"** section in the ODK guide
+  (`vignettes/da-odk-guide.Rmd`) showing the parent/child tables, the `PARENT_KEY` join, and the
+  one-Parquet-per-table sync.
+
 ## Fix: `eri_onboard_cmr()` creates the canonical `rblf/cmr/` directories
 
 - `eri_onboard_cmr()` now creates CMR Azure directories at `{country}/rblf/cmr/{raw,staged,processed}/`

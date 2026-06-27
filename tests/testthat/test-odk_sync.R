@@ -79,7 +79,7 @@ test_that("eri_odk_sync warns and returns invisible NULL on zero submissions", {
     .package = "AzureStor"
   )
   local_mocked_bindings(
-    download_odk_form = function(...) tibble::tibble(),
+    download_odk_form = function(...) list(RiverProspection = tibble::tibble()),
     eri_write         = function(...) { eri_written <<- TRUE },
     .package = "erifunctions"
   )
@@ -123,7 +123,7 @@ test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
   fake_data <- tibble::tibble(id = 1:3, value = letters[1:3])
 
   local_mocked_bindings(
-    download_odk_form = function(...) fake_data,
+    download_odk_form = function(...) list(RiverProspection = fake_data),
     eri_write = function(obj, file_loc, ...) {
       written_obj  <<- obj
       written_path <<- file_loc
@@ -168,7 +168,7 @@ test_that("eri_odk_sync uses correct blob path: {country}/{disease}/odk/raw/{for
   )
 
   local_mocked_bindings(
-    download_odk_form = function(...) tibble::tibble(x = 1L),
+    download_odk_form = function(...) list(LFSurvey = tibble::tibble(x = 1L)),
     eri_write = function(obj, file_loc, ...) {
       written_path <<- file_loc
       invisible(NULL)
@@ -180,4 +180,82 @@ test_that("eri_odk_sync uses correct blob path: {country}/{disease}/odk/raw/{for
   eri_odk_sync(project_id = 3L, form_id = "LFSurvey", data_con = "mock")
 
   expect_equal(written_path, "nga/lf/odk/raw/LFSurvey.parquet")
+})
+
+# --- repeat groups: multiple tables -> multiple Parquets ----------------------
+
+test_that("eri_odk_sync writes one Parquet per table for a repeat-group form", {
+  entry      <- make_sync_entry(form_id = "RiverRepeat")
+  stored_reg <- make_sync_reg(entry)
+
+  written_paths <- character(0)
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored_reg, dest),
+    storage_dir_exists = function(...) TRUE,
+    storage_upload     = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+
+  local_mocked_bindings(
+    download_odk_form = function(...) list(
+      RiverRepeat               = tibble::tibble(KEY = c("a", "b")),               # main: 2 submissions
+      `RiverRepeat-larva_sample` = tibble::tibble(PARENT_KEY = c("a", "a", "b"))   # repeat: 3 rows
+    ),
+    eri_write = function(obj, file_loc, ...) {
+      written_paths <<- c(written_paths, file_loc)
+      invisible(NULL)
+    },
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  res <- eri_odk_sync(project_id = 7L, form_id = "RiverRepeat", data_con = "mock")
+
+  expect_equal(written_paths, c(
+    "uga/oncho/odk/raw/RiverRepeat.parquet",
+    "uga/oncho/odk/raw/RiverRepeat-larva_sample.parquet"
+  ))
+  # multi-table sync returns the named list of tables
+  expect_named(res, c("RiverRepeat", "RiverRepeat-larva_sample"))
+})
+
+# --- download_odk_form table extraction ---------------------------------------
+
+# Mock the download (GET) + unzip so the function reads real fixture CSVs offline.
+mock_export <- function(env) {
+  parent <- tibble::tibble(KEY = c("a", "b"),        site = c("S1", "S2"))
+  child  <- tibble::tibble(PARENT_KEY = c("a", "a", "b"), species = c("x", "y", "z"))
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) structure(list(status_code = 200L), class = "response"),
+    .package = "httr", .env = env
+  )
+  testthat::local_mocked_bindings(
+    .odk_check_response = function(...) invisible(NULL),
+    unzip = function(zipfile, exdir, ...) {
+      readr::write_csv(parent, file.path(exdir, "myform.csv"))
+      readr::write_csv(child,  file.path(exdir, "myform-larva_sample.csv"))
+      invisible(character(0))
+    },
+    .package = "erifunctions", .env = env
+  )
+}
+
+test_that("download_odk_form(tables = TRUE) returns a named list of all export tables", {
+  mock_export(environment())
+  out <- download_odk_form(url = "https://x/", auth = "tok",
+                           project_id = 1L, form_id = "myform", tables = TRUE)
+  expect_type(out, "list")
+  expect_named(out, c("myform", "myform-larva_sample"))   # main table first
+  expect_equal(nrow(out[["myform"]]), 2L)
+  expect_equal(nrow(out[["myform-larva_sample"]]), 3L)
+})
+
+test_that("download_odk_form(tables = FALSE) returns only the main table tibble", {
+  mock_export(environment())
+  out <- download_odk_form(url = "https://x/", auth = "tok",
+                           project_id = 1L, form_id = "myform")   # tables = FALSE
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 2L)   # the repeat table is not returned
 })

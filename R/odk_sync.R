@@ -2,10 +2,14 @@
 
 #' Sync an ODK form's submissions to Azure
 #'
-#' Downloads all submissions for a registered ODK form and writes them as a
-#' Parquet file to `data/{country}/{disease}/odk/raw/{form_id}.parquet` in the
-#' Azure `data/` container.  The registry entry's `last_synced` timestamp is
-#' updated on success.
+#' Downloads all submissions for a registered ODK form and writes them as
+#' Parquet file(s) into `data/{country}/{disease}/odk/raw/` in the Azure `data/`
+#' container. Forms with **repeat groups** (most real forms) export multiple
+#' tables -- the main submission table plus one child table per repeat group --
+#' and each is written as its own Parquet (`{form_id}.parquet`,
+#' `{form_id}-{repeat}.parquet`, ...); a flat form writes a single
+#' `{form_id}.parquet`. The registry entry's `last_synced` timestamp is updated
+#' on success.
 #'
 #' @param project_id `int` ODK Central project ID.
 #' @param form_id `str` ODK Central form ID (xmlFormId).
@@ -15,7 +19,8 @@
 #'   automatically using `ERIFUNCTIONS_*` environment variables.
 #' @param overwrite `lgl` Whether to overwrite an existing Parquet file in Azure.
 #'   Defaults to `TRUE`.
-#' @returns The downloaded tibble (invisibly), or `invisible(NULL)` when zero
+#' @returns Invisibly, the downloaded tibble (single-table forms) or a named list
+#'   of tibbles (forms with repeat groups); `invisible(NULL)` when zero
 #'   submissions are found.
 #' @examples
 #' \dontrun{
@@ -43,14 +48,16 @@ eri_odk_sync <- function(
 
   cli::cli_inform("Downloading submissions for {.val {form_id}} ({country}/{disease})...")
 
-  submissions <- download_odk_form(
+  tabs <- download_odk_form(
     con        = con,
     project_id = project_id,
     form_id    = form_id,
-    data_con   = NULL
+    data_con   = NULL,
+    tables     = TRUE
   )
+  main <- tabs[[1L]]
 
-  if (nrow(submissions) == 0L) {
+  if (nrow(main) == 0L) {
     cli::cli_warn(c(
       "No submissions found for {.val {form_id}}.",
       "i" = "Nothing written to Azure."
@@ -58,14 +65,13 @@ eri_odk_sync <- function(
     return(invisible(NULL))
   }
 
-  blob_path <- paste0(country, "/", disease, "/odk/raw/", form_id, ".parquet")
-
-  eri_write(
-    obj         = submissions,
-    file_loc    = blob_path,
-    azure       = TRUE,
-    azcontainer = data_con
-  )
+  raw_dir    <- paste0(country, "/", disease, "/odk/raw")
+  blob_paths <- character(0)
+  for (nm in names(tabs)) {
+    bp <- paste0(raw_dir, "/", nm, ".parquet")
+    eri_write(obj = tabs[[nm]], file_loc = bp, azure = TRUE, azcontainer = data_con)
+    blob_paths <- c(blob_paths, bp)
+  }
 
   .odk_sync_update_last_synced(reg, data_con, project_id, form_id)
 
@@ -78,18 +84,26 @@ eri_odk_sync <- function(
       form_id    = form_id,
       country    = country,
       disease    = disease,
-      n_records  = nrow(submissions),
-      blob_path  = blob_path
+      n_records  = nrow(main),
+      n_tables   = length(tabs),
+      blob_paths = as.list(blob_paths)
     ),
     status = "success"
   )
   .eri_write_log(op_log, data_con, paste0(country, "/", disease, "/odk/logs"))
 
-  cli::cli_alert_success(
-    "Synced {nrow(submissions)} record{?s} from {.val {form_id}} to {.path {blob_path}}."
-  )
+  if (length(tabs) == 1L) {
+    cli::cli_alert_success(
+      "Synced {nrow(main)} record{?s} from {.val {form_id}} to {.path {blob_paths[[1L]]}}."
+    )
+  } else {
+    n_repeats <- length(tabs) - 1L
+    cli::cli_alert_success(
+      "Synced {.val {form_id}}: {nrow(main)} submission{?s} + {n_repeats} repeat table{?s} to {.path {raw_dir}/}."
+    )
+  }
 
-  invisible(submissions)
+  invisible(if (length(tabs) == 1L) main else tabs)
 }
 
 # Find a single active registry entry matching project_id + form_id.
