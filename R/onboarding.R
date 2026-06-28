@@ -9,7 +9,8 @@
   paste0(
     "country: ", country_code, "\n",
     "disease: ", disease, "\n",
-    "data_type: mda\n",
+    "data_source: programmatic\n",
+    "data_type: treatment\n",
     "version: \"1.0\"\n",
     "# time_grain: annual\n",
     "\n",
@@ -78,6 +79,7 @@
   paste0(
     "country: ", country_code, "\n",
     "disease: ", disease, "\n",
+    "data_source: research\n",
     "data_type: prevalence\n",
     "version: \"1.0\"\n",
     "# time_grain: annual\n",
@@ -172,10 +174,13 @@
 }
 
 # Build surveillance schema YAML content as a string with guiding comments.
-.surveillance_schema_template <- function(country_code, country_name, disease, language) {
+.surveillance_schema_template <- function(country_code, country_name, disease, language,
+                                          data_type = "aggregate") {
   paste0(
-    "country: ", country_name, "\n",
+    "country: ", country_code, "\n",
     "disease: ", disease, "\n",
+    "data_source: surveillance\n",
+    "data_type: ", data_type, "\n",
     "language: ", language, "\n",
     "# time_grain: weekly   # or: monthly\n",
     "# aggregation: case    # or: count\n",
@@ -335,7 +340,13 @@ eri_onboard_disease <- function(disease,
   country    <- tolower(trimws(country))
   data_types <- match.arg(data_types, c("mda", "prevalence"), several.ok = TRUE)
 
-  file_names <- paste0(country, "_", disease, "_", data_types, ".yaml")
+  # ADR-0012 identity: the user-facing kind maps to (data_source, data_type).
+  kind_map   <- list(mda        = c("programmatic", "treatment"),
+                     prevalence = c("research",     "prevalence"))
+  file_names <- vapply(data_types, function(k) {
+    m <- kind_map[[k]]
+    paste0(country, "_", disease, "_", m[[1L]], "_", m[[2L]], ".yaml")
+  }, character(1L))
   file_paths <- file.path(output_dir, file_names)
 
   if (dry_run) {
@@ -388,6 +399,9 @@ eri_onboard_disease <- function(disease,
 #'   Ignored when `dry_run = TRUE`.
 #' @param dry_run `lgl` If `TRUE`, print a plan but do not write files or create Azure
 #'   directories. Default `FALSE`.
+#' @param data_type `chr` The surveillance measure for the schema identity (ADR-0012),
+#'   e.g. `"aggregate"` or `"case"`. Default `"aggregate"`. Sets the schema filename
+#'   `{country}_{disease}_surveillance_{data_type}.yaml`.
 #' @returns Invisibly, the path to the written schema file (or `NULL` in dry-run mode).
 #' @examples
 #' \dontrun{
@@ -402,7 +416,8 @@ eri_onboard_country <- function(
     language  = "en",
     path      = getwd(),
     data_con  = NULL,
-    dry_run   = FALSE
+    dry_run   = FALSE,
+    data_type = "aggregate"
 ) {
   country_code <- tolower(trimws(country_code))
   disease      <- tolower(trimws(disease))
@@ -411,7 +426,7 @@ eri_onboard_country <- function(
   if (!language %in% c("en", "fr"))
     cli::cli_abort("{.arg language} must be {.val en} or {.val fr}, not {.val {language}}.")
 
-  schema_filename <- paste0(country_code, "_", disease, "_schema.yaml")
+  schema_filename <- paste0(country_code, "_", disease, "_surveillance_", data_type, ".yaml")
   schema_path     <- file.path(path, schema_filename)
 
   azure_dirs <- c(
@@ -430,7 +445,7 @@ eri_onboard_country <- function(
     return(invisible(NULL))
   }
 
-  yaml_content <- .surveillance_schema_template(country_code, country_name, disease, language)
+  yaml_content <- .surveillance_schema_template(country_code, country_name, disease, language, data_type)
   writeLines(yaml_content, schema_path)
   cli::cli_alert_success("Schema template written to {.path {schema_path}}.")
 
@@ -452,7 +467,7 @@ eri_onboard_country <- function(
     " " = "1. Open {.path {schema_path}} and fill in the TODO sections.",
     " " = "2. Run {.run eri_schema_validate('{schema_path}')} to check your edits.",
     " " = "3. Submit the schema via a pull request to add it to the package:",
-    " " = "   {.path inst/schemas/{country_code}_{disease}.yaml}",
+    " " = "   {.path inst/schemas/{country_code}_{disease}_surveillance_{data_type}.yaml}",
     " " = "4. Register any ODK forms with {.run eri_odk_register()}.",
     " " = "5. Pin the package version in your project: {.run renv::snapshot()}."
   ))
@@ -564,7 +579,7 @@ eri_onboard_cmr <- function(
 #' @examples
 #' \dontrun{
 #' # Validate a schema you just generated
-#' eri_schema_validate("uga_oncho_schema.yaml")
+#' eri_schema_validate("uga_oncho_surveillance_aggregate.yaml")
 #'
 #' # Validate a bundled schema
 #' eri_schema_validate(system.file("schemas/dr_malaria_surveillance_aggregate.yaml",

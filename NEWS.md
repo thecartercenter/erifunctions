@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Feature: onboarding scaffolders emit the 4-part schema identity (ADR-0012, #175 phase 4a)
+
+- `eri_onboard_disease()` and `eri_onboard_country()` now write schema skeletons named to the ADR-0012
+  identity `{country}_{disease}_{data_source}_{data_type}.yaml` with `data_source` / `data_type` header
+  fields: `mda` → `programmatic` / `treatment`, `prevalence` → `research` / `prevalence`, and
+  surveillance → `surveillance` / `{data_type}` (new `eri_onboard_country(data_type = "aggregate")`
+  argument). So a freshly onboarded program is consistent with the migrated bundled schemas and loads
+  via the 4-arg `load_dq_schema()`. The DA onboarding guide is updated to match.
+
 ## Feature: `eri_ingest()` is a general, sandbox-runnable ingest core (ADR-0012, #175 phase 3a)
 
 - `eri_ingest()` no longer requires the `hsp-mal` pipeline registry or a registered country, and no

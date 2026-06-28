@@ -7,7 +7,7 @@ test_that("eri_onboard_country dry_run returns invisible NULL without writing fi
   result <- eri_onboard_country("uga", "Uganda", "oncho",
                                  path = tmp, dry_run = TRUE)
   expect_null(result)
-  expect_false(file.exists(file.path(tmp, "uga_oncho_schema.yaml")))
+  expect_false(file.exists(file.path(tmp, "uga_oncho_surveillance_aggregate.yaml")))
 })
 
 test_that("eri_onboard_country writes a YAML file to path", {
@@ -24,12 +24,14 @@ test_that("eri_onboard_country writes a YAML file to path", {
   )
 
   out_path <- eri_onboard_country("uga", "Uganda", "oncho", path = tmp)
-  expect_equal(out_path, file.path(tmp, "uga_oncho_schema.yaml"))
+  expect_equal(out_path, file.path(tmp, "uga_oncho_surveillance_aggregate.yaml"))
   expect_true(file.exists(out_path))
 
   content <- paste(readLines(out_path, warn = FALSE), collapse = "\n")
-  expect_match(content, "country: Uganda")
+  expect_match(content, "country: uga")
   expect_match(content, "disease: oncho")
+  expect_match(content, "data_source: surveillance")
+  expect_match(content, "data_type: aggregate")
   expect_match(content, "year_col")
   unlink(out_path)
 })
@@ -63,7 +65,7 @@ test_that("eri_onboard_country creates Azure directories", {
   expect_true("uga/oncho/surveillance/raw"       %in% created)
   expect_true("uga/oncho/surveillance/staged"    %in% created)
   expect_true("uga/oncho/surveillance/processed" %in% created)
-  unlink(file.path(tmp, "uga_oncho_schema.yaml"))
+  unlink(file.path(tmp, "uga_oncho_surveillance_aggregate.yaml"))
 })
 
 # --- eri_onboard_cmr ----------------------------------------------------------
@@ -231,8 +233,8 @@ test_that("eri_onboard_disease dry_run returns NULL without writing files", {
   tmp <- tempdir()
   result <- eri_onboard_disease("schisto", "ug", output_dir = tmp, dry_run = TRUE)
   expect_null(result)
-  expect_false(file.exists(file.path(tmp, "ug_schisto_mda.yaml")))
-  expect_false(file.exists(file.path(tmp, "ug_schisto_prevalence.yaml")))
+  expect_false(file.exists(file.path(tmp, "ug_schisto_programmatic_treatment.yaml")))
+  expect_false(file.exists(file.path(tmp, "ug_schisto_research_prevalence.yaml")))
 })
 
 test_that("eri_onboard_disease generates one file per data_type", {
@@ -240,8 +242,8 @@ test_that("eri_onboard_disease generates one file per data_type", {
   paths <- eri_onboard_disease("schisto", "ug", output_dir = tmp)
   expect_length(paths, 2L)
   expect_true(all(file.exists(paths)))
-  expect_true(any(grepl("mda", paths)))
-  expect_true(any(grepl("prevalence", paths)))
+  expect_true(any(grepl("programmatic_treatment", paths)))
+  expect_true(any(grepl("research_prevalence", paths)))
   unlink(paths)
 })
 
