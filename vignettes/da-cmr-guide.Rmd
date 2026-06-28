@@ -127,6 +127,12 @@ the two programmes these reports cover. Only the registered RB-expansion countri
 > programme code — so the paths are `{country}/rblf/cmr/…` and you approve with
 > `eri_approve(country, "rblf", "cmr", period)`. Scaffolding a new country's CMR with
 > `eri_onboard_cmr(create_dirs = TRUE)` creates those same `{country}/rblf/cmr/` folders.
+>
+> **Transitional vocabulary.** `rblf` and `cmr` are interim coordinates: under the
+> [source ≠ measure model (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
+> CMR is a *format* of the `programmatic` channel, and each sheet splits to its own disease and measure
+> (e.g. RB Treatment → `{country}/oncho/programmatic/treatment/`). Until that split ships, keep using
+> `rblf`/`cmr` as shown here — don't adopt them as the canonical addressing model.
 
 ## 3. Parse each sheet {#parse}
 

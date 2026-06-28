@@ -828,8 +828,8 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #'
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
-#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`, `"odk"`
-#'   (extensible — see [eri_data_model()]; unknown values warn).
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"` (extensible — see [eri_data_model()]; unknown values warn).
 #' @param data_type `str` The measure: `"case"`, `"aggregate"`, `"treatment"`,
 #'   `"tas"`, ... (extensible; unknown values warn).
 #' @param layer `str` Pipeline layer: `"raw"`, `"staged"`, or `"processed"`.
