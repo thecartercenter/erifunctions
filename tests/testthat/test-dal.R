@@ -321,6 +321,23 @@ test_that("eri_approve errors informatively when staged dir does not exist", {
   )
 })
 
+test_that(".eri_note_no_measure signposts the four-axis form once per session", {
+  withr::local_options(erifunctions.noted_no_measure = NULL)
+  expect_message(
+    erifunctions:::.eri_note_no_measure(NULL),
+    "no-measure"
+  )
+  # Once per session: a second four-axis call is silent.
+  expect_no_message(erifunctions:::.eri_note_no_measure(NULL))
+})
+
+test_that(".eri_note_no_measure is silent when a measure is supplied", {
+  withr::local_options(erifunctions.noted_no_measure = NULL)
+  expect_no_message(erifunctions:::.eri_note_no_measure("case"))
+  # ...and it did not arm the once-per-session guard, so a later no-measure call still notes.
+  expect_message(erifunctions:::.eri_note_no_measure(NULL), "no-measure")
+})
+
 test_that("eri_approve errors when no files match period", {
   mock_container <- structure(list(), class = "mock_container")
   empty_tbl      <- tibble::tibble(name = character(0), size = integer(0))
