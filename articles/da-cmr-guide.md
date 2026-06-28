@@ -148,9 +148,19 @@ template has:
 
 schema <- load_cmr_schema("uga")
 names(schema$sheets)
-#> [1] "RB Treatment"  "SCH Treatment" "LF MMDP"       "CDD Training"
-#> [5] "CS Training"   "MMDP Training" "Surveys"
+#>  [1] "RB Treatment"                  "SCH Treatment"
+#>  [3] "LF MMDP"                       "VHT Training"
+#>  [5] "Parish Supervisors Training"   "Local Leaders Training"
+#>  [7] "Subcounty Supervisor Training" "MMDP (surgery) Training"
+#>  [9] "MMDP (patient) Training"       "Field Ento Training"
+#> [11] "Lab Training"                  "LF Surveys"
+#> [13] "RB Epi Surveys"                "RB Ento Surveys"
 ```
+
+(A real monthly file has many sheets — treatments, MMDP, the various
+trainings, and surveys. The bundled `cmr-example.xlsx` below is a small
+**two-sheet** subset, `RB Treatment` + `SCH Treatment`, so you can run
+the parse and split offline.)
 
 Then read a sheet with
 [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md).
@@ -223,7 +233,16 @@ eri_split_cmr(report, "uga", dry_run = TRUE)
 #> ℹ Dry run -- nothing written. Routing plan:
 #>   "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)
 #>   "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)
+#> Warning: Sheet "LF MMDP" not found in cmr-example.xlsx; skipping.   # ...and the
+#> Warning: Sheet "VHT Training" not found in cmr-example.xlsx; skipping.  # other
+#> # ... (the example has only the two treatment sheets; a real file routes them all)
 ```
+
+A sheet the schema routes but the workbook doesn’t contain is **skipped
+with a warning** — expected here, since the example is a two-sheet
+subset. (If *none* of the routable sheets are present,
+[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+errors instead of silently doing nothing.)
 
 > **Why the sheet, not the row?** Each sheet carries a per-row
 > `#…_disease` field whose values are *programme-coverage* codes (`RB` /

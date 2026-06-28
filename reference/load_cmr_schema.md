@@ -29,6 +29,11 @@ list with `field_code_prefix` and `required_fields`.
 ``` r
 schema <- load_cmr_schema("uga")
 names(schema$sheets)  # sheet names present for Uganda
-#> [1] "RB Treatment"  "SCH Treatment" "LF MMDP"       "CDD Training" 
-#> [5] "CS Training"   "MMDP Training" "Surveys"      
+#>  [1] "RB Treatment"                  "SCH Treatment"                
+#>  [3] "LF MMDP"                       "VHT Training"                 
+#>  [5] "Parish Supervisors Training"   "Local Leaders Training"       
+#>  [7] "Subcounty Supervisor Training" "MMDP (surgery) Training"      
+#>  [9] "MMDP (patient) Training"       "Field Ento Training"          
+#> [11] "Lab Training"                  "LF Surveys"                   
+#> [13] "RB Epi Surveys"                "RB Ento Surveys"              
 ```

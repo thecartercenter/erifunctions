@@ -254,8 +254,18 @@ country’s template has:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_cmr_schema.html">load_cmr_schema</a></span><span class="op">(</span><span class="st">"uga"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">schema</span><span class="op">$</span><span class="va">sheets</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "RB Treatment"  "SCH Treatment" "LF MMDP"       "CDD Training"</span></span>
-<span><span class="co">#&gt; [5] "CS Training"   "MMDP Training" "Surveys"</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] "RB Treatment"                  "SCH Treatment"</span></span>
+<span><span class="co">#&gt;  [3] "LF MMDP"                       "VHT Training"</span></span>
+<span><span class="co">#&gt;  [5] "Parish Supervisors Training"   "Local Leaders Training"</span></span>
+<span><span class="co">#&gt;  [7] "Subcounty Supervisor Training" "MMDP (surgery) Training"</span></span>
+<span><span class="co">#&gt;  [9] "MMDP (patient) Training"       "Field Ento Training"</span></span>
+<span><span class="co">#&gt; [11] "Lab Training"                  "LF Surveys"</span></span>
+<span><span class="co">#&gt; [13] "RB Epi Surveys"                "RB Ento Surveys"</span></span></code></pre></div>
+<p>(A real monthly file has many sheets — treatments, MMDP, the various
+trainings, and surveys. The bundled <code>cmr-example.xlsx</code> below
+is a small <strong>two-sheet</strong> subset, <code>RB Treatment</code>
++ <code>SCH Treatment</code>, so you can run the parse and split
+offline.)</p>
 <p>Then read a sheet with <a href="../reference/eri_ingest_cmr.html"><code>eri_ingest_cmr()</code></a>.
 It reads from <strong>row 5</strong> (the field codes), keeps only the
 <code>#</code>-coded columns, drops the template’s blank spacer rows,
@@ -317,7 +327,15 @@ routing first with <code>dry_run</code>:</p>
 <span><span class="co">#&gt; ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.</span></span>
 <span><span class="co">#&gt; ℹ Dry run -- nothing written. Routing plan:</span></span>
 <span><span class="co">#&gt;   "RB Treatment"  -&gt; uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)</span></span>
-<span><span class="co">#&gt;   "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)</span></span></code></pre></div>
+<span><span class="co">#&gt;   "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)</span></span>
+<span><span class="co">#&gt; Warning: Sheet "LF MMDP" not found in cmr-example.xlsx; skipping.   # ...and the</span></span>
+<span><span class="co">#&gt; Warning: Sheet "VHT Training" not found in cmr-example.xlsx; skipping.  # other</span></span>
+<span><span class="co">#&gt; # ... (the example has only the two treatment sheets; a real file routes them all)</span></span></code></pre></div>
+<p>A sheet the schema routes but the workbook doesn’t contain is
+<strong>skipped with a warning</strong> — expected here, since the
+example is a two-sheet subset. (If <em>none</em> of the routable sheets
+are present, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> errors instead of silently
+doing nothing.)</p>
 <blockquote>
 <p><strong>Why the sheet, not the row?</strong> Each sheet carries a
 per-row <code>#…_disease</code> field whose values are
