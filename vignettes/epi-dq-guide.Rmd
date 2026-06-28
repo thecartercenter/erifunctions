@@ -59,10 +59,11 @@ case. It has three planted problems — a species typo, a **case spike**, and a 
 kinds of thing a real extract hides:
 
 ```{r extract}
-# The `disease` argument is the *schema key* (here "malaria_case", the case-level
-# malaria schema) — more specific than the "malaria" program in the country table,
-# and separate from the layer-path data_type (surveillance/cmr/odk).
-schema <- load_dq_schema("dr", disease = "malaria_case", azcontainer = NULL)
+# Load by the four-part identity (ADR-0012): country, disease, data_source (the
+# channel — surveillance/programmatic/research), data_type (the measure — here
+# "case", the case-level line-list). The legacy compound key still works too:
+# load_dq_schema("dr", "malaria_case") resolves via an alias during the migration.
+schema <- load_dq_schema("dr", "malaria", "surveillance", "case", azcontainer = NULL)
 
 # A tiny helper to make `n` identical case rows for a province/week.
 mk <- function(province, week, n, species = "P. vivax") {

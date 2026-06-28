@@ -110,16 +110,19 @@ Open the `.qmd` file in RStudio and knit it.
 
 ### Data layers
 
-All data lives in the `data/` Azure blob under a standard path:
+All data lives in the `data/` Azure blob under a standard path
+([ADR-0012](docs/adr/0012-source-measure-data-model.md)):
 
 ```
-data/{country}/{disease}/{data_type}/{layer}/
-                                     raw/        <- as-received from source
-                                     staged/     <- DQ-checked, awaiting approval
-                                     processed/  <- analyst-approved, canonical
+data/{country}/{disease}/{data_source}/{data_type}/{layer}/
+                                                   raw/        <- as-received from source
+                                                   staged/     <- DQ-checked, awaiting approval
+                                                   processed/  <- analyst-approved, canonical
 ```
 
-`eri_approve()` is the explicit human gate. Nothing reaches `processed/` without it.
+The `data_type` (measure) level is optional — channel-only data lands one level shallower. The two
+addressing axes are explained just below. `eri_approve()` is the explicit human gate. Nothing reaches
+`processed/` without it.
 
 ### How data is addressed (vocabulary)
 
@@ -130,7 +133,7 @@ is that **how the data arrives (`data_source`) is separate from what it measures
 |---|---|---|
 | `country` | the country | `dr`, `ht`, `uga` |
 | `disease` | the disease | `malaria`, `lf`, `oncho` |
-| `data_source` | **the channel — how it arrives** | `surveillance`, `programmatic`, `odk` |
+| `data_source` | **the channel — how it arrives** | `surveillance`, `programmatic`, `research` |
 | `data_type` | **the measure — what it captures** | `case`, `aggregate`, `treatment`, `tas` |
 | `layer` | pipeline stage | `raw`, `staged`, `processed` |
 
@@ -227,8 +230,8 @@ eri_catalog_verify()
 
 | Function | What it does |
 |---|---|
-| `eri_catalog_register(path, country, disease, data_type, layer)` | Register a file in the catalog |
-| `eri_catalog_query(country, disease, data_type, layer, period)` | Query catalog entries |
+| `eri_catalog_register(path, country, disease, data_source, layer, data_type)` | Register a file in the catalog |
+| `eri_catalog_query(country, disease, data_source, data_type, layer, period)` | Query catalog entries |
 | `eri_catalog_verify()` | Check catalog entries exist in Azure; update verification timestamps |
 
 ### Onboarding a new country or disease
