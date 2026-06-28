@@ -158,7 +158,9 @@ sheets:
       - "#hgtrn_adm3"
       - "#hgtrn_disease"
   "Formation Professeurs":
-    field_code_prefix: "#tch"
+    field_code_prefix: "#tchrtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#tchrtrn_year"
       - "#tchrtrn_adm0"

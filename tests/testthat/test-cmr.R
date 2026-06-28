@@ -356,6 +356,22 @@ test_that("every country's CMR schema routes at least one sheet to a registered 
   }
 })
 
+test_that("every bundled CMR sheet declares routing keys (no silently-skipped data sheet)", {
+  # Bundled CMR schemas only contain data sheets (reference tabs with no field
+  # codes are excluded at generation), so every sheet must declare disease +
+  # data_type or eri_split_cmr() would silently drop its data.
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+    schema <- load_cmr_schema(country)
+    for (sheet in names(schema$sheets)) {
+      sd <- schema$sheets[[sheet]]
+      expect_false(is.null(sd$disease),
+                   info = paste(country, "/", sheet, "missing disease routing key"))
+      expect_false(is.null(sd$data_type),
+                   info = paste(country, "/", sheet, "missing data_type routing key"))
+    }
+  }
+})
+
 test_that("eri_split_cmr aborts when the workbook has none of the routable sheets", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   writexl::write_xlsx(list(

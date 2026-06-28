@@ -194,7 +194,9 @@ sheets:
       - "#labtrn_adm3"
       - "#labtrn_disease"
   "Teacher Training":
-    field_code_prefix: "#tch"
+    field_code_prefix: "#tchrtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#tchrtrn_year"
       - "#tchrtrn_adm0"
