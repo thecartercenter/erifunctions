@@ -20,7 +20,9 @@ eri_onboard_disease(
   data_types = c("mda", "prevalence"),
   output_dir = "schemas/"     # write locally, not to the package
 )
-# Writes schemas/ug_schisto_mda.yaml and schemas/ug_schisto_prevalence.yaml
+# Writes schemas/ug_schisto_programmatic_treatment.yaml and
+#        schemas/ug_schisto_research_prevalence.yaml (ADR-0012: mda -> programmatic/
+#        treatment, prevalence -> research/prevalence)
 ```
 
 Use `dry_run = TRUE` first to preview what will be written:
@@ -35,7 +37,7 @@ eri_onboard_disease("rb", "eth", dry_run = TRUE)
 Open each skeleton file and complete the TODO sections:
 
 ``` yaml
-# ug_schisto_mda.yaml (excerpt)
+# ug_schisto_programmatic_treatment.yaml (excerpt)
 columns:
   species_target:
     required: true
@@ -90,7 +92,7 @@ Before submitting, test the schema against real or synthetic data:
 
 ``` r
 
-schema <- load_dq_schema("ug", "schisto_mda", azcontainer = NULL)
+schema <- load_dq_schema("ug", "schisto", "programmatic", "treatment", azcontainer = NULL)
 # azcontainer = NULL tells it to use the local file, not Azure
 
 # Create a small synthetic data frame that matches your schema
@@ -112,11 +114,12 @@ schema is ready for real data.
 
 ## 5. Submit to the package
 
-Copy the validated schema file to `inst/schemas/` using the naming
-convention `{country}_{disease}_{data_type}.yaml`:
+Copy the validated schema file to `inst/schemas/` using the four-part
+identity `{country}_{disease}_{data_source}_{data_type}.yaml`
+(ADR-0012):
 
-    inst/schemas/ug_schisto_mda.yaml
-    inst/schemas/ug_schisto_prevalence.yaml
+    inst/schemas/ug_schisto_programmatic_treatment.yaml
+    inst/schemas/ug_schisto_research_prevalence.yaml
 
 PR checklist:
 
@@ -125,7 +128,8 @@ Schema file is in `inst/schemas/` with correct name
 [`eri_schema_validate()`](https://thecartercenter.github.io/erifunctions/reference/eri_schema_validate.md)
 returns 0 issues
 
-`load_dq_schema("ug", "schisto_mda", azcontainer = NULL)` works
+`load_dq_schema("ug", "schisto", "programmatic", "treatment", azcontainer = NULL)`
+works
 
 At least one `load_dq_schema` + `eri_schema_validate` test added to
 `tests/testthat/test-onboarding.R` following the existing pattern

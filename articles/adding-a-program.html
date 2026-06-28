@@ -106,7 +106,9 @@ type:</p>
 <span>  data_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mda"</span>, <span class="st">"prevalence"</span><span class="op">)</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="st">"schemas/"</span>     <span class="co"># write locally, not to the package</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co"># Writes schemas/ug_schisto_mda.yaml and schemas/ug_schisto_prevalence.yaml</span></span></code></pre></div>
+<span><span class="co"># Writes schemas/ug_schisto_programmatic_treatment.yaml and</span></span>
+<span><span class="co">#        schemas/ug_schisto_research_prevalence.yaml (ADR-0012: mda -&gt; programmatic/</span></span>
+<span><span class="co">#        treatment, prevalence -&gt; research/prevalence)</span></span></code></pre></div>
 <p>Use <code>dry_run = TRUE</code> first to preview what will be
 written:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -116,7 +118,7 @@ written:</p>
 <h2 id="fill-in-disease-specific-columns">2. Fill in disease-specific columns<a class="anchor" aria-label="anchor" href="#fill-in-disease-specific-columns"></a>
 </h2>
 <p>Open each skeleton file and complete the TODO sections:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># ug_schisto_mda.yaml (excerpt)</span></span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># ug_schisto_programmatic_treatment.yaml (excerpt)</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">columns</span><span class="kw">:</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="at">  </span><span class="fu">species_target</span><span class="kw">:</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
@@ -182,7 +184,7 @@ pointing to a column not in <code>columns</code>
 <p>Before submitting, test the schema against real or synthetic
 data:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"ug"</span>, <span class="st">"schisto_mda"</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"ug"</span>, <span class="st">"schisto"</span>, <span class="st">"programmatic"</span>, <span class="st">"treatment"</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="co"># azcontainer = NULL tells it to use the local file, not Azure</span></span>
 <span></span>
 <span><span class="co"># Create a small synthetic data frame that matches your schema</span></span>
@@ -205,17 +207,18 @@ data.</p>
 <h2 id="submit-to-the-package">5. Submit to the package<a class="anchor" aria-label="anchor" href="#submit-to-the-package"></a>
 </h2>
 <p>Copy the validated schema file to <code>inst/schemas/</code> using
-the naming convention
-<code>{country}_{disease}_{data_type}.yaml</code>:</p>
-<pre><code><span><span class="va">inst</span><span class="op">/</span><span class="va">schemas</span><span class="op">/</span><span class="va">ug_schisto_mda.yaml</span></span>
-<span><span class="va">inst</span><span class="op">/</span><span class="va">schemas</span><span class="op">/</span><span class="va">ug_schisto_prevalence.yaml</span></span></code></pre>
+the four-part identity
+<code>{country}_{disease}_{data_source}_{data_type}.yaml</code>
+(ADR-0012):</p>
+<pre><code><span><span class="va">inst</span><span class="op">/</span><span class="va">schemas</span><span class="op">/</span><span class="va">ug_schisto_programmatic_treatment.yaml</span></span>
+<span><span class="va">inst</span><span class="op">/</span><span class="va">schemas</span><span class="op">/</span><span class="va">ug_schisto_research_prevalence.yaml</span></span></code></pre>
 <p>PR checklist:</p>
 <ul class="task-list">
 <li><label><input type="checkbox">Schema file is in
 <code>inst/schemas/</code> with correct name</label></li>
 <li><label><input type="checkbox"><code><a href="../reference/eri_schema_validate.html">eri_schema_validate()</a></code>
 returns 0 issues</label></li>
-<li><label><input type="checkbox"><code>load_dq_schema("ug", "schisto_mda", azcontainer = NULL)</code>
+<li><label><input type="checkbox"><code>load_dq_schema("ug", "schisto", "programmatic", "treatment", azcontainer = NULL)</code>
 works</label></li>
 <li><label><input type="checkbox">At least one
 <code>load_dq_schema</code> + <code>eri_schema_validate</code> test

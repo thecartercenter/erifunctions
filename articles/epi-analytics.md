@@ -122,12 +122,13 @@ The function warns (rather than errors) when `npos > npool` and returns
 
 ## Lymphatic filariasis: MDA coverage
 
-Use the `ht_lf_mda` and `dr_lf_mda` schemas to clean coverage data, then
+Use the `ht_lf_programmatic_treatment` and
+`dr_lf_programmatic_treatment` schemas to clean coverage data, then
 compute programme indicators:
 
 ``` r
 
-schema <- load_dq_schema("ht", "lf_mda", azcontainer = NULL)
+schema <- load_dq_schema("ht", "lf", "programmatic", "treatment", azcontainer = NULL)
 result <- run_dq_checks(raw_mda, schema)
 
 coverage <- result$data |>
