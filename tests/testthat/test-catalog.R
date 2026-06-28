@@ -288,6 +288,33 @@ test_that("eri_catalog_query filters by data_source and data_type (the measure)"
   expect_equal(by_measure$path, e1$path)
 })
 
+# --- prune-under (eri_dir_delete catalog cleanup) -----------------------------
+
+test_that(".eri_prune_catalog_under removes only entries under the deleted prefix", {
+  removed <- character(0)
+  local_mocked_bindings(
+    eri_catalog_query = function(...) tibble::tibble(path = c(
+      "atlantis/malaria/surveillance/case/processed/a.parquet",
+      "atlantis/malaria/surveillance/case/processed/b.parquet",
+      "uga/oncho/programmatic/treatment/processed/c.parquet")),
+    eri_catalog_remove = function(path, ...) { removed <<- c(removed, path); invisible(TRUE) },
+    .package = "erifunctions"
+  )
+
+  n <- erifunctions:::.eri_prune_catalog_under("atlantis/")  # trailing slash tolerated
+  expect_equal(n, 2L)
+  expect_setequal(removed, c("atlantis/malaria/surveillance/case/processed/a.parquet",
+                             "atlantis/malaria/surveillance/case/processed/b.parquet"))
+})
+
+test_that(".eri_prune_catalog_under is a fail-silent no-op on an empty catalog", {
+  local_mocked_bindings(
+    eri_catalog_query = function(...) tibble::tibble(path = character()),
+    .package = "erifunctions"
+  )
+  expect_equal(erifunctions:::.eri_prune_catalog_under("atlantis"), 0L)
+})
+
 # --- verify -------------------------------------------------------------------
 
 test_that("eri_catalog_verify returns exists column", {

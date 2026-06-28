@@ -372,6 +372,13 @@ test_that("every bundled CMR sheet declares routing keys (no silently-skipped da
   }
 })
 
+test_that("eri_split_cmr summarizes absent sheets in one message (not a deferred pile)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)  # 3 sheets present; the uga schema routes more, so some are skipped
+  # The absent sheets are reported once as an informational summary, not warnings.
+  expect_message(eri_split_cmr(tmp, "uga", dry_run = TRUE), "Skipped [0-9]+ sheet")
+})
+
 test_that("eri_split_cmr aborts when the workbook has none of the routable sheets", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   writexl::write_xlsx(list(

@@ -180,11 +180,12 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   fbase     <- tools::file_path_sans_ext(basename(path))
   slug      <- function(x) gsub("_+", "_", gsub("[^a-z0-9]+", "_", tolower(x)))
 
-  plan <- list()
+  plan    <- list()
+  skipped <- character(0)
   for (sheet_name in names(routable)) {
     spec <- routable[[sheet_name]]
     if (!sheet_name %in% available) {
-      cli::cli_warn("Sheet {.val {sheet_name}} not found in {.path {basename(path)}}; skipping.")
+      skipped <- c(skipped, sheet_name)
       next
     }
     df       <- eri_ingest_cmr(path, sheet = sheet_name, country = country)
@@ -194,6 +195,14 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       sheet = sheet_name, disease = spec$disease, data_type = spec$data_type,
       dest = dest, dest_dir = dest_dir, n_rows = nrow(df), data = df
     )
+  }
+
+  # One tidy summary of sheets the schema routes but this workbook lacks, rather
+  # than a deferred pile of individual warnings.
+  if (length(skipped) > 0L) {
+    cli::cli_inform(c(
+      "i" = "Skipped {length(skipped)} sheet{?s} not in {.path {basename(path)}}: {.val {skipped}}."
+    ))
   }
 
   # A wrong workbook (none of the schema's routable sheets present) is an error,

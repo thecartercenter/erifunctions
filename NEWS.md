@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Fix: `eri_dir_delete()` prunes the catalog; `eri_split_cmr()` summarizes skipped sheets (#175 polish)
+
+- `eri_dir_delete()` now **removes data-catalog entries under the deleted path** (new `prune_catalog`
+  argument, default `TRUE` for Azure deletes), so deleting a namespace no longer leaves dangling rows that
+  `eri_catalog_verify()` would flag. Fail-silent — a catalog hiccup never blocks the delete. Surfaced by a
+  fresh-Epi red-team run whose sandbox teardown left a phantom catalog row.
+- `eri_split_cmr()` reports sheets the schema routes but the workbook lacks as a **single informational
+  summary** ("Skipped N sheets …") instead of a deferred pile of individual warnings (a fresh-DA nit).
+
 ## Data: bundled CMR schemas reconciled to the real country templates (ADR-0012, #175)
 
 - The seven bundled CMR schemas (`inst/schemas/cmr/{eth,nga,sdn,ssd,uga,tcd,mad}.yaml`) are regenerated
