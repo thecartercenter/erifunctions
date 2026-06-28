@@ -948,9 +948,10 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
 #' `staged/` directory whose names contain `period`, moves them to `processed/`,
 #' and writes a YAML approval log alongside them.
 #'
-#' Analyst identity is read from the `ERI_ANALYST_ID` environment variable,
-#' falling back to `Sys.info()[["user"]]` if it is unset or empty (in which case a
-#' one-time warning is emitted so the fallback attribution is not silent).
+#' Analyst identity is read from the `ERI_ANALYST_ID` environment variable. If it is
+#' unset, the approver is recorded as `"<os-username> (unverified)"` (a one-time
+#' warning is emitted so the fallback is not silent); set `ERI_REQUIRE_ANALYST_ID`
+#' truthy to refuse approving without a configured identity instead.
 #'
 #' An operation log capturing every step (including errors) is always written to
 #' `{country}/{disease}/{data_source}/{data_type}/logs/` in the data container,
@@ -1583,10 +1584,13 @@ eri_ingest <- function(path, country, disease,
 
 #' Resolve the analyst identity for governed actions and audit logs
 #'
-#' Returns `ERI_ANALYST_ID` when set. When it is not, falls back to the operating
-#' system username and warns **once per R session** (via
-#' `options(erifunctions.warned_analyst_id)`) so the analyst knows the shared
-#' audit trail will be stamped with that fallback rather than their identity.
+#' Returns `ERI_ANALYST_ID` when set. When it is not, the behaviour depends on
+#' `ERI_REQUIRE_ANALYST_ID`: if that is truthy (`1`/`true`/`yes`/`on`), governed
+#' actions are **refused** (an error). Otherwise it falls back to
+#' `"<os-username> (unverified)"` — the OS account, explicitly **marked** so the
+#' shared audit trail records the attribution as provisional rather than as a real
+#' analyst id — and warns **once per R session** (via
+#' `options(erifunctions.warned_analyst_id)`).
 #' @keywords internal
 .eri_analyst_id <- function() {
   id <- Sys.getenv("ERI_ANALYST_ID", unset = "")
