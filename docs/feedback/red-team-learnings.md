@@ -44,6 +44,14 @@ Both personas independently concluded the **code is uniformly ADR-0012-correct**
    teaches it produces `data_type = NA` catalog rows with no signal. Watch for whether a `cli_inform`
    signpost was added.
 
+> **Resolved after Run 1 (verify, don't re-report):** the doc sweep landed — README five-axis
+> consistency + reference rows + transitional callouts (#196); `eri_research_pull` → 5-axis (#195);
+> a once-per-session `eri_approve` no-measure signpost (#197); the full `da-ingest-guide` 5-axis
+> rewrite (#198); and the role-scoped "New here? Do these in order" path in README + `docs/guides.md`
+> (#199). The **remaining** Run-1 items still open: the CMR guide leads with Storage Explorer for
+> upload (should lead with `eri_upload()`), and `ERI_ANALYST_ID` is not promoted to a required Day-1
+> step. Confirm these before re-reporting; treat everything above as fixed unless proven otherwise.
+
 ### Delighters worth protecting (regressions here would hurt most)
 
 - `eri_data_model()` — the single best orientation tool; prints the whole 5-axis vocabulary with the
