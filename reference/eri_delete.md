@@ -4,7 +4,10 @@
 
 Thin wrapper around
 [`erifunctions_io()`](https://thecartercenter.github.io/erifunctions/reference/erifunctions_io.md)
-for deleting a file.
+for deleting a file. Note this does **not** touch the data catalog — if
+you are tearing down a namespace, use
+[`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md),
+which also prunes catalog entries under the deleted path.
 
 ## Usage
 
