@@ -144,11 +144,14 @@ test_that("load_cmr_schema Nigeria has both SCH and STH Treatment", {
   expect_true("STH Treatment" %in% sheet_names)
 })
 
-test_that("load_cmr_schema Ethiopia has Fly Collection and River Prospection", {
+test_that("load_cmr_schema Ethiopia has the RB+LF entomology/survey sheets (real template)", {
   schema <- load_cmr_schema("eth")
   sheet_names <- names(schema$sheets)
-  expect_true("Fly Collection" %in% sheet_names)
-  expect_true("River Prospection" %in% sheet_names)
+  # eth is an RB+LF country (no SCH/STH); its oncho entomology lives in the
+  # RB Ento Surveys + Field Ento Training sheets, not the old stand-in names.
+  expect_true("RB Ento Surveys" %in% sheet_names)
+  expect_true("Field Ento Training" %in% sheet_names)
+  expect_false("SCH Treatment" %in% sheet_names)
 })
 
 #### Tests for French CMR schemas (issue #29) ####
@@ -349,6 +352,22 @@ test_that("every country's CMR schema routes at least one sheet to a registered 
       dt <- routed[[sheet]]$data_type
       expect_true(dt %in% measures,
                   info = paste(country, "/", sheet, "data_type", dt, "is not a registered measure"))
+    }
+  }
+})
+
+test_that("every bundled CMR sheet declares routing keys (no silently-skipped data sheet)", {
+  # Bundled CMR schemas only contain data sheets (reference tabs with no field
+  # codes are excluded at generation), so every sheet must declare disease +
+  # data_type or eri_split_cmr() would silently drop its data.
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+    schema <- load_cmr_schema(country)
+    for (sheet in names(schema$sheets)) {
+      sd <- schema$sheets[[sheet]]
+      expect_false(is.null(sd$disease),
+                   info = paste(country, "/", sheet, "missing disease routing key"))
+      expect_false(is.null(sd$data_type),
+                   info = paste(country, "/", sheet, "missing data_type routing key"))
     }
   }
 })
