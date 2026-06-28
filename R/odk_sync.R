@@ -3,8 +3,11 @@
 #' Sync an ODK form's submissions to Azure
 #'
 #' Downloads all submissions for a registered ODK form and writes them as
-#' Parquet file(s) into `data/{country}/{disease}/odk/raw/` in the Azure `data/`
-#' container. Forms with **repeat groups** (most real forms) export multiple
+#' Parquet file(s) into `data/{country}/{disease}/research/raw/` in the Azure
+#' `data/` container — ODK is the **research** channel's collection format
+#' (`format: odk`) under ADR-0012, not a `data_source` of its own. The measure
+#' (`data_type`) is assigned later, when the analyst cleans the form into a final
+#' dataset. Forms with **repeat groups** (most real forms) export multiple
 #' tables -- the main submission table plus one child table per repeat group --
 #' and each is written as its own Parquet (`{form_id}.parquet`,
 #' `{form_id}-{repeat}.parquet`, ...); a flat form writes a single
@@ -65,7 +68,10 @@ eri_odk_sync <- function(
     return(invisible(NULL))
   }
 
-  raw_dir    <- paste0(country, "/", disease, "/odk/raw")
+  # ODK is the research channel's collection format (ADR-0012): submissions land
+  # in the `research` source (format: odk), not the retired `odk` source token.
+  # The measure is assigned later when the DA cleans the form into a final dataset.
+  raw_dir    <- paste0(country, "/", disease, "/research/raw")
   blob_paths <- character(0)
   for (nm in names(tabs)) {
     bp <- paste0(raw_dir, "/", nm, ".parquet")
@@ -80,17 +86,19 @@ eri_odk_sync <- function(
     analyst    = analyst,
     timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(
-      project_id = as.integer(project_id),
-      form_id    = form_id,
-      country    = country,
-      disease    = disease,
-      n_records  = nrow(main),
-      n_tables   = length(tabs),
-      blob_paths = as.list(blob_paths)
+      project_id  = as.integer(project_id),
+      form_id     = form_id,
+      country     = country,
+      disease     = disease,
+      data_source = "research",
+      format      = "odk",
+      n_records   = nrow(main),
+      n_tables    = length(tabs),
+      blob_paths  = as.list(blob_paths)
     ),
     status = "success"
   )
-  .eri_write_log(op_log, data_con, paste0(country, "/", disease, "/odk/logs"))
+  .eri_write_log(op_log, data_con, paste0(country, "/", disease, "/research/logs"))
 
   if (length(tabs) == 1L) {
     cli::cli_alert_success(
