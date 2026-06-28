@@ -119,6 +119,160 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   df
 }
 
+#' Split a CMR monthly report into per-disease, per-measure staged datasets
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Reads every sheet a country's CMR schema routes (those declaring a `disease`
+#' and a `data_type`), and writes each sheet's parsed rows to
+#' `data/{country}/{disease}/programmatic/{data_type}/staged/` in the `data` blob
+#' (ADR-0012, #175). The **disease comes from the sheet** (e.g. `RB Treatment` →
+#' `oncho`, `SCH Treatment` → `sch`, `LF MMDP` → `lf`); cross-programme Training
+#' sheets route together under the combined `rblf` disease. The per-row
+#' `#..._disease` field — which holds program-coverage codes (`RB` / `RBLF` /
+#' `RBLFSCH`) — is kept as a data column, **not** split on, so no row is
+#' duplicated across diseases.
+#'
+#' Data is staged **parsed as-is** (machine-readable `#field-code` columns; no
+#' reshape, no automated DQ — CMR review is manual). [eri_approve()] then promotes
+#' each `{disease}/programmatic/{data_type}` to `processed/`.
+#'
+#' @param path `str` Local path to the CMR Excel file.
+#' @param country `str` Three-letter country code (e.g. `"uga"`); resolves the
+#'   CMR schema via [load_cmr_schema()].
+#' @param data_con Azure container for the `data` blob. `NULL` connects using
+#'   `ERIFUNCTIONS_DATA_STORAGE_NAME`.
+#' @param overwrite `logical` If `FALSE` (default), warns before overwriting an
+#'   existing staged file.
+#' @param dry_run `logical` If `TRUE`, returns the routing plan and writes
+#'   nothing. Default `FALSE`.
+#' @returns Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
+#'   `data_type`, `dest`, `n_rows`.
+#' @examples
+#' \dontrun{
+#' # Preview where each sheet would land
+#' eri_split_cmr("uga_2024_06.xlsx", "uga", dry_run = TRUE)
+#' # Stage for real, then approve each disease/measure
+#' eri_split_cmr("uga_2024_06.xlsx", "uga")
+#' eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
+#' }
+#' @export
+eri_split_cmr <- function(path, country, data_con = NULL,
+                          overwrite = FALSE, dry_run = FALSE) {
+  if (!file.exists(path)) {
+    cli::cli_abort("File not found: {.path {path}}")
+  }
+  schema   <- load_cmr_schema(country)
+  routable <- Filter(
+    function(s) !is.null(s$disease) && !is.null(s$data_type),
+    schema$sheets
+  )
+  if (length(routable) == 0L) {
+    cli::cli_abort(c(
+      "No routable sheets in the {.val {country}} CMR schema.",
+      "i" = "A sheet routes only when it declares both {.field disease} and {.field data_type}."
+    ))
+  }
+
+  available <- readxl::excel_sheets(path)
+  fbase     <- tools::file_path_sans_ext(basename(path))
+  slug      <- function(x) gsub("_+", "_", gsub("[^a-z0-9]+", "_", tolower(x)))
+
+  plan <- list()
+  for (sheet_name in names(routable)) {
+    spec <- routable[[sheet_name]]
+    if (!sheet_name %in% available) {
+      cli::cli_warn("Sheet {.val {sheet_name}} not found in {.path {basename(path)}}; skipping.")
+      next
+    }
+    df       <- eri_ingest_cmr(path, sheet = sheet_name, country = country)
+    dest_dir <- eri_data_path(country, spec$disease, "programmatic", spec$data_type, "staged")
+    dest     <- paste0(dest_dir, "/", fbase, "_", slug(sheet_name), ".parquet")
+    plan[[length(plan) + 1L]] <- list(
+      sheet = sheet_name, disease = spec$disease, data_type = spec$data_type,
+      dest = dest, dest_dir = dest_dir, n_rows = nrow(df), data = df
+    )
+  }
+
+  plan_tbl <- tibble::tibble(
+    sheet     = vapply(plan, function(p) p$sheet,     character(1L)),
+    disease   = vapply(plan, function(p) p$disease,   character(1L)),
+    data_type = vapply(plan, function(p) p$data_type, character(1L)),
+    dest      = vapply(plan, function(p) p$dest,      character(1L)),
+    n_rows    = vapply(plan, function(p) p$n_rows,    integer(1L))
+  )
+
+  if (dry_run) {
+    cli::cli_inform(c("i" = "Dry run -- nothing written. Routing plan:"))
+    for (p in plan) {
+      cli::cli_inform("  {.val {p$sheet}} -> {.path {p$dest}} ({p$n_rows} row{?s})")
+    }
+    return(invisible(plan_tbl))
+  }
+
+  data_con <- if (is.null(data_con)) {
+    suppressMessages(get_azure_storage_connection(
+      storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+    ))
+  } else data_con
+
+  log_dir <- paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+  op_log  <- list(
+    operation  = "eri_split_cmr",
+    analyst    = .eri_analyst_id(),
+    started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(country = country, path = path),
+    status     = "in_progress", steps = list(), error = NULL, files = NULL
+  )
+
+  written   <- character(0)
+  had_error <- FALSE
+  err_msg   <- NULL
+
+  tryCatch({
+    for (p in plan) {
+      if (!AzureStor::storage_dir_exists(data_con, p$dest_dir)) {
+        .eri_create_azure_dir(data_con, p$dest_dir)
+        op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir", path = p$dest_dir)
+      }
+      if (AzureStor::storage_file_exists(data_con, p$dest) && !overwrite) {
+        cli::cli_warn("Overwriting existing staged file: {.path {basename(p$dest)}}")
+      }
+      withr::with_tempfile("parquet_file", fileext = ".parquet", {
+        arrow::write_parquet(p$data, parquet_file)
+        .eri_blob_write(data_con, parquet_file, p$dest)
+      })
+      written      <- c(written, p$dest)
+      op_log$steps <- .eri_log_step(op_log$steps, "split_sheet",
+                                     sheet = p$sheet, disease = p$disease,
+                                     data_type = p$data_type, dest = p$dest)
+      .eri_say_done("{.val {p$sheet}} -> {.path {p$dest}}")
+    }
+    .eri_summary("Split CMR by disease/measure", c(
+      Sheets   = sprintf("%d routed", length(written)),
+      Diseases = paste(sort(unique(plan_tbl$disease)), collapse = ", ")
+    ))
+    op_log$status <- "success"
+    op_log$files  <- as.list(written)
+  }, error = function(e) {
+    had_error <<- TRUE
+    err_msg   <<- conditionMessage(e)
+  })
+
+  op_log$completed_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (had_error) {
+    op_log$status <- "error"
+    op_log$error  <- err_msg
+    op_log$steps  <- .eri_log_step(op_log$steps, "error_caught",
+                                    status = "error", message = err_msg)
+  }
+  .eri_write_log(op_log, data_con, log_dir)
+  if (had_error) cli::cli_abort(err_msg, call = NULL)
+
+  invisible(plan_tbl)
+}
+
 #' Stage CMR monthly report files into the data/ blob
 #'
 #' @description

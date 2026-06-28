@@ -3,9 +3,27 @@ country_code: uga
 language: en
 template: english_cmr
 
+# Per-sheet routing for the CMR per-disease split (ADR-0012, #175):
+#   disease    -- the routing disease, taken from the SHEET (not the per-row
+#                 #..._disease field, which in the real templates holds
+#                 program-coverage codes RB / RBLF / RBLFSCH and is kept as a
+#                 data column, not split on).
+#   data_type  -- the measure for that sheet's category.
+# eri_split_cmr() routes each sheet's parsed rows to
+#   {country}/{disease}/programmatic/{data_type}/staged/ (parsed as-is; no DQ).
+# Cross-programme Training sheets route together under the combined `rblf`
+# disease. Sheets without disease/data_type are skipped by the split.
+#
+# NOTE: this is a simplified stand-in. The real Uganda template has a larger
+# sheet set (VHT/Parish/Local-Leaders/Subcounty/MMDP-surgery/MMDP-patient/
+# Field-Ento/Lab Training, LF Surveys, RB Epi Surveys, RB Ento Surveys) and
+# monthly _jan..dec columns; reconciling each country's bundled schema to its
+# real template is tracked as follow-up.
 sheets:
   RB Treatment:
     field_code_prefix: "#rbtrt_"
+    disease: oncho
+    data_type: treatment
     required_fields:
       - "#rbtrt_year"
       - "#rbtrt_month"
@@ -16,6 +34,8 @@ sheets:
 
   SCH Treatment:
     field_code_prefix: "#schtrt_"
+    disease: sch
+    data_type: treatment
     required_fields:
       - "#schtrt_year"
       - "#schtrt_month"
@@ -26,6 +46,8 @@ sheets:
 
   LF MMDP:
     field_code_prefix: "#lfmmdp_"
+    disease: lf
+    data_type: mmdp
     required_fields:
       - "#lfmmdp_year"
       - "#lfmmdp_month"
@@ -38,6 +60,8 @@ sheets:
 
   CDD Training:
     field_code_prefix: "#cddtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cddtrn_year"
       - "#cddtrn_month"
@@ -48,6 +72,8 @@ sheets:
 
   CS Training:
     field_code_prefix: "#cstrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cstrn_year"
       - "#cstrn_month"
@@ -58,6 +84,8 @@ sheets:
 
   MMDP Training:
     field_code_prefix: "#mmdptrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#mmdptrn_year"
       - "#mmdptrn_month"
@@ -68,6 +96,8 @@ sheets:
 
   Surveys:
     field_code_prefix: "#svy_"
+    disease: rblf
+    data_type: survey
     required_fields:
       - "#svy_year"
       - "#svy_adm1"

@@ -279,3 +279,88 @@ test_that("eri_ingest_cmr parses French template identically (same field codes)"
   expect_equal(names(en), names(fr))
   expect_equal(en[["#rbtrt_year"]], fr[["#rbtrt_year"]])
 })
+
+#### Tests for eri_split_cmr ####
+
+# One CMR-layout sheet: 3 junk rows, the field-code row, then data rows.
+make_cmr_sheet_df <- function(field_codes, data_rows) {
+  n <- length(field_codes); col_nms <- paste0("V", seq_len(n))
+  mk <- function(vals) setNames(as.data.frame(matrix(vals, nrow = 1), stringsAsFactors = FALSE), col_nms)
+  junk  <- do.call(rbind, replicate(3, mk(rep(NA_character_, n)), simplify = FALSE))
+  codes <- mk(field_codes)
+  data  <- do.call(rbind, lapply(data_rows, mk))
+  rbind(junk, codes, data)
+}
+
+# A synthetic Uganda CMR with the three disease-specific treatment/MMDP sheets.
+# Each carries a per-row #..._disease program-coverage code (RB/RBLF/RBLFSCH).
+make_uga_cmr <- function(path) {
+  writexl::write_xlsx(list(
+    "RB Treatment" = make_cmr_sheet_df(
+      c("#rbtrt_year", "#rbtrt_disease", "#rbtrt_target"),
+      list(c("2024", "RBLFSCH", "100"), c("2024", "RB", "200"))),
+    "SCH Treatment" = make_cmr_sheet_df(
+      c("#schtrt_year", "#schtrt_disease", "#schtrt_target"),
+      list(c("2024", "RBLFSCH", "50"))),
+    "LF MMDP" = make_cmr_sheet_df(
+      c("#lfmmdp_year", "#lfmmdp_disease", "#lfmmdp_hydro_treated"),
+      list(c("2024", "RBLF", "10"), c("2024", "RBLFSCH", "5")))
+  ), path)
+  path
+}
+
+test_that("eri_split_cmr routes each sheet to {disease}/programmatic/{measure} (dry run)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  plan <- suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE))
+  expect_s3_class(plan, "tbl_df")
+
+  expect_equal(plan$disease[plan$sheet == "RB Treatment"], "oncho")
+  expect_equal(plan$data_type[plan$sheet == "RB Treatment"], "treatment")
+  expect_match(plan$dest[plan$sheet == "RB Treatment"],
+               "^uga/oncho/programmatic/treatment/staged/")
+  expect_equal(plan$disease[plan$sheet == "SCH Treatment"], "sch")
+  expect_match(plan$dest[plan$sheet == "SCH Treatment"],
+               "^uga/sch/programmatic/treatment/staged/")
+  expect_match(plan$dest[plan$sheet == "LF MMDP"],
+               "^uga/lf/programmatic/mmdp/staged/")
+  # The per-row program code is preserved, not split: RB Treatment keeps both rows.
+  expect_equal(plan$n_rows[plan$sheet == "RB Treatment"], 2L)
+})
+
+test_that("eri_split_cmr keeps the per-row program code as a column (no disease split)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+  # The parsed RB Treatment sheet keeps #rbtrt_disease with RBLFSCH/RB intact.
+  rb <- eri_ingest_cmr(tmp, sheet = "RB Treatment", country = "uga")
+  expect_true("#rbtrt_disease" %in% names(rb))
+  expect_setequal(rb[["#rbtrt_disease"]], c("RBLFSCH", "RB"))
+})
+
+test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  written <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { written <<- c(written, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"))
+  )
+
+  expect_length(written, 3L)
+  expect_true(any(grepl("^uga/oncho/programmatic/treatment/staged/", written)))
+  expect_true(any(grepl("^uga/sch/programmatic/treatment/staged/", written)))
+  expect_true(any(grepl("^uga/lf/programmatic/mmdp/staged/", written)))
+})
