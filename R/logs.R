@@ -32,26 +32,32 @@
   )
 }
 
-# Top-level data/ directories that are infrastructure, not country namespaces,
-# plus the pipeline layer names (raw/staged/processed) and `logs`, which are
-# never country/disease/source/measure values. Used to skip non-axis subdirs
-# while walking the tree.
+# Top-level `data/` directories that are infrastructure, not country namespaces.
+# These are skipped only at the *country* level of the walk — crucially, some of
+# these names (`research`, `odk`) are also valid `data_source` values deeper in
+# the tree, so they must NOT be stripped below the country level.
 #' @keywords internal
 .ERI_LOGS_INFRA_DIRS <- c("artifacts", "research", "schemas", "spatial",
-                          "odk", "templates", "logs",
-                          "raw", "staged", "processed")
+                          "odk", "templates", "logs")
 
-# List immediate sub-directory names under a blob prefix, skipping infra dirs
-# (those starting with "_", e.g. _catalog, or in the known infra set).
+# Structural directory names that are never a country/disease/data_source/measure
+# value: the pipeline layers and the `logs/` leaf. Skipped at every level below
+# the country so the measure enumeration doesn't mistake a layer for a measure.
 #' @keywords internal
-.eri_logs_list_subdirs <- function(con, prefix) {
+.ERI_LOGS_NONAXIS_DIRS <- c("raw", "staged", "processed", "logs")
+
+# List immediate sub-directory names under a blob prefix, skipping `_`-prefixed
+# dirs (e.g. _catalog) and any name in `exclude`. `exclude` is level-specific:
+# the top-level infra set at the country level, the non-axis set deeper down.
+#' @keywords internal
+.eri_logs_list_subdirs <- function(con, prefix, exclude = .ERI_LOGS_NONAXIS_DIRS) {
   lst <- tryCatch(
     dplyr::as_tibble(AzureStor::list_storage_files(con, prefix)),
     error = function(e) NULL
   )
   if (is.null(lst) || nrow(lst) == 0L) return(character(0))
   nm <- basename(lst$name[lst$isdir])
-  nm[!startsWith(nm, "_") & !(nm %in% .ERI_LOGS_INFRA_DIRS)]
+  nm[!startsWith(nm, "_") & !(nm %in% exclude)]
 }
 
 #' @keywords internal
@@ -68,7 +74,8 @@
 # own `logs/` and every measure's `logs/` under it are scanned.
 #' @keywords internal
 .eri_logs_dirs <- function(con, country, disease, data_source, data_type) {
-  countries <- if (!is.null(country)) country else .eri_logs_list_subdirs(con, "")
+  countries <- if (!is.null(country)) country
+               else .eri_logs_list_subdirs(con, "", exclude = .ERI_LOGS_INFRA_DIRS)
 
   dirs <- character(0)
   for (cc in countries) {
