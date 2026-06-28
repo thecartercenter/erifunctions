@@ -338,6 +338,21 @@ test_that("eri_split_cmr keeps the per-row program code as a column (no disease 
   expect_setequal(rb[["#rbtrt_disease"]], c("RBLFSCH", "RB"))
 })
 
+test_that("every country's CMR schema routes at least one sheet to a registered measure", {
+  measures <- names(erifunctions:::.eri_data_model()$data_types)
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+    schema <- load_cmr_schema(country)
+    routed <- Filter(function(s) !is.null(s$disease) && !is.null(s$data_type), schema$sheets)
+    expect_gt(length(routed), 0L,
+              label = paste(country, "has no routable CMR sheets"))
+    for (sheet in names(routed)) {
+      dt <- routed[[sheet]]$data_type
+      expect_true(dt %in% measures,
+                  info = paste(country, "/", sheet, "data_type", dt, "is not a registered measure"))
+    }
+  }
+})
+
 test_that("eri_split_cmr aborts when the workbook has none of the routable sheets", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   writexl::write_xlsx(list(
