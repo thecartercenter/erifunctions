@@ -7,9 +7,12 @@
 .eri_analyst_id()
 }
 \description{
-Returns \code{ERI_ANALYST_ID} when set. When it is not, falls back to the operating
-system username and warns \strong{once per R session} (via
-\code{options(erifunctions.warned_analyst_id)}) so the analyst knows the shared
-audit trail will be stamped with that fallback rather than their identity.
+Returns \code{ERI_ANALYST_ID} when set. When it is not, the behaviour depends on
+\code{ERI_REQUIRE_ANALYST_ID}: if that is truthy (\code{1}/\code{true}/\code{yes}/\code{on}), governed
+actions are \strong{refused} (an error). Otherwise it falls back to
+\code{"<os-username> (unverified)"} — the OS account, explicitly \strong{marked} so the
+shared audit trail records the attribution as provisional rather than as a real
+analyst id — and warns \strong{once per R session} (via
+\code{options(erifunctions.warned_analyst_id)}).
 }
 \keyword{internal}

@@ -172,6 +172,7 @@ reference:
   contents:
   - eri_odk_register
   - eri_odk_deregister
+  - eri_odk_purge
   - eri_odk_list_registered
   - eri_odk_sync
   - eri_survey_status
