@@ -1,5 +1,15 @@
 # erifunctions (development version)
 
+## Feature: `eri_research_pull()` speaks the five-axis model (ADR-0012, #175 phase 4b)
+
+- `eri_research_pull()` — the Epi sourcing entry point — now takes `data_source` (the channel) plus an
+  optional `data_type` (the measure), matching the coordinates [eri_catalog_query()] reports, so a study
+  pulls canonical processed data with the same tokens a discovery query returns:
+  `eri_research_pull("dr", "malaria", "surveillance", "case")`. Path construction delegates to
+  `eri_data_path()`, so the four-axis (channel-only) form works too. **Back-compat:** the pre-ADR-0012
+  form where the channel was passed as `data_type` (`data_type = "surveillance"`) still resolves to the
+  same processed path. Surfaced by a fresh-Epi red-team run as the one un-migrated step on the sourcing path.
+
 ## Feature: the measure (`data_type`) reaches the human gate and the catalog (ADR-0012, #175 phase 4b)
 
 - `eri_approve()` gains an optional `data_type` (the measure) argument:

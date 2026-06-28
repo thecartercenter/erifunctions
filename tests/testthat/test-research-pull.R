@@ -79,6 +79,97 @@ test_that("eri_research_pull by canonical args resolves processed path and downl
   expect_true(any(grepl("2024_W02.parquet", downloaded)))
 })
 
+test_that("eri_research_pull builds a five-axis processed path from data_source + data_type", {
+  tmp <- withr::local_tempdir()
+  dir.create(file.path(tmp, "data"))
+  .write_manifest(tmp)
+
+  listed_path <- NULL
+
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    list_storage_files = function(con, path, ...) {
+      listed_path <<- path
+      c("uga/oncho/programmatic/treatment/processed/2024_06.parquet")
+    },
+    storage_download = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+
+  withr::with_dir(tmp, {
+    result <- eri_research_pull(
+      country     = "uga",
+      disease     = "oncho",
+      data_source = "programmatic",
+      data_type   = "treatment",
+      dest        = file.path(tmp, "data")
+    )
+  })
+
+  expect_equal(listed_path, "uga/oncho/programmatic/treatment/processed")
+  expect_equal(length(result), 1L)
+})
+
+test_that("eri_research_pull builds a four-axis path from data_source alone (no measure)", {
+  tmp <- withr::local_tempdir()
+  dir.create(file.path(tmp, "data"))
+  .write_manifest(tmp)
+
+  listed_path <- NULL
+
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    list_storage_files = function(con, path, ...) {
+      listed_path <<- path
+      c("dr/malaria/surveillance/processed/2024_W01.parquet")
+    },
+    storage_download = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+
+  withr::with_dir(tmp, {
+    eri_research_pull(country = "dr", disease = "malaria",
+                      data_source = "surveillance", dest = file.path(tmp, "data"))
+  })
+
+  expect_equal(listed_path, "dr/malaria/surveillance/processed")
+})
+
+test_that("eri_research_pull back-compat: legacy data_type=<channel> resolves to the channel path", {
+  tmp <- withr::local_tempdir()
+  dir.create(file.path(tmp, "data"))
+  .write_manifest(tmp)
+
+  listed_path <- NULL
+
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    list_storage_files = function(con, path, ...) {
+      listed_path <<- path
+      c("dr/malaria/surveillance/processed/2024_W01.parquet")
+    },
+    storage_download = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+
+  withr::with_dir(tmp, {
+    # Pre-ADR-0012 form: the channel was passed as data_type.
+    eri_research_pull(country = "dr", disease = "malaria",
+                      data_type = "surveillance", dest = file.path(tmp, "data"))
+  })
+
+  expect_equal(listed_path, "dr/malaria/surveillance/processed")
+})
+
 test_that("eri_research_pull handles a single-file path directly (no directory listing)", {
   tmp <- withr::local_tempdir()
   dir.create(file.path(tmp, "data"))

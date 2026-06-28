@@ -258,7 +258,7 @@ eri_catalog_verify()
 | `eri_research_status(check_remote)` | Report what data the project depends on and whether any of it is stale |
 | `eri_research_log(note)` | Append a timestamped lab notebook entry to `research.yaml` |
 | `eri_research_list()` | List all research projects in Azure |
-| `eri_research_pull(country, disease, data_type)` | Pull canonical or reference data into the project with provenance |
+| `eri_research_pull(country, disease, data_source, data_type)` | Pull canonical or reference data into the project with provenance |
 | `eri_research_upload_figure(local_path, caption)` | Upload a figure to Azure outputs and record in manifest |
 | `eri_research_upload_output(obj, filename)` | Serialize and upload an R object to Azure outputs |
 | `eri_research_snapshot(label)` | Freeze the local `data/` directory to a timestamped Azure snapshot |

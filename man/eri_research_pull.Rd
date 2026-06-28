@@ -7,6 +7,7 @@
 eri_research_pull(
   country = NULL,
   disease = NULL,
+  data_source = NULL,
   data_type = NULL,
   path = NULL,
   dest = NULL,
@@ -15,11 +16,18 @@ eri_research_pull(
 )
 }
 \arguments{
-\item{country}{\code{chr} or \code{NULL} Country code (e.g. \code{"dr"}). Used with \code{disease} and \code{data_type}.}
+\item{country}{\code{chr} or \code{NULL} Country code (e.g. \code{"dr"}). Used with \code{disease} and \code{data_source}.}
 
-\item{disease}{\code{chr} or \code{NULL} Disease name (e.g. \code{"malaria"}). Used with \code{country} and \code{data_type}.}
+\item{disease}{\code{chr} or \code{NULL} Disease name (e.g. \code{"malaria"}). Used with \code{country} and \code{data_source}.}
 
-\item{data_type}{\code{chr} or \code{NULL} Data type (\code{"surveillance"}, \code{"cmr"}, \code{"odk"}). Used with \code{country} and \code{disease}.}
+\item{data_source}{\code{chr} or \code{NULL} The channel (\code{"surveillance"}, \code{"programmatic"},
+\code{"research"}). Used with \code{country} and \code{disease}. The catalog (\code{\link[=eri_catalog_query]{eri_catalog_query()}})
+reports this column, so a pull uses the same coordinates a discovery query returns.}
+
+\item{data_type}{\code{chr} or \code{NULL} The measure (e.g. \code{"case"}, \code{"aggregate"}, \code{"treatment"},
+\code{"tas"}). Optional — \code{NULL} pulls the four-axis channel-level processed layer.
+\strong{Back-compat:} if only \code{data_type} is given (the pre-ADR-0012 form where it held the
+channel), it is treated as \code{data_source}.}
 
 \item{path}{\code{chr} or \code{NULL} Explicit Azure blob path to download from. Mutually exclusive with canonical args.}
 
@@ -39,8 +47,9 @@ Downloads files from Azure into a local destination and records every pull in
 }
 \details{
 \itemize{
-\item \strong{Canonical}: supply \code{country}, \code{disease}, and \code{data_type} to pull from the
-standard processed layer (\verb{\{country\}/\{disease\}/\{data_type\}/processed/}).
+\item \strong{Canonical}: supply \code{country}, \code{disease}, and \code{data_source} (optionally a
+\code{data_type} measure) to pull from the standard processed layer
+(\verb{\{country\}/\{disease\}/\{data_source\}/\{data_type\}/processed/}, per ADR-0012).
 \item \strong{Path}: supply \code{path} to pull any Azure location (e.g. \code{"data/spatial/dom_admin_boundaries/"}).
 }
 
@@ -49,8 +58,12 @@ For non-standard external files not yet in Azure, upload them first with
 }
 \examples{
 \dontrun{
-# Pull canonical processed surveillance data
-eri_research_pull(country = "dr", disease = "malaria", data_type = "surveillance")
+# Pull canonical processed data using the coordinates the catalog reports
+eri_research_pull(country = "dr", disease = "malaria",
+                  data_source = "surveillance", data_type = "case")
+
+# Four-axis (channel only, no measure)
+eri_research_pull(country = "dr", disease = "malaria", data_source = "surveillance")
 
 # Pull standard spatial reference files
 eri_research_pull(path = "spatial/dom_admin_boundaries")

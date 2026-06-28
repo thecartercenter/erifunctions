@@ -260,16 +260,23 @@ eri_research_list <- function(data_con = NULL) {
 #' Downloads files from Azure into a local destination and records every pull in
 #' `research.yaml` for provenance. Two modes:
 #'
-#' - **Canonical**: supply `country`, `disease`, and `data_type` to pull from the
-#'   standard processed layer (`{country}/{disease}/{data_type}/processed/`).
+#' - **Canonical**: supply `country`, `disease`, and `data_source` (optionally a
+#'   `data_type` measure) to pull from the standard processed layer
+#'   (`{country}/{disease}/{data_source}/{data_type}/processed/`, per ADR-0012).
 #' - **Path**: supply `path` to pull any Azure location (e.g. `"data/spatial/dom_admin_boundaries/"`).
 #'
 #' For non-standard external files not yet in Azure, upload them first with
 #' [eri_artifact_upload()], then pull with [eri_artifact_pull()].
 #'
-#' @param country `chr` or `NULL` Country code (e.g. `"dr"`). Used with `disease` and `data_type`.
-#' @param disease `chr` or `NULL` Disease name (e.g. `"malaria"`). Used with `country` and `data_type`.
-#' @param data_type `chr` or `NULL` Data type (`"surveillance"`, `"cmr"`, `"odk"`). Used with `country` and `disease`.
+#' @param country `chr` or `NULL` Country code (e.g. `"dr"`). Used with `disease` and `data_source`.
+#' @param disease `chr` or `NULL` Disease name (e.g. `"malaria"`). Used with `country` and `data_source`.
+#' @param data_source `chr` or `NULL` The channel (`"surveillance"`, `"programmatic"`,
+#'   `"research"`). Used with `country` and `disease`. The catalog ([eri_catalog_query()])
+#'   reports this column, so a pull uses the same coordinates a discovery query returns.
+#' @param data_type `chr` or `NULL` The measure (e.g. `"case"`, `"aggregate"`, `"treatment"`,
+#'   `"tas"`). Optional — `NULL` pulls the four-axis channel-level processed layer.
+#'   **Back-compat:** if only `data_type` is given (the pre-ADR-0012 form where it held the
+#'   channel), it is treated as `data_source`.
 #' @param path `chr` or `NULL` Explicit Azure blob path to download from. Mutually exclusive with canonical args.
 #' @param dest `chr` or `NULL` Local directory to download files into. Defaults to `data/` inside `getwd()`.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
@@ -278,38 +285,52 @@ eri_research_list <- function(data_con = NULL) {
 #' @returns Character vector of local file paths downloaded (invisibly).
 #' @examples
 #' \dontrun{
-#' # Pull canonical processed surveillance data
-#' eri_research_pull(country = "dr", disease = "malaria", data_type = "surveillance")
+#' # Pull canonical processed data using the coordinates the catalog reports
+#' eri_research_pull(country = "dr", disease = "malaria",
+#'                   data_source = "surveillance", data_type = "case")
+#'
+#' # Four-axis (channel only, no measure)
+#' eri_research_pull(country = "dr", disease = "malaria", data_source = "surveillance")
 #'
 #' # Pull standard spatial reference files
 #' eri_research_pull(path = "spatial/dom_admin_boundaries")
 #' }
 #' @export
 eri_research_pull <- function(
-    country   = NULL,
-    disease   = NULL,
-    data_type = NULL,
-    path      = NULL,
-    dest      = NULL,
-    data_con  = NULL,
-    progress  = FALSE
+    country     = NULL,
+    disease     = NULL,
+    data_source = NULL,
+    data_type   = NULL,
+    path        = NULL,
+    dest        = NULL,
+    data_con    = NULL,
+    progress    = FALSE
 ) {
-  has_canonical <- !is.null(country) && !is.null(disease) && !is.null(data_type)
+  # Back-compat: before ADR-0012 the canonical channel was passed as `data_type`.
+  # If only `data_type` is supplied, treat it as the channel (`data_source`) with
+  # no measure, so legacy calls keep resolving to the same processed path.
+  if (is.null(data_source) && !is.null(data_type)) {
+    data_source <- data_type
+    data_type   <- NULL
+  }
+
+  has_canonical <- !is.null(country) && !is.null(disease) && !is.null(data_source)
   has_path      <- !is.null(path)
 
   if (!has_canonical && !has_path) {
     cli::cli_abort(
-      "Supply either {.arg country} + {.arg disease} + {.arg data_type}, or {.arg path}."
+      "Supply either {.arg country} + {.arg disease} + {.arg data_source} (optionally {.arg data_type}), or {.arg path}."
     )
   }
   if (has_canonical && has_path) {
     cli::cli_abort(
-      "Supply either canonical args ({.arg country}/{.arg disease}/{.arg data_type}) or {.arg path}, not both."
+      "Supply either canonical args ({.arg country}/{.arg disease}/{.arg data_source}/{.arg data_type}) or {.arg path}, not both."
     )
   }
 
   azure_path <- if (has_canonical) {
-    paste(country, disease, data_type, "processed", sep = "/")
+    # eri_data_path builds the four-axis path when data_type is NULL, five-axis otherwise.
+    eri_data_path(country, disease, data_source, data_type, "processed")
   } else {
     path
   }
