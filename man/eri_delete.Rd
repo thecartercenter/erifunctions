@@ -18,5 +18,7 @@ Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Thin wrapper around \code{\link[=erifunctions_io]{erifunctions_io()}} for deleting a file.
+Thin wrapper around \code{\link[=erifunctions_io]{erifunctions_io()}} for deleting a file. Note this does
+\strong{not} touch the data catalog — if you are tearing down a namespace, use
+\code{\link[=eri_dir_delete]{eri_dir_delete()}}, which also prunes catalog entries under the deleted path.
 }
