@@ -144,11 +144,14 @@ test_that("load_cmr_schema Nigeria has both SCH and STH Treatment", {
   expect_true("STH Treatment" %in% sheet_names)
 })
 
-test_that("load_cmr_schema Ethiopia has Fly Collection and River Prospection", {
+test_that("load_cmr_schema Ethiopia has the RB+LF entomology/survey sheets (real template)", {
   schema <- load_cmr_schema("eth")
   sheet_names <- names(schema$sheets)
-  expect_true("Fly Collection" %in% sheet_names)
-  expect_true("River Prospection" %in% sheet_names)
+  # eth is an RB+LF country (no SCH/STH); its oncho entomology lives in the
+  # RB Ento Surveys + Field Ento Training sheets, not the old stand-in names.
+  expect_true("RB Ento Surveys" %in% sheet_names)
+  expect_true("Field Ento Training" %in% sheet_names)
+  expect_false("SCH Treatment" %in% sheet_names)
 })
 
 #### Tests for French CMR schemas (issue #29) ####

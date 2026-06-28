@@ -1,5 +1,18 @@
 # erifunctions (development version)
 
+## Data: bundled CMR schemas reconciled to the real country templates (ADR-0012, #175)
+
+- The seven bundled CMR schemas (`inst/schemas/cmr/{eth,nga,sdn,ssd,uga,tcd,mad}.yaml`) are regenerated
+  from the **real** monthly templates' structure (sheet names + machine-readable field codes only — no
+  data values), replacing the earlier simplified stand-ins. Each country now carries its actual sheet set
+  with `disease` / `data_type` routing keys, so `eri_split_cmr()` routes a real CMR completely: e.g. uga's
+  14 sheets (RB/SCH Treatment, LF MMDP, VHT/Parish/Local-Leaders/Subcounty/MMDP-surgery/MMDP-patient/
+  Field-Ento/Lab Training, LF Surveys, RB Epi Surveys, RB Ento Surveys); nga adds SCH/STH Treatment +
+  Teacher/Health-Worker/Hope-Group trainings; mad is LF-only; the French `tcd`/`mad` keep their slug
+  aliases. RB Epi Surveys → `oncho`/`prevalence`, RB Ento Surveys → `oncho`/`entomology`, LF Surveys →
+  `lf`/`tas`, all Training sheets (incl. ToT) → combined `rblf`/`training`. `required_fields` now lists the
+  real stable (non-monthly) identifier columns.
+
 ## Feature: `eri_odk_sync()` writes to the `research` channel (ADR-0012, #175 phase 4)
 
 - `eri_odk_sync()` now lands submissions in `data/{country}/{disease}/research/raw/` (was

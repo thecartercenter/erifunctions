@@ -3,18 +3,18 @@ country_code: mad
 language: fr
 template: french_cmr
 
+# Generated from the real CMR template structure (field codes + sheet names
+# only; no data values). Per-sheet `disease`/`data_type` route eri_split_cmr()
+# to {country}/{disease}/programmatic/{data_type}/staged/ (disease from the
+# sheet; Training sheets -> combined `rblf`). Sheets without routing keys
+# (reference tabs with no field codes) are skipped; ToT routes with the trainings.
+# `required_fields` lists the stable (non-monthly) identifier columns.
+
 sheet_aliases:
   lf_treatment: "Traitement FL"
   lf_mmdp: "PCMPI FL"
-  cdd_training: "Formation Distributeurs"
-  cs_training: "Formation SC"
-  mmdp_training: "Formation Travailleurs de Sante"
-  mmdp_surgery_training: "PCMPI Formation Chirurgie"
-  surveys: "Enquêtes FL"
+  lf_surveys: "FL Enquetes"
 
-# Per-sheet routing (disease from the sheet; data_type = the measure) drives
-# eri_split_cmr() -> {country}/{disease}/programmatic/{data_type}/staged/.
-# Madagascar is LF-only (no RB/oncho sheets).
 sheets:
   "Traitement FL":
     field_code_prefix: "#lftrt_"
@@ -22,84 +22,135 @@ sheets:
     data_type: treatment
     required_fields:
       - "#lftrt_year"
-      - "#lftrt_month"
+      - "#lftrt_adm0"
+      - "#lftrt_adm0_id"
       - "#lftrt_adm1"
+      - "#lftrt_adm1_id"
       - "#lftrt_adm2"
-      - "#lftrt_target"
-      - "#lftrt_treated"
-
+      - "#lftrt_adm2_id"
+      - "#lftrt_adm3"
+      - "#lftrt_disease"
   "PCMPI FL":
-    field_code_prefix: "#lfmmdp_"
+    field_code_prefix: "#lfdmdi_"
     disease: lf
     data_type: mmdp
     required_fields:
-      - "#lfmmdp_year"
-      - "#lfmmdp_month"
-      - "#lfmmdp_adm1"
-      - "#lfmmdp_adm2"
-      - "#lfmmdp_hydro_screened"
-      - "#lfmmdp_lymph_screened"
-      - "#lfmmdp_hydro_treated"
-      - "#lfmmdp_lymph_treated"
-
+      - "#lfdmdi_adm0"
+      - "#lfdmdi_adm0_id"
+      - "#lfdmdi_adm1"
+      - "#lfdmdi_adm1_id"
+      - "#lfdmdi_adm2"
+      - "#lfdmdi_adm2_id"
+      - "#lfdmdi_adm3"
+      - "#lfdmdi_adm3_id"
+      - "#lfdmdi_disease"
   "Formation Distributeurs":
     field_code_prefix: "#cddtrn_"
     disease: rblf
     data_type: training
     required_fields:
       - "#cddtrn_year"
-      - "#cddtrn_month"
+      - "#cddtrn_adm0"
+      - "#cddtrn_adm0_id"
       - "#cddtrn_adm1"
+      - "#cddtrn_adm1_id"
       - "#cddtrn_adm2"
-      - "#cddtrn_target"
-      - "#cddtrn_trained"
-
+      - "#cddtrn_adm2_id"
+      - "#cddtrn_adm3"
+      - "#cddtrn_disease"
   "Formation SC":
     field_code_prefix: "#cstrn_"
     disease: rblf
     data_type: training
     required_fields:
       - "#cstrn_year"
-      - "#cstrn_month"
+      - "#cstrn_adm0"
+      - "#cstrn_adm0_id"
       - "#cstrn_adm1"
+      - "#cstrn_adm1_id"
       - "#cstrn_adm2"
-      - "#cstrn_target"
-      - "#cstrn_trained"
-
-  "Formation Travailleurs de Sante":
-    field_code_prefix: "#mmdptrn_"
-    disease: rblf
-    data_type: training
-    required_fields:
-      - "#mmdptrn_year"
-      - "#mmdptrn_month"
-      - "#mmdptrn_adm1"
-      - "#mmdptrn_adm2"
-      - "#mmdptrn_target"
-      - "#mmdptrn_trained"
-
-  # Surgery training shares the MMDP-training field codes; it is a distinct sheet,
-  # so it stages as a distinct file in the same rblf/programmatic/training/ dir.
+      - "#cstrn_adm2_id"
+      - "#cstrn_adm3"
+      - "#cstrn_disease"
   "PCMPI Formation Chirurgie":
-    field_code_prefix: "#mmdptrn_"
+    field_code_prefix: "#dmditrnsx_"
     disease: rblf
     data_type: training
     required_fields:
-      - "#mmdptrn_year"
-      - "#mmdptrn_month"
-      - "#mmdptrn_adm1"
-      - "#mmdptrn_adm2"
-      - "#mmdptrn_target"
-      - "#mmdptrn_trained"
-
-  "Enquêtes FL":
-    field_code_prefix: "#svy_"
+      - "#dmditrnsx_year"
+      - "#dmditrnsx_adm0"
+      - "#dmditrnsx_adm0_id"
+      - "#dmditrnsx_adm1"
+      - "#dmditrnsx_adm1_id"
+      - "#dmditrnsx_adm2"
+      - "#dmditrnsx_adm2_id"
+      - "#dmditrnsx_adm3"
+      - "#dmditrnsx_disease"
+  "Formation PCMPI Patient":
+    field_code_prefix: "#dmditrnpt_"
     disease: rblf
-    data_type: survey
+    data_type: training
     required_fields:
-      - "#svy_year"
-      - "#svy_adm1"
-      - "#svy_adm2"
-      - "#svy_type"
-      - "#svy_examined"
-      - "#svy_positive"
+      - "#dmditrnpt__year"
+      - "#dmditrnpt__adm0"
+      - "#dmditrnpt__adm0_id"
+      - "#dmditrnpt__adm1"
+      - "#dmditrnpt__adm1_id"
+      - "#dmditrnpt__adm2"
+      - "#dmditrnpt__adm2_id"
+      - "#dmditrnpt__adm3"
+      - "#dmditrnpt__disease"
+  "Formation Travailleurs de Sante":
+    field_code_prefix: "#hwtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#hwtrn_year"
+      - "#hwtrn_adm0"
+      - "#hwtrn_adm0_id"
+      - "#hwtrn_adm1"
+      - "#hwtrn_adm1_id"
+      - "#hwtrn_adm2"
+      - "#hwtrn_adm2_id"
+      - "#hwtrn_adm3"
+      - "#hwtrn_disease"
+  "Formation Leader Groupe HOPE":
+    field_code_prefix: "#hgtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#hgtrn__year"
+      - "#hgtrn__adm0"
+      - "#hgtrn__adm0_id"
+      - "#hgtrn__adm1"
+      - "#hgtrn__adm1_id"
+      - "#hgtrn__adm2"
+      - "#hgtrn__adm2_id"
+      - "#hgtrn__adm3"
+      - "#hgtrn__disease"
+  "Formation Professeurs":
+    field_code_prefix: "#tch"
+    required_fields:
+      - "#tchrtrn_year"
+      - "#tchrtrn_adm0"
+      - "#tchrtrn_adm0_id"
+      - "#tchrtrn_adm1"
+      - "#tchrtrn_adm1_id"
+      - "#tchrtrn_adm2"
+      - "#tchrtrn_adm2_id"
+      - "#tchrtrn_adm3"
+      - "#tchrtrn_disease"
+  "FL Enquetes":
+    field_code_prefix: "#lfsurv_"
+    disease: lf
+    data_type: tas
+    required_fields:
+      - "#lfsurv_year"
+      - "#lfsurv_adm0"
+      - "#lfsurv_adm0_id"
+      - "#lfsurv_adm1"
+      - "#lfsurv_adm1_id"
+      - "#lfsurv_adm2"
+      - "#lfsurv_adm2_id"
+      - "#lfsurv_adm3"
+      - "#lfsurv_disease"

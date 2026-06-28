@@ -3,138 +3,233 @@ country_code: eth
 language: en
 template: english_cmr
 
-# Per-sheet routing (disease from the sheet; data_type = the measure) drives
-# eri_split_cmr() -> {country}/{disease}/programmatic/{data_type}/staged/.
-# Drug Inventory and SBCC are logistics / communications, not per-disease
-# measures, so they declare no routing keys and are not split.
+# Generated from the real CMR template structure (field codes + sheet names
+# only; no data values). Per-sheet `disease`/`data_type` route eri_split_cmr()
+# to {country}/{disease}/programmatic/{data_type}/staged/ (disease from the
+# sheet; Training sheets -> combined `rblf`). Sheets without routing keys
+# (reference tabs with no field codes) are skipped; ToT routes with the trainings.
+# `required_fields` lists the stable (non-monthly) identifier columns.
+
 sheets:
-  RB Treatment:
+  "RB Treatment":
     field_code_prefix: "#rbtrt_"
     disease: oncho
     data_type: treatment
     required_fields:
       - "#rbtrt_year"
-      - "#rbtrt_month"
+      - "#rbtrt_adm0"
+      - "#rbtrt_adm0_id"
       - "#rbtrt_adm1"
+      - "#rbtrt_adm1_id"
       - "#rbtrt_adm2"
-      - "#rbtrt_target"
-      - "#rbtrt_treated"
-
-  LF Treatment:
+      - "#rbtrt_adm2_id"
+      - "#rbtrt_adm3"
+      - "#rbtrt_disease"
+  "LF Treatment":
     field_code_prefix: "#lftrt_"
     disease: lf
     data_type: treatment
     required_fields:
       - "#lftrt_year"
-      - "#lftrt_month"
+      - "#lftrt_adm0"
+      - "#lftrt_adm0_id"
       - "#lftrt_adm1"
+      - "#lftrt_adm1_id"
       - "#lftrt_adm2"
-      - "#lftrt_target"
-      - "#lftrt_treated"
-
-  LF MMDP:
-    field_code_prefix: "#lfmmdp_"
+      - "#lftrt_adm2_id"
+      - "#lftrt_adm3"
+      - "#lftrt_disease"
+  "LF MMDP":
+    field_code_prefix: "#lfdmdi_"
     disease: lf
     data_type: mmdp
     required_fields:
-      - "#lfmmdp_year"
-      - "#lfmmdp_month"
-      - "#lfmmdp_adm1"
-      - "#lfmmdp_adm2"
-      - "#lfmmdp_hydro_screened"
-      - "#lfmmdp_lymph_screened"
-      - "#lfmmdp_hydro_treated"
-      - "#lfmmdp_lymph_treated"
-
-  CDD Training:
+      - "#lfdmdi_year"
+      - "#lfdmdi_adm0"
+      - "#lfdmdi_adm0_id"
+      - "#lfdmdi_adm1"
+      - "#lfdmdi_adm1_id"
+      - "#lfdmdi_adm2"
+      - "#lfdmdi_adm2_id"
+      - "#lfdmdi_adm3"
+      - "#lfdmdi_disease"
+  "CDD Training":
     field_code_prefix: "#cddtrn_"
     disease: rblf
     data_type: training
     required_fields:
       - "#cddtrn_year"
-      - "#cddtrn_month"
+      - "#cddtrn_adm0"
+      - "#cddtrn_adm0_id"
       - "#cddtrn_adm1"
+      - "#cddtrn_adm1_id"
       - "#cddtrn_adm2"
-      - "#cddtrn_target"
-      - "#cddtrn_trained"
-
-  CS Training:
+      - "#cddtrn_adm2_id"
+      - "#cddtrn_adm3"
+      - "#cddtrn_disease"
+  "CS Training":
     field_code_prefix: "#cstrn_"
     disease: rblf
     data_type: training
     required_fields:
       - "#cstrn_year"
-      - "#cstrn_month"
+      - "#cstrn_adm0"
+      - "#cstrn_adm0_id"
       - "#cstrn_adm1"
+      - "#cstrn_adm1_id"
       - "#cstrn_adm2"
-      - "#cstrn_target"
-      - "#cstrn_trained"
-
-  MMDP Training:
-    field_code_prefix: "#mmdptrn_"
+      - "#cstrn_adm2_id"
+      - "#cstrn_adm3"
+      - "#cstrn_disease"
+  "MMDP (surgery) Training":
+    field_code_prefix: "#dmditrnsx_"
     disease: rblf
     data_type: training
     required_fields:
-      - "#mmdptrn_year"
-      - "#mmdptrn_month"
-      - "#mmdptrn_adm1"
-      - "#mmdptrn_adm2"
-      - "#mmdptrn_target"
-      - "#mmdptrn_trained"
-
-  Surveys:
-    field_code_prefix: "#svy_"
+      - "#dmditrnsx_year"
+      - "#dmditrnsx_adm0"
+      - "#dmditrnsx_adm0_id"
+      - "#dmditrnsx_adm1"
+      - "#dmditrnsx_adm1_id"
+      - "#dmditrnsx_adm2"
+      - "#dmditrnsx_adm2_id"
+      - "#dmditrnsx_adm3"
+      - "#dmditrnsx_disease"
+  "MMDP (patient) Training":
+    field_code_prefix: "#dmditrnpt_"
     disease: rblf
-    data_type: survey
+    data_type: training
     required_fields:
-      - "#svy_year"
-      - "#svy_adm1"
-      - "#svy_adm2"
-      - "#svy_type"
-      - "#svy_examined"
-      - "#svy_positive"
-
-  Drug Inventory:
-    field_code_prefix: "#inv_"
+      - "#dmditrnpt_year"
+      - "#dmditrnpt_adm0"
+      - "#dmditrnpt_adm0_id"
+      - "#dmditrnpt_adm1"
+      - "#dmditrnpt_adm1_id"
+      - "#dmditrnpt_adm2"
+      - "#dmditrnpt_adm2_id"
+      - "#dmditrnpt_adm3"
+      - "#dmditrnpt_disease"
+  "Field Ento Training":
+    field_code_prefix: "#entotrn_"
+    disease: rblf
+    data_type: training
     required_fields:
-      - "#inv_year"
-      - "#inv_month"
-      - "#inv_adm1"
-      - "#inv_drug"
-      - "#inv_opening_balance"
-      - "#inv_received"
-      - "#inv_distributed"
-      - "#inv_closing_balance"
-
-  SBCC:
-    field_code_prefix: "#sbcc_"
+      - "#entotrn_year"
+      - "#entotrn_adm0"
+      - "#entotrn_adm0_id"
+      - "#entotrn_adm1"
+      - "#entotrn_adm1_id"
+      - "#entotrn_adm2"
+      - "#entotrn_adm2_id"
+      - "#entotrn_adm3"
+      - "#entotrn_disease"
+  "Hope Group Leader Training":
+    field_code_prefix: "#hgtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
-      - "#sbcc_year"
-      - "#sbcc_month"
-      - "#sbcc_adm1"
-      - "#sbcc_adm2"
-      - "#sbcc_type"
-      - "#sbcc_people_reached"
-
-  River Prospection:
-    field_code_prefix: "#rivpro_"
+      - "#hgtrn_year"
+      - "#hgtrn_adm0"
+      - "#hgtrn_adm0_id"
+      - "#hgtrn_adm1"
+      - "#hgtrn_adm1_id"
+      - "#hgtrn_adm2"
+      - "#hgtrn_adm2_id"
+      - "#hgtrn_adm3"
+      - "#hgtrn_disease"
+  "HW Training":
+    field_code_prefix: "#hwtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#hwtrn_year"
+      - "#hwtrn_adm0"
+      - "#hwtrn_adm0_id"
+      - "#hwtrn_adm1"
+      - "#hwtrn_adm1_id"
+      - "#hwtrn_adm2"
+      - "#hwtrn_adm2_id"
+      - "#hwtrn_adm3"
+      - "#hwtrn_disease"
+  "Lab Training":
+    field_code_prefix: "#labtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#labtrn_year"
+      - "#labtrn_adm0"
+      - "#labtrn_adm0_id"
+      - "#labtrn_adm1"
+      - "#labtrn_adm1_id"
+      - "#labtrn_adm2"
+      - "#labtrn_adm2_id"
+      - "#labtrn_adm3"
+      - "#labtrn_disease"
+  "ToT Regional":
+    field_code_prefix: "#tot_reg_trn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#tot_reg_trn_year"
+      - "#tot_reg_trn_adm0"
+      - "#tot_reg_trn_adm0_id"
+      - "#tot_reg_trn_adm1"
+      - "#tot_reg_trn_donor"
+      - "#tot_reg_trn_goal"
+      - "#tot_reg_trn_tot_reg__male"
+      - "#tot_reg_trn_tot_reg__fem"
+  "ToT Zonal":
+    field_code_prefix: "#tot_zone_trn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#tot_zone_trn_year"
+      - "#tot_zone_trn_adm0"
+      - "#tot_zone_trn_adm1"
+      - "#tot_zone_trn_adm2"
+      - "#tot_zone_trn_donor"
+      - "#tot_zone_trn_goal"
+      - "#tot_zone_trn_tot_zone__male"
+      - "#tot_zone_trn_tot_zone__fem"
+  "LF Surveys":
+    field_code_prefix: "#lfsurv_"
+    disease: lf
+    data_type: tas
+    required_fields:
+      - "#lfsurv_year"
+      - "#lfsurv_adm0"
+      - "#lfsurv_adm0_id"
+      - "#lfsurv_adm1"
+      - "#lfsurv_adm1_id"
+      - "#lfsurv_adm2"
+      - "#lfsurv_adm2_id"
+      - "#lfsurv_adm3"
+      - "#lfsurv_disease"
+  "RB Epi Surveys":
+    field_code_prefix: "#rb_epi_surv_"
+    disease: oncho
+    data_type: prevalence
+    required_fields:
+      - "#rb_epi_surv_year"
+      - "#rb_epi_surv_adm0"
+      - "#rb_epi_surv_adm0_id"
+      - "#rb_epi_surv_adm1"
+      - "#rb_epi_surv_adm1_id"
+      - "#rb_epi_surv_adm2"
+      - "#rb_epi_surv_adm2_id"
+      - "#rb_epi_surv_adm3"
+      - "#rb_epi_surv_disease"
+  "RB Ento Surveys":
+    field_code_prefix: "#rb_ento_surv_"
     disease: oncho
     data_type: entomology
     required_fields:
-      - "#rivpro_year"
-      - "#rivpro_month"
-      - "#rivpro_adm1"
-      - "#rivpro_site"
-      - "#rivpro_blackfly_positive"
-
-  Fly Collection:
-    field_code_prefix: "#flycol_"
-    disease: oncho
-    data_type: entomology
-    required_fields:
-      - "#flycol_year"
-      - "#flycol_month"
-      - "#flycol_adm1"
-      - "#flycol_site"
-      - "#flycol_flies_dissected"
-      - "#flycol_parous_rate"
+      - "#rb_ento_surv_year"
+      - "#rb_ento_surv_adm0"
+      - "#rb_ento_surv_adm0_id"
+      - "#rb_ento_surv_adm1"
+      - "#rb_ento_surv_adm1_id"
+      - "#rb_ento_surv_adm2"
+      - "#rb_ento_surv_adm2_id"
+      - "#rb_ento_surv_adm3"
+      - "#rb_ento_surv_disease"
