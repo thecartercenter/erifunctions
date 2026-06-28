@@ -127,6 +127,12 @@ the two programmes these reports cover. Only the registered RB-expansion countri
 > programme code — so the paths are `{country}/rblf/cmr/…` and you approve with
 > `eri_approve(country, "rblf", "cmr", period)`. Scaffolding a new country's CMR with
 > `eri_onboard_cmr(create_dirs = TRUE)` creates those same `{country}/rblf/cmr/` folders.
+>
+> **Transitional vocabulary.** `rblf` and `cmr` are interim coordinates: under the
+> [source ≠ measure model (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
+> CMR is a *format* of the `programmatic` channel, and each sheet splits to its own disease and measure
+> (e.g. RB Treatment → `{country}/oncho/programmatic/treatment/`). Until that split ships, keep using
+> `rblf`/`cmr` as shown here — don't adopt them as the canonical addressing model.
 
 ## 3. Parse each sheet {#parse}
 
@@ -200,11 +206,11 @@ eri_approve("uga", "rblf", "cmr", "202406")
 The month's report is now canonical and discoverable in the catalog like any other approved dataset:
 
 ```{r catalog}
-eri_catalog_query(country = "uga", data_type = "cmr")
-#> # A tibble: 1 × 12
-#>   path                                country disease data_type layer     period …
-#>   <chr>                               <chr>   <chr>   <chr>     <chr>     <chr>
-#> 1 uga/rblf/cmr/processed/uga_cmr_202… uga     rblf    cmr       processed 202406
+eri_catalog_query(country = "uga", data_source = "cmr")
+#> # A tibble: 1 × 13
+#>   path                              country disease data_source data_type layer …
+#>   <chr>                             <chr>   <chr>   <chr>       <chr>     <chr>
+#> 1 uga/rblf/cmr/processed/uga_cmr_2… uga     rblf    cmr         NA        proces…
 ```
 
 That's the monthly loop: **upload → stage → parse → approve.**

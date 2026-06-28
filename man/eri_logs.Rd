@@ -7,6 +7,7 @@
 eri_logs(
   country = NULL,
   disease = NULL,
+  data_source = NULL,
   data_type = NULL,
   status = NULL,
   operation = NULL,
@@ -17,8 +18,11 @@ eri_logs(
 )
 }
 \arguments{
-\item{country, disease, data_type}{\code{chr} or \code{NULL} Scope the search. All three
-together read a single \verb{logs/} directory; any left \code{NULL} triggers enumeration.}
+\item{country, disease, data_source}{\code{chr} or \code{NULL} Scope the search by country,
+disease, and channel; any left \code{NULL} is enumerated from the blob.}
+
+\item{data_type}{\code{chr} or \code{NULL} Scope to a single measure (the five-axis
+layout). \code{NULL} reads the channel-level logs and every measure beneath it.}
 
 \item{status}{\code{chr} or \code{NULL} Filter by status (\code{"success"}, \code{"error"},
 \code{"in_progress"}, \code{"needs_review"}, \code{"clean"}).}
@@ -35,21 +39,23 @@ together read a single \verb{logs/} directory; any left \code{NULL} triggers enu
 }
 \value{
 A tibble, newest first, with columns: \code{log_path}, \code{timestamp},
-\code{operation}, \code{status}, \code{analyst}, \code{country}, \code{disease}, \code{data_type},
-\code{period}, \code{summary}, \code{n_issues}, \code{handled}, \code{handled_by}, \code{handled_at}.
+\code{operation}, \code{status}, \code{analyst}, \code{country}, \code{disease}, \code{data_source},
+\code{data_type}, \code{period}, \code{summary}, \code{n_issues}, \code{handled}, \code{handled_by},
+\code{handled_at}.
 }
 \description{
 Reads the structured operation logs (written by \code{eri_ingest()}, \code{eri_approve()},
 \code{eri_stage()}, \code{eri_odk_sync()}, …) and the DQ-flag logs (written by
-\code{\link[=eri_dq_log]{eri_dq_log()}}) from \verb{\{country\}/\{disease\}/\{data_type\}/logs/} in the \verb{data/}
-Azure blob, and returns them as a triage backlog. Filter to failures with
-\code{status = "error"} or data-quality items with \code{status = "needs_review"}, then
-close items out with \code{\link[=eri_logs_resolve]{eri_logs_resolve()}}.
+\code{\link[=eri_dq_log]{eri_dq_log()}}) from \verb{\{country\}/\{disease\}/\{data_source\}[/\{data_type\}]/logs/} in
+the \verb{data/} Azure blob, and returns them as a triage backlog. Filter to failures
+with \code{status = "error"} or data-quality items with \code{status = "needs_review"},
+then close items out with \code{\link[=eri_logs_resolve]{eri_logs_resolve()}}.
 }
 \details{
-If \code{country}, \code{disease}, and \code{data_type} are all supplied, only that one log
-directory is read (fast). Otherwise the function enumerates the data blob to
-build a system-wide backlog (slower); supplying filters narrows the scan.
+The function scopes the scan to whichever axes you supply and enumerates the
+rest from the blob; the more you supply (\code{country} → \code{disease} → \code{data_source}
+→ \code{data_type}), the faster it is. It reads both the four-axis channel-level
+logs and the five-axis measure-level logs (ADR-0012).
 }
 \examples{
 \dontrun{
@@ -58,5 +64,8 @@ eri_logs(status = "error")
 
 # The backlog for one dataset
 eri_logs("uga", "oncho", "surveillance")
+
+# Scope to a single measure (five-axis)
+eri_logs("uga", "oncho", "programmatic", data_type = "treatment")
 }
 }

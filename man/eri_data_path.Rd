@@ -11,8 +11,8 @@ eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 
 \item{disease}{\code{str} Disease name (e.g. \code{"malaria"}, \code{"lf"}, \code{"oncho"}).}
 
-\item{data_source}{\code{str} The channel: \code{"surveillance"}, \code{"programmatic"}, \code{"odk"}
-(extensible — see \code{\link[=eri_data_model]{eri_data_model()}}; unknown values warn).}
+\item{data_source}{\code{str} The channel: \code{"surveillance"}, \code{"programmatic"},
+\code{"research"} (extensible — see \code{\link[=eri_data_model]{eri_data_model()}}; unknown values warn).}
 
 \item{data_type}{\code{str} The measure: \code{"case"}, \code{"aggregate"}, \code{"treatment"},
 \code{"tas"}, ... (extensible; unknown values warn).}

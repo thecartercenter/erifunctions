@@ -1,5 +1,26 @@
 # erifunctions (development version)
 
+## Feature: the measure (`data_type`) reaches the human gate and the catalog (ADR-0012, #175 phase 4b)
+
+- `eri_approve()` gains an optional `data_type` (the measure) argument:
+  `eri_approve(country, disease, data_source, period, data_type = NULL, …)`. When supplied it promotes
+  the full five-axis path `{country}/{disease}/{data_source}/{data_type}/staged → processed/` and records
+  the measure in the approval log, the operation log, and the catalog. The third positional argument is
+  now named `data_source` (it always carried the channel); `data_type` defaults to `NULL`, so existing
+  four-axis calls — `eri_approve("dr", "malaria", "surveillance", "2024-W01")` — are unchanged.
+- The data catalog carries a `data_source` column alongside `data_type`, and `eri_catalog_register()` /
+  `eri_catalog_query()` gain a `data_source` argument (`eri_catalog_register(... , data_source, ... ,
+  data_type = NULL)`; `eri_catalog_query(... , data_source = NULL, data_type = NULL, ...)`). Four-axis
+  entries leave `data_type` as `NA`. Legacy positional `eri_catalog_register()` calls that passed the
+  channel as `data_type` now pass it as `data_source`.
+- The log triage reader follows the writer: `eri_logs()` scans both the four-axis channel-level
+  `…/{data_source}/logs/` and the five-axis measure-level `…/{data_source}/{data_type}/logs/` layouts, and
+  its backlog tibble gains a `data_source` column with `data_type` now meaning the measure.
+  `eri_logs(country, disease, data_source, data_type = NULL, …)` and
+  `eri_dq_log(result, country, disease, data_source, data_type = NULL, …)` rename the old third/fourth
+  argument to `data_source` (it always held the channel) and add the optional measure. Positional callers
+  passing the channel third are unchanged.
+
 ## Feature: onboarding scaffolders emit the 4-part schema identity (ADR-0012, #175 phase 4a)
 
 - `eri_onboard_disease()` and `eri_onboard_country()` now write schema skeletons named to the ADR-0012

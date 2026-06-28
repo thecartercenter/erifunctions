@@ -7,6 +7,7 @@
 eri_catalog_query(
   country = NULL,
   disease = NULL,
+  data_source = NULL,
   data_type = NULL,
   layer = NULL,
   period = NULL,
@@ -18,7 +19,9 @@ eri_catalog_query(
 
 \item{disease}{\code{chr} or \code{NULL} Filter by disease name.}
 
-\item{data_type}{\code{chr} or \code{NULL} Filter by data type.}
+\item{data_source}{\code{chr} or \code{NULL} Filter by channel (\code{"surveillance"}, \code{"programmatic"}, ...).}
+
+\item{data_type}{\code{chr} or \code{NULL} Filter by measure (\code{"case"}, \code{"treatment"}, ...).}
 
 \item{layer}{\code{chr} or \code{NULL} Filter by storage layer.}
 
@@ -27,9 +30,9 @@ eri_catalog_query(
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
-A tibble with columns: \code{path}, \code{country}, \code{disease}, \code{data_type}, \code{layer},
-\code{period}, \code{file_format}, \code{row_count}, \code{size_bytes}, \code{registered_at}, \code{registered_by},
-\code{last_verified_at}.
+A tibble with columns: \code{path}, \code{country}, \code{disease}, \code{data_source}, \code{data_type},
+\code{layer}, \code{period}, \code{file_format}, \code{row_count}, \code{size_bytes}, \code{registered_at},
+\code{registered_by}, \code{last_verified_at}.
 }
 \description{
 Returns a filtered tibble of catalog entries from \verb{_catalog/data_catalog.yaml}

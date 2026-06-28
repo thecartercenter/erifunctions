@@ -828,8 +828,8 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #'
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
-#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`, `"odk"`
-#'   (extensible — see [eri_data_model()]; unknown values warn).
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"` (extensible — see [eri_data_model()]; unknown values warn).
 #' @param data_type `str` The measure: `"case"`, `"aggregate"`, `"treatment"`,
 #'   `"tas"`, ... (extensible; unknown values warn).
 #' @param layer `str` Pipeline layer: `"raw"`, `"staged"`, or `"processed"`.
@@ -849,8 +849,10 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
   known_sources <- names(model$data_sources)
 
   # Capture which arguments were actually supplied before any reassignment.
+  # An explicit NULL `data_type` is treated as "no measure" (the 4-axis form), so
+  # callers can pass `data_type` through uniformly during the migration.
   src_missing   <- missing(data_source)
-  type_missing  <- missing(data_type)
+  type_missing  <- missing(data_type) || is.null(data_type)
   layer_missing <- missing(layer)
 
   # Legacy NAMED form: the old 3rd parameter was *named* `data_type` but held the
@@ -912,26 +914,34 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
 #' one-time warning is emitted so the fallback attribution is not silent).
 #'
 #' An operation log capturing every step (including errors) is always written to
-#' `{country}/{disease}/{data_type}/logs/` in the data container, regardless of
-#' whether the approval succeeds or fails. This log is the primary debugging
-#' artifact for pipeline issues.
+#' `{country}/{disease}/{data_source}/{data_type}/logs/` in the data container,
+#' regardless of whether the approval succeeds or fails. This log is the primary
+#' debugging artifact for pipeline issues.
 #'
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`).
-#' @param data_type `str` Data input type: `"surveillance"`, `"cmr"`, or `"odk"`.
+#' @param data_source `str` The channel the data came through: `"surveillance"`,
+#'   `"programmatic"`, or `"research"` (ADR-0012).
 #' @param period `str` Period string matched against staged filenames (e.g.
 #'   `"2024-W01"`, `"2024-01"`). Any staged file whose name contains this string
 #'   is promoted.
+#' @param data_type `str` or `NULL` The measure the data captures (e.g. `"case"`,
+#'   `"aggregate"`, `"treatment"`, `"tas"`). `NULL` (default) approves the legacy
+#'   four-axis path `{country}/{disease}/{data_source}/...` without a measure level.
 #' @param azcontainer Azure container object for the `data/` blob, returned by
 #'   [get_azure_storage_connection()]. If `NULL` (default), connects automatically
 #'   using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
 #' @returns Invisibly, a character vector of the promoted file paths in `processed/`.
 #' @examples
 #' \dontrun{
+#' # Four-axis (no measure): {country}/{disease}/{data_source}/...
 #' eri_approve("dr", "malaria", "surveillance", "2024-W01")
+#'
+#' # Five-axis (with measure): {country}/{disease}/{data_source}/{data_type}/...
+#' eri_approve("dr", "malaria", "surveillance", "2024-W01", data_type = "case")
 #' }
 #' @export
-eri_approve <- function(country, disease, data_type, period, azcontainer = NULL) {
+eri_approve <- function(country, disease, data_source, period, data_type = NULL, azcontainer = NULL) {
   .eri_log_session()
   if (is.null(azcontainer)) {
     azcontainer <- suppressMessages(
@@ -942,16 +952,17 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
   }
 
   analyst_id    <- .eri_analyst_id()
-  staged_dir    <- eri_data_path(country, disease, data_type, "staged")
-  processed_dir <- eri_data_path(country, disease, data_type, "processed")
-  log_dir       <- paste(c(country, disease, data_type, "logs"), collapse = "/")
+  staged_dir    <- eri_data_path(country, disease, data_source, data_type, "staged")
+  processed_dir <- eri_data_path(country, disease, data_source, data_type, "processed")
+  log_dir       <- paste(c(country, disease, data_source, data_type, "logs"), collapse = "/")
 
   op_log <- list(
     operation  = "eri_approve",
     analyst    = analyst_id,
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(country = country, disease = disease,
-                      data_type = data_type, period = period),
+                      data_source = data_source, data_type = data_type,
+                      period = period),
     status     = "in_progress",
     steps      = list(),
     error      = NULL,
@@ -1000,13 +1011,14 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
                                      src = src_path, dest = dest_path)
       tryCatch(
         eri_catalog_register(
-          path      = dest_path,
-          country   = country,
-          disease   = disease,
-          data_type = data_type,
-          layer     = "processed",
-          period    = period,
-          data_con  = azcontainer
+          path        = dest_path,
+          country     = country,
+          disease     = disease,
+          data_source = data_source,
+          data_type   = data_type,
+          layer       = "processed",
+          period      = period,
+          data_con    = azcontainer
         ),
         error = function(e) invisible(NULL)
       )
@@ -1017,11 +1029,12 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
     approval <- list(
       analyst   = analyst_id,
       timestamp = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-      period    = period,
-      country   = country,
-      disease   = disease,
-      data_type = data_type,
-      files     = as.list(moved)
+      period      = period,
+      country     = country,
+      disease     = disease,
+      data_source = data_source,
+      data_type   = data_type,
+      files       = as.list(moved)
     )
     approval_path <- paste0(processed_dir, "/", period, "_approval_log.yaml")
     approval_file <- tempfile(fileext = ".yaml")
@@ -1032,7 +1045,7 @@ eri_approve <- function(country, disease, data_type, period, azcontainer = NULL)
                                    path = approval_path)
     .eri_say_done("Approval log: {.path {approval_path}}")
     .eri_summary("Approved {.val {period}}", c(
-      Dataset  = sprintf("%s / %s / %s", country, disease, data_type),
+      Dataset  = paste(c(country, disease, data_source, data_type), collapse = " / "),
       Files    = sprintf("%d moved to processed", length(moved)),
       Approver = analyst_id,
       Location = processed_dir

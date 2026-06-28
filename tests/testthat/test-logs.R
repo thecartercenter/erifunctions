@@ -136,13 +136,19 @@ test_that("eri_logs enumerates the tree when unscoped", {
   logfile <- paste0(scoped_dir, "/20260604_120000_eri_approve.yaml")
   store <- list(); store[[logfile]] <- make_op_log(period = NULL)
 
+  empty_tbl <- tibble::tibble(name = character(), size = numeric(),
+                              isdir = logical(), lastModified = Sys.time()[0])
+
   local_mocked_bindings(
     storage_dir_exists = function(container, path, ...) identical(path, scoped_dir),
     list_storage_files = function(container, path, ...) {
-      if (identical(path, ""))    return(tibble::tibble(name = "uga", size = NA, isdir = TRUE, lastModified = Sys.time()))
-      if (identical(path, "uga")) return(tibble::tibble(name = "uga/oncho", size = NA, isdir = TRUE, lastModified = Sys.time()))
-      if (identical(path, scoped_dir)) return(tibble::tibble(name = names(store), size = 100L, isdir = FALSE, lastModified = Sys.time()))
-      tibble::tibble(name = character(), size = numeric(), isdir = logical(), lastModified = Sys.time()[0])
+      # Walk country -> disease -> data_source; no measure level (four-axis).
+      if (identical(path, ""))               return(tibble::tibble(name = "uga", size = NA, isdir = TRUE, lastModified = Sys.time()))
+      if (identical(path, "uga"))            return(tibble::tibble(name = "uga/oncho", size = NA, isdir = TRUE, lastModified = Sys.time()))
+      if (identical(path, "uga/oncho"))      return(tibble::tibble(name = "uga/oncho/surveillance", size = NA, isdir = TRUE, lastModified = Sys.time()))
+      if (identical(path, "uga/oncho/surveillance")) return(empty_tbl)  # no measures
+      if (identical(path, scoped_dir))       return(tibble::tibble(name = names(store), size = 100L, isdir = FALSE, lastModified = Sys.time()))
+      empty_tbl
     },
     storage_download = function(container, src, dest, ...) {
       yaml::write_yaml(store[[src]], dest); invisible(dest)
@@ -157,11 +163,100 @@ test_that("eri_logs enumerates the tree when unscoped", {
   out <- eri_logs()
   expect_equal(nrow(out), 1L)
   expect_equal(out$country, "uga")
+  expect_equal(out$data_source, "surveillance")
   expect_equal(out$operation, "eri_approve")
 })
 
+# `odk` and `research` are both top-level infra dir names, but below the country
+# level they are valid data_sources: an unscoped scan must still surface them.
+for (channel in c("odk", "research")) {
+  local({
+    ch <- channel
+    test_that(paste0("unscoped eri_logs enumerates a ", ch, "-channel log"), {
+      empty <- tibble::tibble(name = character(), size = numeric(),
+                              isdir = logical(), lastModified = Sys.time()[0])
+      dir <- paste0("uga/oncho/", ch, "/logs")
+      log <- list(
+        operation  = "eri_odk_sync", analyst = "test.user",
+        timestamp  = "2026-06-09T08:00:00Z",
+        parameters = list(country = "uga", disease = "oncho"),
+        status     = "success"
+      )
+      store <- list(); store[[paste0(dir, "/x.yaml")]] <- log
+
+      local_mocked_bindings(
+        storage_dir_exists = function(container, path, ...) identical(path, dir),
+        list_storage_files = function(container, path, ...) {
+          mk <- function(name) tibble::tibble(name = name, size = NA, isdir = TRUE,
+                                              lastModified = Sys.time())
+          if (identical(path, ""))                       return(mk("uga"))
+          if (identical(path, "uga"))                    return(mk("uga/oncho"))
+          if (identical(path, "uga/oncho"))              return(mk(paste0("uga/oncho/", ch)))
+          if (identical(path, paste0("uga/oncho/", ch))) return(empty)  # no measures
+          if (identical(path, dir)) return(tibble::tibble(name = names(store), size = 100L,
+                                                          isdir = FALSE, lastModified = Sys.time()))
+          empty
+        },
+        storage_download = function(container, src, dest, ...) {
+          yaml::write_yaml(store[[src]], dest); invisible(dest)
+        },
+        .package = "AzureStor"
+      )
+      local_mocked_bindings(
+        get_azure_storage_connection = function(...) "mock_con",
+        .package = "erifunctions"
+      )
+
+      out <- eri_logs()
+      expect_equal(nrow(out), 1L)
+      expect_equal(out$data_source, ch)
+    })
+  })
+}
+
+test_that("eri_logs discovers five-axis (measure-level) logs and fills data_type", {
+  # An approval log under the full {country}/{disease}/{data_source}/{measure}/logs path.
+  dir <- "uga/oncho/programmatic/treatment/logs"
+  log <- list(
+    operation    = "eri_approve", analyst = "test.user",
+    started_at   = "2026-06-08T08:00:00Z", completed_at = "2026-06-08T08:00:00Z",
+    parameters   = list(country = "uga", disease = "oncho",
+                        data_source = "programmatic", data_type = "treatment",
+                        period = "2024-06"),
+    status       = "success"
+  )
+  store <- list(); store[[paste0(dir, "/x_eri_approve.yaml")]] <- log
+  files <- tibble::tibble(name = names(store), size = 100L, isdir = FALSE,
+                          lastModified = Sys.time())
+
+  local_mocked_bindings(
+    storage_dir_exists = function(container, path, ...) identical(path, dir),
+    list_storage_files = function(container, path, ...) {
+      # The source has one measure subdir; its logs/ holds the file.
+      if (identical(path, "uga/oncho/programmatic"))
+        return(tibble::tibble(name = "uga/oncho/programmatic/treatment", size = NA,
+                              isdir = TRUE, lastModified = Sys.time()))
+      files[startsWith(files$name, path), , drop = FALSE]
+    },
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(store[[src]], dest); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  out <- eri_logs("uga", "oncho", "programmatic")
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$data_source, "programmatic")
+  expect_equal(out$data_type, "treatment")
+  expect_equal(out$period, "2024-06")
+})
+
 test_that("eri_logs fills scoping columns from the path for thin envelopes", {
-  # eri_odk_sync-style log whose parameters omit data_type/period.
+  # eri_odk_sync-style log whose parameters omit the channel/measure/period.
   dir  <- "uga/oncho/odk/logs"
   thin <- list(
     operation  = "eri_odk_sync", analyst = "test.user",
@@ -189,7 +284,8 @@ test_that("eri_logs fills scoping columns from the path for thin envelopes", {
 
   out <- eri_logs("uga", "oncho", "odk")
   expect_equal(nrow(out), 1L)
-  expect_equal(out$data_type, "odk")   # recovered from the blob path
+  expect_equal(out$data_source, "odk")  # the channel, recovered from the blob path
+  expect_true(is.na(out$data_type))     # four-axis log: no measure level
   expect_equal(out$country, "uga")
   expect_equal(out$disease, "oncho")
 })
@@ -227,6 +323,7 @@ test_that("eri_dq_log writes a dq_flags envelope with the flags", {
   expect_equal(captured$n_flags, 2L)
   expect_length(captured$flags, 2L)
   expect_equal(captured$parameters$country, "uga")
+  expect_equal(captured$parameters$data_source, "surveillance")
   expect_equal(captured$flags[[1]]$column, "Age")
 })
 

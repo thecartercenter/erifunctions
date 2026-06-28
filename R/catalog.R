@@ -40,13 +40,14 @@
 
 # Build a single catalog entry list from its components.
 #' @keywords internal
-.eri_catalog_entry <- function(path, country, disease, data_type, layer,
-                                period, row_count, analyst) {
+.eri_catalog_entry <- function(path, country, disease, data_source, layer,
+                                period, row_count, analyst, data_type = NULL) {
   list(
     path             = path,
     country          = country,
     disease          = disease,
-    data_type        = data_type,
+    data_source      = data_source,
+    data_type        = if (is.null(data_type)) NA_character_ else data_type,
     layer            = layer,
     period           = if (is.null(period)) NA_character_ else period,
     file_format      = tools::file_ext(path),
@@ -69,21 +70,24 @@
 #' @param path `chr` Blob path of the file (e.g. `"dr/malaria/surveillance/processed/2024_W01.parquet"`).
 #' @param country `chr` Country code (e.g. `"uga"`).
 #' @param disease `chr` Disease name (e.g. `"oncho"`).
-#' @param data_type `chr` Data type (e.g. `"surveillance"`, `"cmr"`, `"odk"`).
+#' @param data_source `chr` The channel (`"surveillance"`, `"programmatic"`, `"research"`).
 #' @param layer `chr` Storage layer (`"raw"`, `"staged"`, or `"processed"`).
 #' @param period `chr` or `NULL` Data period string (e.g. `"2024-W01"`, `"202405"`).
 #' @param row_count `int` or `NULL` Number of rows in the file, if known.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @param data_type `chr` or `NULL` The measure (e.g. `"case"`, `"treatment"`, `"tas"`); `NULL` for
+#'   legacy four-axis entries (ADR-0012).
 #' @returns The registered entry (invisibly).
 #' @examples
 #' \dontrun{
 #' eri_catalog_register(
-#'   path      = "uga/oncho/surveillance/processed/2024_W01.parquet",
-#'   country   = "uga",
-#'   disease   = "oncho",
-#'   data_type = "surveillance",
-#'   layer     = "processed",
-#'   period    = "2024-W01"
+#'   path        = "uga/oncho/programmatic/treatment/processed/2024_06.parquet",
+#'   country     = "uga",
+#'   disease     = "oncho",
+#'   data_source = "programmatic",
+#'   data_type   = "treatment",
+#'   layer       = "processed",
+#'   period      = "2024-06"
 #' )
 #' }
 #' @export
@@ -91,18 +95,19 @@ eri_catalog_register <- function(
     path,
     country,
     disease,
-    data_type,
+    data_source,
     layer,
     period    = NULL,
     row_count = NULL,
-    data_con  = NULL
+    data_con  = NULL,
+    data_type = NULL
 ) {
   data_con <- .eri_catalog_con(data_con)
   analyst  <- .eri_analyst_id()
   catalog  <- .eri_catalog_read(data_con)
 
-  entry    <- .eri_catalog_entry(path, country, disease, data_type, layer,
-                                  period, row_count, analyst)
+  entry    <- .eri_catalog_entry(path, country, disease, data_source, layer,
+                                  period, row_count, analyst, data_type = data_type)
 
   existing <- vapply(catalog$entries, function(e) identical(e$path, path), logical(1L))
   if (any(existing)) {
@@ -166,13 +171,14 @@ eri_catalog_remove <- function(path, data_con = NULL) {
 #'
 #' @param country `chr` or `NULL` Filter by country code.
 #' @param disease `chr` or `NULL` Filter by disease name.
-#' @param data_type `chr` or `NULL` Filter by data type.
+#' @param data_source `chr` or `NULL` Filter by channel (`"surveillance"`, `"programmatic"`, ...).
+#' @param data_type `chr` or `NULL` Filter by measure (`"case"`, `"treatment"`, ...).
 #' @param layer `chr` or `NULL` Filter by storage layer.
 #' @param period `chr` or `NULL` Filter by period string (exact match).
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
-#' @returns A tibble with columns: `path`, `country`, `disease`, `data_type`, `layer`,
-#'   `period`, `file_format`, `row_count`, `size_bytes`, `registered_at`, `registered_by`,
-#'   `last_verified_at`.
+#' @returns A tibble with columns: `path`, `country`, `disease`, `data_source`, `data_type`,
+#'   `layer`, `period`, `file_format`, `row_count`, `size_bytes`, `registered_at`,
+#'   `registered_by`, `last_verified_at`.
 #' @examples
 #' \dontrun{
 #' # All processed Uganda oncho data
@@ -183,12 +189,13 @@ eri_catalog_remove <- function(path, data_con = NULL) {
 #' }
 #' @export
 eri_catalog_query <- function(
-    country   = NULL,
-    disease   = NULL,
-    data_type = NULL,
-    layer     = NULL,
-    period    = NULL,
-    data_con  = NULL
+    country     = NULL,
+    disease     = NULL,
+    data_source = NULL,
+    data_type   = NULL,
+    layer       = NULL,
+    period      = NULL,
+    data_con    = NULL
 ) {
   data_con <- .eri_catalog_con(data_con)
   catalog  <- .eri_catalog_read(data_con)
@@ -197,6 +204,7 @@ eri_catalog_query <- function(
     path             = character(),
     country          = character(),
     disease          = character(),
+    data_source      = character(),
     data_type        = character(),
     layer            = character(),
     period           = character(),
@@ -214,6 +222,8 @@ eri_catalog_query <- function(
     entries <- Filter(function(e) identical(e$country, country), entries)
   if (!is.null(disease))
     entries <- Filter(function(e) identical(e$disease, disease), entries)
+  if (!is.null(data_source))
+    entries <- Filter(function(e) identical(e$data_source, data_source), entries)
   if (!is.null(data_type))
     entries <- Filter(function(e) identical(e$data_type, data_type), entries)
   if (!is.null(layer))
@@ -224,7 +234,7 @@ eri_catalog_query <- function(
   if (length(entries) == 0L) {
     # Distinguish "your filter matched nothing" from "the whole catalog is empty"
     # so a filtered query never implies the shared catalog was wiped.
-    any_filter <- !is.null(country) || !is.null(disease) ||
+    any_filter <- !is.null(country) || !is.null(disease) || !is.null(data_source) ||
       !is.null(data_type) || !is.null(layer) || !is.null(period)
     if (any_filter) {
       cli::cli_inform("No catalog entries match the specified filters.")
@@ -241,6 +251,7 @@ eri_catalog_query <- function(
     path             = vapply(entries, function(e) .na_chr(e$path),             character(1L)),
     country          = vapply(entries, function(e) .na_chr(e$country),          character(1L)),
     disease          = vapply(entries, function(e) .na_chr(e$disease),          character(1L)),
+    data_source      = vapply(entries, function(e) .na_chr(e$data_source),      character(1L)),
     data_type        = vapply(entries, function(e) .na_chr(e$data_type),        character(1L)),
     layer            = vapply(entries, function(e) .na_chr(e$layer),            character(1L)),
     period           = vapply(entries, function(e) .na_chr(e$period),           character(1L)),
@@ -313,6 +324,7 @@ eri_catalog_verify <- function(data_con = NULL) {
     path             = vapply(entries, function(e) .na_chr(e$path),             character(1L)),
     country          = vapply(entries, function(e) .na_chr(e$country),          character(1L)),
     disease          = vapply(entries, function(e) .na_chr(e$disease),          character(1L)),
+    data_source      = vapply(entries, function(e) .na_chr(e$data_source),      character(1L)),
     data_type        = vapply(entries, function(e) .na_chr(e$data_type),        character(1L)),
     layer            = vapply(entries, function(e) .na_chr(e$layer),            character(1L)),
     period           = vapply(entries, function(e) .na_chr(e$period),           character(1L)),
