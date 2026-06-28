@@ -1,9 +1,12 @@
 #### Operation / DQ log triage ####
 #
 # Reads the structured operation-log YAMLs already written across
-# `{country}/{disease}/{data_type}/logs/` (by .eri_write_log) plus the DQ-flag
-# logs written by eri_dq_log(), into a triage backlog, and lets an analyst mark
-# items handled. Mirrors the catalog query/verify pattern in R/catalog.R.
+# `{country}/{disease}/{data_source}[/{data_type}]/logs/` (by .eri_write_log)
+# plus the DQ-flag logs written by eri_dq_log(), into a triage backlog, and lets
+# an analyst mark items handled. Mirrors the catalog query/verify pattern in
+# R/catalog.R. Per ADR-0012 the log path carries the channel (`data_source`) and,
+# when present, the measure (`data_type`); the reader handles both the four-axis
+# (no measure) and five-axis layouts.
 
 #' @keywords internal
 .eri_na_chr <- function(x) {
@@ -29,10 +32,14 @@
   )
 }
 
-# Top-level data/ directories that are infrastructure, not country namespaces.
+# Top-level data/ directories that are infrastructure, not country namespaces,
+# plus the pipeline layer names (raw/staged/processed) and `logs`, which are
+# never country/disease/source/measure values. Used to skip non-axis subdirs
+# while walking the tree.
 #' @keywords internal
 .ERI_LOGS_INFRA_DIRS <- c("artifacts", "research", "schemas", "spatial",
-                          "odk", "templates", "logs")
+                          "odk", "templates", "logs",
+                          "raw", "staged", "processed")
 
 # List immediate sub-directory names under a blob prefix, skipping infra dirs
 # (those starting with "_", e.g. _catalog, or in the known infra set).
@@ -47,25 +54,46 @@
   nm[!startsWith(nm, "_") & !(nm %in% .ERI_LOGS_INFRA_DIRS)]
 }
 
-# Resolve which `…/logs/` directories to scan. If country+disease+data_type are
-# all supplied, that single dir; otherwise enumerate the tree (data_type is
-# bounded to the three known types, so only country/disease levels are listed).
 #' @keywords internal
-.eri_logs_dirs <- function(con, country, disease, data_type) {
-  dts <- if (!is.null(data_type)) data_type else c("surveillance", "cmr", "odk")
+.eri_logs_dir_exists <- function(con, d) {
+  isTRUE(tryCatch(AzureStor::storage_dir_exists(con, d), error = function(e) FALSE))
+}
+
+# Resolve which `…/logs/` directories to scan, across both the four-axis
+# (`{country}/{disease}/{data_source}/logs/`) and five-axis
+# (`{country}/{disease}/{data_source}/{data_type}/logs/`) layouts (ADR-0012).
+# Supplying `country`/`disease`/`data_source`/`data_type` narrows each level;
+# any left `NULL` is enumerated from the blob. A supplied `data_type` (measure)
+# restricts to the five-axis dir for that measure; otherwise both the channel's
+# own `logs/` and every measure's `logs/` under it are scanned.
+#' @keywords internal
+.eri_logs_dirs <- function(con, country, disease, data_source, data_type) {
   countries <- if (!is.null(country)) country else .eri_logs_list_subdirs(con, "")
 
   dirs <- character(0)
   for (cc in countries) {
-    diseases <- if (!is.null(disease)) disease else .eri_logs_list_subdirs(con, cc)
+    diseases <- if (!is.null(disease)) disease
+                else .eri_logs_list_subdirs(con, cc)
     for (dd in diseases) {
-      for (dt in dts) {
-        d <- paste(c(cc, dd, dt, "logs"), collapse = "/")
-        exists <- isTRUE(tryCatch(
-          AzureStor::storage_dir_exists(con, d),
-          error = function(e) FALSE
-        ))
-        if (exists) dirs <- c(dirs, d)
+      dd_prefix <- paste(cc, dd, sep = "/")
+      sources   <- if (!is.null(data_source)) data_source
+                   else .eri_logs_list_subdirs(con, dd_prefix)
+      for (ds in sources) {
+        src_prefix <- paste(dd_prefix, ds, sep = "/")
+
+        # Four-axis: the channel's own logs/ (only when not scoping to a measure).
+        if (is.null(data_type)) {
+          d4 <- paste0(src_prefix, "/logs")
+          if (.eri_logs_dir_exists(con, d4)) dirs <- c(dirs, d4)
+        }
+
+        # Five-axis: a measure level under the channel.
+        measures <- if (!is.null(data_type)) data_type
+                    else .eri_logs_list_subdirs(con, src_prefix)
+        for (mm in measures) {
+          d5 <- paste(c(cc, dd, ds, mm, "logs"), collapse = "/")
+          if (.eri_logs_dir_exists(con, d5)) dirs <- c(dirs, d5)
+        }
       }
     }
   }
@@ -78,14 +106,19 @@
 .eri_log_flatten <- function(entry, log_path) {
   # Some operations (eri_odk_sync, eri_stage_cmr) don't record every scoping
   # field in `parameters`; the values are unambiguous in the blob path
-  # `{country}/{disease}/{data_type}/logs/{file}.yaml`, so fall back to that.
+  # `{country}/{disease}/{data_source}[/{data_type}]/logs/{file}.yaml`, so fall
+  # back to that. The path is authoritative for the channel/measure axes, since
+  # legacy envelopes overloaded `parameters$data_type` with the channel value.
   parts   <- strsplit(log_path, "/", fixed = TRUE)[[1]]
   logs_at <- which(parts == "logs")
   logs_at <- if (length(logs_at)) logs_at[length(logs_at)] else NA_integer_
-  from_path <- function(offset) {
-    i <- logs_at - offset
-    if (!is.na(logs_at) && i >= 1L) parts[i] else NA_character_
-  }
+  depth   <- if (!is.na(logs_at)) logs_at - 1L else 0L  # segments before /logs
+  # Layout is country/disease/data_source[/data_type]/logs, so the axes read off
+  # the front of the path; a measure exists only at depth 4 (the five-axis form).
+  path_country <- if (depth >= 1L) parts[1L] else NA_character_
+  path_disease <- if (depth >= 2L) parts[2L] else NA_character_
+  path_source  <- if (depth >= 3L) parts[3L] else NA_character_
+  path_measure <- if (depth >= 4L) parts[4L] else NA_character_
   coalesce_chr <- function(x, fallback) {
     x <- .eri_na_chr(x)
     if (is.na(x)) fallback else x
@@ -112,10 +145,12 @@
     operation  = .eri_na_chr(entry$operation),
     status     = .eri_na_chr(entry$status),
     analyst    = .eri_na_chr(entry$analyst),
-    country    = coalesce_chr(entry$parameters$country,   from_path(3L)),
-    disease    = coalesce_chr(entry$parameters$disease,   from_path(2L)),
-    data_type  = coalesce_chr(entry$parameters$data_type, from_path(1L)),
-    period     = .eri_na_chr(entry$parameters$period),
+    country     = coalesce_chr(entry$parameters$country, path_country),
+    disease     = coalesce_chr(entry$parameters$disease, path_disease),
+    # Channel/measure: trust the path (legacy envelopes overloaded data_type).
+    data_source = coalesce_chr(path_source,  entry$parameters$data_source),
+    data_type   = coalesce_chr(path_measure, NA_character_),
+    period      = .eri_na_chr(entry$parameters$period),
     summary    = .eri_na_chr(summary),
     n_issues   = .eri_na_int(n_issues),
     handled    = isTRUE(entry$triage$handled),
@@ -131,16 +166,17 @@
     timestamp  = character(),
     operation  = character(),
     status     = character(),
-    analyst    = character(),
-    country    = character(),
-    disease    = character(),
-    data_type  = character(),
-    period     = character(),
-    summary    = character(),
-    n_issues   = integer(),
-    handled    = logical(),
-    handled_by = character(),
-    handled_at = character()
+    analyst     = character(),
+    country     = character(),
+    disease     = character(),
+    data_source = character(),
+    data_type   = character(),
+    period      = character(),
+    summary     = character(),
+    n_issues    = integer(),
+    handled     = logical(),
+    handled_by  = character(),
+    handled_at  = character()
   )
 }
 
@@ -149,15 +185,18 @@
 #' Persist data-quality flags to the log backlog
 #'
 #' Writes the `$flags` from a [run_dq_checks()] result (plus a corrections count)
-#' to a YAML log in `{country}/{disease}/{data_type}/logs/` in the `data/` Azure
-#' blob, so the data-quality issues are durable and discoverable by [eri_logs()].
-#' Without this, `run_dq_checks()` flags exist only in your R session. `eri_ingest()`
-#' calls this automatically.
+#' to a YAML log in `{country}/{disease}/{data_source}[/{data_type}]/logs/` in the
+#' `data/` Azure blob, so the data-quality issues are durable and discoverable by
+#' [eri_logs()]. Without this, `run_dq_checks()` flags exist only in your R session.
+#' `eri_ingest()` calls this automatically.
 #'
 #' @param result A `dq_result` object returned by [run_dq_checks()].
 #' @param country `chr` Country code (e.g. `"uga"`).
 #' @param disease `chr` Disease name (e.g. `"oncho"`).
-#' @param data_type `chr` Data type (`"surveillance"`, `"cmr"`, or `"odk"`).
+#' @param data_source `chr` The channel (`"surveillance"`, `"programmatic"`,
+#'   `"research"`).
+#' @param data_type `chr` or `NULL` The measure (e.g. `"case"`, `"treatment"`);
+#'   `NULL` (default) writes to the four-axis channel-level `logs/` directory.
 #' @param period `chr` or `NULL` Reporting period the data covers (e.g. `"2024-01"`).
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @returns Invisibly, the number of flags logged.
@@ -167,8 +206,8 @@
 #' eri_dq_log(result, "uga", "oncho", "surveillance", period = "2024-01")
 #' }
 #' @export
-eri_dq_log <- function(result, country, disease, data_type,
-                       period = NULL, data_con = NULL) {
+eri_dq_log <- function(result, country, disease, data_source,
+                       data_type = NULL, period = NULL, data_con = NULL) {
   if (!inherits(result, "dq_result")) {
     cli::cli_abort("{.arg result} must be a {.cls dq_result} from {.fn run_dq_checks}.")
   }
@@ -190,14 +229,17 @@ eri_dq_log <- function(result, country, disease, data_type,
     analyst       = .eri_analyst_id(),
     timestamp     = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters    = list(country = country, disease = disease,
-                         data_type = data_type, period = period),
+                         data_source = data_source, data_type = data_type,
+                         period = period),
     status        = if (n_flags > 0L) "needs_review" else "clean",
     n_flags       = n_flags,
     n_corrections = nrow(result$log),
     flags         = flags_list
   )
 
-  log_dir <- paste(c(country, disease, data_type, "logs"), collapse = "/")
+  # c() drops a NULL data_type, so a four-axis call lands at the channel level.
+  log_dir <- paste(c(country, disease, data_source, data_type, "logs"),
+                   collapse = "/")
   .eri_write_log(envelope, data_con, log_dir)
   cli::cli_alert_success(
     "Logged {n_flags} DQ flag{?s} ({envelope$status})."
@@ -211,17 +253,20 @@ eri_dq_log <- function(result, country, disease, data_type,
 #'
 #' Reads the structured operation logs (written by `eri_ingest()`, `eri_approve()`,
 #' `eri_stage()`, `eri_odk_sync()`, …) and the DQ-flag logs (written by
-#' [eri_dq_log()]) from `{country}/{disease}/{data_type}/logs/` in the `data/`
-#' Azure blob, and returns them as a triage backlog. Filter to failures with
-#' `status = "error"` or data-quality items with `status = "needs_review"`, then
-#' close items out with [eri_logs_resolve()].
+#' [eri_dq_log()]) from `{country}/{disease}/{data_source}[/{data_type}]/logs/` in
+#' the `data/` Azure blob, and returns them as a triage backlog. Filter to failures
+#' with `status = "error"` or data-quality items with `status = "needs_review"`,
+#' then close items out with [eri_logs_resolve()].
 #'
-#' If `country`, `disease`, and `data_type` are all supplied, only that one log
-#' directory is read (fast). Otherwise the function enumerates the data blob to
-#' build a system-wide backlog (slower); supplying filters narrows the scan.
+#' The function scopes the scan to whichever axes you supply and enumerates the
+#' rest from the blob; the more you supply (`country` → `disease` → `data_source`
+#' → `data_type`), the faster it is. It reads both the four-axis channel-level
+#' logs and the five-axis measure-level logs (ADR-0012).
 #'
-#' @param country,disease,data_type `chr` or `NULL` Scope the search. All three
-#'   together read a single `logs/` directory; any left `NULL` triggers enumeration.
+#' @param country,disease,data_source `chr` or `NULL` Scope the search by country,
+#'   disease, and channel; any left `NULL` is enumerated from the blob.
+#' @param data_type `chr` or `NULL` Scope to a single measure (the five-axis
+#'   layout). `NULL` reads the channel-level logs and every measure beneath it.
 #' @param status `chr` or `NULL` Filter by status (`"success"`, `"error"`,
 #'   `"in_progress"`, `"needs_review"`, `"clean"`).
 #' @param operation `chr` or `NULL` Filter by operation (e.g. `"eri_approve"`, `"dq_flags"`).
@@ -230,8 +275,9 @@ eri_dq_log <- function(result, country, disease, data_type,
 #' @param include_handled `lgl` Include items already marked handled. Default `FALSE`.
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @returns A tibble, newest first, with columns: `log_path`, `timestamp`,
-#'   `operation`, `status`, `analyst`, `country`, `disease`, `data_type`,
-#'   `period`, `summary`, `n_issues`, `handled`, `handled_by`, `handled_at`.
+#'   `operation`, `status`, `analyst`, `country`, `disease`, `data_source`,
+#'   `data_type`, `period`, `summary`, `n_issues`, `handled`, `handled_by`,
+#'   `handled_at`.
 #' @examples
 #' \dontrun{
 #' # Everything needing attention across the system
@@ -239,13 +285,17 @@ eri_dq_log <- function(result, country, disease, data_type,
 #'
 #' # The backlog for one dataset
 #' eri_logs("uga", "oncho", "surveillance")
+#'
+#' # Scope to a single measure (five-axis)
+#' eri_logs("uga", "oncho", "programmatic", data_type = "treatment")
 #' }
 #' @export
-eri_logs <- function(country = NULL, disease = NULL, data_type = NULL,
-                     status = NULL, operation = NULL, analyst = NULL,
-                     since = NULL, include_handled = FALSE, data_con = NULL) {
+eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
+                     data_type = NULL, status = NULL, operation = NULL,
+                     analyst = NULL, since = NULL, include_handled = FALSE,
+                     data_con = NULL) {
   data_con <- .eri_logs_con(data_con)
-  dirs     <- .eri_logs_dirs(data_con, country, disease, data_type)
+  dirs     <- .eri_logs_dirs(data_con, country, disease, data_source, data_type)
 
   if (length(dirs) == 0L) {
     cli::cli_inform("No log directories found.")
@@ -284,10 +334,11 @@ eri_logs <- function(country = NULL, disease = NULL, data_type = NULL,
     operation  = vapply(rows, function(r) .eri_na_chr(r$operation),  character(1L)),
     status     = vapply(rows, function(r) .eri_na_chr(r$status),     character(1L)),
     analyst    = vapply(rows, function(r) .eri_na_chr(r$analyst),    character(1L)),
-    country    = vapply(rows, function(r) .eri_na_chr(r$country),    character(1L)),
-    disease    = vapply(rows, function(r) .eri_na_chr(r$disease),    character(1L)),
-    data_type  = vapply(rows, function(r) .eri_na_chr(r$data_type),  character(1L)),
-    period     = vapply(rows, function(r) .eri_na_chr(r$period),     character(1L)),
+    country     = vapply(rows, function(r) .eri_na_chr(r$country),     character(1L)),
+    disease     = vapply(rows, function(r) .eri_na_chr(r$disease),     character(1L)),
+    data_source = vapply(rows, function(r) .eri_na_chr(r$data_source), character(1L)),
+    data_type   = vapply(rows, function(r) .eri_na_chr(r$data_type),   character(1L)),
+    period      = vapply(rows, function(r) .eri_na_chr(r$period),      character(1L)),
     summary    = vapply(rows, function(r) .eri_na_chr(r$summary),    character(1L)),
     n_issues   = vapply(rows, function(r) .eri_na_int(r$n_issues),   integer(1L)),
     handled    = vapply(rows, function(r) isTRUE(r$handled),         logical(1L)),

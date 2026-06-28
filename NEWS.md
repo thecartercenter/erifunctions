@@ -13,6 +13,13 @@
   data_type = NULL)`; `eri_catalog_query(... , data_source = NULL, data_type = NULL, ...)`). Four-axis
   entries leave `data_type` as `NA`. Legacy positional `eri_catalog_register()` calls that passed the
   channel as `data_type` now pass it as `data_source`.
+- The log triage reader follows the writer: `eri_logs()` scans both the four-axis channel-level
+  `…/{data_source}/logs/` and the five-axis measure-level `…/{data_source}/{data_type}/logs/` layouts, and
+  its backlog tibble gains a `data_source` column with `data_type` now meaning the measure.
+  `eri_logs(country, disease, data_source, data_type = NULL, …)` and
+  `eri_dq_log(result, country, disease, data_source, data_type = NULL, …)` rename the old third/fourth
+  argument to `data_source` (it always held the channel) and add the optional measure. Positional callers
+  passing the channel third are unchanged.
 
 ## Feature: onboarding scaffolders emit the 4-part schema identity (ADR-0012, #175 phase 4a)
 

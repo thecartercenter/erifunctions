@@ -4,7 +4,15 @@
 \alias{eri_dq_log}
 \title{Persist data-quality flags to the log backlog}
 \usage{
-eri_dq_log(result, country, disease, data_type, period = NULL, data_con = NULL)
+eri_dq_log(
+  result,
+  country,
+  disease,
+  data_source,
+  data_type = NULL,
+  period = NULL,
+  data_con = NULL
+)
 }
 \arguments{
 \item{result}{A \code{dq_result} object returned by \code{\link[=run_dq_checks]{run_dq_checks()}}.}
@@ -13,7 +21,11 @@ eri_dq_log(result, country, disease, data_type, period = NULL, data_con = NULL)
 
 \item{disease}{\code{chr} Disease name (e.g. \code{"oncho"}).}
 
-\item{data_type}{\code{chr} Data type (\code{"surveillance"}, \code{"cmr"}, or \code{"odk"}).}
+\item{data_source}{\code{chr} The channel (\code{"surveillance"}, \code{"programmatic"},
+\code{"research"}).}
+
+\item{data_type}{\code{chr} or \code{NULL} The measure (e.g. \code{"case"}, \code{"treatment"});
+\code{NULL} (default) writes to the four-axis channel-level \verb{logs/} directory.}
 
 \item{period}{\code{chr} or \code{NULL} Reporting period the data covers (e.g. \code{"2024-01"}).}
 
@@ -24,10 +36,10 @@ Invisibly, the number of flags logged.
 }
 \description{
 Writes the \verb{$flags} from a \code{\link[=run_dq_checks]{run_dq_checks()}} result (plus a corrections count)
-to a YAML log in \verb{\{country\}/\{disease\}/\{data_type\}/logs/} in the \verb{data/} Azure
-blob, so the data-quality issues are durable and discoverable by \code{\link[=eri_logs]{eri_logs()}}.
-Without this, \code{run_dq_checks()} flags exist only in your R session. \code{eri_ingest()}
-calls this automatically.
+to a YAML log in \verb{\{country\}/\{disease\}/\{data_source\}[/\{data_type\}]/logs/} in the
+\verb{data/} Azure blob, so the data-quality issues are durable and discoverable by
+\code{\link[=eri_logs]{eri_logs()}}. Without this, \code{run_dq_checks()} flags exist only in your R session.
+\code{eri_ingest()} calls this automatically.
 }
 \examples{
 \dontrun{
