@@ -55,7 +55,9 @@ eri_approve(
   `str` or `NULL` The measure the data captures (e.g. `"case"`,
   `"aggregate"`, `"treatment"`, `"tas"`). `NULL` (default) approves the
   legacy four-axis path `{country}/{disease}/{data_source}/...` without
-  a measure level.
+  a measure level, and the catalog entry's measure is recorded as `NA` —
+  a one-time per-session note points this out so it is a deliberate
+  choice, not a silent omission.
 
 - azcontainer:
 

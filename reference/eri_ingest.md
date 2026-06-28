@@ -6,10 +6,11 @@ The general analyst ingest entry point. Reads a raw local file, runs all
 DQ checks via
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md),
 prints the flags, and writes the cleaned parquet to
-`data/{country}/{disease}/{data_source}/staged/` — feeding
-[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
-It runs on **any** data, including a throwaway sandbox: there is no
-pipeline-registry or country gate by default.
+`data/{country}/{disease}/{data_source}/{data_type}/staged/` — feeding
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+with the matching measure. It runs on **any** data, including a
+throwaway sandbox: there is no pipeline-registry or country gate by
+default.
 
 The legacy `projects`-blob dual-write (the hsp-mal cutover comparison)
 is an **opt-in** mirror: pass `mirror_pipeline = "hsp-mal"` to
@@ -54,8 +55,14 @@ eri_ingest(
 
 - data_type:
 
-  `str` The measure used to select the DQ schema (e.g. `"aggregate"`,
-  `"case"`). Default `"aggregate"`.
+  `str` or `NULL` The measure (e.g. `"aggregate"`, `"case"`,
+  `"treatment"`). Selects the DQ schema **and** is the measure level in
+  the staged path `.../{data_source}/{data_type}/staged/`. Default
+  `"aggregate"`. Whatever you pass here, **promote with the same
+  measure** —
+  `eri_approve(country, disease, data_source, period, data_type = <same>)`
+  — or the approve will look one level up and find nothing. `NULL`
+  stages channel-level (four-axis), for the rare measure-less case.
 
 - schema:
 
@@ -88,8 +95,11 @@ Invisibly, the `dq_result` object (`$data`, `$log`, `$flags`).
 
 ``` r
 if (FALSE) { # \dontrun{
+# Default measure is "aggregate", so it stages to
+# dr/malaria/surveillance/aggregate/staged/ ...
 result <- eri_ingest("data/raw/dr_malaria_2024W01.xlsx", "dr", "malaria")
 result$flags  # review before approving
-eri_approve("dr", "malaria", "surveillance", "2024W01")
+# ... and the same measure promotes it:
+eri_approve("dr", "malaria", "surveillance", "2024W01", data_type = "aggregate")
 } # }
 ```

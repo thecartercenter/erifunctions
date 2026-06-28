@@ -124,7 +124,9 @@ is promoted.</p></dd>
 <dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
 <dd><p><code>str</code> or <code>NULL</code> The measure the data captures (e.g. <code>"case"</code>,
 <code>"aggregate"</code>, <code>"treatment"</code>, <code>"tas"</code>). <code>NULL</code> (default) approves the legacy
-four-axis path <code>{country}/{disease}/{data_source}/...</code> without a measure level.</p></dd>
+four-axis path <code>{country}/{disease}/{data_source}/...</code> without a measure level,
+and the catalog entry's measure is recorded as <code>NA</code> — a one-time per-session
+note points this out so it is a deliberate choice, not a silent omission.</p></dd>
 
 
 <dt id="arg-azcontainer">azcontainer<a class="anchor" aria-label="anchor" href="#arg-azcontainer"></a></dt>
