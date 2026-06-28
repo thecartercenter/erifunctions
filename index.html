@@ -227,12 +227,12 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <div class="section level3">
 <h3 id="data-layers">Data layers<a class="anchor" aria-label="anchor" href="#data-layers"></a>
 </h3>
-<p>All data lives in the <code>data/</code> Azure blob under a standard path:</p>
-<pre><code>data/{country}/{disease}/{data_type}/{layer}/
-                                     raw/        &lt;- as-received from source
-                                     staged/     &lt;- DQ-checked, awaiting approval
-                                     processed/  &lt;- analyst-approved, canonical</code></pre>
-<p><code><a href="reference/eri_approve.html">eri_approve()</a></code> is the explicit human gate. Nothing reaches <code>processed/</code> without it.</p>
+<p>All data lives in the <code>data/</code> Azure blob under a standard path (<a href="docs/adr/0012-source-measure-data-model.html">ADR-0012</a>):</p>
+<pre><code>data/{country}/{disease}/{data_source}/{data_type}/{layer}/
+                                                   raw/        &lt;- as-received from source
+                                                   staged/     &lt;- DQ-checked, awaiting approval
+                                                   processed/  &lt;- analyst-approved, canonical</code></pre>
+<p>The <code>data_type</code> (measure) level is optional — channel-only data lands one level shallower. The two addressing axes are explained just below. <code><a href="reference/eri_approve.html">eri_approve()</a></code> is the explicit human gate. Nothing reaches <code>processed/</code> without it.</p>
 </div>
 <div class="section level3">
 <h3 id="how-data-is-addressed-vocabulary">How data is addressed (vocabulary)<a class="anchor" aria-label="anchor" href="#how-data-is-addressed-vocabulary"></a>
@@ -268,7 +268,7 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <td><code>data_source</code></td>
 <td><strong>the channel — how it arrives</strong></td>
 <td>
-<code>surveillance</code>, <code>programmatic</code>, <code>odk</code>
+<code>surveillance</code>, <code>programmatic</code>, <code>research</code>
 </td>
 </tr>
 <tr>
@@ -547,11 +547,11 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 </tr></thead>
 <tbody>
 <tr>
-<td><code>eri_catalog_register(path, country, disease, data_type, layer)</code></td>
+<td><code>eri_catalog_register(path, country, disease, data_source, layer, data_type)</code></td>
 <td>Register a file in the catalog</td>
 </tr>
 <tr>
-<td><code>eri_catalog_query(country, disease, data_type, layer, period)</code></td>
+<td><code>eri_catalog_query(country, disease, data_source, data_type, layer, period)</code></td>
 <td>Query catalog entries</td>
 </tr>
 <tr>

@@ -204,6 +204,15 @@ and
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 put it. Dry-run it first:
 
+> **Transitional vocabulary.** `rblf` and `cmr` are interim coordinates.
+> Under the [source ≠ measure model
+> (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
+> CMR is a *format* of the `programmatic` channel, and each report sheet
+> splits to its own disease and measure (e.g. RB Treatment →
+> `{country}/oncho/programmatic/treatment/`). Until that split ships,
+> keep using `rblf`/`cmr` as shown here — don’t adopt them as the
+> canonical addressing model.
+
 ``` r
 
 eri_onboard_cmr("atlantis", "Atlantis", create_dirs = TRUE, dry_run = TRUE)

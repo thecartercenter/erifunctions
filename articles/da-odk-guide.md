@@ -26,6 +26,14 @@ up**](#clean-up) section removes everything you created.
 > flows through the same `raw → staged → processed` lifecycle — with
 > [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 > as the human gate — as every other dataset.
+>
+> **Transitional vocabulary.** `odk` is an interim `data_source` token
+> here. Under the [source ≠ measure model
+> (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
+> ODK is a *format* of the `research` channel, and its measure (`tas`,
+> `prevalence`, …) is optional — which is why this guide’s paths carry
+> no measure level. Keep using `odk` as shown until the research adapter
+> ships; don’t adopt it as the canonical channel name.
 
 flowchart TD A\["Field teams collect on phones"\] --\> B\["ODK Central
 server"\] B --\> C\["init_odk_connection()"\] C --\> D\["Register the
