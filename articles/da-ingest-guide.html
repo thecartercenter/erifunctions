@@ -172,34 +172,43 @@ we make one pointed at <code>data</code> and pass it explicitly
 everywhere below — that way every step targets the right place:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
-<p>Every dataset is identified by four coordinates:
-<strong>country</strong>, <strong>disease</strong>, <strong>data
-type</strong>, and <strong>layer</strong>. Never hand-type the folder
-paths — let <a href="../reference/eri_data_path.html"><code>eri_data_path()</code></a>
+<p>Every dataset is identified by five coordinates (<a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">ADR-0012</a>):
+<strong>country</strong>, <strong>disease</strong>,
+<strong>data_source</strong> (the <em>channel</em> — how the data
+arrives), <strong>data_type</strong> (the <em>measure</em> — what it
+captures), and <strong>layer</strong>. The key idea is that the channel
+is <strong>separate</strong> from the measure: <code>surveillance</code>
+data can be a <code>case</code> line-list in one country and an
+<code>aggregate</code> weekly count in another. Our extract is a
+line-list — one row per case — so its measure is <code>case</code>.
+Never hand-type the folder paths — let <a href="../reference/eri_data_path.html"><code>eri_data_path()</code></a>
 build the canonical path for you, so every step agrees on where things
 go:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Our make-believe country and its malaria surveillance data.</span></span>
-<span><span class="va">country</span>   <span class="op">&lt;-</span> <span class="st">"atlantis"</span></span>
-<span><span class="va">disease</span>   <span class="op">&lt;-</span> <span class="st">"malaria"</span></span>
-<span><span class="va">data_type</span> <span class="op">&lt;-</span> <span class="st">"surveillance"</span></span>
+<span><span class="va">country</span>     <span class="op">&lt;-</span> <span class="st">"atlantis"</span></span>
+<span><span class="va">disease</span>     <span class="op">&lt;-</span> <span class="st">"malaria"</span></span>
+<span><span class="va">data_source</span> <span class="op">&lt;-</span> <span class="st">"surveillance"</span>   <span class="co"># the channel</span></span>
+<span><span class="va">data_type</span>   <span class="op">&lt;-</span> <span class="st">"case"</span>           <span class="co"># the measure (one row per case)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"raw"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "atlantis/malaria/surveillance/raw"</span></span>
+<span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"raw"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "atlantis/malaria/surveillance/case/raw"</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"staged"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "atlantis/malaria/surveillance/staged"</span></span></code></pre></div>
-<p><code>data_type</code> must be one of <code>"surveillance"</code>,
-<code>"cmr"</code>, or <code>"odk"</code>, and <code>layer</code> one of
-<code>"raw"</code>, <code>"staged"</code>, <code>"processed"</code> —
-but <strong>country and disease are free text</strong>, which is exactly
-why we can stand up an <em>atlantis</em> sandbox next to the real
-countries without disturbing them.</p>
+<span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "atlantis/malaria/surveillance/case/staged"</span></span></code></pre></div>
+<p><code>data_source</code> and <code>data_type</code> are
+<strong>extensible</strong> — <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> lists the
+known values, and an unregistered one <em>warns</em> rather than blocks
+— while <code>layer</code> is one of <code>"raw"</code>,
+<code>"staged"</code>, <code>"processed"</code>. <strong>Country and
+disease are free text</strong>, which is exactly why we can stand up an
+<em>atlantis</em> sandbox next to the real countries without disturbing
+them.</p>
 <p>Create the two folders we will write into (the third,
 <code>processed/</code>, is created for us at approval):</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_dir_create.html">eri_dir_create</a></span><span class="op">(</span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"raw"</span><span class="op">)</span>,    azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/eri_dir_create.html">eri_dir_create</a></span><span class="op">(</span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"staged"</span><span class="op">)</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_dir_create.html">eri_dir_create</a></span><span class="op">(</span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"raw"</span><span class="op">)</span>,    azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_dir_create.html">eri_dir_create</a></span><span class="op">(</span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span><span class="op">)</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Directory created!</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -236,7 +245,8 @@ couple of district names are mis-cased or use an old spelling
 untouched, so there is always a record of what actually arrived. Write
 it to <code>raw/</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">raw_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"raw"</span>, <span class="st">"atlantis_malaria_2024-01.csv"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">raw_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"raw"</span>,</span>
+<span>                           <span class="st">"atlantis_malaria_2024-01.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">extract1</span>, <span class="va">raw_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <p><code>raw/</code> is your archive of the source. From here on we work
 toward <code>staged/</code> — but the original is safe if you ever need
@@ -252,63 +262,78 @@ describing each column: its type, its allowed range or allowed values,
 known fixes, and translations. The schema is the contract every future
 extract for this dataset is checked against.</p>
 <p>Open a text editor and save the following as
-<strong><code>atlantis_malaria.yaml</code></strong> in your working
-directory. (It is intentionally short — a real schema like
-<code>dominican_republic_malaria.yaml</code> has more columns, but the
-<em>shape</em> is exactly this.)</p>
+<strong><code>atlantis_malaria_surveillance_case.yaml</code></strong> in
+your working directory — the filename is the four-part identity
+<code>{country}_{disease}_{data_source}_{data_type}</code>, which is how
+<code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> finds it. (It is intentionally short — a
+real schema like <code>dr_malaria_surveillance_case.yaml</code> has more
+columns, but the <em>shape</em> is exactly this.)</p>
+<blockquote>
+<p><strong>One source, many measures.</strong> If you stood up this
+space with the <a href="da-onboard-guide.html">onboarding guide</a>, its
+scaffold defaults to the <strong><code>aggregate</code></strong> measure
+(weekly counts) —
+<code>atlantis_malaria_surveillance_aggregate.yaml</code>. Our extract
+here is a line-list, so we author the <strong><code>case</code></strong>
+measure alongside it. That is the whole point of separating the channel
+from the measure: the same <code>surveillance</code> source can hold
+both <code>case</code> and <code>aggregate</code> data. Run
+<code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> any time to see the known measures.</p>
+</blockquote>
 <div class="sourceCode" id="cb8"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">country</span><span class="kw">:</span><span class="at"> atlantis</span></span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">disease</span><span class="kw">:</span><span class="at"> malaria</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> en</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">time_grain</span><span class="kw">:</span><span class="at"> weekly</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">aggregation</span><span class="kw">:</span><span class="at"> case</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="fu">temporal</span><span class="kw">:</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="at">  </span><span class="fu">year_col</span><span class="kw">:</span><span class="at"> Year</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="at">  </span><span class="fu">period_col</span><span class="kw">:</span><span class="at"> EpiWeek</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">preprocessing</span><span class="kw">:</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> remove_smart_quotes</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> drop_rows_missing_year</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="fu">columns</span><span class="kw">:</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="at">  </span><span class="fu">Year</span><span class="kw">:</span></span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">year</span><span class="kw">,</span><span class="at"> YEAR</span><span class="kw">,</span><span class="at"> Año</span><span class="kw">]</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">2000</span><span class="kw">,</span><span class="at"> </span><span class="dv">2035</span><span class="kw">]</span></span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a></span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="at">  </span><span class="fu">EpiWeek</span><span class="kw">:</span></span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">week</span><span class="kw">,</span><span class="at"> Week</span><span class="kw">,</span><span class="at"> Semana</span><span class="kw">]</span></span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">53</span><span class="kw">]</span></span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a></span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="at">  </span><span class="fu">District</span><span class="kw">:</span></span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">district</span><span class="kw">,</span><span class="at"> Distrito</span><span class="kw">]</span></span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="at">    </span><span class="fu">allowed_values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Coralia</span><span class="kw">,</span><span class="at"> Nerei</span><span class="kw">,</span><span class="at"> Tritonis</span><span class="kw">,</span><span class="at"> Marisa</span><span class="kw">]</span></span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="at">    </span><span class="fu">corrections</span><span class="kw">:</span></span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="at">      </span><span class="fu">coralia</span><span class="kw">:</span><span class="at"> Coralia</span></span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="at">      </span><span class="fu">CORALIA</span><span class="kw">:</span><span class="at"> Coralia</span></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="at">      </span><span class="fu">"Nerei City"</span><span class="kw">:</span><span class="at"> Nerei</span></span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a></span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="at">  </span><span class="fu">Sex</span><span class="kw">:</span></span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
-<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">sex</span><span class="kw">,</span><span class="at"> SEX</span><span class="kw">,</span><span class="at"> Sexo</span><span class="kw">]</span></span>
-<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="at">    </span><span class="fu">allowed_values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Male</span><span class="kw">,</span><span class="at"> Female</span><span class="kw">]</span></span>
-<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="at">    </span><span class="fu">translations</span><span class="kw">:</span></span>
-<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="at">      </span><span class="fu">Masculino</span><span class="kw">:</span><span class="at"> Male</span></span>
-<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="at">      </span><span class="fu">Femenino</span><span class="kw">:</span><span class="at"> Female</span></span>
-<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a><span class="at">      </span><span class="fu">M</span><span class="kw">:</span><span class="at"> Male</span></span>
-<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a><span class="at">      </span><span class="fu">F</span><span class="kw">:</span><span class="at"> Female</span></span>
-<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a></span>
-<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a><span class="at">  </span><span class="fu">Age</span><span class="kw">:</span></span>
-<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
-<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">age</span><span class="kw">,</span><span class="at"> AGE</span><span class="kw">,</span><span class="at"> Edad</span><span class="kw">]</span></span>
-<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="dv">120</span><span class="kw">]</span></span></code></pre></div>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">data_source</span><span class="kw">:</span><span class="at"> surveillance</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="fu">data_type</span><span class="kw">:</span><span class="at"> case</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> en</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">time_grain</span><span class="kw">:</span><span class="at"> case</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">temporal</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="at">  </span><span class="fu">year_col</span><span class="kw">:</span><span class="at"> Year</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="at">  </span><span class="fu">period_col</span><span class="kw">:</span><span class="at"> EpiWeek</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">preprocessing</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> remove_smart_quotes</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> drop_rows_missing_year</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="at">  </span><span class="fu">Year</span><span class="kw">:</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">year</span><span class="kw">,</span><span class="at"> YEAR</span><span class="kw">,</span><span class="at"> Año</span><span class="kw">]</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">2000</span><span class="kw">,</span><span class="at"> </span><span class="dv">2035</span><span class="kw">]</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="at">  </span><span class="fu">EpiWeek</span><span class="kw">:</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">week</span><span class="kw">,</span><span class="at"> Week</span><span class="kw">,</span><span class="at"> Semana</span><span class="kw">]</span></span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">53</span><span class="kw">]</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="at">  </span><span class="fu">District</span><span class="kw">:</span></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">district</span><span class="kw">,</span><span class="at"> Distrito</span><span class="kw">]</span></span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="at">    </span><span class="fu">allowed_values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Coralia</span><span class="kw">,</span><span class="at"> Nerei</span><span class="kw">,</span><span class="at"> Tritonis</span><span class="kw">,</span><span class="at"> Marisa</span><span class="kw">]</span></span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="at">    </span><span class="fu">corrections</span><span class="kw">:</span></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="at">      </span><span class="fu">coralia</span><span class="kw">:</span><span class="at"> Coralia</span></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="at">      </span><span class="fu">CORALIA</span><span class="kw">:</span><span class="at"> Coralia</span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="at">      </span><span class="fu">"Nerei City"</span><span class="kw">:</span><span class="at"> Nerei</span></span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="at">  </span><span class="fu">Sex</span><span class="kw">:</span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">sex</span><span class="kw">,</span><span class="at"> SEX</span><span class="kw">,</span><span class="at"> Sexo</span><span class="kw">]</span></span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="at">    </span><span class="fu">allowed_values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Male</span><span class="kw">,</span><span class="at"> Female</span><span class="kw">]</span></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="at">    </span><span class="fu">translations</span><span class="kw">:</span></span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="at">      </span><span class="fu">Masculino</span><span class="kw">:</span><span class="at"> Male</span></span>
+<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a><span class="at">      </span><span class="fu">Femenino</span><span class="kw">:</span><span class="at"> Female</span></span>
+<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a><span class="at">      </span><span class="fu">M</span><span class="kw">:</span><span class="at"> Male</span></span>
+<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a><span class="at">      </span><span class="fu">F</span><span class="kw">:</span><span class="at"> Female</span></span>
+<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a></span>
+<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a><span class="at">  </span><span class="fu">Age</span><span class="kw">:</span></span>
+<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
+<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">age</span><span class="kw">,</span><span class="at"> AGE</span><span class="kw">,</span><span class="at"> Edad</span><span class="kw">]</span></span>
+<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="dv">120</span><span class="kw">]</span></span></code></pre></div>
 <p>Read it slowly — each block is a rule:</p>
 <table class="table">
 <colgroup>
@@ -364,10 +389,11 @@ are applied for you and recorded; flags are problems only <em>you</em>
 can resolve.</strong></p>
 <p>Now publish the schema to Azure so <a href="../reference/load_dq_schema.html"><code>load_dq_schema()</code></a>
 can find it. It looks for
-<code>schemas/&lt;country&gt;_&lt;disease&gt;.yaml</code>, so the
-filename matters:</p>
+<code>schemas/{country}_{disease}_{data_source}_{data_type}.yaml</code>,
+so the filename matters:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_upload.html">eri_upload</a></span><span class="op">(</span><span class="st">"atlantis_malaria.yaml"</span>, <span class="st">"schemas/atlantis_malaria.yaml"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_upload.html">eri_upload</a></span><span class="op">(</span><span class="st">"atlantis_malaria_surveillance_case.yaml"</span>,</span>
+<span>           <span class="st">"schemas/atlantis_malaria_surveillance_case.yaml"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="dq">4. Run the data-quality checks<a class="anchor" aria-label="anchor" href="#dq"></a>
@@ -378,7 +404,7 @@ schema and hands back the cleaned data plus two ledgers — what it
 <em>fixed</em>, and what it wants <em>you</em> to look at:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">raw1</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">raw_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="va">schema</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="va">schema</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"case"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_dq_checks.html">run_dq_checks</a></span><span class="op">(</span><span class="va">raw1</span>, <span class="va">schema</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ DQ checks complete: 6 corrections, 0 flags for review.</span></span></code></pre></div>
@@ -420,7 +446,7 @@ approval. We store it as <strong>parquet</strong> (compact, typed,
 fast). Give the file a name that contains the reporting period — you
 will use that period to approve it in the next step:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">staged_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"staged"</span>,</span>
+<code class="sourceCode R"><span><span class="va">staged_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span>,</span>
 <span>                              <span class="st">"atlantis_malaria_2024-01.parquet"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">result1</span><span class="op">$</span><span class="va">data</span>, <span class="va">staged_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <p>Nothing is official yet. The data is checked and parked, but it will
@@ -436,28 +462,33 @@ moves it to <code>processed/</code>, writes a human-readable
 <strong>registers the file in the data catalog</strong> so teammates can
 discover it:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"2024-01"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="st">"2024-01"</span>, data_type <span class="op">=</span> <span class="va">data_type</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Catalog: registered atlantis_malaria_2024-01.parquet.</span></span>
 <span><span class="co">#&gt; ✔ Approved: atlantis_malaria_2024-01.parquet</span></span>
-<span><span class="co">#&gt; ✔ Approval log: atlantis/malaria/surveillance/processed/2024-01_approval_log.yaml</span></span>
+<span><span class="co">#&gt; ✔ Approval log: atlantis/malaria/surveillance/case/processed/2024-01_approval_log.yaml</span></span>
 <span><span class="co">#&gt; ── ✔ Approved "2024-01" ─────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: atlantis / malaria / surveillance</span></span>
+<span><span class="co">#&gt; Dataset: atlantis / malaria / surveillance / case</span></span>
 <span><span class="co">#&gt; Files: 1 moved to processed</span></span>
 <span><span class="co">#&gt; Approver: your.name</span></span>
-<span><span class="co">#&gt; Location: atlantis/malaria/surveillance/processed</span></span>
-<span><span class="co">#&gt; ℹ Operation log: atlantis/malaria/surveillance/logs/20240115_142233_eri_approve_2024-01.yaml</span></span></code></pre></div>
+<span><span class="co">#&gt; Location: atlantis/malaria/surveillance/case/processed</span></span>
+<span><span class="co">#&gt; ℹ Operation log: atlantis/malaria/surveillance/case/logs/20240115_142233_eri_approve_2024-01.yaml</span></span></code></pre></div>
+<p>Passing <code>data_type</code> records the <strong>measure</strong>
+on the catalog entry. (Omit it and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> files the
+data at the channel level with <code>data_type = NA</code>, and says so
+once — fine for channel-only data, but here our line-list is
+<code>case</code>.)</p>
 <p>The catalog is the team’s index of canonical data. Confirm your
 dataset is now in it:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"atlantis"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 12</span></span>
-<span><span class="co">#&gt;   path                          country disease data_type layer  period  file_format …</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;                         &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;  &lt;chr&gt;   &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 atlantis/malaria/surveillan…  atlantis malaria surveill… proce… 2024-01 parquet</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 1 × 13</span></span>
+<span><span class="co">#&gt;   path                        country disease data_source data_type layer  period  …</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                       &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;  &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 atlantis/malaria/surveill…  atlantis malaria surveillance case      proce… 2024-01</span></span></code></pre></div>
 <p>And read the canonical file straight back, exactly as any teammate
 would:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">processed_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"processed"</span>,</span>
+<code class="sourceCode R"><span><span class="va">processed_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"processed"</span>,</span>
 <span>                                 <span class="st">"atlantis_malaria_2024-01.parquet"</span><span class="op">)</span></span>
 <span><span class="va">official</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">processed_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">official</span><span class="op">)</span>   <span class="co"># 10 approved cases</span></span></code></pre></div>
@@ -485,7 +516,8 @@ typo, or a new district the schema does not know yet):</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Archive it to <code>raw/</code>, then run the same checks:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">raw_path2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"raw"</span>, <span class="st">"atlantis_malaria_2024-02.csv"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">raw_path2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"raw"</span>,</span>
+<span>                           <span class="st">"atlantis_malaria_2024-02.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">extract2</span>, <span class="va">raw_path2</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">raw2</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">raw_path2</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
@@ -538,18 +570,18 @@ the impossible age.</p>
 <p>Now stage and approve the corrected second period, exactly as
 before:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">staged_path2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"staged"</span>,</span>
+<code class="sourceCode R"><span><span class="va">staged_path2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span>,</span>
 <span>                              <span class="st">"atlantis_malaria_2024-02.parquet"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">result2b</span><span class="op">$</span><span class="va">data</span>, <span class="va">staged_path2</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="st">"2024-02"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="st">"2024-02"</span>, data_type <span class="op">=</span> <span class="va">data_type</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Catalog: registered atlantis_malaria_2024-02.parquet.</span></span>
 <span><span class="co">#&gt; ✔ Approved: atlantis_malaria_2024-02.parquet</span></span>
 <span><span class="co">#&gt; ── ✔ Approved "2024-02" ─────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: atlantis / malaria / surveillance</span></span>
+<span><span class="co">#&gt; Dataset: atlantis / malaria / surveillance / case</span></span>
 <span><span class="co">#&gt; Files: 1 moved to processed</span></span>
 <span><span class="co">#&gt; Approver: your.name</span></span>
-<span><span class="co">#&gt; Location: atlantis/malaria/surveillance/processed</span></span></code></pre></div>
+<span><span class="co">#&gt; Location: atlantis/malaria/surveillance/case/processed</span></span></code></pre></div>
 <p>You now have <strong>two approved periods</strong> in the catalog for
 <em>atlantis</em>, each with its own approval log recording that you
 signed off and when.</p>
@@ -574,12 +606,12 @@ layers and the logs), the schema, and the catalog entries:</p>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Delete the schema you published.</span></span>
-<span><span class="fu"><a href="../reference/eri_delete.html">eri_delete</a></span><span class="op">(</span><span class="st">"schemas/atlantis_malaria.yaml"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_delete.html">eri_delete</a></span><span class="op">(</span><span class="st">"schemas/atlantis_malaria_surveillance_case.yaml"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Remove the two catalog entries (the catalog is shared, so tidy up after yourself).</span></span>
-<span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/processed/atlantis_malaria_2024-01.parquet"</span>,</span>
+<span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/case/processed/atlantis_malaria_2024-01.parquet"</span>,</span>
 <span>                   data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/processed/atlantis_malaria_2024-02.parquet"</span>,</span>
+<span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/case/processed/atlantis_malaria_2024-02.parquet"</span>,</span>
 <span>                   data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Catalog: removed atlantis_malaria_2024-01.parquet.</span></span>
 <span><span class="co">#&gt; ✔ Catalog: removed atlantis_malaria_2024-02.parquet.</span></span></code></pre></div>
@@ -588,7 +620,7 @@ layers and the logs), the schema, and the catalog entries:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"atlantis"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; No catalog entries match the specified filters.</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="st">"atlantis_malaria.yaml"</span><span class="op">)</span>   <span class="co"># the local schema file</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="st">"atlantis_malaria_surveillance_case.yaml"</span><span class="op">)</span>   <span class="co"># the local schema file</span></span></code></pre></div>
 <blockquote>
 <p><strong>Why we could delete freely here:</strong> <em>Atlantis</em>
 is invented and its data is fake. <strong>Real Carter Center
@@ -611,11 +643,11 @@ messy extract.</p>
 the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 <strong>any</strong> data including the sandbox you just built (it takes
 the same <code>country</code> / <code>disease</code> /
-<code>data_source</code> you have been using). We did each step by hand
-here so you could <em>see</em> every layer; once you are comfortable,
-<code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast path, and
-<code><a href="../reference/eri_approve.html">eri_approve()</a></code> — your sign-off — is always the same human
-gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
+<code>data_source</code> / <code>data_type</code> you have been using).
+We did each step by hand here so you could <em>see</em> every layer;
+once you are comfortable, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast path,
+and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> — your sign-off — is always the same
+human gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
 passing <code>mirror_pipeline = "hsp-mal"</code> also mirrors the output
 to the old <code>projects</code> blob — off by default.)</em></p>
 <p>This is one of a planned set of short, task-oriented guides —

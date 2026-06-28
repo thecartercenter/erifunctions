@@ -85,8 +85,14 @@ right place:
 data_con <- get_azure_storage_connection(storage_name = "data")
 ```
 
-Every dataset is identified by four coordinates: **country**,
-**disease**, **data type**, and **layer**. Never hand-type the folder
+Every dataset is identified by five coordinates
+([ADR-0012](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md)):
+**country**, **disease**, **data_source** (the *channel* — how the data
+arrives), **data_type** (the *measure* — what it captures), and
+**layer**. The key idea is that the channel is **separate** from the
+measure: `surveillance` data can be a `case` line-list in one country
+and an `aggregate` weekly count in another. Our extract is a line-list —
+one row per case — so its measure is `case`. Never hand-type the folder
 paths — let
 [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
 build the canonical path for you, so every step agrees on where things
@@ -95,29 +101,33 @@ go:
 ``` r
 
 # Our make-believe country and its malaria surveillance data.
-country   <- "atlantis"
-disease   <- "malaria"
-data_type <- "surveillance"
+country     <- "atlantis"
+disease     <- "malaria"
+data_source <- "surveillance"   # the channel
+data_type   <- "case"           # the measure (one row per case)
 
-eri_data_path(country, disease, data_type, "raw")
-#> [1] "atlantis/malaria/surveillance/raw"
+eri_data_path(country, disease, data_source, data_type, "raw")
+#> [1] "atlantis/malaria/surveillance/case/raw"
 
-eri_data_path(country, disease, data_type, "staged")
-#> [1] "atlantis/malaria/surveillance/staged"
+eri_data_path(country, disease, data_source, data_type, "staged")
+#> [1] "atlantis/malaria/surveillance/case/staged"
 ```
 
-`data_type` must be one of `"surveillance"`, `"cmr"`, or `"odk"`, and
-`layer` one of `"raw"`, `"staged"`, `"processed"` — but **country and
-disease are free text**, which is exactly why we can stand up an
-*atlantis* sandbox next to the real countries without disturbing them.
+`data_source` and `data_type` are **extensible** —
+[`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
+lists the known values, and an unregistered one *warns* rather than
+blocks — while `layer` is one of `"raw"`, `"staged"`, `"processed"`.
+**Country and disease are free text**, which is exactly why we can stand
+up an *atlantis* sandbox next to the real countries without disturbing
+them.
 
 Create the two folders we will write into (the third, `processed/`, is
 created for us at approval):
 
 ``` r
 
-eri_dir_create(eri_data_path(country, disease, data_type, "raw"),    azcontainer = data_con)
-eri_dir_create(eri_data_path(country, disease, data_type, "staged"), azcontainer = data_con)
+eri_dir_create(eri_data_path(country, disease, data_source, data_type, "raw"),    azcontainer = data_con)
+eri_dir_create(eri_data_path(country, disease, data_source, data_type, "staged"), azcontainer = data_con)
 #> ✔ Directory created!
 ```
 
@@ -157,7 +167,8 @@ there is always a record of what actually arrived. Write it to `raw/`:
 
 ``` r
 
-raw_path1 <- eri_data_path(country, disease, data_type, "raw", "atlantis_malaria_2024-01.csv")
+raw_path1 <- eri_data_path(country, disease, data_source, data_type, "raw",
+                           "atlantis_malaria_2024-01.csv")
 eri_write(extract1, raw_path1, azcontainer = data_con)
 ```
 
@@ -172,17 +183,33 @@ small YAML file describing each column: its type, its allowed range or
 allowed values, known fixes, and translations. The schema is the
 contract every future extract for this dataset is checked against.
 
-Open a text editor and save the following as **`atlantis_malaria.yaml`**
-in your working directory. (It is intentionally short — a real schema
-like `dominican_republic_malaria.yaml` has more columns, but the *shape*
-is exactly this.)
+Open a text editor and save the following as
+**`atlantis_malaria_surveillance_case.yaml`** in your working directory
+— the filename is the four-part identity
+`{country}_{disease}_{data_source}_{data_type}`, which is how
+[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+finds it. (It is intentionally short — a real schema like
+`dr_malaria_surveillance_case.yaml` has more columns, but the *shape* is
+exactly this.)
+
+> **One source, many measures.** If you stood up this space with the
+> [onboarding
+> guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md),
+> its scaffold defaults to the **`aggregate`** measure (weekly counts) —
+> `atlantis_malaria_surveillance_aggregate.yaml`. Our extract here is a
+> line-list, so we author the **`case`** measure alongside it. That is
+> the whole point of separating the channel from the measure: the same
+> `surveillance` source can hold both `case` and `aggregate` data. Run
+> [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
+> any time to see the known measures.
 
 ``` yaml
 country: atlantis
 disease: malaria
+data_source: surveillance
+data_type: case
 language: en
-time_grain: weekly
-aggregation: case
+time_grain: case
 
 temporal:
   year_col: Year
@@ -248,12 +275,14 @@ for you and recorded; flags are problems only *you* can resolve.**
 
 Now publish the schema to Azure so
 [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
-can find it. It looks for `schemas/<country>_<disease>.yaml`, so the
+can find it. It looks for
+`schemas/{country}_{disease}_{data_source}_{data_type}.yaml`, so the
 filename matters:
 
 ``` r
 
-eri_upload("atlantis_malaria.yaml", "schemas/atlantis_malaria.yaml", azcontainer = data_con)
+eri_upload("atlantis_malaria_surveillance_case.yaml",
+           "schemas/atlantis_malaria_surveillance_case.yaml", azcontainer = data_con)
 ```
 
 ## 4. Run the data-quality checks
@@ -267,7 +296,7 @@ two ledgers — what it *fixed*, and what it wants *you* to look at:
 ``` r
 
 raw1    <- eri_read(raw_path1, azcontainer = data_con)
-schema  <- load_dq_schema("atlantis", "malaria", azcontainer = data_con)
+schema  <- load_dq_schema("atlantis", "malaria", "surveillance", "case", azcontainer = data_con)
 
 result1 <- run_dq_checks(raw1, schema)
 #> ✔ DQ checks complete: 6 corrections, 0 flags for review.
@@ -320,7 +349,7 @@ in the next step:
 
 ``` r
 
-staged_path1 <- eri_data_path(country, disease, data_type, "staged",
+staged_path1 <- eri_data_path(country, disease, data_source, data_type, "staged",
                               "atlantis_malaria_2024-01.parquet")
 eri_write(result1$data, staged_path1, azcontainer = data_con)
 ```
@@ -339,17 +368,23 @@ so teammates can discover it:
 
 ``` r
 
-eri_approve(country, disease, data_type, "2024-01", azcontainer = data_con)
+eri_approve(country, disease, data_source, "2024-01", data_type = data_type, azcontainer = data_con)
 #> ✔ Catalog: registered atlantis_malaria_2024-01.parquet.
 #> ✔ Approved: atlantis_malaria_2024-01.parquet
-#> ✔ Approval log: atlantis/malaria/surveillance/processed/2024-01_approval_log.yaml
+#> ✔ Approval log: atlantis/malaria/surveillance/case/processed/2024-01_approval_log.yaml
 #> ── ✔ Approved "2024-01" ─────────────────────────────────
-#> Dataset: atlantis / malaria / surveillance
+#> Dataset: atlantis / malaria / surveillance / case
 #> Files: 1 moved to processed
 #> Approver: your.name
-#> Location: atlantis/malaria/surveillance/processed
-#> ℹ Operation log: atlantis/malaria/surveillance/logs/20240115_142233_eri_approve_2024-01.yaml
+#> Location: atlantis/malaria/surveillance/case/processed
+#> ℹ Operation log: atlantis/malaria/surveillance/case/logs/20240115_142233_eri_approve_2024-01.yaml
 ```
+
+Passing `data_type` records the **measure** on the catalog entry. (Omit
+it and
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+files the data at the channel level with `data_type = NA`, and says so
+once — fine for channel-only data, but here our line-list is `case`.)
 
 The catalog is the team’s index of canonical data. Confirm your dataset
 is now in it:
@@ -357,10 +392,10 @@ is now in it:
 ``` r
 
 eri_catalog_query(country = "atlantis", data_con = data_con)
-#> # A tibble: 1 × 12
-#>   path                          country disease data_type layer  period  file_format …
-#>   <chr>                         <chr>   <chr>   <chr>     <chr>  <chr>   <chr>
-#> 1 atlantis/malaria/surveillan…  atlantis malaria surveill… proce… 2024-01 parquet
+#> # A tibble: 1 × 13
+#>   path                        country disease data_source data_type layer  period  …
+#>   <chr>                       <chr>   <chr>   <chr>       <chr>     <chr>  <chr>
+#> 1 atlantis/malaria/surveill…  atlantis malaria surveillance case      proce… 2024-01
 ```
 
 And read the canonical file straight back, exactly as any teammate
@@ -368,7 +403,7 @@ would:
 
 ``` r
 
-processed_path1 <- eri_data_path(country, disease, data_type, "processed",
+processed_path1 <- eri_data_path(country, disease, data_source, data_type, "processed",
                                  "atlantis_malaria_2024-01.parquet")
 official <- eri_read(processed_path1, azcontainer = data_con)
 nrow(official)   # 10 approved cases
@@ -401,7 +436,8 @@ Archive it to `raw/`, then run the same checks:
 
 ``` r
 
-raw_path2 <- eri_data_path(country, disease, data_type, "raw", "atlantis_malaria_2024-02.csv")
+raw_path2 <- eri_data_path(country, disease, data_source, data_type, "raw",
+                           "atlantis_malaria_2024-02.csv")
 eri_write(extract2, raw_path2, azcontainer = data_con)
 
 raw2    <- eri_read(raw_path2, azcontainer = data_con)
@@ -462,18 +498,18 @@ Now stage and approve the corrected second period, exactly as before:
 
 ``` r
 
-staged_path2 <- eri_data_path(country, disease, data_type, "staged",
+staged_path2 <- eri_data_path(country, disease, data_source, data_type, "staged",
                               "atlantis_malaria_2024-02.parquet")
 eri_write(result2b$data, staged_path2, azcontainer = data_con)
 
-eri_approve(country, disease, data_type, "2024-02", azcontainer = data_con)
+eri_approve(country, disease, data_source, "2024-02", data_type = data_type, azcontainer = data_con)
 #> ✔ Catalog: registered atlantis_malaria_2024-02.parquet.
 #> ✔ Approved: atlantis_malaria_2024-02.parquet
 #> ── ✔ Approved "2024-02" ─────────────────────────────────
-#> Dataset: atlantis / malaria / surveillance
+#> Dataset: atlantis / malaria / surveillance / case
 #> Files: 1 moved to processed
 #> Approver: your.name
-#> Location: atlantis/malaria/surveillance/processed
+#> Location: atlantis/malaria/surveillance/case/processed
 ```
 
 You now have **two approved periods** in the catalog for *atlantis*,
@@ -501,12 +537,12 @@ the logs), the schema, and the catalog entries:
 eri_dir_delete("atlantis", azcontainer = data_con)
 
 # Delete the schema you published.
-eri_delete("schemas/atlantis_malaria.yaml", azcontainer = data_con)
+eri_delete("schemas/atlantis_malaria_surveillance_case.yaml", azcontainer = data_con)
 
 # Remove the two catalog entries (the catalog is shared, so tidy up after yourself).
-eri_catalog_remove("atlantis/malaria/surveillance/processed/atlantis_malaria_2024-01.parquet",
+eri_catalog_remove("atlantis/malaria/surveillance/case/processed/atlantis_malaria_2024-01.parquet",
                    data_con = data_con)
-eri_catalog_remove("atlantis/malaria/surveillance/processed/atlantis_malaria_2024-02.parquet",
+eri_catalog_remove("atlantis/malaria/surveillance/case/processed/atlantis_malaria_2024-02.parquet",
                    data_con = data_con)
 #> ✔ Catalog: removed atlantis_malaria_2024-01.parquet.
 #> ✔ Catalog: removed atlantis_malaria_2024-02.parquet.
@@ -519,7 +555,7 @@ Confirm nothing of yours remains, then delete the local files:
 eri_catalog_query(country = "atlantis", data_con = data_con)
 #> No catalog entries match the specified filters.
 
-unlink("atlantis_malaria.yaml")   # the local schema file
+unlink("atlantis_malaria_surveillance_case.yaml")   # the local schema file
 ```
 
 > **Why we could delete freely here:** *Atlantis* is invented and its
@@ -540,9 +576,9 @@ One call —
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
 — does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 **any** data including the sandbox you just built (it takes the same
-`country` / `disease` / `data_source` you have been using). We did each
-step by hand here so you could *see* every layer; once you are
-comfortable,
+`country` / `disease` / `data_source` / `data_type` you have been
+using). We did each step by hand here so you could *see* every layer;
+once you are comfortable,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
 is the fast path, and
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
