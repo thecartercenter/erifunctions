@@ -3,9 +3,13 @@ country_code: nga
 language: en
 template: english_cmr
 
+# Per-sheet routing (disease from the sheet; data_type = the measure) drives
+# eri_split_cmr() -> {country}/{disease}/programmatic/{data_type}/staged/.
 sheets:
   RB Treatment:
     field_code_prefix: "#rbtrt_"
+    disease: oncho
+    data_type: treatment
     required_fields:
       - "#rbtrt_year"
       - "#rbtrt_month"
@@ -16,6 +20,8 @@ sheets:
 
   LF Treatment:
     field_code_prefix: "#lftrt_"
+    disease: lf
+    data_type: treatment
     required_fields:
       - "#lftrt_year"
       - "#lftrt_month"
@@ -26,6 +32,8 @@ sheets:
 
   SCH Treatment:
     field_code_prefix: "#schtrt_"
+    disease: sch
+    data_type: treatment
     required_fields:
       - "#schtrt_year"
       - "#schtrt_month"
@@ -36,6 +44,8 @@ sheets:
 
   STH Treatment:
     field_code_prefix: "#sthtrt_"
+    disease: sth
+    data_type: treatment
     required_fields:
       - "#sthtrt_year"
       - "#sthtrt_month"
@@ -46,6 +56,8 @@ sheets:
 
   LF MMDP:
     field_code_prefix: "#lfmmdp_"
+    disease: lf
+    data_type: mmdp
     required_fields:
       - "#lfmmdp_year"
       - "#lfmmdp_month"
@@ -58,6 +70,8 @@ sheets:
 
   CDD Training:
     field_code_prefix: "#cddtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cddtrn_year"
       - "#cddtrn_month"
@@ -68,6 +82,8 @@ sheets:
 
   CS Training:
     field_code_prefix: "#cstrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cstrn_year"
       - "#cstrn_month"
@@ -78,6 +94,8 @@ sheets:
 
   MMDP Training:
     field_code_prefix: "#mmdptrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#mmdptrn_year"
       - "#mmdptrn_month"
@@ -88,6 +106,8 @@ sheets:
 
   Surveys:
     field_code_prefix: "#svy_"
+    disease: rblf
+    data_type: survey
     required_fields:
       - "#svy_year"
       - "#svy_adm1"
