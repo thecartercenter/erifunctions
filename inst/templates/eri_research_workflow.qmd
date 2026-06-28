@@ -99,12 +99,16 @@ population grids), upload them first with `eri_artifact_upload()`, then pull
 with `eri_artifact_pull()`.
 
 ```{r pull-canonical, eval=FALSE}
-# Pull processed surveillance data for your country and disease
+# Pull processed data for your country and disease, using the same coordinates
+# the catalog reports (data_source = the channel, data_type = the measure).
 eri_research_pull(
-  country   = "dr",              # <-- replace
-  disease   = "malaria",         # <-- replace
-  data_type = "surveillance",    # <-- replace: surveillance, cmr, odk
-  data_con  = az_con
+  country     = "dr",            # <-- replace
+  disease     = "malaria",       # <-- replace
+  data_source = "surveillance",  # <-- replace: surveillance, programmatic, research
+  data_type   = "case",          # <-- the measure for that channel: surveillance ->
+                                 #     case/aggregate; programmatic -> treatment/mmdp;
+                                 #     research -> tas/prevalence (or omit for the channel level)
+  data_con    = az_con
 )
 ```
 
