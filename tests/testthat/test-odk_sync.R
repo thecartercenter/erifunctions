@@ -138,7 +138,7 @@ test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
     data_con = "mock"
   )
 
-  expect_equal(written_path, "uga/oncho/odk/raw/RiverProspection.parquet")
+  expect_equal(written_path, "uga/oncho/research/raw/RiverProspection.parquet")
   expect_equal(written_obj, fake_data)
   expect_false(is.null(stored_reg$forms[[1]]$last_synced))
   expect_invisible(
@@ -151,7 +151,7 @@ test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
 
 # --- blob path construction ---------------------------------------------------
 
-test_that("eri_odk_sync uses correct blob path: {country}/{disease}/odk/raw/{form_id}.parquet", {
+test_that("eri_odk_sync uses correct blob path: {country}/{disease}/research/raw/{form_id}.parquet", {
   entry      <- make_sync_entry(project_id = 3L, country = "nga", disease = "lf", form_id = "LFSurvey")
   stored_reg <- make_sync_reg(entry)
 
@@ -179,7 +179,7 @@ test_that("eri_odk_sync uses correct blob path: {country}/{disease}/odk/raw/{for
 
   eri_odk_sync(project_id = 3L, form_id = "LFSurvey", data_con = "mock")
 
-  expect_equal(written_path, "nga/lf/odk/raw/LFSurvey.parquet")
+  expect_equal(written_path, "nga/lf/research/raw/LFSurvey.parquet")
 })
 
 # --- repeat groups: multiple tables -> multiple Parquets ----------------------
@@ -214,8 +214,8 @@ test_that("eri_odk_sync writes one Parquet per table for a repeat-group form", {
   res <- eri_odk_sync(project_id = 7L, form_id = "RiverRepeat", data_con = "mock")
 
   expect_equal(written_paths, c(
-    "uga/oncho/odk/raw/RiverRepeat.parquet",
-    "uga/oncho/odk/raw/RiverRepeat-larva_sample.parquet"
+    "uga/oncho/research/raw/RiverRepeat.parquet",
+    "uga/oncho/research/raw/RiverRepeat-larva_sample.parquet"
   ))
   # multi-table sync returns the named list of tables
   expect_named(res, c("RiverRepeat", "RiverRepeat-larva_sample"))
