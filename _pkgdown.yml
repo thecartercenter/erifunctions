@@ -47,22 +47,54 @@ navbar:
       href: https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md
 
 articles:
-- title: Workflows
-  navbar: Workflows
+- title: Get started
+  navbar: Get started
+  desc: >
+    New here? Read these first — the data-addressing model and your role's path, then how to
+    connect to the services erifunctions talks to.
   contents:
+  - getting-started
   - connections-guide
-  - epi-research-guide
+
+- title: For data analysts
+  navbar: Data analysts
+  desc: >
+    The daily DA workflow, in order: stand up a space, bring data through the
+    raw → staged → approved gate, then keep the backlog clean. CMR and ODK as those feeds arrive.
+  contents:
   - da-onboard-guide
   - da-ingest-guide
   - da-cmr-guide
   - da-odk-guide
   - da-logs-guide
-  - epi-dq-guide
-  - dq-pipeline
-  - epi-analytics
+
+- title: For epidemiologists
+  navbar: Epidemiologists
+  desc: >
+    Source approved data, reconcile free-text places to admin units, quality-check an extract for
+    epidemiological sense, and compute programme indicators.
+  contents:
+  - epi-research-guide
   - epi-reconcile-guide
+  - epi-dq-guide
+  - epi-analytics
+
+- title: Topic deep-dives
+  navbar: Topics
+  desc: >
+    How the engines work, beyond the role walkthroughs: the data-quality pipeline, spatial
+    sourcing and joins, and sharing via SharePoint and Teams.
+  contents:
+  - dq-pipeline
   - spatial-workflow
   - sharepoint-workflow
+
+- title: Extending the package
+  navbar: Contributing
+  desc: >
+    Add a new country, disease, or programme — author its schema and disease analytics, and
+    contribute them to the package.
+  contents:
   - adding-a-program
 
 reference:

@@ -24,7 +24,10 @@ reference, and the project roadmap. This README is the quick orientation.
 ## Guides
 
 These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them
-on the [documentation site](https://thecartercenter.github.io/erifunctions/articles/).
+on the [documentation site](https://thecartercenter.github.io/erifunctions/articles/), which groups
+them **Get started → your role → topic deep-dives → contributing**. The
+[**Getting started**](https://thecartercenter.github.io/erifunctions/articles/getting-started.html)
+article is the front door.
 
 **New here? Do these in order** (then dip into the rest as your work needs them). First, run
 `eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure) every guide
