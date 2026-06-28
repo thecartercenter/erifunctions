@@ -338,6 +338,18 @@ test_that("eri_split_cmr keeps the per-row program code as a column (no disease 
   expect_setequal(rb[["#rbtrt_disease"]], c("RBLFSCH", "RB"))
 })
 
+test_that("eri_split_cmr aborts when the workbook has none of the routable sheets", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(list(
+    "Not A CMR Sheet" = make_cmr_sheet_df(c("#foo_year"), list(c("2024")))
+  ), tmp)
+
+  expect_error(
+    suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE)),
+    "None of the .* routable sheets were found"
+  )
+})
+
 test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_uga_cmr(tmp)

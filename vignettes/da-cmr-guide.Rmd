@@ -191,8 +191,10 @@ This is the moment to eyeball the numbers (treated vs target, missing districts)
 The sheets are per-programme, but the canonical store is **per-disease**.
 [`eri_split_cmr()`](../reference/eri_split_cmr.html) reads every routable sheet and routes its rows to
 `{country}/{disease}/programmatic/{measure}/staged/` — the **disease from the sheet** (RB Treatment →
-`oncho`, SCH Treatment → `sch`, LF MMDP → `lf`), the **measure from its category**. Preview the routing
-first with `dry_run`:
+`oncho`, SCH Treatment → `sch`, LF MMDP → `lf`), the **measure from its category**. It reads the Excel
+**directly** (here the bundled example; in real work the file you uploaded), independently of the
+`rblf/cmr/staged/` copy `eri_stage_cmr()` made — that copy is the raw archive; this is the parse + route.
+Preview the routing first with `dry_run`:
 
 ```{r split-dry}
 eri_split_cmr(report, "uga", dry_run = TRUE)
@@ -254,6 +256,10 @@ That's the monthly loop: **upload → stage → split → approve.**
 - **A new country files its first report?** Its CMR schema (which sheets, which field codes) has to
   exist first — see the CMR section of the [onboarding guide](da-onboard-guide.html)
   (`eri_onboard_cmr()`).
+- **`eri_split_cmr()` says "No routable sheets"?** A sheet only routes when its schema entry declares a
+  `disease` and a `data_type`. `uga` is the worked example; other countries' routing keys are being
+  filled in — add them to the country's `inst/schemas/cmr/{code}.yaml` (one `disease` + `data_type` per
+  sheet) to enable the split there.
 - The [surveillance ingest guide](da-ingest-guide.html) covers the same `raw → staged → approved` gate
   for line-list data, and the data-catalog mechanics in more depth.
 

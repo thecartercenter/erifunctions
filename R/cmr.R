@@ -160,6 +160,7 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' @export
 eri_split_cmr <- function(path, country, data_con = NULL,
                           overwrite = FALSE, dry_run = FALSE) {
+  if (!dry_run) .eri_log_session()
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
   }
@@ -195,6 +196,15 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     )
   }
 
+  # A wrong workbook (none of the schema's routable sheets present) is an error,
+  # not a silent 0-routed success.
+  if (length(plan) == 0L) {
+    cli::cli_abort(c(
+      "None of the {.val {country}} CMR routable sheets were found in {.path {basename(path)}}.",
+      "i" = "Routable sheets: {paste(names(routable), collapse = ', ')}."
+    ))
+  }
+
   plan_tbl <- tibble::tibble(
     sheet     = vapply(plan, function(p) p$sheet,     character(1L)),
     disease   = vapply(plan, function(p) p$disease,   character(1L)),
@@ -217,6 +227,9 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     ))
   } else data_con
 
+  # One op-log per split run, co-located with eri_stage_cmr's log at the CMR
+  # staging coordinate (the run spans multiple disease/measure outputs, so it has
+  # no single per-disease home); the per-disease data lands under programmatic/.
   log_dir <- paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
   op_log  <- list(
     operation  = "eri_split_cmr",
