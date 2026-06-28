@@ -106,8 +106,10 @@ readability** (your actual file also lists `aliases:` for each column and a few 
 `time_grain` and `admin1_name_field`):
 
 ```yaml
-country: Atlantis
+country: atlantis
 disease: malaria
+data_source: surveillance
+data_type: aggregate
 language: en
 
 admin:

@@ -21,7 +21,7 @@ rules referencing unknown columns. Returns a tidy tibble of issues.
 \examples{
 \dontrun{
 # Validate a schema you just generated
-eri_schema_validate("uga_oncho_schema.yaml")
+eri_schema_validate("uga_oncho_surveillance_aggregate.yaml")
 
 # Validate a bundled schema
 eri_schema_validate(system.file("schemas/dr_malaria_surveillance_aggregate.yaml",
