@@ -236,7 +236,8 @@ eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest
 > ```r
 > eri_catalog_query(country = "dr", disease = "malaria", layer = "processed")
 > #> # ... data_source = surveillance, data_type = case ...
-> eri_research_pull("dr", "malaria", "surveillance", "case", dest = "data")
+> eri_research_pull(country = "dr", disease = "malaria",
+>                   data_source = "surveillance", data_type = "case", dest = "data")
 > ```
 >
 > Discover what exists, then pull it with the coordinates the catalog handed you — one vocabulary,

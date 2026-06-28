@@ -201,7 +201,8 @@ combined **`rblf`** disease code (RB + LF — the programmes these reports cover
 > CMR is a *format* of the `programmatic` channel. [`eri_split_cmr()`](da-cmr-guide.html) reads the
 > staged Excel and routes **each sheet to its own disease and measure** —
 > e.g. RB Treatment → `{country}/oncho/programmatic/treatment/`, then you approve **each disease/measure**.
-> So `rblf/cmr/` is the transitional landing/archive; the canonical, approved data is per-disease. See the
+> So `rblf/cmr/` is the transitional landing/archive; the canonical, approved data is per-disease
+> (shared sheets like Training route together under the combined `rblf` disease). See the
 > [CMR guide](da-cmr-guide.html) for the full upload → stage → split → approve flow.
 
 ```{r cmr-dry}
