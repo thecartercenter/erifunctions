@@ -223,6 +223,79 @@ eri_odk_deregister <- function(
   invisible(deregistered)
 }
 
+#### eri_odk_purge ####
+
+#' Permanently remove an ODK form from the shared Azure registry
+#'
+#' **Hard-deletes** every matching registry entry — active *or* already
+#' soft-deleted — removing it from `odk/registry.yaml` entirely. Unlike
+#' [eri_odk_deregister()], which soft-deletes (`active: false`) and preserves the
+#' sync history, this leaves no trace. Use it to clean up **practice / sandbox**
+#' registrations (which otherwise linger as inactive rows in the shared registry);
+#' for a real form prefer `eri_odk_deregister()`, which keeps the audit trail.
+#'
+#' @param project_id `int` ODK Central project ID.
+#' @param form_id `str` ODK Central form ID (xmlFormId).
+#' @param server_url `str` or `NULL` ODK Central server URL. If `NULL`, matches on
+#'   `project_id` and `form_id` alone (removes every server's matching entry).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Invisibly, the number of entries removed.
+#' @examples
+#' \dontrun{
+#' # Tear down a sandbox registration completely
+#' eri_odk_purge(project_id = 99999, form_id = "eri_test_river_prospection")
+#' }
+#' @export
+eri_odk_purge <- function(
+    project_id,
+    form_id,
+    server_url = NULL,
+    data_con   = NULL
+) {
+  data_con <- .odk_data_con(data_con)
+  analyst  <- .eri_analyst_id()
+  reg      <- .odk_registry_read(data_con)
+
+  # Match active and inactive entries alike, so sandbox rows already
+  # soft-deleted by eri_odk_deregister() are cleaned up too.
+  match <- vapply(reg$forms, function(f) {
+    identical(as.integer(f$project_id), as.integer(project_id)) &&
+      identical(f$form_id, form_id) &&
+      (is.null(server_url) || identical(f$server_url, server_url))
+  }, logical(1L))
+
+  n <- sum(match)
+  if (n == 0L) {
+    cli::cli_abort(c(
+      "No registered form (active or inactive) found to purge.",
+      "i" = "project_id: {.val {project_id}}",
+      "i" = "form_id:    {.val {form_id}}"
+    ))
+  }
+
+  reg$forms <- reg$forms[!match]
+  .odk_registry_write(reg, data_con)
+
+  op_log <- list(
+    operation  = "eri_odk_purge",
+    analyst    = analyst,
+    timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(
+      project_id = as.integer(project_id),
+      form_id    = form_id,
+      server_url = server_url,
+      n_removed  = n
+    ),
+    status = "success"
+  )
+  .eri_write_log(op_log, data_con, "logs/_access")
+
+  cli::cli_alert_success(
+    "Purged {n} registry entr{?y/ies} for {.val {form_id}} (project {project_id})."
+  )
+  invisible(n)
+}
+
 #### eri_odk_list_registered ####
 
 #' List all actively registered ODK forms

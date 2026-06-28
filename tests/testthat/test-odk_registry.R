@@ -128,6 +128,53 @@ test_that("eri_odk_deregister errors when multiple entries match without server_
   )
 })
 
+# --- purge (hard delete) ------------------------------------------------------
+
+test_that("eri_odk_purge removes both active and inactive matching entries", {
+  active   <- make_entry(form_id = "SandboxForm", active = TRUE)
+  inactive <- make_entry(form_id = "SandboxForm", active = FALSE)   # already soft-deleted
+  other    <- make_entry(form_id = "RealForm", project_id = 7L, active = TRUE)
+  reg      <- make_reg(active, inactive, other)
+  stored   <- NULL
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(reg, dest),
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) { stored <<- yaml::read_yaml(src) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  n <- eri_odk_purge(project_id = 7L, form_id = "SandboxForm", data_con = "mock")
+  expect_equal(n, 2L)
+  # The real form survives; both SandboxForm rows are gone.
+  expect_length(stored$forms, 1L)
+  expect_equal(stored$forms[[1]]$form_id, "RealForm")
+})
+
+test_that("eri_odk_purge errors when no entry (active or inactive) matches", {
+  reg <- make_reg(make_entry(form_id = "RealForm"))
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(reg, dest),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  expect_error(
+    eri_odk_purge(project_id = 7L, form_id = "NoSuchForm", data_con = "mock"),
+    "No registered form"
+  )
+})
+
 # --- round-trip ---------------------------------------------------------------
 
 test_that("register / deregister / list round-trip works", {

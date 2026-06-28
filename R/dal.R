@@ -1592,12 +1592,28 @@ eri_ingest <- function(path, country, disease,
   id <- Sys.getenv("ERI_ANALYST_ID", unset = "")
   if (nzchar(id)) return(id)
 
-  fallback <- Sys.info()[["user"]]
+  # Opt-in strict mode: a team or CI run can *require* a configured identity so
+  # governed actions are never silently attributed to the operating-system
+  # account. Set ERI_REQUIRE_ANALYST_ID=true to refuse rather than fall back.
+  strict <- tolower(trimws(Sys.getenv("ERI_REQUIRE_ANALYST_ID", unset = ""))) %in%
+    c("1", "true", "yes", "on")
+  if (strict) {
+    cli::cli_abort(c(
+      "{.envvar ERI_ANALYST_ID} is not set and {.envvar ERI_REQUIRE_ANALYST_ID} is on.",
+      "i" = "Set {.envvar ERI_ANALYST_ID} in your {.file .Renviron} before any governed action."
+    ))
+  }
+
+  # Otherwise fall back to the OS account, but **mark it** so the audit trail
+  # records the attribution as unverified rather than presenting an OS username
+  # as if it were a real analyst id.
+  fallback <- paste0(Sys.info()[["user"]], " (unverified)")
   if (!isTRUE(getOption("erifunctions.warned_analyst_id"))) {
     options(erifunctions.warned_analyst_id = TRUE)
     cli::cli_warn(c(
-      "!" = "{.envvar ERI_ANALYST_ID} is not set; governed actions will be logged as {.val {fallback}}.",
-      "i" = "Set it in your {.file .Renviron} so approvals and logs carry your analyst identity."
+      "!" = "{.envvar ERI_ANALYST_ID} is not set; governed actions will be attributed to {.val {fallback}}.",
+      "i" = "Set it in your {.file .Renviron} so approvals and logs carry your real analyst identity \\
+             (or set {.envvar ERI_REQUIRE_ANALYST_ID} to refuse unattributed actions)."
     ))
   }
   fallback
