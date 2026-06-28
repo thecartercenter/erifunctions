@@ -105,7 +105,9 @@ eri_research_pull(
   country     = "dr",            # <-- replace
   disease     = "malaria",       # <-- replace
   data_source = "surveillance",  # <-- replace: surveillance, programmatic, research
-  data_type   = "case",          # <-- replace: case, aggregate, treatment, tas, ...
+  data_type   = "case",          # <-- the measure for that channel: surveillance ->
+                                 #     case/aggregate; programmatic -> treatment/mmdp;
+                                 #     research -> tas/prevalence (or omit for the channel level)
   data_con    = az_con
 )
 ```

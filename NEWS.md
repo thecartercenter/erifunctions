@@ -9,6 +9,8 @@
   `eri_data_path()`, so the four-axis (channel-only) form works too. **Back-compat:** the pre-ADR-0012
   form where the channel was passed as `data_type` (`data_type = "surveillance"`) still resolves to the
   same processed path. Surfaced by a fresh-Epi red-team run as the one un-migrated step on the sourcing path.
+  Note: because `data_source` is inserted before `data_type`, the `path` argument moves from the fourth
+  to the fifth position — pass it by name (`eri_research_pull(path = "spatial/...")`), as the docs already do.
 
 ## Feature: the measure (`data_type`) reaches the human gate and the catalog (ADR-0012, #175 phase 4b)
 
