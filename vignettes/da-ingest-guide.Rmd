@@ -168,6 +168,13 @@ working directory — the filename is the four-part identity `{country}_{disease
 which is how `load_dq_schema()` finds it. (It is intentionally short — a real schema like
 `dr_malaria_surveillance_case.yaml` has more columns, but the *shape* is exactly this.)
 
+> **One source, many measures.** If you stood up this space with the
+> [onboarding guide](da-onboard-guide.html), its scaffold defaults to the **`aggregate`** measure
+> (weekly counts) — `atlantis_malaria_surveillance_aggregate.yaml`. Our extract here is a line-list, so
+> we author the **`case`** measure alongside it. That is the whole point of separating the channel from
+> the measure: the same `surveillance` source can hold both `case` and `aggregate` data. Run
+> `eri_data_model()` any time to see the known measures.
+
 ```yaml
 country: atlantis
 disease: malaria
