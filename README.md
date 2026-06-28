@@ -24,7 +24,26 @@ reference, and the project roadmap. This README is the quick orientation.
 ## Guides
 
 These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them
-on the [documentation site](https://thecartercenter.github.io/erifunctions/articles/):
+on the [documentation site](https://thecartercenter.github.io/erifunctions/articles/).
+
+**New here? Do these in order** (then dip into the rest as your work needs them). First, run
+`eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure) every guide
+assumes.
+
+- **New Data Analyst:**
+  [Connections](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) →
+  [Onboard a space](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) →
+  [Ingest a dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) →
+  [Triage the log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html).
+  Then [CMR](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) and
+  [ODK](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) when you file those.
+- **New Epidemiologist:**
+  [Connections](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) →
+  [Research workflow](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) →
+  [Reconcile localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) →
+  [Catch anomalies](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html).
+
+The full set:
 
 | Guide | For |
 |---|---|

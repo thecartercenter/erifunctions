@@ -14,6 +14,22 @@ vignettes (ADR-0001).
 
 This page is the **menu and the backlog**: what exists today, and what is still missing.
 
+## New here? Do these in order
+
+First run `eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure)
+the guides assume. Then follow your role's path; dip into the rest as your work needs them.
+
+- **Data Analyst:** [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html)
+  → [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html)
+  → [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html)
+  → [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html).
+  Add [`da-cmr-guide`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) /
+  [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) for those feeds.
+- **Epidemiologist:** [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html)
+  → [`epi-research-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html)
+  → [`epi-reconcile-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html)
+  → [`epi-dq-guide`](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html).
+
 ## Guides
 
 | Role | Task | Guide | Status |
