@@ -4,7 +4,12 @@
 \alias{eri_dir_delete}
 \title{Delete a directory}
 \usage{
-eri_dir_delete(file_loc, azure = TRUE, azcontainer = NULL)
+eri_dir_delete(
+  file_loc,
+  azure = TRUE,
+  azcontainer = NULL,
+  prune_catalog = azure
+)
 }
 \arguments{
 \item{file_loc}{\code{str} Path of file.}
@@ -14,9 +19,17 @@ Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 
 \item{azcontainer}{\verb{Azure container} A container object returned by
 \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+
+\item{prune_catalog}{\code{lgl} If \code{TRUE} (default when \code{azure}), remove catalog
+entries under \code{file_loc} after the delete. Fail-silent: a catalog hiccup
+never blocks the delete.}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-Thin wrapper around \code{\link[=erifunctions_io]{erifunctions_io()}} for deleting a directory.
+Thin wrapper around \code{\link[=erifunctions_io]{erifunctions_io()}} for deleting a directory. When deleting
+from the \verb{data/} blob, it also \strong{prunes the data catalog}: any
+\code{\link[=eri_catalog_query]{eri_catalog_query()}} entry whose path falls under \code{file_loc} is removed, so
+deleting a namespace never leaves dangling rows that \code{\link[=eri_catalog_verify]{eri_catalog_verify()}}
+would later flag.
 }

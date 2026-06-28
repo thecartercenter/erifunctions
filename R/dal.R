@@ -781,14 +781,45 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Thin wrapper around [erifunctions_io()] for deleting a directory.
+#' Thin wrapper around [erifunctions_io()] for deleting a directory. When deleting
+#' from the `data/` blob, it also **prunes the data catalog**: any
+#' [eri_catalog_query()] entry whose path falls under `file_loc` is removed, so
+#' deleting a namespace never leaves dangling rows that [eri_catalog_verify()]
+#' would later flag.
 #'
 #' @inheritParams erifunctions_io
+#' @param prune_catalog `lgl` If `TRUE` (default when `azure`), remove catalog
+#'   entries under `file_loc` after the delete. Fail-silent: a catalog hiccup
+#'   never blocks the delete.
 #' @export
-eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
+eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
+                           prune_catalog = azure) {
   if (azure) .eri_log_session()
   if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
-  erifunctions_io("delete.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
+  result <- erifunctions_io("delete.dir", file_loc = file_loc, azure = azure,
+                            azcontainer = azcontainer)
+  if (isTRUE(azure) && isTRUE(prune_catalog)) {
+    .eri_prune_catalog_under(file_loc, data_con = azcontainer)
+  }
+  result
+}
+
+# Remove catalog entries whose path falls under `prefix` (e.g. after deleting a
+# namespace). Fail-silent so a catalog problem never blocks the directory delete.
+#' @keywords internal
+.eri_prune_catalog_under <- function(prefix, data_con = NULL) {
+  tryCatch({
+    entries <- suppressMessages(eri_catalog_query(data_con = data_con))
+    if (nrow(entries) == 0L) return(invisible(0L))
+    norm <- sub("/+$", "", prefix)
+    hit  <- entries$path[entries$path == norm |
+                           startsWith(entries$path, paste0(norm, "/"))]
+    for (p in hit) suppressMessages(eri_catalog_remove(p, data_con = data_con))
+    if (length(hit) > 0L) {
+      cli::cli_alert_info("Removed {length(hit)} catalog entr{?y/ies} under {.path {norm}}.")
+    }
+    invisible(length(hit))
+  }, error = function(e) invisible(0L))
 }
 
 #' Upload any local file to Azure
