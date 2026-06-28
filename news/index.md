@@ -2,6 +2,19 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_approve()` signposts the no-measure (four-axis) form (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 4)
+
+- When
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  runs without a `data_type`, the dataset is filed and catalogued at the
+  channel level with the measure recorded as `NA`. That is legitimate
+  for channel-only data (e.g. ODK), but it used to be silent —
+  indistinguishable from forgetting the measure.
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  now emits a quiet, **once-per-session** `cli_inform` the first time
+  the four-axis form is used, pointing to `data_type` and ADR-0012.
+  Supplying a measure is silent. Surfaced by a fresh-DA red-team run.
+
 ### Feature: `eri_research_pull()` speaks the five-axis model (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 4b)
 
 - [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)
