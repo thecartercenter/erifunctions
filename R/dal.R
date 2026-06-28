@@ -766,7 +766,9 @@ eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' Thin wrapper around [erifunctions_io()] for deleting a file.
+#' Thin wrapper around [erifunctions_io()] for deleting a file. Note this does
+#' **not** touch the data catalog — if you are tearing down a namespace, use
+#' [eri_dir_delete()], which also prunes catalog entries under the deleted path.
 #'
 #' @inheritParams erifunctions_io
 #' @export
@@ -799,7 +801,9 @@ eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
   result <- erifunctions_io("delete.dir", file_loc = file_loc, azure = azure,
                             azcontainer = azcontainer)
   if (isTRUE(azure) && isTRUE(prune_catalog)) {
-    .eri_prune_catalog_under(file_loc, data_con = azcontainer)
+    # The data catalog always lives in the `data/` blob, so resolve it
+    # independently of whichever container `file_loc` was deleted from.
+    .eri_prune_catalog_under(file_loc, data_con = NULL)
   }
   result
 }
@@ -819,7 +823,11 @@ eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
       cli::cli_alert_info("Removed {length(hit)} catalog entr{?y/ies} under {.path {norm}}.")
     }
     invisible(length(hit))
-  }, error = function(e) invisible(0L))
+  }, error = function(e) {
+    # Never block the delete, but don't hide that the catalog wasn't pruned.
+    cli::cli_alert_warning("Could not prune catalog under {.path {prefix}}: {conditionMessage(e)}")
+    invisible(0L)
+  })
 }
 
 #' Upload any local file to Azure
