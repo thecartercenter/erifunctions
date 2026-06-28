@@ -104,6 +104,7 @@ reference:
   - eri_approve
   - eri_trigger
   - eri_ingest_cmr
+  - eri_split_cmr
   - eri_stage_cmr
   - load_cmr_schema
 

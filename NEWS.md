@@ -1,5 +1,22 @@
 # erifunctions (development version)
 
+## Feature: `eri_split_cmr()` routes a CMR per disease and measure (ADR-0012, #175 phase 4)
+
+- New `eri_split_cmr(path, country, …)` reads every routable sheet of a CMR monthly report and writes
+  each to `data/{country}/{disease}/programmatic/{data_type}/staged/`, so a single Excel fans out to its
+  per-disease, per-measure canonical coordinates. The **disease comes from the sheet** (RB Treatment →
+  `oncho`, SCH Treatment → `sch`, LF MMDP → `lf`; cross-programme Training sheets route together under
+  the combined `rblf`), and the per-row `#…_disease` field — which holds programme-coverage codes
+  (`RB`/`RBLF`/`RBLFSCH`) — is **kept as a column, not split on**, so treatment counts are never
+  duplicated across diseases. Data is staged **parsed as-is** (machine-readable `#field-code` columns; no
+  reshape, no automated DQ — CMR review is manual); `eri_approve()` then promotes each disease/measure.
+  `dry_run = TRUE` returns the routing plan without writing.
+- The CMR schema gains two per-sheet keys, `disease` and `data_type`, driving the routing. The bundled
+  `uga` schema is the worked example; the other countries' routing keys and full real-template
+  reconciliation are tracked as follow-up.
+- The `da-cmr-guide` now teaches `upload → stage → split → approve`, approving each disease/measure on its
+  own coordinates instead of one combined `rblf`/`cmr` bucket.
+
 ## Feature: `eri_ingest()` stages to the five-axis measure path (ADR-0012, #175 phase 4)
 
 - `eri_ingest()` now writes the cleaned parquet to
