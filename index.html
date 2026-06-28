@@ -45,20 +45,29 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><a class="dropdown-item" href="articles/getting-started.html">Getting started with erifunctions</a></li>
     <li><a class="dropdown-item" href="articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
-    <li><a class="dropdown-item" href="articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Data analysts</h6></li>
     <li><a class="dropdown-item" href="articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
-    <li><a class="dropdown-item" href="articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
-    <li><a class="dropdown-item" href="articles/dq-pipeline.html">Data Quality Pipeline</a></li>
-    <li><a class="dropdown-item" href="articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Epidemiologists</h6></li>
+    <li><a class="dropdown-item" href="articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="articles/epi-reconcile-guide.html">Reconciling free-text localities to admin units (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Topics</h6></li>
+    <li><a class="dropdown-item" href="articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="articles/spatial-workflow.html">Spatial Workflow</a></li>
     <li><a class="dropdown-item" href="articles/sharepoint-workflow.html">SharePoint Workflow</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Contributing</h6></li>
     <li><a class="dropdown-item" href="articles/adding-a-program.html">Adding a New NTD Program</a></li>
   </ul>
 </li>
@@ -99,7 +108,7 @@
 <div class="section level2">
 <h2 id="guides">Guides<a class="anchor" aria-label="anchor" href="#guides"></a>
 </h2>
-<p>These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them on the <a href="https://thecartercenter.github.io/erifunctions/articles/">documentation site</a>.</p>
+<p>These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them on the <a href="https://thecartercenter.github.io/erifunctions/articles/">documentation site</a>, which groups them <strong>Get started → your role → topic deep-dives → contributing</strong>. The <a href="https://thecartercenter.github.io/erifunctions/articles/getting-started.html"><strong>Getting started</strong></a> article is the front door.</p>
 <p><strong>New here? Do these in order</strong> (then dip into the rest as your work needs them). First, run <code><a href="reference/eri_data_model.html">eri_data_model()</a></code> once — it prints the data-addressing vocabulary (channel vs. measure) every guide assumes.</p>
 <ul>
 <li>
@@ -479,6 +488,10 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <td>Parse a CMR Excel sheet</td>
 </tr>
 <tr>
+<td><code>eri_split_cmr(path, country)</code></td>
+<td>Route each CMR sheet to its disease/measure staged path</td>
+</tr>
+<tr>
 <td><code>load_cmr_schema(country)</code></td>
 <td>Load a bundled CMR country schema</td>
 </tr>
@@ -561,6 +574,10 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <tr>
 <td><code>eri_catalog_query(country, disease, data_source, data_type, layer, period)</code></td>
 <td>Query catalog entries</td>
+</tr>
+<tr>
+<td><code>eri_catalog_remove(path)</code></td>
+<td>Remove a file’s catalog entry (e.g. after deleting it)</td>
 </tr>
 <tr>
 <td><code><a href="reference/eri_catalog_verify.html">eri_catalog_verify()</a></code></td>

@@ -53,7 +53,11 @@ library(erifunctions)
 
 ## 1. Where logs come from
 
-Two kinds of log end up in `{country}/{disease}/{data_type}/logs/`:
+Two kinds of log end up in
+`{country}/{disease}/{data_source}/[{data_type}/]logs/` (the measure
+level is present when the data was approved with one —
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+reads both layouts):
 
 - **Operation logs** — written automatically by
   [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
@@ -84,8 +88,10 @@ result with a couple of flags. Persist it:
 ``` r
 
 # result <- run_dq_checks(raw, schema)   # from the ingest guide
-eri_dq_log(result, "atlantis", "malaria", "surveillance", period = "2024-01")
-#> ℹ Operation log: atlantis/malaria/surveillance/logs/20260626_093000_dq_flags_2024-01.yaml
+# Pass the same measure you approve with (here "case") so the DQ log co-locates
+# with the approval log under the measure level.
+eri_dq_log(result, "atlantis", "malaria", "surveillance", data_type = "case", period = "2024-01")
+#> ℹ Operation log: atlantis/malaria/surveillance/case/logs/20260626_093000_dq_flags_2024-01.yaml
 #> ✔ Logged 2 DQ flags (needs_review).
 ```
 
@@ -96,9 +102,9 @@ staged. It errors — **and leaves an error log** behind:
 
 ``` r
 
-eri_approve("atlantis", "malaria", "surveillance", "2024-02")
-#> ℹ Operation log: atlantis/malaria/surveillance/logs/20260626_100000_eri_approve_2024-02.yaml
-#> Error: No staged files found matching "2024-02" in atlantis/malaria/surveillance/staged.
+eri_approve("atlantis", "malaria", "surveillance", "2024-02", data_type = "case")
+#> ℹ Operation log: atlantis/malaria/surveillance/case/logs/20260626_100000_eri_approve_2024-02.yaml
+#> Error: No staged files found matching "2024-02" in atlantis/malaria/surveillance/case/staged.
 ```
 
 ## 2. See the backlog

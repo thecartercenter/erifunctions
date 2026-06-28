@@ -244,6 +244,26 @@ eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest
 > superseded version, and counts updates — exactly the lifecycle this
 > guide demonstrates in §11.
 
+> **Sourcing canonical, team-approved data.** When your study draws on
+> data the analysts already approved (not a study artifact you
+> uploaded), **discover it in the catalog and pull it with the same
+> coordinates** —
+> [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)
+> takes the four tokens
+> [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
+> reports (`country`, `disease`, `data_source`, `data_type`):
+>
+> ``` r
+>
+> eri_catalog_query(country = "dr", disease = "malaria", layer = "processed")
+> #> # ... data_source = surveillance, data_type = case ...
+> eri_research_pull(country = "dr", disease = "malaria",
+>                   data_source = "surveillance", data_type = "case", dest = "data")
+> ```
+>
+> Discover what exists, then pull it with the coordinates the catalog
+> handed you — one vocabulary, end to end.
+
 > **Never commit `data/` to git.** The scaffold’s `.gitignore` already
 > excludes it. Data lives in Azure; your repository holds only *code*
 > and the `research.yaml` record of what was pulled. For `mtcars` it

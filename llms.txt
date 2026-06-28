@@ -23,7 +23,11 @@ README is the quick orientation.
 
 These copy-paste, start-to-finish walkthroughs are the fastest way to
 learn the system. Read them on the [documentation
-site](https://thecartercenter.github.io/erifunctions/articles/).
+site](https://thecartercenter.github.io/erifunctions/articles/), which
+groups them **Get started → your role → topic deep-dives →
+contributing**. The [**Getting
+started**](https://thecartercenter.github.io/erifunctions/articles/getting-started.html)
+article is the front door.
 
 **New here? Do these in order** (then dip into the rest as your work
 needs them). First, run
@@ -250,6 +254,7 @@ eri_catalog_verify()
 | Function | What it does |
 |----|----|
 | `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet |
+| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path |
 | `load_cmr_schema(country)` | Load a bundled CMR country schema |
 | `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
 
@@ -273,6 +278,7 @@ eri_catalog_verify()
 |----|----|
 | `eri_catalog_register(path, country, disease, data_source, layer, data_type)` | Register a file in the catalog |
 | `eri_catalog_query(country, disease, data_source, data_type, layer, period)` | Query catalog entries |
+| `eri_catalog_remove(path)` | Remove a file’s catalog entry (e.g. after deleting it) |
 | [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md) | Check catalog entries exist in Azure; update verification timestamps |
 
 ### Onboarding a new country or disease
@@ -714,12 +720,22 @@ CMR.
 
 # Articles
 
-### Workflows
+### Get started
 
+New here? Read these first — the data-addressing model and your role’s
+path, then how to connect to the services erifunctions talks to.
+
+- [Getting started with
+  erifunctions](https://thecartercenter.github.io/erifunctions/articles/getting-started.md):
 - [Connecting to Azure, ODK Central, SharePoint, and
   Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md):
-- [A complete research workflow for
-  epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+
+### For data analysts
+
+The daily DA workflow, in order: stand up a space, bring data through
+the raw → staged → approved gate, then keep the backlog clean. CMR and
+ODK as those feeds arrive.
+
 - [Onboarding a new country, disease, or data type (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md):
 - [Ingesting a surveillance dataset: raw to approved (for data
@@ -731,17 +747,39 @@ CMR.
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
 - [Triaging the error & data-quality log backlog (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
-- [Catching anomalies in a new surveillance extract (for
-  epidemiologists)](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md):
-- [Data Quality
-  Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
-- [Epidemiological
-  Analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md):
+
+### For epidemiologists
+
+Source approved data, reconcile free-text places to admin units,
+quality-check an extract for epidemiological sense, and compute
+programme indicators.
+
+- [A complete research workflow for
+  epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
 - [Reconciling free-text localities to admin units (for
   epidemiologists)](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md):
+- [Catching anomalies in a new surveillance extract (for
+  epidemiologists)](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md):
+- [Epidemiological
+  Analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md):
+
+### Topic deep-dives
+
+How the engines work, beyond the role walkthroughs: the data-quality
+pipeline, spatial sourcing and joins, and sharing via SharePoint and
+Teams.
+
+- [Data Quality
+  Pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
 - [Spatial
   Workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md):
 - [SharePoint
   Workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.md):
+
+### Extending the package
+
+Add a new country, disease, or programme — author its schema and disease
+analytics, and contribute them to the package.
+
 - [Adding a New NTD
   Program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md):

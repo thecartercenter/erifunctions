@@ -42,20 +42,29 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with erifunctions</a></li>
     <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Data analysts</h6></li>
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
-    <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Epidemiologists</h6></li>
+    <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="../articles/epi-reconcile-guide.html">Reconciling free-text localities to admin units (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Topics</h6></li>
+    <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
     <li><a class="dropdown-item" href="../articles/sharepoint-workflow.html">SharePoint Workflow</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Contributing</h6></li>
     <li><a class="dropdown-item" href="../articles/adding-a-program.html">Adding a New NTD Program</a></li>
   </ul>
 </li>
@@ -151,9 +160,11 @@ blob</strong>, under a per-country, per-period folder. The period is a
 six-digit <code>YYYYMM</code>:</p>
 <pre><code>projects: health-rb-country-expansion-dev/raw/filled_templates/{country}/{period}/{file}.xlsx
 e.g.      …/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx</code></pre>
-<p>Often this upload happens through Azure Storage Explorer or
-SharePoint, but you can also do it from R. Connect to the
-<code>projects</code> blob and upload the file to that path:</p>
+<p>Do this from R with <code><a href="../reference/eri_upload.html">eri_upload()</a></code> — it keeps the whole
+monthly run in one place and one tool. (If a file already arrived via
+Azure Storage Explorer or SharePoint, that’s fine too; you can skip
+ahead to staging.) Connect to the <code>projects</code> blob and upload
+the file to that path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Connect to the projects blob explicitly (the same blob eri_stage_cmr reads from).</span></span>
 <span><span class="va">projects_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"projects"</span><span class="op">)</span></span>

@@ -15,6 +15,16 @@ you need; skip the rest.
 > your **`.Renviron`** file — never typed into a script and never
 > committed to git. We point that out at each step.
 
+> **Do this first: set your analyst identity.** Before your **first
+> governed action** (approving data, registering a catalog entry,
+> syncing a form), set `ERI_ANALYST_ID` in your `.Renviron` —
+> `usethis::edit_r_environ()`, add `ERI_ANALYST_ID=firstname.lastname`,
+> save, and **restart R**. Every approval log, catalog entry, and
+> operation log is stamped with it. If it is unset, `erifunctions` warns
+> once and falls back to your **operating-system username** — so the
+> shared audit trail records `jsmith` instead of `jane.smith`. Set it
+> once and the attribution is correct everywhere.
+
 flowchart TD You\["Your R session"\] --\> P\["erifunctions"\] P --\>
 AZ\["Azure Storage — where the data lives"\] P --\> ODK\["ODK Central —
 field submissions"\] P --\> SP\["SharePoint — shared files"\] P --\>

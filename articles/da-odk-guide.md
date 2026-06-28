@@ -260,7 +260,17 @@ this clearly a practice run.)
 
 Registering records the form in the shared **ODK registry**
 (`odk/registry.yaml`) — the team’s single source of truth for which
-forms are tracked, and which country/disease each one feeds:
+forms are tracked, and which country/disease each one feeds.
+
+> **The registry is shared and team-visible.** Your registration lands
+> in the **same** `odk/registry.yaml` as everyone’s real forms, and
+> [Clean up](#clean-up)’s
+> [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
+> is a **soft-delete** (`active: false`) that preserves the audit trail
+> — so a practice entry lingers (inactive) rather than vanishing. Use an
+> obviously-fake `project_id`/`country` for sandbox work, and don’t be
+> surprised to see a deregistered practice form still listed as
+> inactive.
 
 ``` r
 

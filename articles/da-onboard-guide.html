@@ -42,20 +42,29 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Workflows</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Get started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with erifunctions</a></li>
     <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Data analysts</h6></li>
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
-    <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
-    <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Epidemiologists</h6></li>
+    <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
     <li><a class="dropdown-item" href="../articles/epi-reconcile-guide.html">Reconciling free-text localities to admin units (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-dq-guide.html">Catching anomalies in a new surveillance extract (for epidemiologists)</a></li>
+    <li><a class="dropdown-item" href="../articles/epi-analytics.html">Epidemiological Analytics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Topics</h6></li>
+    <li><a class="dropdown-item" href="../articles/dq-pipeline.html">Data Quality Pipeline</a></li>
     <li><a class="dropdown-item" href="../articles/spatial-workflow.html">Spatial Workflow</a></li>
     <li><a class="dropdown-item" href="../articles/sharepoint-workflow.html">SharePoint Workflow</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Contributing</h6></li>
     <li><a class="dropdown-item" href="../articles/adding-a-program.html">Adding a New NTD Program</a></li>
   </ul>
 </li>
@@ -281,20 +290,23 @@ green light to use it.</p>
 </h2>
 <p><strong>Case Management Reports (CMR)</strong> are the monthly Excel
 returns from country programs. Onboarding one writes a CMR schema
-template and (when you pass <code>create_dirs = TRUE</code>) the CMR
-folders. CMR lives under the combined <strong><code>rblf</code></strong>
-disease code (RB + LF — the programmes these reports cover), matching
-where <a href="da-cmr-guide.html"><code>eri_stage_cmr()</code></a> and
-<code><a href="../reference/eri_approve.html">eri_approve()</a></code> put it. Dry-run it first:</p>
+template and (when you pass <code>create_dirs = TRUE</code>) the staging
+folders under the combined <strong><code>rblf</code></strong> disease
+code (RB + LF — the programmes these reports cover), where <a href="da-cmr-guide.html"><code>eri_stage_cmr()</code></a> lands the raw
+Excel. Dry-run it first:</p>
 <blockquote>
-<p><strong>Transitional vocabulary.</strong> <code>rblf</code> and
-<code>cmr</code> are interim coordinates. Under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
+<p><strong><code>rblf</code>/<code>cmr</code> is the staging archive,
+not the canonical home.</strong> Under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
 ≠ measure model (ADR-0012)</a>, CMR is a <em>format</em> of the
-<code>programmatic</code> channel, and each report sheet splits to its
-own disease and measure (e.g. RB Treatment →
-<code>{country}/oncho/programmatic/treatment/</code>). Until that split
-ships, keep using <code>rblf</code>/<code>cmr</code> as shown here —
-don’t adopt them as the canonical addressing model.</p>
+<code>programmatic</code> channel. <a href="da-cmr-guide.html"><code>eri_split_cmr()</code></a> reads the
+staged Excel and routes <strong>each sheet to its own disease and
+measure</strong> — e.g. RB Treatment →
+<code>{country}/oncho/programmatic/treatment/</code>, then you approve
+<strong>each disease/measure</strong>. So <code>rblf/cmr/</code> is the
+transitional landing/archive; the canonical, approved data is
+per-disease (shared sheets like Training route together under the
+combined <code>rblf</code> disease). See the <a href="da-cmr-guide.html">CMR guide</a> for the full upload → stage →
+split → approve flow.</p>
 </blockquote>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, create_dirs <span class="op">=</span> <span class="cn">TRUE</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>

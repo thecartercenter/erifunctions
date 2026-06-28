@@ -60,9 +60,12 @@ per-country, per-period folder. The period is a six-digit `YYYYMM`:
     projects: health-rb-country-expansion-dev/raw/filled_templates/{country}/{period}/{file}.xlsx
     e.g.      …/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx
 
-Often this upload happens through Azure Storage Explorer or SharePoint,
-but you can also do it from R. Connect to the `projects` blob and upload
-the file to that path:
+Do this from R with
+[`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md)
+— it keeps the whole monthly run in one place and one tool. (If a file
+already arrived via Azure Storage Explorer or SharePoint, that’s fine
+too; you can skip ahead to staging.) Connect to the `projects` blob and
+upload the file to that path:
 
 ``` r
 

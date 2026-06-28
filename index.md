@@ -23,7 +23,11 @@ README is the quick orientation.
 
 These copy-paste, start-to-finish walkthroughs are the fastest way to
 learn the system. Read them on the [documentation
-site](https://thecartercenter.github.io/erifunctions/articles/).
+site](https://thecartercenter.github.io/erifunctions/articles/), which
+groups them **Get started → your role → topic deep-dives →
+contributing**. The [**Getting
+started**](https://thecartercenter.github.io/erifunctions/articles/getting-started.html)
+article is the front door.
 
 **New here? Do these in order** (then dip into the rest as your work
 needs them). First, run
@@ -250,6 +254,7 @@ eri_catalog_verify()
 | Function | What it does |
 |----|----|
 | `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet |
+| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path |
 | `load_cmr_schema(country)` | Load a bundled CMR country schema |
 | `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
 
@@ -273,6 +278,7 @@ eri_catalog_verify()
 |----|----|
 | `eri_catalog_register(path, country, disease, data_source, layer, data_type)` | Register a file in the catalog |
 | `eri_catalog_query(country, disease, data_source, data_type, layer, period)` | Query catalog entries |
+| `eri_catalog_remove(path)` | Remove a file’s catalog entry (e.g. after deleting it) |
 | [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md) | Check catalog entries exist in Azure; update verification timestamps |
 
 ### Onboarding a new country or disease
