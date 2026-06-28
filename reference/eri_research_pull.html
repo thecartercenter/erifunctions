@@ -64,6 +64,7 @@ research.yaml for provenance. Two modes:"><meta property="og:image" content="htt
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_research_pull</span><span class="op">(</span></span>
 <span>  country <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  disease <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data_source <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  data_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dest <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -77,15 +78,24 @@ research.yaml for provenance. Two modes:"><meta property="og:image" content="htt
 
 
 <dl><dt id="arg-country">country<a class="anchor" aria-label="anchor" href="#arg-country"></a></dt>
-<dd><p><code>chr</code> or <code>NULL</code> Country code (e.g. <code>"dr"</code>). Used with <code>disease</code> and <code>data_type</code>.</p></dd>
+<dd><p><code>chr</code> or <code>NULL</code> Country code (e.g. <code>"dr"</code>). Used with <code>disease</code> and <code>data_source</code>.</p></dd>
 
 
 <dt id="arg-disease">disease<a class="anchor" aria-label="anchor" href="#arg-disease"></a></dt>
-<dd><p><code>chr</code> or <code>NULL</code> Disease name (e.g. <code>"malaria"</code>). Used with <code>country</code> and <code>data_type</code>.</p></dd>
+<dd><p><code>chr</code> or <code>NULL</code> Disease name (e.g. <code>"malaria"</code>). Used with <code>country</code> and <code>data_source</code>.</p></dd>
+
+
+<dt id="arg-data-source">data_source<a class="anchor" aria-label="anchor" href="#arg-data-source"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> The channel (<code>"surveillance"</code>, <code>"programmatic"</code>,
+<code>"research"</code>). Used with <code>country</code> and <code>disease</code>. The catalog (<code><a href="eri_catalog_query.html">eri_catalog_query()</a></code>)
+reports this column, so a pull uses the same coordinates a discovery query returns.</p></dd>
 
 
 <dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
-<dd><p><code>chr</code> or <code>NULL</code> Data type (<code>"surveillance"</code>, <code>"cmr"</code>, <code>"odk"</code>). Used with <code>country</code> and <code>disease</code>.</p></dd>
+<dd><p><code>chr</code> or <code>NULL</code> The measure (e.g. <code>"case"</code>, <code>"aggregate"</code>, <code>"treatment"</code>,
+<code>"tas"</code>). Optional — <code>NULL</code> pulls the four-axis channel-level processed layer.
+<strong>Back-compat:</strong> if only <code>data_type</code> is given (the pre-ADR-0012 form where it held the
+channel), it is treated as <code>data_source</code>.</p></dd>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
@@ -112,8 +122,9 @@ e.g. a LandScan raster). Default <code>FALSE</code> uses one compact progress ba
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
-<ul><li><p><strong>Canonical</strong>: supply <code>country</code>, <code>disease</code>, and <code>data_type</code> to pull from the
-standard processed layer (<code>{country}/{disease}/{data_type}/processed/</code>).</p></li>
+<ul><li><p><strong>Canonical</strong>: supply <code>country</code>, <code>disease</code>, and <code>data_source</code> (optionally a
+<code>data_type</code> measure) to pull from the standard processed layer
+(<code>{country}/{disease}/{data_source}/{data_type}/processed/</code>, per ADR-0012).</p></li>
 <li><p><strong>Path</strong>: supply <code>path</code> to pull any Azure location (e.g. <code>"data/spatial/dom_admin_boundaries/"</code>).</p></li>
 </ul><p>For non-standard external files not yet in Azure, upload them first with
 <code><a href="eri_artifact_upload.html">eri_artifact_upload()</a></code>, then pull with <code><a href="eri_artifact_pull.html">eri_artifact_pull()</a></code>.</p>
@@ -122,8 +133,12 @@ standard processed layer (<code>{country}/{disease}/{data_type}/processed/</code
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Pull canonical processed surveillance data</span></span></span>
-<span class="r-in"><span><span class="fu">eri_research_pull</span><span class="op">(</span>country <span class="op">=</span> <span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria"</span>, data_type <span class="op">=</span> <span class="st">"surveillance"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Pull canonical processed data using the coordinates the catalog reports</span></span></span>
+<span class="r-in"><span><span class="fu">eri_research_pull</span><span class="op">(</span>country <span class="op">=</span> <span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria"</span>,</span></span>
+<span class="r-in"><span>                  data_source <span class="op">=</span> <span class="st">"surveillance"</span>, data_type <span class="op">=</span> <span class="st">"case"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Four-axis (channel only, no measure)</span></span></span>
+<span class="r-in"><span><span class="fu">eri_research_pull</span><span class="op">(</span>country <span class="op">=</span> <span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria"</span>, data_source <span class="op">=</span> <span class="st">"surveillance"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Pull standard spatial reference files</span></span></span>
 <span class="r-in"><span><span class="fu">eri_research_pull</span><span class="op">(</span>path <span class="op">=</span> <span class="st">"spatial/dom_admin_boundaries"</span><span class="op">)</span></span></span>
