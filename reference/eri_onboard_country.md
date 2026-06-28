@@ -15,7 +15,8 @@ eri_onboard_country(
   language = "en",
   path = getwd(),
   data_con = NULL,
-  dry_run = FALSE
+  dry_run = FALSE,
+  data_type = "aggregate"
 )
 ```
 
@@ -51,6 +52,12 @@ eri_onboard_country(
 
   `lgl` If `TRUE`, print a plan but do not write files or create Azure
   directories. Default `FALSE`.
+
+- data_type:
+
+  `chr` The surveillance measure for the schema identity (ADR-0012),
+  e.g. `"aggregate"` or `"case"`. Default `"aggregate"`. Sets the schema
+  filename `{country}_{disease}_surveillance_{data_type}.yaml`.
 
 ## Value
 

@@ -57,7 +57,7 @@ what it would do** and changes nothing. Always start here:
 
 eri_onboard_country("atlantis", "Atlantis", "malaria", dry_run = TRUE)
 #> ℹ Dry run -- nothing will be written or created.
-#>   Would write: atlantis_malaria_schema.yaml
+#>   Would write: atlantis_malaria_surveillance_aggregate.yaml
 #>   Would create Azure directories:
 #>     atlantis/malaria/surveillance/raw
 #>     atlantis/malaria/surveillance/staged
@@ -77,13 +77,13 @@ arguments are the **country code**, the **full country name**, and the
 ``` r
 
 eri_onboard_country("atlantis", "Atlantis", "malaria")
-#> ✔ Schema template written to atlantis_malaria_schema.yaml.
+#> ✔ Schema template written to atlantis_malaria_surveillance_aggregate.yaml.
 #> ✔ Created 3 Azure directories.
 #> ℹ Next steps:
-#>   1. Open atlantis_malaria_schema.yaml and fill in the TODO sections.
-#>   2. Run eri_schema_validate('atlantis_malaria_schema.yaml') to check your edits.
+#>   1. Open atlantis_malaria_surveillance_aggregate.yaml and fill in the TODO sections.
+#>   2. Run eri_schema_validate('atlantis_malaria_surveillance_aggregate.yaml') to check your edits.
 #>   3. Submit the schema via a pull request to add it to the package:
-#>      inst/schemas/atlantis_malaria.yaml
+#>      inst/schemas/atlantis_malaria_surveillance_aggregate.yaml
 #>   4. Register any ODK forms with eri_odk_register().
 #>   5. Pin the package version in your project: renv::snapshot().
 ```
@@ -94,15 +94,17 @@ blob.
 
 ### Fill in the template
 
-Open `atlantis_malaria_schema.yaml`. It is a **correct, structured
-starting point** — the standard sections are there, with `TODO` markers
-where your data is unique. Here it is **trimmed for readability** (your
-actual file also lists `aliases:` for each column and a few commented
-options like `time_grain` and `admin1_name_field`):
+Open `atlantis_malaria_surveillance_aggregate.yaml`. It is a **correct,
+structured starting point** — the standard sections are there, with
+`TODO` markers where your data is unique. Here it is **trimmed for
+readability** (your actual file also lists `aliases:` for each column
+and a few commented options like `time_grain` and `admin1_name_field`):
 
 ``` yaml
-country: Atlantis
+country: atlantis
 disease: malaria
+data_source: surveillance
+data_type: aggregate
 language: en
 
 admin:
@@ -163,8 +165,8 @@ Run it on the file you just edited:
 
 ``` r
 
-eri_schema_validate("atlantis_malaria_schema.yaml")
-#> ✔ Schema 'atlantis_malaria_schema.yaml' is valid.
+eri_schema_validate("atlantis_malaria_surveillance_aggregate.yaml")
+#> ✔ Schema 'atlantis_malaria_surveillance_aggregate.yaml' is valid.
 #> # A tibble: 0 × 3
 #> # ℹ 3 variables: issue_type <chr>, field <chr>, message <chr>
 ```
@@ -174,8 +176,8 @@ row per problem. Say you fat- finger two of the column types to `numbr`:
 
 ``` r
 
-eri_schema_validate("atlantis_malaria_schema.yaml")
-#> ⚠ 2 issues found in 'atlantis_malaria_schema.yaml':
+eri_schema_validate("atlantis_malaria_surveillance_aggregate.yaml")
+#> ⚠ 2 issues found in 'atlantis_malaria_surveillance_aggregate.yaml':
 #> ✖ Column 'Year' has invalid type 'numbr'. Valid: numeric, character, categorical, date.
 #> ✖ Column 'EpiWeek' has invalid type 'numbr'. Valid: numeric, character, categorical, date.
 
@@ -243,8 +245,8 @@ administration) and **prevalence**. Note the argument order here is
 ``` r
 
 eri_onboard_disease("schisto", "atlantis")
-#> ✔ Schema skeleton written to atlantis_schisto_mda.yaml.
-#> ✔ Schema skeleton written to atlantis_schisto_prevalence.yaml.
+#> ✔ Schema skeleton written to atlantis_schisto_programmatic_treatment.yaml.
+#> ✔ Schema skeleton written to atlantis_schisto_research_prevalence.yaml.
 #> ℹ Next steps:
 #>   1. Open each file and fill in the TODO sections.
 #>   2. Run eri_schema_validate('<path>') to check your edits.
@@ -294,8 +296,8 @@ con <- get_azure_storage_connection(storage_name = "data")
 eri_dir_delete("atlantis", azcontainer = con)
 
 # Remove the local schema templates.
-unlink(c("atlantis_malaria_schema.yaml", "atlantis_cmr_schema.yaml",
-         "atlantis_schisto_mda.yaml", "atlantis_schisto_prevalence.yaml"))
+unlink(c("atlantis_malaria_surveillance_aggregate.yaml", "atlantis_cmr_schema.yaml",
+         "atlantis_schisto_programmatic_treatment.yaml", "atlantis_schisto_research_prevalence.yaml"))
 ```
 
 > **Why deleting was fine here:** *Atlantis* is invented. **A real

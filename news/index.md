@@ -2,6 +2,22 @@
 
 ## erifunctions (development version)
 
+### Feature: onboarding scaffolders emit the 4-part schema identity (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 4a)
+
+- [`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)
+  and
+  [`eri_onboard_country()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_country.md)
+  now write schema skeletons named to the ADR-0012 identity
+  `{country}_{disease}_{data_source}_{data_type}.yaml` with
+  `data_source` / `data_type` header fields: `mda` → `programmatic` /
+  `treatment`, `prevalence` → `research` / `prevalence`, and
+  surveillance → `surveillance` / `{data_type}` (new
+  `eri_onboard_country(data_type = "aggregate")` argument). So a freshly
+  onboarded program is consistent with the migrated bundled schemas and
+  loads via the 4-arg
+  [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md).
+  The DA onboarding guide is updated to match.
+
 ### Feature: `eri_ingest()` is a general, sandbox-runnable ingest core (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 3a)
 
 - [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)

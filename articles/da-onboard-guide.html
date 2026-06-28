@@ -154,7 +154,7 @@ Always start here:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_country.html">eri_onboard_country</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, <span class="st">"malaria"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Dry run -- nothing will be written or created.</span></span>
-<span><span class="co">#&gt;   Would write: atlantis_malaria_schema.yaml</span></span>
+<span><span class="co">#&gt;   Would write: atlantis_malaria_surveillance_aggregate.yaml</span></span>
 <span><span class="co">#&gt;   Would create Azure directories:</span></span>
 <span><span class="co">#&gt;     atlantis/malaria/surveillance/raw</span></span>
 <span><span class="co">#&gt;     atlantis/malaria/surveillance/staged</span></span>
@@ -171,13 +171,13 @@ arguments are the <strong>country code</strong>, the <strong>full
 country name</strong>, and the <strong>disease</strong>:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_country.html">eri_onboard_country</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"Atlantis"</span>, <span class="st">"malaria"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Schema template written to atlantis_malaria_schema.yaml.</span></span>
+<span><span class="co">#&gt; ✔ Schema template written to atlantis_malaria_surveillance_aggregate.yaml.</span></span>
 <span><span class="co">#&gt; ✔ Created 3 Azure directories.</span></span>
 <span><span class="co">#&gt; ℹ Next steps:</span></span>
-<span><span class="co">#&gt;   1. Open atlantis_malaria_schema.yaml and fill in the TODO sections.</span></span>
-<span><span class="co">#&gt;   2. Run eri_schema_validate('atlantis_malaria_schema.yaml') to check your edits.</span></span>
+<span><span class="co">#&gt;   1. Open atlantis_malaria_surveillance_aggregate.yaml and fill in the TODO sections.</span></span>
+<span><span class="co">#&gt;   2. Run eri_schema_validate('atlantis_malaria_surveillance_aggregate.yaml') to check your edits.</span></span>
 <span><span class="co">#&gt;   3. Submit the schema via a pull request to add it to the package:</span></span>
-<span><span class="co">#&gt;      inst/schemas/atlantis_malaria.yaml</span></span>
+<span><span class="co">#&gt;      inst/schemas/atlantis_malaria_surveillance_aggregate.yaml</span></span>
 <span><span class="co">#&gt;   4. Register any ODK forms with eri_odk_register().</span></span>
 <span><span class="co">#&gt;   5. Pin the package version in your project: renv::snapshot().</span></span></code></pre></div>
 <p>It did two things: wrote a local schema template, and created
@@ -186,57 +186,59 @@ the data blob.</p>
 <div class="section level3">
 <h3 id="fill-in-the-template">Fill in the template<a class="anchor" aria-label="anchor" href="#fill-in-the-template"></a>
 </h3>
-<p>Open <code>atlantis_malaria_schema.yaml</code>. It is a
-<strong>correct, structured starting point</strong> — the standard
+<p>Open <code>atlantis_malaria_surveillance_aggregate.yaml</code>. It is
+a <strong>correct, structured starting point</strong> — the standard
 sections are there, with <code>TODO</code> markers where your data is
 unique. Here it is <strong>trimmed for readability</strong> (your actual
 file also lists <code>aliases:</code> for each column and a few
 commented options like <code>time_grain</code> and
 <code>admin1_name_field</code>):</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">country</span><span class="kw">:</span><span class="at"> Atlantis</span></span>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">country</span><span class="kw">:</span><span class="at"> atlantis</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">disease</span><span class="kw">:</span><span class="at"> malaria</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> en</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">admin</span><span class="kw">:</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="at">  </span><span class="fu">admin1_col</span><span class="kw">:</span><span class="at"> Admin1</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="at">  </span><span class="fu">admin2_col</span><span class="kw">:</span><span class="at"> Admin2</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="at">  </span><span class="fu">admin1_spatial</span><span class="kw">:</span><span class="at"> spatial/atlantis/atlantis_admin1.shp</span></span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="at">  </span><span class="fu">admin2_spatial</span><span class="kw">:</span><span class="at"> spatial/atlantis/atlantis_admin2.shp</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="fu">temporal</span><span class="kw">:</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="at">  </span><span class="fu">year_col</span><span class="kw">:</span><span class="at"> Year</span></span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="at">  </span><span class="fu">period_col</span><span class="kw">:</span><span class="at"> EpiWeek</span></span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="at">  </span><span class="fu">max_gap</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="fu">preprocessing</span><span class="kw">:</span></span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> remove_smart_quotes</span></span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> drop_rows_missing_year</span></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="fu">columns</span><span class="kw">:</span></span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="at">  </span><span class="fu">Year</span><span class="kw">:</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">2000</span><span class="kw">,</span><span class="at"> </span><span class="dv">2035</span><span class="kw">]</span></span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="at">  </span><span class="fu">EpiWeek</span><span class="kw">:</span></span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">53</span><span class="kw">]</span></span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="at">  </span><span class="fu">Admin1</span><span class="kw">:</span></span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">    # </span><span class="al">TODO</span><span class="co">: add allowed_values (list of valid admin1 names)</span></span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="at">  </span><span class="fu">Admin2</span><span class="kw">:</span></span>
-<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> character</span></span>
-<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a></span>
-<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">  # </span><span class="al">TODO</span><span class="co">: add your disease-specific columns here</span></span>
-<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">  # CasesConfirmed:</span></span>
-<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">  #   required: false</span></span>
-<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">  #   type: numeric</span></span>
-<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">  #   range: [0, 1000000]</span></span>
-<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a></span>
-<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="fu">consistency</span><span class="kw">:</span></span>
-<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">  # </span><span class="al">TODO</span><span class="co">: add cross-field rules here</span></span></code></pre></div>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">data_source</span><span class="kw">:</span><span class="at"> surveillance</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">data_type</span><span class="kw">:</span><span class="at"> aggregate</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">language</span><span class="kw">:</span><span class="at"> en</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">admin</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="at">  </span><span class="fu">admin1_col</span><span class="kw">:</span><span class="at"> Admin1</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="at">  </span><span class="fu">admin2_col</span><span class="kw">:</span><span class="at"> Admin2</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="at">  </span><span class="fu">admin1_spatial</span><span class="kw">:</span><span class="at"> spatial/atlantis/atlantis_admin1.shp</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="at">  </span><span class="fu">admin2_spatial</span><span class="kw">:</span><span class="at"> spatial/atlantis/atlantis_admin2.shp</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="fu">temporal</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="at">  </span><span class="fu">year_col</span><span class="kw">:</span><span class="at"> Year</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="at">  </span><span class="fu">period_col</span><span class="kw">:</span><span class="at"> EpiWeek</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="at">  </span><span class="fu">max_gap</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="fu">preprocessing</span><span class="kw">:</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> remove_smart_quotes</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> drop_rows_missing_year</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="at">  </span><span class="fu">Year</span><span class="kw">:</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">2000</span><span class="kw">,</span><span class="at"> </span><span class="dv">2035</span><span class="kw">]</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="at">  </span><span class="fu">EpiWeek</span><span class="kw">:</span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">53</span><span class="kw">]</span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="at">  </span><span class="fu">Admin1</span><span class="kw">:</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> categorical</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">    # </span><span class="al">TODO</span><span class="co">: add allowed_values (list of valid admin1 names)</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="at">  </span><span class="fu">Admin2</span><span class="kw">:</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="at">    </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> character</span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">  # </span><span class="al">TODO</span><span class="co">: add your disease-specific columns here</span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">  # CasesConfirmed:</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">  #   required: false</span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">  #   type: numeric</span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">  #   range: [0, 1000000]</span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="fu">consistency</span><span class="kw">:</span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">  # </span><span class="al">TODO</span><span class="co">: add cross-field rules here</span></span></code></pre></div>
 <p>The schema structure — <code>columns</code> with
 <code>type</code>/<code>required</code>/<code>range</code>/<code>allowed_values</code>,
 the <code>temporal</code> block, <code>consistency</code> rules — is
@@ -251,16 +253,16 @@ exactly what the data-quality engine reads. The <a href="da-ingest-guide.html">i
 that temporal/consistency rules reference columns that actually exist.
 Run it on the file you just edited:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_schema_validate.html">eri_schema_validate</a></span><span class="op">(</span><span class="st">"atlantis_malaria_schema.yaml"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Schema 'atlantis_malaria_schema.yaml' is valid.</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_schema_validate.html">eri_schema_validate</a></span><span class="op">(</span><span class="st">"atlantis_malaria_surveillance_aggregate.yaml"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Schema 'atlantis_malaria_surveillance_aggregate.yaml' is valid.</span></span>
 <span><span class="co">#&gt; # A tibble: 0 × 3</span></span>
 <span><span class="co">#&gt; # ℹ 3 variables: issue_type &lt;chr&gt;, field &lt;chr&gt;, message &lt;chr&gt;</span></span></code></pre></div>
 <p>An <strong>empty tibble means it’s valid</strong>. When something is
 off, you get a row per problem. Say you fat- finger two of the column
 types to <code>numbr</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_schema_validate.html">eri_schema_validate</a></span><span class="op">(</span><span class="st">"atlantis_malaria_schema.yaml"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ⚠ 2 issues found in 'atlantis_malaria_schema.yaml':</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_schema_validate.html">eri_schema_validate</a></span><span class="op">(</span><span class="st">"atlantis_malaria_surveillance_aggregate.yaml"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ⚠ 2 issues found in 'atlantis_malaria_surveillance_aggregate.yaml':</span></span>
 <span><span class="co">#&gt; ✖ Column 'Year' has invalid type 'numbr'. Valid: numeric, character, categorical, date.</span></span>
 <span><span class="co">#&gt; ✖ Column 'EpiWeek' has invalid type 'numbr'. Valid: numeric, character, categorical, date.</span></span>
 <span></span>
@@ -316,8 +318,8 @@ pattern needs — <strong>MDA</strong> (mass drug administration) and
 <strong>disease first, then country</strong>:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_onboard_disease.html">eri_onboard_disease</a></span><span class="op">(</span><span class="st">"schisto"</span>, <span class="st">"atlantis"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Schema skeleton written to atlantis_schisto_mda.yaml.</span></span>
-<span><span class="co">#&gt; ✔ Schema skeleton written to atlantis_schisto_prevalence.yaml.</span></span>
+<span><span class="co">#&gt; ✔ Schema skeleton written to atlantis_schisto_programmatic_treatment.yaml.</span></span>
+<span><span class="co">#&gt; ✔ Schema skeleton written to atlantis_schisto_research_prevalence.yaml.</span></span>
 <span><span class="co">#&gt; ℹ Next steps:</span></span>
 <span><span class="co">#&gt;   1. Open each file and fill in the TODO sections.</span></span>
 <span><span class="co">#&gt;   2. Run eri_schema_validate('&lt;path&gt;') to check your edits.</span></span>
@@ -368,8 +370,8 @@ namespace and the local schema files:</p>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Remove the local schema templates.</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"atlantis_malaria_schema.yaml"</span>, <span class="st">"atlantis_cmr_schema.yaml"</span>,</span>
-<span>         <span class="st">"atlantis_schisto_mda.yaml"</span>, <span class="st">"atlantis_schisto_prevalence.yaml"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"atlantis_malaria_surveillance_aggregate.yaml"</span>, <span class="st">"atlantis_cmr_schema.yaml"</span>,</span>
+<span>         <span class="st">"atlantis_schisto_programmatic_treatment.yaml"</span>, <span class="st">"atlantis_schisto_research_prevalence.yaml"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <blockquote>
 <p><strong>Why deleting was fine here:</strong> <em>Atlantis</em> is
 invented. <strong>A real onboarded country is not torn down
