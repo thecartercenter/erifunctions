@@ -26,8 +26,9 @@ eri_ingest(
 \item{data_source}{\code{str} The channel (\code{"surveillance"}, \code{"programmatic"},
 \code{"research"}). Default \code{"surveillance"}.}
 
-\item{data_type}{\code{str} The measure used to select the DQ schema (e.g.
-\code{"aggregate"}, \code{"case"}). Default \code{"aggregate"}.}
+\item{data_type}{\code{str} The measure (e.g. \code{"aggregate"}, \code{"case"}, \code{"treatment"}).
+Selects the DQ schema \strong{and} is the measure level in the staged path
+\verb{.../\{data_source\}/\{data_type\}/staged/}. Default \code{"aggregate"}.}
 
 \item{schema}{Named list from \code{\link[=load_dq_schema]{load_dq_schema()}}. If \code{NULL} (default), loaded
 for \verb{(country, disease, data_source, data_type)}.}
@@ -50,9 +51,9 @@ Invisibly, the \code{dq_result} object (\verb{$data}, \verb{$log}, \verb{$flags}
 
 The general analyst ingest entry point. Reads a raw local file, runs all DQ
 checks via \code{\link[=run_dq_checks]{run_dq_checks()}}, prints the flags, and writes the cleaned parquet
-to \verb{data/\{country\}/\{disease\}/\{data_source\}/staged/} — feeding \code{\link[=eri_approve]{eri_approve()}}.
-It runs on \strong{any} data, including a throwaway sandbox: there is no
-pipeline-registry or country gate by default.
+to \verb{data/\{country\}/\{disease\}/\{data_source\}/\{data_type\}/staged/} — feeding
+\code{\link[=eri_approve]{eri_approve()}} with the matching measure. It runs on \strong{any} data, including a
+throwaway sandbox: there is no pipeline-registry or country gate by default.
 
 The legacy \code{projects}-blob dual-write (the hsp-mal cutover comparison) is an
 \strong{opt-in} mirror: pass \code{mirror_pipeline = "hsp-mal"} to additionally mirror the
@@ -61,8 +62,11 @@ This is transitional and removed at the Phase-3 cutover (ADR-0012).
 }
 \examples{
 \dontrun{
+# Default measure is "aggregate", so it stages to
+# dr/malaria/surveillance/aggregate/staged/ ...
 result <- eri_ingest("data/raw/dr_malaria_2024W01.xlsx", "dr", "malaria")
 result$flags  # review before approving
-eri_approve("dr", "malaria", "surveillance", "2024W01")
+# ... and the same measure promotes it:
+eri_approve("dr", "malaria", "surveillance", "2024W01", data_type = "aggregate")
 }
 }

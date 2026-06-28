@@ -1331,9 +1331,9 @@ eri_stage <- function(pipeline, country, disease,
 #'
 #' The general analyst ingest entry point. Reads a raw local file, runs all DQ
 #' checks via [run_dq_checks()], prints the flags, and writes the cleaned parquet
-#' to `data/{country}/{disease}/{data_source}/staged/` — feeding [eri_approve()].
-#' It runs on **any** data, including a throwaway sandbox: there is no
-#' pipeline-registry or country gate by default.
+#' to `data/{country}/{disease}/{data_source}/{data_type}/staged/` — feeding
+#' [eri_approve()] with the matching measure. It runs on **any** data, including a
+#' throwaway sandbox: there is no pipeline-registry or country gate by default.
 #'
 #' The legacy `projects`-blob dual-write (the hsp-mal cutover comparison) is an
 #' **opt-in** mirror: pass `mirror_pipeline = "hsp-mal"` to additionally mirror the
@@ -1345,8 +1345,9 @@ eri_stage <- function(pipeline, country, disease,
 #' @param disease `str` Disease name (e.g. `"malaria"`).
 #' @param data_source `str` The channel (`"surveillance"`, `"programmatic"`,
 #'   `"research"`). Default `"surveillance"`.
-#' @param data_type `str` The measure used to select the DQ schema (e.g.
-#'   `"aggregate"`, `"case"`). Default `"aggregate"`.
+#' @param data_type `str` The measure (e.g. `"aggregate"`, `"case"`, `"treatment"`).
+#'   Selects the DQ schema **and** is the measure level in the staged path
+#'   `.../{data_source}/{data_type}/staged/`. Default `"aggregate"`.
 #' @param schema Named list from [load_dq_schema()]. If `NULL` (default), loaded
 #'   for `(country, disease, data_source, data_type)`.
 #' @param data_con Azure container for the `data` blob. If `NULL` (default),
@@ -1360,9 +1361,12 @@ eri_stage <- function(pipeline, country, disease,
 #' @returns Invisibly, the `dq_result` object (`$data`, `$log`, `$flags`).
 #' @examples
 #' \dontrun{
+#' # Default measure is "aggregate", so it stages to
+#' # dr/malaria/surveillance/aggregate/staged/ ...
 #' result <- eri_ingest("data/raw/dr_malaria_2024W01.xlsx", "dr", "malaria")
 #' result$flags  # review before approving
-#' eri_approve("dr", "malaria", "surveillance", "2024W01")
+#' # ... and the same measure promotes it:
+#' eri_approve("dr", "malaria", "surveillance", "2024W01", data_type = "aggregate")
 #' }
 #' @export
 eri_ingest <- function(path, country, disease,
@@ -1420,8 +1424,11 @@ eri_ingest <- function(path, country, disease,
   dq_report(result)
 
   fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
-  staged_dir    <- eri_data_path(country, disease, data_source, "staged")
-  log_dir       <- paste(c(country, disease, data_source, "logs"), collapse = "/")
+  # Five-axis staging (ADR-0012): the measure lands in the path, so a later
+  # eri_approve(country, disease, data_source, period, data_type) promotes it.
+  # c() drops a NULL data_type, so a measure-less ingest stays four-axis.
+  staged_dir    <- eri_data_path(country, disease, data_source, data_type, "staged")
+  log_dir       <- paste(c(country, disease, data_source, data_type, "logs"), collapse = "/")
 
   op_log <- list(
     operation  = "eri_ingest",
@@ -1479,7 +1486,7 @@ eri_ingest <- function(path, country, disease,
     # Persist the DQ flags to the log backlog so they are durable and triageable
     # via eri_logs() / eri_logs_resolve(). Never let a logging hiccup break ingest.
     tryCatch(
-      eri_dq_log(result, country, disease, data_source, data_con = data_con),
+      eri_dq_log(result, country, disease, data_source, data_type, data_con = data_con),
       error = function(e) cli::cli_alert_warning("Could not log DQ flags: {conditionMessage(e)}")
     )
 

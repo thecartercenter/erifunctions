@@ -27,7 +27,9 @@ is promoted.}
 
 \item{data_type}{\code{str} or \code{NULL} The measure the data captures (e.g. \code{"case"},
 \code{"aggregate"}, \code{"treatment"}, \code{"tas"}). \code{NULL} (default) approves the legacy
-four-axis path \code{{country}/{disease}/{data_source}/...} without a measure level.}
+four-axis path \code{{country}/{disease}/{data_source}/...} without a measure level,
+and the catalog entry's measure is recorded as \code{NA} — a one-time per-session
+note points this out so it is a deliberate choice, not a silent omission.}
 
 \item{azcontainer}{Azure container object for the \verb{data/} blob, returned by
 \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}. If \code{NULL} (default), connects automatically
