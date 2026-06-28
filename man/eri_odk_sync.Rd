@@ -33,8 +33,11 @@ submissions are found.
 }
 \description{
 Downloads all submissions for a registered ODK form and writes them as
-Parquet file(s) into \verb{data/\{country\}/\{disease\}/odk/raw/} in the Azure \verb{data/}
-container. Forms with \strong{repeat groups} (most real forms) export multiple
+Parquet file(s) into \verb{data/\{country\}/\{disease\}/research/raw/} in the Azure
+\verb{data/} container — ODK is the \strong{research} channel's collection format
+(\code{format: odk}) under ADR-0012, not a \code{data_source} of its own. The measure
+(\code{data_type}) is assigned later, when the analyst cleans the form into a final
+dataset. Forms with \strong{repeat groups} (most real forms) export multiple
 tables -- the main submission table plus one child table per repeat group --
 and each is written as its own Parquet (\verb{\{form_id\}.parquet},
 \verb{\{form_id\}-\{repeat\}.parquet}, ...); a flat form writes a single

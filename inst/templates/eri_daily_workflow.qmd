@@ -85,7 +85,8 @@ print(status)
 
 Run `eri_odk_sync()` for each form you manage. Add or remove chunks below as
 needed. Each call downloads new submissions and writes them to the Azure data
-blob at `{country}/{disease}/odk/raw/{form_id}.parquet`.
+blob at `{country}/{disease}/research/raw/{form_id}.parquet` (ODK is the
+`research` channel's collection format under ADR-0012).
 
 ```{r sync-form-1}
 # Replace with your actual project_id, form_id, country, and disease values.
