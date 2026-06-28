@@ -12,9 +12,14 @@ sheet_aliases:
   mmdp_surgery_training: "PCMPI Formation Chirurgie"
   surveys: "Enquêtes FL"
 
+# Per-sheet routing (disease from the sheet; data_type = the measure) drives
+# eri_split_cmr() -> {country}/{disease}/programmatic/{data_type}/staged/.
+# Madagascar is LF-only (no RB/oncho sheets).
 sheets:
   "Traitement FL":
     field_code_prefix: "#lftrt_"
+    disease: lf
+    data_type: treatment
     required_fields:
       - "#lftrt_year"
       - "#lftrt_month"
@@ -25,6 +30,8 @@ sheets:
 
   "PCMPI FL":
     field_code_prefix: "#lfmmdp_"
+    disease: lf
+    data_type: mmdp
     required_fields:
       - "#lfmmdp_year"
       - "#lfmmdp_month"
@@ -37,6 +44,8 @@ sheets:
 
   "Formation Distributeurs":
     field_code_prefix: "#cddtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cddtrn_year"
       - "#cddtrn_month"
@@ -47,6 +56,8 @@ sheets:
 
   "Formation SC":
     field_code_prefix: "#cstrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cstrn_year"
       - "#cstrn_month"
@@ -57,6 +68,8 @@ sheets:
 
   "Formation Travailleurs de Sante":
     field_code_prefix: "#mmdptrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#mmdptrn_year"
       - "#mmdptrn_month"
@@ -67,6 +80,8 @@ sheets:
 
   "PCMPI Formation Chirurgie":
     field_code_prefix: "#mmdptrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#mmdptrn_year"
       - "#mmdptrn_month"
@@ -77,6 +92,8 @@ sheets:
 
   "Enquêtes FL":
     field_code_prefix: "#svy_"
+    disease: rblf
+    data_type: survey
     required_fields:
       - "#svy_year"
       - "#svy_adm1"

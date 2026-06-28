@@ -11,9 +11,15 @@ sheet_aliases:
   cs_training: "Formation Superviseurs Comm"
   surveys: "Enquêtes"
 
+# Per-sheet routing (disease from the sheet; data_type = the measure) drives
+# eri_split_cmr() -> {country}/{disease}/programmatic/{data_type}/staged/. The
+# #field codes are language-neutral, so routing is identical to the English
+# templates despite the French sheet names.
 sheets:
   "Oncho Traitement":
     field_code_prefix: "#rbtrt_"
+    disease: oncho
+    data_type: treatment
     required_fields:
       - "#rbtrt_year"
       - "#rbtrt_month"
@@ -24,6 +30,8 @@ sheets:
 
   "Traitement FL":
     field_code_prefix: "#lftrt_"
+    disease: lf
+    data_type: treatment
     required_fields:
       - "#lftrt_year"
       - "#lftrt_month"
@@ -34,6 +42,8 @@ sheets:
 
   "LF MMDP":
     field_code_prefix: "#lfmmdp_"
+    disease: lf
+    data_type: mmdp
     required_fields:
       - "#lfmmdp_year"
       - "#lfmmdp_month"
@@ -46,6 +56,8 @@ sheets:
 
   "Formation Distributeurs Comm":
     field_code_prefix: "#cddtrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cddtrn_year"
       - "#cddtrn_month"
@@ -56,6 +68,8 @@ sheets:
 
   "Formation Superviseurs Comm":
     field_code_prefix: "#cstrn_"
+    disease: rblf
+    data_type: training
     required_fields:
       - "#cstrn_year"
       - "#cstrn_month"
@@ -66,6 +80,8 @@ sheets:
 
   "Enquêtes":
     field_code_prefix: "#svy_"
+    disease: rblf
+    data_type: survey
     required_fields:
       - "#svy_year"
       - "#svy_adm1"
