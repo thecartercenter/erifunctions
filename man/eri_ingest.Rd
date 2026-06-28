@@ -26,9 +26,13 @@ eri_ingest(
 \item{data_source}{\code{str} The channel (\code{"surveillance"}, \code{"programmatic"},
 \code{"research"}). Default \code{"surveillance"}.}
 
-\item{data_type}{\code{str} The measure (e.g. \code{"aggregate"}, \code{"case"}, \code{"treatment"}).
-Selects the DQ schema \strong{and} is the measure level in the staged path
-\verb{.../\{data_source\}/\{data_type\}/staged/}. Default \code{"aggregate"}.}
+\item{data_type}{\code{str} or \code{NULL} The measure (e.g. \code{"aggregate"}, \code{"case"},
+\code{"treatment"}). Selects the DQ schema \strong{and} is the measure level in the staged
+path \verb{.../\{data_source\}/\{data_type\}/staged/}. Default \code{"aggregate"}. Whatever you
+pass here, \strong{promote with the same measure} —
+\verb{eri_approve(country, disease, data_source, period, data_type = <same>)} — or the
+approve will look one level up and find nothing. \code{NULL} stages channel-level
+(four-axis), for the rare measure-less case.}
 
 \item{schema}{Named list from \code{\link[=load_dq_schema]{load_dq_schema()}}. If \code{NULL} (default), loaded
 for \verb{(country, disease, data_source, data_type)}.}

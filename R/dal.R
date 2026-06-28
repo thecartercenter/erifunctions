@@ -1345,9 +1345,13 @@ eri_stage <- function(pipeline, country, disease,
 #' @param disease `str` Disease name (e.g. `"malaria"`).
 #' @param data_source `str` The channel (`"surveillance"`, `"programmatic"`,
 #'   `"research"`). Default `"surveillance"`.
-#' @param data_type `str` The measure (e.g. `"aggregate"`, `"case"`, `"treatment"`).
-#'   Selects the DQ schema **and** is the measure level in the staged path
-#'   `.../{data_source}/{data_type}/staged/`. Default `"aggregate"`.
+#' @param data_type `str` or `NULL` The measure (e.g. `"aggregate"`, `"case"`,
+#'   `"treatment"`). Selects the DQ schema **and** is the measure level in the staged
+#'   path `.../{data_source}/{data_type}/staged/`. Default `"aggregate"`. Whatever you
+#'   pass here, **promote with the same measure** —
+#'   `eri_approve(country, disease, data_source, period, data_type = <same>)` — or the
+#'   approve will look one level up and find nothing. `NULL` stages channel-level
+#'   (four-axis), for the rare measure-less case.
 #' @param schema Named list from [load_dq_schema()]. If `NULL` (default), loaded
 #'   for `(country, disease, data_source, data_type)`.
 #' @param data_con Azure container for the `data` blob. If `NULL` (default),
