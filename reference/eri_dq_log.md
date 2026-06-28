@@ -3,8 +3,8 @@
 Writes the `$flags` from a
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
 result (plus a corrections count) to a YAML log in
-`{country}/{disease}/{data_type}/logs/` in the `data/` Azure blob, so
-the data-quality issues are durable and discoverable by
+`{country}/{disease}/{data_source}[/{data_type}]/logs/` in the `data/`
+Azure blob, so the data-quality issues are durable and discoverable by
 [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md).
 Without this,
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
@@ -15,7 +15,15 @@ calls this automatically.
 ## Usage
 
 ``` r
-eri_dq_log(result, country, disease, data_type, period = NULL, data_con = NULL)
+eri_dq_log(
+  result,
+  country,
+  disease,
+  data_source,
+  data_type = NULL,
+  period = NULL,
+  data_con = NULL
+)
 ```
 
 ## Arguments
@@ -33,9 +41,14 @@ eri_dq_log(result, country, disease, data_type, period = NULL, data_con = NULL)
 
   `chr` Disease name (e.g. `"oncho"`).
 
+- data_source:
+
+  `chr` The channel (`"surveillance"`, `"programmatic"`, `"research"`).
+
 - data_type:
 
-  `chr` Data type (`"surveillance"`, `"cmr"`, or `"odk"`).
+  `chr` or `NULL` The measure (e.g. `"case"`, `"treatment"`); `NULL`
+  (default) writes to the four-axis channel-level `logs/` directory.
 
 - period:
 

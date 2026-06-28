@@ -11,11 +11,12 @@ eri_catalog_register(
   path,
   country,
   disease,
-  data_type,
+  data_source,
   layer,
   period = NULL,
   row_count = NULL,
-  data_con = NULL
+  data_con = NULL,
+  data_type = NULL
 )
 ```
 
@@ -34,9 +35,9 @@ eri_catalog_register(
 
   `chr` Disease name (e.g. `"oncho"`).
 
-- data_type:
+- data_source:
 
-  `chr` Data type (e.g. `"surveillance"`, `"cmr"`, `"odk"`).
+  `chr` The channel (`"surveillance"`, `"programmatic"`, `"research"`).
 
 - layer:
 
@@ -55,6 +56,11 @@ eri_catalog_register(
   Azure container object for the `data/` blob. If `NULL`, connects
   automatically.
 
+- data_type:
+
+  `chr` or `NULL` The measure (e.g. `"case"`, `"treatment"`, `"tas"`);
+  `NULL` for legacy four-axis entries (ADR-0012).
+
 ## Value
 
 The registered entry (invisibly).
@@ -64,12 +70,13 @@ The registered entry (invisibly).
 ``` r
 if (FALSE) { # \dontrun{
 eri_catalog_register(
-  path      = "uga/oncho/surveillance/processed/2024_W01.parquet",
-  country   = "uga",
-  disease   = "oncho",
-  data_type = "surveillance",
-  layer     = "processed",
-  period    = "2024-W01"
+  path        = "uga/oncho/programmatic/treatment/processed/2024_06.parquet",
+  country     = "uga",
+  disease     = "oncho",
+  data_source = "programmatic",
+  data_type   = "treatment",
+  layer       = "processed",
+  period      = "2024-06"
 )
 } # }
 ```

@@ -7,9 +7,9 @@ Analyst identity is read from the ERI_ANALYST_ID environment variable,
 falling back to Sys.info()[["user"]] if it is unset or empty (in which case a
 one-time warning is emitted so the fallback attribution is not silent).
 An operation log capturing every step (including errors) is always written to
-{country}/{disease}/{data_type}/logs/ in the data container, regardless of
-whether the approval succeeds or fails. This log is the primary debugging
-artifact for pipeline issues.'><meta property="og:description" content='
+{country}/{disease}/{data_source}/{data_type}/logs/ in the data container,
+regardless of whether the approval succeeds or fails. This log is the primary
+debugging artifact for pipeline issues.'><meta property="og:description" content='
 The human approval gate in the three-layer pipeline. Finds all files in the
 staged/ directory whose names contain period, moves them to processed/,
 and writes a YAML approval log alongside them.
@@ -17,9 +17,9 @@ Analyst identity is read from the ERI_ANALYST_ID environment variable,
 falling back to Sys.info()[["user"]] if it is unset or empty (in which case a
 one-time warning is emitted so the fallback attribution is not silent).
 An operation log capturing every step (including errors) is always written to
-{country}/{disease}/{data_type}/logs/ in the data container, regardless of
-whether the approval succeeds or fails. This log is the primary debugging
-artifact for pipeline issues.'><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
+{country}/{disease}/{data_source}/{data_type}/logs/ in the data container,
+regardless of whether the approval succeeds or fails. This log is the primary
+debugging artifact for pipeline issues.'><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -81,14 +81,21 @@ and writes a YAML approval log alongside them.</p>
 falling back to <code>Sys.info()[["user"]]</code> if it is unset or empty (in which case a
 one-time warning is emitted so the fallback attribution is not silent).</p>
 <p>An operation log capturing every step (including errors) is always written to
-<code>{country}/{disease}/{data_type}/logs/</code> in the data container, regardless of
-whether the approval succeeds or fails. This log is the primary debugging
-artifact for pipeline issues.</p>
+<code>{country}/{disease}/{data_source}/{data_type}/logs/</code> in the data container,
+regardless of whether the approval succeeds or fails. This log is the primary
+debugging artifact for pipeline issues.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_approve</span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_type</span>, <span class="va">period</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_approve</span><span class="op">(</span></span>
+<span>  <span class="va">country</span>,</span>
+<span>  <span class="va">disease</span>,</span>
+<span>  <span class="va">data_source</span>,</span>
+<span>  <span class="va">period</span>,</span>
+<span>  data_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  azcontainer <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -103,14 +110,21 @@ artifact for pipeline issues.</p>
 <dd><p><code>str</code> Disease name (e.g. <code>"malaria"</code>).</p></dd>
 
 
-<dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
-<dd><p><code>str</code> Data input type: <code>"surveillance"</code>, <code>"cmr"</code>, or <code>"odk"</code>.</p></dd>
+<dt id="arg-data-source">data_source<a class="anchor" aria-label="anchor" href="#arg-data-source"></a></dt>
+<dd><p><code>str</code> The channel the data came through: <code>"surveillance"</code>,
+<code>"programmatic"</code>, or <code>"research"</code> (ADR-0012).</p></dd>
 
 
 <dt id="arg-period">period<a class="anchor" aria-label="anchor" href="#arg-period"></a></dt>
 <dd><p><code>str</code> Period string matched against staged filenames (e.g.
 <code>"2024-W01"</code>, <code>"2024-01"</code>). Any staged file whose name contains this string
 is promoted.</p></dd>
+
+
+<dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
+<dd><p><code>str</code> or <code>NULL</code> The measure the data captures (e.g. <code>"case"</code>,
+<code>"aggregate"</code>, <code>"treatment"</code>, <code>"tas"</code>). <code>NULL</code> (default) approves the legacy
+four-axis path <code>{country}/{disease}/{data_source}/...</code> without a measure level.</p></dd>
 
 
 <dt id="arg-azcontainer">azcontainer<a class="anchor" aria-label="anchor" href="#arg-azcontainer"></a></dt>
@@ -127,7 +141,11 @@ using <code>ERIFUNCTIONS_DATA_STORAGE_NAME</code>.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Four-axis (no measure): {country}/{disease}/{data_source}/...</span></span></span>
 <span class="r-in"><span><span class="fu">eri_approve</span><span class="op">(</span><span class="st">"dr"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"2024-W01"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Five-axis (with measure): {country}/{disease}/{data_source}/{data_type}/...</span></span></span>
+<span class="r-in"><span><span class="fu">eri_approve</span><span class="op">(</span><span class="st">"dr"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"2024-W01"</span>, data_type <span class="op">=</span> <span class="st">"case"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

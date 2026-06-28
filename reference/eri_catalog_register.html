@@ -65,11 +65,12 @@ in the <code>data/</code> Azure blob. Existing entries are matched by <code>path
 <span>  <span class="va">path</span>,</span>
 <span>  <span class="va">country</span>,</span>
 <span>  <span class="va">disease</span>,</span>
-<span>  <span class="va">data_type</span>,</span>
+<span>  <span class="va">data_source</span>,</span>
 <span>  <span class="va">layer</span>,</span>
 <span>  period <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  row_count <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  data_con <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data_type <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -89,8 +90,8 @@ in the <code>data/</code> Azure blob. Existing entries are matched by <code>path
 <dd><p><code>chr</code> Disease name (e.g. <code>"oncho"</code>).</p></dd>
 
 
-<dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
-<dd><p><code>chr</code> Data type (e.g. <code>"surveillance"</code>, <code>"cmr"</code>, <code>"odk"</code>).</p></dd>
+<dt id="arg-data-source">data_source<a class="anchor" aria-label="anchor" href="#arg-data-source"></a></dt>
+<dd><p><code>chr</code> The channel (<code>"surveillance"</code>, <code>"programmatic"</code>, <code>"research"</code>).</p></dd>
 
 
 <dt id="arg-layer">layer<a class="anchor" aria-label="anchor" href="#arg-layer"></a></dt>
@@ -108,6 +109,11 @@ in the <code>data/</code> Azure blob. Existing entries are matched by <code>path
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container object for the <code>data/</code> blob. If <code>NULL</code>, connects automatically.</p></dd>
 
+
+<dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> The measure (e.g. <code>"case"</code>, <code>"treatment"</code>, <code>"tas"</code>); <code>NULL</code> for
+legacy four-axis entries (ADR-0012).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -118,12 +124,13 @@ in the <code>data/</code> Azure blob. Existing entries are matched by <code>path
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">eri_catalog_register</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  path      <span class="op">=</span> <span class="st">"uga/oncho/surveillance/processed/2024_W01.parquet"</span>,</span></span>
-<span class="r-in"><span>  country   <span class="op">=</span> <span class="st">"uga"</span>,</span></span>
-<span class="r-in"><span>  disease   <span class="op">=</span> <span class="st">"oncho"</span>,</span></span>
-<span class="r-in"><span>  data_type <span class="op">=</span> <span class="st">"surveillance"</span>,</span></span>
-<span class="r-in"><span>  layer     <span class="op">=</span> <span class="st">"processed"</span>,</span></span>
-<span class="r-in"><span>  period    <span class="op">=</span> <span class="st">"2024-W01"</span></span></span>
+<span class="r-in"><span>  path        <span class="op">=</span> <span class="st">"uga/oncho/programmatic/treatment/processed/2024_06.parquet"</span>,</span></span>
+<span class="r-in"><span>  country     <span class="op">=</span> <span class="st">"uga"</span>,</span></span>
+<span class="r-in"><span>  disease     <span class="op">=</span> <span class="st">"oncho"</span>,</span></span>
+<span class="r-in"><span>  data_source <span class="op">=</span> <span class="st">"programmatic"</span>,</span></span>
+<span class="r-in"><span>  data_type   <span class="op">=</span> <span class="st">"treatment"</span>,</span></span>
+<span class="r-in"><span>  layer       <span class="op">=</span> <span class="st">"processed"</span>,</span></span>
+<span class="r-in"><span>  period      <span class="op">=</span> <span class="st">"2024-06"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

@@ -7,10 +7,10 @@ Reads the structured operation logs (written by
 [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md),
 …) and the DQ-flag logs (written by
 [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md))
-from `{country}/{disease}/{data_type}/logs/` in the `data/` Azure blob,
-and returns them as a triage backlog. Filter to failures with
-`status = "error"` or data-quality items with `status = "needs_review"`,
-then close items out with
+from `{country}/{disease}/{data_source}[/{data_type}]/logs/` in the
+`data/` Azure blob, and returns them as a triage backlog. Filter to
+failures with `status = "error"` or data-quality items with
+`status = "needs_review"`, then close items out with
 [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md).
 
 ## Usage
@@ -19,6 +19,7 @@ then close items out with
 eri_logs(
   country = NULL,
   disease = NULL,
+  data_source = NULL,
   data_type = NULL,
   status = NULL,
   operation = NULL,
@@ -31,10 +32,15 @@ eri_logs(
 
 ## Arguments
 
-- country, disease, data_type:
+- country, disease, data_source:
 
-  `chr` or `NULL` Scope the search. All three together read a single
-  `logs/` directory; any left `NULL` triggers enumeration.
+  `chr` or `NULL` Scope the search by country, disease, and channel; any
+  left `NULL` is enumerated from the blob.
+
+- data_type:
+
+  `chr` or `NULL` Scope to a single measure (the five-axis layout).
+  `NULL` reads the channel-level logs and every measure beneath it.
 
 - status:
 
@@ -67,15 +73,17 @@ eri_logs(
 ## Value
 
 A tibble, newest first, with columns: `log_path`, `timestamp`,
-`operation`, `status`, `analyst`, `country`, `disease`, `data_type`,
-`period`, `summary`, `n_issues`, `handled`, `handled_by`, `handled_at`.
+`operation`, `status`, `analyst`, `country`, `disease`, `data_source`,
+`data_type`, `period`, `summary`, `n_issues`, `handled`, `handled_by`,
+`handled_at`.
 
 ## Details
 
-If `country`, `disease`, and `data_type` are all supplied, only that one
-log directory is read (fast). Otherwise the function enumerates the data
-blob to build a system-wide backlog (slower); supplying filters narrows
-the scan.
+The function scopes the scan to whichever axes you supply and enumerates
+the rest from the blob; the more you supply (`country` → `disease` →
+`data_source` → `data_type`), the faster it is. It reads both the
+four-axis channel-level logs and the five-axis measure-level logs
+(ADR-0012).
 
 ## Examples
 
@@ -86,5 +94,8 @@ eri_logs(status = "error")
 
 # The backlog for one dataset
 eri_logs("uga", "oncho", "surveillance")
+
+# Scope to a single measure (five-axis)
+eri_logs("uga", "oncho", "programmatic", data_type = "treatment")
 } # }
 ```

@@ -111,7 +111,7 @@ a dataset (fast), or call it bare for a system-wide view:
 
 eri_logs("atlantis", "malaria", "surveillance")
 #> 2 logs (2 needing attention).
-#> # A tibble: 2 × 14
+#> # A tibble: 2 × 15
 #>   timestamp            operation   status       period  summary           analyst …
 #>   <chr>                <chr>       <chr>        <chr>   <chr>             <chr>
 #> 1 2026-06-26T10:00:00Z eri_approve error        2024-02 No staged files…  da.one
@@ -125,16 +125,18 @@ columns — shown trimmed here.) Filter to just the failures:
 
 eri_logs("atlantis", "malaria", "surveillance", status = "error")
 #> 1 log (1 needing attention).
-#> # A tibble: 1 × 14
+#> # A tibble: 1 × 15
 #>   operation   status period  summary
 #>   <chr>       <chr>  <chr>   <chr>
 #> 1 eri_approve error  2024-02 No staged files found matching '2024-02'.
 ```
 
 `status = "needs_review"` narrows to data-quality items instead;
-`operation =`, `analyst =`, and `since =` filter the rest. Leaving
-`country`/`disease`/`data_type` out scans the whole data blob for a
-**system-wide backlog** (scoping is faster).
+`operation =`, `analyst =`, and `since =` filter the rest. The tibble
+also carries `data_source` (the channel) and `data_type` (the measure,
+when the data was approved with one). Leaving
+`country`/`disease`/`data_source`/`data_type` out scans the whole data
+blob for a **system-wide backlog** (scoping is faster).
 
 ## 3. Resolve an item
 
@@ -160,7 +162,7 @@ data-quality item remains:
 
 eri_logs("atlantis", "malaria", "surveillance")
 #> 1 log (1 needing attention).
-#> # A tibble: 1 × 14
+#> # A tibble: 1 × 15
 #>   operation status       period  summary
 #>   <chr>     <chr>        <chr>   <chr>
 #> 1 dq_flags  needs_review 2024-01 2 flags

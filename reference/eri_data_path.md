@@ -33,7 +33,7 @@ eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 
 - data_source:
 
-  `str` The channel: `"surveillance"`, `"programmatic"`, `"odk"`
+  `str` The channel: `"surveillance"`, `"programmatic"`, `"research"`
   (extensible — see
   [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md);
   unknown values warn).

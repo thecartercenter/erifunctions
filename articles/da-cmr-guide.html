@@ -234,6 +234,14 @@ you approve with
 <code>eri_approve(country, "rblf", "cmr", period)</code>. Scaffolding a
 new country’s CMR with <code>eri_onboard_cmr(create_dirs = TRUE)</code>
 creates those same <code>{country}/rblf/cmr/</code> folders.</p>
+<p><strong>Transitional vocabulary.</strong> <code>rblf</code> and
+<code>cmr</code> are interim coordinates: under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
+≠ measure model (ADR-0012)</a>, CMR is a <em>format</em> of the
+<code>programmatic</code> channel, and each sheet splits to its own
+disease and measure (e.g. RB Treatment →
+<code>{country}/oncho/programmatic/treatment/</code>). Until that split
+ships, keep using <code>rblf</code>/<code>cmr</code> as shown here —
+don’t adopt them as the canonical addressing model.</p>
 </blockquote>
 </div>
 <div class="section level2">
@@ -307,11 +315,11 @@ dataset passes through. CMR uses <code>disease = "rblf"</code> and
 <p>The month’s report is now canonical and discoverable in the catalog
 like any other approved dataset:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_type <span class="op">=</span> <span class="st">"cmr"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 12</span></span>
-<span><span class="co">#&gt;   path                                country disease data_type layer     period …</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;                               &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;     &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 uga/rblf/cmr/processed/uga_cmr_202… uga     rblf    cmr       processed 202406</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"cmr"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 1 × 13</span></span>
+<span><span class="co">#&gt;   path                              country disease data_source data_type layer …</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                             &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uga/rblf/cmr/processed/uga_cmr_2… uga     rblf    cmr         NA        proces…</span></span></code></pre></div>
 <p>That’s the monthly loop: <strong>upload → stage → parse →
 approve.</strong></p>
 </div>

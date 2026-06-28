@@ -67,6 +67,7 @@ filter on that dimension.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_catalog_query</span><span class="op">(</span></span>
 <span>  country <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  disease <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data_source <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  data_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  layer <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -86,8 +87,12 @@ filter on that dimension.</p>
 <dd><p><code>chr</code> or <code>NULL</code> Filter by disease name.</p></dd>
 
 
+<dt id="arg-data-source">data_source<a class="anchor" aria-label="anchor" href="#arg-data-source"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> Filter by channel (<code>"surveillance"</code>, <code>"programmatic"</code>, ...).</p></dd>
+
+
 <dt id="arg-data-type">data_type<a class="anchor" aria-label="anchor" href="#arg-data-type"></a></dt>
-<dd><p><code>chr</code> or <code>NULL</code> Filter by data type.</p></dd>
+<dd><p><code>chr</code> or <code>NULL</code> Filter by measure (<code>"case"</code>, <code>"treatment"</code>, ...).</p></dd>
 
 
 <dt id="arg-layer">layer<a class="anchor" aria-label="anchor" href="#arg-layer"></a></dt>
@@ -104,9 +109,9 @@ filter on that dimension.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with columns: <code>path</code>, <code>country</code>, <code>disease</code>, <code>data_type</code>, <code>layer</code>,
-<code>period</code>, <code>file_format</code>, <code>row_count</code>, <code>size_bytes</code>, <code>registered_at</code>, <code>registered_by</code>,
-<code>last_verified_at</code>.</p>
+    <p>A tibble with columns: <code>path</code>, <code>country</code>, <code>disease</code>, <code>data_source</code>, <code>data_type</code>,
+<code>layer</code>, <code>period</code>, <code>file_format</code>, <code>row_count</code>, <code>size_bytes</code>, <code>registered_at</code>,
+<code>registered_by</code>, <code>last_verified_at</code>.</p>
     </div>
 
     <div class="section level2">

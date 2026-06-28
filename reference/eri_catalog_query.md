@@ -10,6 +10,7 @@ arguments are optional; `NULL` means no filter on that dimension.
 eri_catalog_query(
   country = NULL,
   disease = NULL,
+  data_source = NULL,
   data_type = NULL,
   layer = NULL,
   period = NULL,
@@ -27,9 +28,14 @@ eri_catalog_query(
 
   `chr` or `NULL` Filter by disease name.
 
+- data_source:
+
+  `chr` or `NULL` Filter by channel (`"surveillance"`, `"programmatic"`,
+  ...).
+
 - data_type:
 
-  `chr` or `NULL` Filter by data type.
+  `chr` or `NULL` Filter by measure (`"case"`, `"treatment"`, ...).
 
 - layer:
 
@@ -46,9 +52,9 @@ eri_catalog_query(
 
 ## Value
 
-A tibble with columns: `path`, `country`, `disease`, `data_type`,
-`layer`, `period`, `file_format`, `row_count`, `size_bytes`,
-`registered_at`, `registered_by`, `last_verified_at`.
+A tibble with columns: `path`, `country`, `disease`, `data_source`,
+`data_type`, `layer`, `period`, `file_format`, `row_count`,
+`size_bytes`, `registered_at`, `registered_by`, `last_verified_at`.
 
 ## Examples
 
