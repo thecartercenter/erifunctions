@@ -20,9 +20,17 @@
   then promotes each disease/measure. `dry_run = TRUE` returns the
   routing plan without writing.
 - The CMR schema gains two per-sheet keys, `disease` and `data_type`,
-  driving the routing. The bundled `uga` schema is the worked example;
-  the other countries’ routing keys and full real-template
-  reconciliation are tracked as follow-up.
+  driving the routing. **All seven registered countries**
+  (eth/nga/sdn/ssd/uga English, tcd/mad French) now carry routing keys,
+  so
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  works for each: Treatment sheets → the disease’s `treatment`, LF MMDP
+  → `lf`/`mmdp`, Training sheets → combined `rblf`/`training`, Surveys →
+  `rblf`/`survey`, River Prospection / Fly Collection →
+  `oncho`/`entomology` (Drug Inventory and SBCC are logistics/comms, not
+  split). The deeper reconciliation of each bundled schema’s sheet set
+  to its real template (monthly `_jan…_dec` columns, the larger real
+  sheet set) remains tracked as follow-up.
 - The `da-cmr-guide` now teaches `upload → stage → split → approve`,
   approving each disease/measure on its own coordinates instead of one
   combined `rblf`/`cmr` bucket.
