@@ -927,7 +927,9 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
 #'   is promoted.
 #' @param data_type `str` or `NULL` The measure the data captures (e.g. `"case"`,
 #'   `"aggregate"`, `"treatment"`, `"tas"`). `NULL` (default) approves the legacy
-#'   four-axis path `{country}/{disease}/{data_source}/...` without a measure level.
+#'   four-axis path `{country}/{disease}/{data_source}/...` without a measure level,
+#'   and the catalog entry's measure is recorded as `NA` — a one-time per-session
+#'   note points this out so it is a deliberate choice, not a silent omission.
 #' @param azcontainer Azure container object for the `data/` blob, returned by
 #'   [get_azure_storage_connection()]. If `NULL` (default), connects automatically
 #'   using `ERIFUNCTIONS_DATA_STORAGE_NAME`.
@@ -943,6 +945,7 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
 #' @export
 eri_approve <- function(country, disease, data_source, period, data_type = NULL, azcontainer = NULL) {
   .eri_log_session()
+  .eri_note_no_measure(data_type)
   if (is.null(azcontainer)) {
     azcontainer <- suppressMessages(
       get_azure_storage_connection(
@@ -1548,6 +1551,26 @@ eri_ingest <- function(path, country, disease,
     ))
   }
   fallback
+}
+
+#' Signpost the four-axis (no-measure) approval form
+#'
+#' When `eri_approve()` runs without a `data_type`, the dataset is filed and
+#' catalogued at the channel level with `data_type = NA` (the measure). That is a
+#' legitimate choice for channel-only data (e.g. ODK), but it is indistinguishable
+#' from forgetting the measure, so we say so **once per R session** (guarded by
+#' `options(erifunctions.noted_no_measure)`) rather than on every call. No-op when a
+#' measure is supplied.
+#' @keywords internal
+.eri_note_no_measure <- function(data_type) {
+  if (!is.null(data_type)) return(invisible(NULL))
+  if (isTRUE(getOption("erifunctions.noted_no_measure"))) return(invisible(NULL))
+  options(erifunctions.noted_no_measure = TRUE)
+  cli::cli_inform(c(
+    "i" = "Approving the channel-level (no-measure) form; the catalog entry's {.field data_type} will be {.val NA}.",
+    " " = "Pass {.arg data_type} (e.g. {.val case}, {.val aggregate}, {.val treatment}) to record a measure (ADR-0012)."
+  ))
+  invisible(NULL)
 }
 
 #' Write a one-time session access entry to the data/ container
