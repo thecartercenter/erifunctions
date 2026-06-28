@@ -36,10 +36,10 @@ eri_data_model()
 #>   MDA feeds); spans diseases.
 #> • research -- Research surveys/studies (household or community level);
 #>   DA-managed, flexible measure.
-#> • cmr -- (transitional) Legacy CMR source token; migrating to `programmatic` +
-#>   format: cmr.
-#> • odk -- (transitional) Legacy ODK source token; migrating to `research` +
-#>   format: odk.
+#> • cmr -- (transitional, legacy reads only) Old CMR source token; new CMR writes
+#>   use `programmatic` + format: cmr.
+#> • odk -- (transitional, legacy reads only) Old ODK source token; new ODK writes
+#>   use `research` + format: odk.
 #> 
 #> ── data_type (the measure / what it captures) ──
 #> 

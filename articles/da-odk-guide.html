@@ -115,18 +115,19 @@ against any server.</p>
 brings the data through it into one governed pipeline.</strong> You
 <strong>register</strong> a form (the registry is the team’s record of
 which forms are tracked), <strong>sync</strong> its submissions into
-<code>{country}/{disease}/odk/raw/</code>, and from there it flows
+<code>{country}/{disease}/research/raw/</code>, and from there it flows
 through the same <code>raw → staged → processed</code> lifecycle — with
 <a href="../reference/eri_approve.html"><code>eri_approve()</code></a>
 as the human gate — as every other dataset.</p>
-<p><strong>Transitional vocabulary.</strong> <code>odk</code> is an
-interim <code>data_source</code> token here. Under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
-≠ measure model (ADR-0012)</a>, ODK is a <em>format</em> of the
-<code>research</code> channel, and its measure (<code>tas</code>,
-<code>prevalence</code>, …) is optional — which is why this guide’s
-paths carry no measure level. Keep using <code>odk</code> as shown until
-the research adapter ships; don’t adopt it as the canonical channel
-name.</p>
+<p><strong>Where ODK lands.</strong> Under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
+≠ measure model (ADR-0012)</a>, ODK is the
+<strong><code>research</code></strong> channel’s collection
+<em>format</em> (<code>format: odk</code>), so
+<code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> writes to the <code>research</code> source.
+Its measure (<code>tas</code>, <code>prevalence</code>, …) is
+<strong>optional</strong> and assigned later, when you clean the form
+into a final dataset — which is why these paths carry no measure level
+yet.</p>
 </blockquote>
 <div class="mermaid">
 flowchart TD
@@ -134,7 +135,7 @@ flowchart TD
     B --&gt; C["init_odk_connection()"]
     C --&gt; D["Register the form (registry)"]
     D --&gt; E["Monitor + manage collectors"]
-    E --&gt; F["eri_odk_sync() -&gt; odk/raw/"]
+    E --&gt; F["eri_odk_sync() -&gt; research/raw/"]
     F --&gt; G["DQ -&gt; staged/"]
     G --&gt; H["eri_approve() -&gt; processed/"]
     H --&gt; Z["Clean up the sandbox"]
@@ -364,12 +365,12 @@ the registry with the sync time:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_sync.html">eri_odk_sync</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>, con <span class="op">=</span> <span class="va">con</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Downloading submissions for "eri_test_river_prospection" (uga/demo)...</span></span>
 <span><span class="co">#&gt; ℹ Downloaded 3 records from "eri_test_river_prospection".</span></span>
-<span><span class="co">#&gt; ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/odk/raw/eri_test_river_prospection.parquet.</span></span></code></pre></div>
+<span><span class="co">#&gt; ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/research/raw/eri_test_river_prospection.parquet.</span></span></code></pre></div>
 <p>Read it back to see what landed. ODK expands the form fields plus its
 own system columns (note the <code>gps</code> geopoint is split into
 latitude/longitude/altitude/accuracy):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/odk/raw/eri_test_river_prospection.parquet"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/research/raw/eri_test_river_prospection.parquet"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">raw</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "SubmissionDate"   "start"            "end"              "today"</span></span>
 <span><span class="co">#&gt;  [5] "site_name"        "prospection_date" "river_stage"      "blackfly_count"</span></span>
@@ -393,27 +394,30 @@ result to <code>staged/</code>, then <strong>approve</strong> it into
 the canonical <code>processed/</code> layer:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># (After any DQ checks.) Stage the data under a reporting period.</span></span>
-<span><span class="va">staged_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"demo"</span>, <span class="st">"odk"</span>, <span class="st">"staged"</span>,</span>
+<span><span class="va">staged_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"demo"</span>, <span class="st">"research"</span>, <span class="st">"staged"</span>,</span>
 <span>                             <span class="st">"eri_test_river_prospection_2026-06.parquet"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">raw</span>, <span class="va">staged_path</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"demo"</span>, <span class="st">"odk"</span>, <span class="st">"2026-06"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Channel-level approve (no measure yet); pass data_type = once you assign one.</span></span>
+<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"demo"</span>, <span class="st">"research"</span>, <span class="st">"2026-06"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ Approving the channel-level (no-measure) form; the catalog entry's data_type will be NA.</span></span>
+<span><span class="co">#&gt;   Pass data_type (e.g. "case", "aggregate", "treatment") to record a measure (ADR-0012).</span></span>
 <span><span class="co">#&gt; ✔ Catalog: registered eri_test_river_prospection_2026-06.parquet.</span></span>
 <span><span class="co">#&gt; ✔ Approved: eri_test_river_prospection_2026-06.parquet</span></span>
-<span><span class="co">#&gt; ✔ Approval log: uga/demo/odk/processed/2026-06_approval_log.yaml</span></span>
+<span><span class="co">#&gt; ✔ Approval log: uga/demo/research/processed/2026-06_approval_log.yaml</span></span>
 <span><span class="co">#&gt; ── ✔ Approved "2026-06" ─────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: uga / demo / odk</span></span>
+<span><span class="co">#&gt; Dataset: uga / demo / research</span></span>
 <span><span class="co">#&gt; Files: 1 moved to processed</span></span>
 <span><span class="co">#&gt; Approver: your.name</span></span>
-<span><span class="co">#&gt; Location: uga/demo/odk/processed</span></span></code></pre></div>
+<span><span class="co">#&gt; Location: uga/demo/research/processed</span></span></code></pre></div>
 <p>Your ODK submissions are now canonical, discoverable in the catalog
 like any other approved dataset:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, disease <span class="op">=</span> <span class="st">"demo"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 12</span></span>
-<span><span class="co">#&gt;   path                                  country disease data_type layer     period  …</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;                                 &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;     &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 uga/demo/odk/processed/eri_test_rive… uga     demo    odk       processed 2026-06</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 1 × 13</span></span>
+<span><span class="co">#&gt;   path                              country disease data_source data_type layer …</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                             &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uga/demo/research/processed/eri…  uga     demo    research    NA        proces…</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -511,11 +515,11 @@ sync — it writes <strong>each</strong> table to its own Parquet in the
 <span><span class="co">#&gt; ℹ Downloaded 2 tables from "eri_test_river_repeat":</span></span>
 <span><span class="co">#&gt; • "eri_test_river_repeat": 3 records</span></span>
 <span><span class="co">#&gt; • "eri_test_river_repeat-larva_sample": 7 records</span></span>
-<span><span class="co">#&gt; ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/odk/raw/'.</span></span></code></pre></div>
+<span><span class="co">#&gt; ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/research/raw/'.</span></span></code></pre></div>
 <p>You now have two files in <code>raw/</code> — a flat form would have
 left exactly one:</p>
-<pre><code><span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">odk</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat.parquet</span>                <span class="co"># parent: 3 submissions</span></span>
-<span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">odk</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat</span><span class="op">-</span><span class="va">larva_sample.parquet</span>   <span class="co"># child:  7 samples</span></span></code></pre>
+<pre><code><span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">research</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat.parquet</span>                <span class="co"># parent: 3 submissions</span></span>
+<span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">research</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat</span><span class="op">-</span><span class="va">larva_sample.parquet</span>   <span class="co"># child:  7 samples</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="rejoin-them-for-analysis">Rejoin them for analysis<a class="anchor" aria-label="anchor" href="#rejoin-them-for-analysis"></a>
@@ -525,8 +529,8 @@ lossless shape of the data. When you want one flat table (one row per
 sample, carrying its site context), join the child to the parent on
 <code>PARENT_KEY</code> = <code>KEY</code>:</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">parent</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/odk/raw/eri_test_river_repeat.parquet"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet"</span>,</span>
+<code class="sourceCode R"><span><span class="va">parent</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/research/raw/eri_test_river_repeat.parquet"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="st">"uga/demo/research/raw/eri_test_river_repeat-larva_sample.parquet"</span>,</span>
 <span>                    azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">flat</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>

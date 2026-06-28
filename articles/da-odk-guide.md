@@ -22,24 +22,27 @@ up**](#clean-up) section removes everything you created.
 > **ODK Central is the front door; `erifunctions` brings the data
 > through it into one governed pipeline.** You **register** a form (the
 > registry is the team’s record of which forms are tracked), **sync**
-> its submissions into `{country}/{disease}/odk/raw/`, and from there it
-> flows through the same `raw → staged → processed` lifecycle — with
+> its submissions into `{country}/{disease}/research/raw/`, and from
+> there it flows through the same `raw → staged → processed` lifecycle —
+> with
 > [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 > as the human gate — as every other dataset.
 >
-> **Transitional vocabulary.** `odk` is an interim `data_source` token
-> here. Under the [source ≠ measure model
+> **Where ODK lands.** Under the [source ≠ measure model
 > (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
-> ODK is a *format* of the `research` channel, and its measure (`tas`,
-> `prevalence`, …) is optional — which is why this guide’s paths carry
-> no measure level. Keep using `odk` as shown until the research adapter
-> ships; don’t adopt it as the canonical channel name.
+> ODK is the **`research`** channel’s collection *format*
+> (`format: odk`), so
+> [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+> writes to the `research` source. Its measure (`tas`, `prevalence`, …)
+> is **optional** and assigned later, when you clean the form into a
+> final dataset — which is why these paths carry no measure level yet.
 
 flowchart TD A\["Field teams collect on phones"\] --\> B\["ODK Central
 server"\] B --\> C\["init_odk_connection()"\] C --\> D\["Register the
 form (registry)"\] D --\> E\["Monitor + manage collectors"\] E --\>
-F\["eri_odk_sync() -\> odk/raw/"\] F --\> G\["DQ -\> staged/"\] G --\>
-H\["eri_approve() -\> processed/"\] H --\> Z\["Clean up the sandbox"\]
+F\["eri_odk_sync() -\> research/raw/"\] F --\> G\["DQ -\> staged/"\] G
+--\> H\["eri_approve() -\> processed/"\] H --\> Z\["Clean up the
+sandbox"\]
 
 ## Before you start
 
@@ -292,7 +295,7 @@ the **raw** layer, then stamps the registry with the sync time:
 eri_odk_sync(project_id = project_id, form_id = form_id, con = con, data_con = data_con)
 #> ℹ Downloading submissions for "eri_test_river_prospection" (uga/demo)...
 #> ℹ Downloaded 3 records from "eri_test_river_prospection".
-#> ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/odk/raw/eri_test_river_prospection.parquet.
+#> ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/research/raw/eri_test_river_prospection.parquet.
 ```
 
 Read it back to see what landed. ODK expands the form fields plus its
@@ -301,7 +304,7 @@ latitude/longitude/altitude/accuracy):
 
 ``` r
 
-raw <- eri_read("uga/demo/odk/raw/eri_test_river_prospection.parquet", azcontainer = data_con)
+raw <- eri_read("uga/demo/research/raw/eri_test_river_prospection.parquet", azcontainer = data_con)
 names(raw)
 #>  [1] "SubmissionDate"   "start"            "end"              "today"
 #>  [5] "site_name"        "prospection_date" "river_stage"      "blackfly_count"
@@ -330,22 +333,25 @@ cleaned result to `staged/`, then **approve** it into the canonical
 ``` r
 
 # (After any DQ checks.) Stage the data under a reporting period.
-staged_path <- eri_data_path("uga", "demo", "odk", "staged",
+staged_path <- eri_data_path("uga", "demo", "research", "staged",
                              "eri_test_river_prospection_2026-06.parquet")
 eri_write(raw, staged_path, azcontainer = data_con)
 ```
 
 ``` r
 
-eri_approve("uga", "demo", "odk", "2026-06", azcontainer = data_con)
+# Channel-level approve (no measure yet); pass data_type = once you assign one.
+eri_approve("uga", "demo", "research", "2026-06", azcontainer = data_con)
+#> ℹ Approving the channel-level (no-measure) form; the catalog entry's data_type will be NA.
+#>   Pass data_type (e.g. "case", "aggregate", "treatment") to record a measure (ADR-0012).
 #> ✔ Catalog: registered eri_test_river_prospection_2026-06.parquet.
 #> ✔ Approved: eri_test_river_prospection_2026-06.parquet
-#> ✔ Approval log: uga/demo/odk/processed/2026-06_approval_log.yaml
+#> ✔ Approval log: uga/demo/research/processed/2026-06_approval_log.yaml
 #> ── ✔ Approved "2026-06" ─────────────────────────────────
-#> Dataset: uga / demo / odk
+#> Dataset: uga / demo / research
 #> Files: 1 moved to processed
 #> Approver: your.name
-#> Location: uga/demo/odk/processed
+#> Location: uga/demo/research/processed
 ```
 
 Your ODK submissions are now canonical, discoverable in the catalog like
@@ -354,10 +360,10 @@ any other approved dataset:
 ``` r
 
 eri_catalog_query(country = "uga", disease = "demo", data_con = data_con)
-#> # A tibble: 1 × 12
-#>   path                                  country disease data_type layer     period  …
-#>   <chr>                                 <chr>   <chr>   <chr>     <chr>     <chr>
-#> 1 uga/demo/odk/processed/eri_test_rive… uga     demo    odk       processed 2026-06
+#> # A tibble: 1 × 13
+#>   path                              country disease data_source data_type layer …
+#>   <chr>                             <chr>   <chr>   <chr>       <chr>     <chr>
+#> 1 uga/demo/research/processed/eri…  uga     demo    research    NA        proces…
 ```
 
 ## 4. Forms with repeat groups
@@ -464,14 +470,14 @@ eri_odk_sync(project_id = project_id, form_id = repeat_form_id, con = con, data_
 #> ℹ Downloaded 2 tables from "eri_test_river_repeat":
 #> • "eri_test_river_repeat": 3 records
 #> • "eri_test_river_repeat-larva_sample": 7 records
-#> ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/odk/raw/'.
+#> ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/research/raw/'.
 ```
 
 You now have two files in `raw/` — a flat form would have left exactly
 one:
 
-    uga/demo/odk/raw/eri_test_river_repeat.parquet                # parent: 3 submissions
-    uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet   # child:  7 samples
+    uga/demo/research/raw/eri_test_river_repeat.parquet                # parent: 3 submissions
+    uga/demo/research/raw/eri_test_river_repeat-larva_sample.parquet   # child:  7 samples
 
 ### Rejoin them for analysis
 
@@ -482,8 +488,8 @@ carrying its site context), join the child to the parent on `PARENT_KEY`
 
 ``` r
 
-parent  <- eri_read("uga/demo/odk/raw/eri_test_river_repeat.parquet", azcontainer = data_con)
-samples <- eri_read("uga/demo/odk/raw/eri_test_river_repeat-larva_sample.parquet",
+parent  <- eri_read("uga/demo/research/raw/eri_test_river_repeat.parquet", azcontainer = data_con)
+samples <- eri_read("uga/demo/research/raw/eri_test_river_repeat-larva_sample.parquet",
                     azcontainer = data_con)
 
 flat <- dplyr::left_join(

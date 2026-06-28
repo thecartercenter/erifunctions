@@ -2,6 +2,22 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_odk_sync()` writes to the `research` channel (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 4)
+
+- [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+  now lands submissions in `data/{country}/{disease}/research/raw/` (was
+  `.../odk/raw/`), recording `data_source = "research"` +
+  `format = "odk"` in its operation log. ODK is the **research**
+  channel’s collection *format*, not a `data_source` of its own — so
+  this retires the transitional `odk` source token for new writes (the
+  measure is assigned later, when the analyst cleans the form into a
+  final dataset, so the path carries no measure level yet). The
+  `odk`/`cmr` tokens remain registered for **reading legacy data** and
+  are removed at the Phase-3 cutover. The `da-odk-guide` and
+  `connections-guide` are updated to the `research` paths and a
+  channel-level
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
+
 ### Feature: `eri_split_cmr()` routes a CMR per disease and measure (ADR-0012, [\#175](https://github.com/thecartercenter/erifunctions/issues/175) phase 4)
 
 - New `eri_split_cmr(path, country, …)` reads every routable sheet of a
