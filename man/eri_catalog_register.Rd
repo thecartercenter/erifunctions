@@ -8,11 +8,12 @@ eri_catalog_register(
   path,
   country,
   disease,
-  data_type,
+  data_source,
   layer,
   period = NULL,
   row_count = NULL,
-  data_con = NULL
+  data_con = NULL,
+  data_type = NULL
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ eri_catalog_register(
 
 \item{disease}{\code{chr} Disease name (e.g. \code{"oncho"}).}
 
-\item{data_type}{\code{chr} Data type (e.g. \code{"surveillance"}, \code{"cmr"}, \code{"odk"}).}
+\item{data_source}{\code{chr} The channel (\code{"surveillance"}, \code{"programmatic"}, \code{"research"}).}
 
 \item{layer}{\code{chr} Storage layer (\code{"raw"}, \code{"staged"}, or \code{"processed"}).}
 
@@ -31,6 +32,9 @@ eri_catalog_register(
 \item{row_count}{\code{int} or \code{NULL} Number of rows in the file, if known.}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{data_type}{\code{chr} or \code{NULL} The measure (e.g. \code{"case"}, \code{"treatment"}, \code{"tas"}); \code{NULL} for
+legacy four-axis entries (ADR-0012).}
 }
 \value{
 The registered entry (invisibly).
@@ -42,12 +46,13 @@ in the \verb{data/} Azure blob. Existing entries are matched by \code{path} (ups
 \examples{
 \dontrun{
 eri_catalog_register(
-  path      = "uga/oncho/surveillance/processed/2024_W01.parquet",
-  country   = "uga",
-  disease   = "oncho",
-  data_type = "surveillance",
-  layer     = "processed",
-  period    = "2024-W01"
+  path        = "uga/oncho/programmatic/treatment/processed/2024_06.parquet",
+  country     = "uga",
+  disease     = "oncho",
+  data_source = "programmatic",
+  data_type   = "treatment",
+  layer       = "processed",
+  period      = "2024-06"
 )
 }
 }

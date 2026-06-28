@@ -4,18 +4,30 @@
 \alias{eri_approve}
 \title{Approve staged data and promote it to processed}
 \usage{
-eri_approve(country, disease, data_type, period, azcontainer = NULL)
+eri_approve(
+  country,
+  disease,
+  data_source,
+  period,
+  data_type = NULL,
+  azcontainer = NULL
+)
 }
 \arguments{
 \item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}).}
 
 \item{disease}{\code{str} Disease name (e.g. \code{"malaria"}).}
 
-\item{data_type}{\code{str} Data input type: \code{"surveillance"}, \code{"cmr"}, or \code{"odk"}.}
+\item{data_source}{\code{str} The channel the data came through: \code{"surveillance"},
+\code{"programmatic"}, or \code{"research"} (ADR-0012).}
 
 \item{period}{\code{str} Period string matched against staged filenames (e.g.
 \code{"2024-W01"}, \code{"2024-01"}). Any staged file whose name contains this string
 is promoted.}
+
+\item{data_type}{\code{str} or \code{NULL} The measure the data captures (e.g. \code{"case"},
+\code{"aggregate"}, \code{"treatment"}, \code{"tas"}). \code{NULL} (default) approves the legacy
+four-axis path \code{{country}/{disease}/{data_source}/...} without a measure level.}
 
 \item{azcontainer}{Azure container object for the \verb{data/} blob, returned by
 \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}. If \code{NULL} (default), connects automatically
@@ -36,12 +48,16 @@ falling back to \code{Sys.info()[["user"]]} if it is unset or empty (in which ca
 one-time warning is emitted so the fallback attribution is not silent).
 
 An operation log capturing every step (including errors) is always written to
-\verb{\{country\}/\{disease\}/\{data_type\}/logs/} in the data container, regardless of
-whether the approval succeeds or fails. This log is the primary debugging
-artifact for pipeline issues.
+\verb{\{country\}/\{disease\}/\{data_source\}/\{data_type\}/logs/} in the data container,
+regardless of whether the approval succeeds or fails. This log is the primary
+debugging artifact for pipeline issues.
 }
 \examples{
 \dontrun{
+# Four-axis (no measure): {country}/{disease}/{data_source}/...
 eri_approve("dr", "malaria", "surveillance", "2024-W01")
+
+# Five-axis (with measure): {country}/{disease}/{data_source}/{data_type}/...
+eri_approve("dr", "malaria", "surveillance", "2024-W01", data_type = "case")
 }
 }

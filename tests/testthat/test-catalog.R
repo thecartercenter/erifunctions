@@ -5,17 +5,19 @@
 make_catalog <- function(...) list(entries = list(...))
 
 make_entry <- function(
-    path      = "uga/oncho/surveillance/processed/2024_W01.parquet",
-    country   = "uga",
-    disease   = "oncho",
-    data_type = "surveillance",
-    layer     = "processed",
-    period    = "2024-W01"
+    path        = "uga/oncho/surveillance/processed/2024_W01.parquet",
+    country     = "uga",
+    disease     = "oncho",
+    data_source = "surveillance",
+    data_type   = NA_character_,
+    layer       = "processed",
+    period      = "2024-W01"
 ) {
   list(
     path             = path,
     country          = country,
     disease          = disease,
+    data_source      = data_source,
     data_type        = data_type,
     layer            = layer,
     period           = period,
@@ -48,12 +50,12 @@ test_that("eri_catalog_register adds a new entry", {
   )
 
   out <- eri_catalog_register(
-    path      = "uga/oncho/surveillance/processed/2024_W01.parquet",
-    country   = "uga",
-    disease   = "oncho",
-    data_type = "surveillance",
-    layer     = "processed",
-    period    = "2024-W01"
+    path        = "uga/oncho/surveillance/processed/2024_W01.parquet",
+    country     = "uga",
+    disease     = "oncho",
+    data_source = "surveillance",
+    layer       = "processed",
+    period      = "2024-W01"
   )
 
   expect_equal(out$path, "uga/oncho/surveillance/processed/2024_W01.parquet")
@@ -81,17 +83,78 @@ test_that("eri_catalog_register upserts existing entry by path", {
   )
 
   eri_catalog_register(
-    path      = entry1$path,
-    country   = "uga",
-    disease   = "oncho",
-    data_type = "surveillance",
-    layer     = "processed",
-    period    = "2024-W01",
-    row_count = 500L
+    path        = entry1$path,
+    country     = "uga",
+    disease     = "oncho",
+    data_source = "surveillance",
+    layer       = "processed",
+    period      = "2024-W01",
+    row_count   = 500L
   )
 
   expect_length(stored$entries, 1L)
   expect_equal(stored$entries[[1]]$row_count, 500L)
+})
+
+test_that("eri_catalog_register records data_source and the optional data_type measure", {
+  stored <- list(entries = list())
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    storage_dir_exists  = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      stored$entries <<- yaml::read_yaml(src)$entries
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  out <- eri_catalog_register(
+    path        = "uga/oncho/programmatic/treatment/processed/2024_06.parquet",
+    country     = "uga",
+    disease     = "oncho",
+    data_source = "programmatic",
+    data_type   = "treatment",
+    layer       = "processed",
+    period      = "2024-06"
+  )
+
+  expect_equal(out$data_source, "programmatic")
+  expect_equal(out$data_type, "treatment")
+  expect_equal(stored$entries[[1]]$data_source, "programmatic")
+  expect_equal(stored$entries[[1]]$data_type, "treatment")
+})
+
+test_that("eri_catalog_register leaves data_type NA for the four-axis (no-measure) form", {
+  stored <- list(entries = list())
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) FALSE,
+    storage_dir_exists  = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      stored$entries <<- yaml::read_yaml(src)$entries
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  out <- eri_catalog_register(
+    path        = "uga/oncho/surveillance/processed/2024_W01.parquet",
+    country     = "uga",
+    disease     = "oncho",
+    data_source = "surveillance",
+    layer       = "processed",
+    period      = "2024-W01"
+  )
+
+  expect_equal(out$data_source, "surveillance")
+  expect_true(is.na(out$data_type))
 })
 
 # --- query --------------------------------------------------------------------
@@ -192,6 +255,37 @@ test_that("eri_catalog_query filters by multiple dimensions", {
   out <- eri_catalog_query(country = "uga", disease = "oncho", layer = "processed")
   expect_equal(nrow(out), 1L)
   expect_equal(out$path, e1$path)
+})
+
+test_that("eri_catalog_query filters by data_source and data_type (the measure)", {
+  e1 <- make_entry(country = "uga", disease = "oncho", data_source = "programmatic",
+                   data_type = "treatment",
+                   path = "uga/oncho/programmatic/treatment/processed/f1.parquet")
+  e2 <- make_entry(country = "uga", disease = "oncho", data_source = "programmatic",
+                   data_type = "mmdp",
+                   path = "uga/oncho/programmatic/mmdp/processed/f2.parquet")
+  e3 <- make_entry(country = "uga", disease = "malaria", data_source = "surveillance",
+                   data_type = "case",
+                   path = "uga/malaria/surveillance/case/processed/f3.parquet")
+  stored <- make_catalog(e1, e2, e3)
+
+  local_mocked_bindings(
+    storage_file_exists = function(...) TRUE,
+    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  by_source <- eri_catalog_query(data_source = "programmatic")
+  expect_equal(nrow(by_source), 2L)
+  expect_true(all(by_source$data_source == "programmatic"))
+
+  by_measure <- eri_catalog_query(data_source = "programmatic", data_type = "treatment")
+  expect_equal(nrow(by_measure), 1L)
+  expect_equal(by_measure$path, e1$path)
 })
 
 # --- verify -------------------------------------------------------------------
@@ -324,4 +418,41 @@ test_that("eri_approve calls eri_catalog_register for each moved file", {
   eri_approve("uga", "oncho", "surveillance", period = "2024_W01")
   expect_length(catalog_paths, 1L)
   expect_match(catalog_paths[[1]], "processed")
+})
+
+test_that("eri_approve threads data_type into a five-axis path and the catalog", {
+  listed_dirs   <- character(0)
+  reg_args      <- NULL
+  staged_files  <- tibble::tibble(
+    name = "uga/oncho/programmatic/treatment/staged/2024_06.parquet"
+  )
+
+  local_mocked_bindings(
+    storage_dir_exists   = function(...) TRUE,
+    list_storage_files   = function(container, dir, ...) {
+      listed_dirs <<- c(listed_dirs, dir)
+      staged_files
+    },
+    storage_download     = function(container, src, dest, ...) file.create(dest),
+    storage_upload       = function(...) invisible(NULL),
+    delete_storage_file  = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .eri_log_session = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    eri_catalog_register = function(...) { reg_args <<- list(...); invisible(NULL) },
+    .package = "erifunctions"
+  )
+
+  eri_approve("uga", "oncho", "programmatic", period = "2024_06",
+              data_type = "treatment")
+
+  # The staged dir it scanned carries the measure level.
+  expect_true(any(grepl("uga/oncho/programmatic/treatment/staged", listed_dirs)))
+  # The catalog registration records both axes.
+  expect_equal(reg_args$data_source, "programmatic")
+  expect_equal(reg_args$data_type, "treatment")
+  expect_match(reg_args$path, "uga/oncho/programmatic/treatment/processed")
 })

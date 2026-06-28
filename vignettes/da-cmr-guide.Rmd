@@ -200,11 +200,11 @@ eri_approve("uga", "rblf", "cmr", "202406")
 The month's report is now canonical and discoverable in the catalog like any other approved dataset:
 
 ```{r catalog}
-eri_catalog_query(country = "uga", data_type = "cmr")
-#> # A tibble: 1 × 12
-#>   path                                country disease data_type layer     period …
-#>   <chr>                               <chr>   <chr>   <chr>     <chr>     <chr>
-#> 1 uga/rblf/cmr/processed/uga_cmr_202… uga     rblf    cmr       processed 202406
+eri_catalog_query(country = "uga", data_source = "cmr")
+#> # A tibble: 1 × 13
+#>   path                              country disease data_source data_type layer …
+#>   <chr>                             <chr>   <chr>   <chr>       <chr>     <chr>
+#> 1 uga/rblf/cmr/processed/uga_cmr_2… uga     rblf    cmr         NA        proces…
 ```
 
 That's the monthly loop: **upload → stage → parse → approve.**
