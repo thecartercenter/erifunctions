@@ -307,6 +307,7 @@ eri_write(raw, staged_path, azcontainer = data_con)
 # Channel-level approve (no measure yet); pass data_type = once you assign one.
 eri_approve("uga", "demo", "research", "2026-06", azcontainer = data_con)
 #> ℹ Approving the channel-level (no-measure) form; the catalog entry's data_type will be NA.
+#>   Pass data_type (e.g. "case", "aggregate", "treatment") to record a measure (ADR-0012).
 #> ✔ Catalog: registered eri_test_river_prospection_2026-06.parquet.
 #> ✔ Approved: eri_test_river_prospection_2026-06.parquet
 #> ✔ Approval log: uga/demo/research/processed/2026-06_approval_log.yaml

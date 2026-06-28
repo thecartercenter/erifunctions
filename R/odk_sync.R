@@ -40,6 +40,7 @@ eri_odk_sync <- function(
     data_con = NULL,
     overwrite = TRUE
 ) {
+  .eri_log_session()
   data_con <- .odk_data_con(data_con)
   analyst  <- .eri_analyst_id()
 
@@ -71,7 +72,7 @@ eri_odk_sync <- function(
   # ODK is the research channel's collection format (ADR-0012): submissions land
   # in the `research` source (format: odk), not the retired `odk` source token.
   # The measure is assigned later when the DA cleans the form into a final dataset.
-  raw_dir    <- paste0(country, "/", disease, "/research/raw")
+  raw_dir    <- eri_data_path(country, disease, "research", "raw")
   blob_paths <- character(0)
   for (nm in names(tabs)) {
     bp <- paste0(raw_dir, "/", nm, ".parquet")
