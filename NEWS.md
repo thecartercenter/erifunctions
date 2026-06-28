@@ -1,5 +1,17 @@
 # erifunctions (development version)
 
+## Feature: `eri_ingest()` stages to the five-axis measure path (ADR-0012, #175 phase 4)
+
+- `eri_ingest()` now writes the cleaned parquet to
+  `data/{country}/{disease}/{data_source}/{data_type}/staged/` (the **measure** is in the path, not just
+  used to pick the schema), and its operation/DQ logs land alongside. So `eri_ingest()` →
+  `eri_approve(country, disease, data_source, period, data_type = …)` is now a consistent five-axis
+  round-trip. **Behaviour change:** with the default `data_type = "aggregate"`, a plain
+  `eri_ingest(path, country, disease)` now stages to `.../{data_source}/aggregate/staged/` (was
+  `.../{data_source}/staged/`); pass the matching `data_type` to `eri_approve()`. This finishes the
+  measure-into-path work for the ingest entry point and is the foundation the CMR per-disease split
+  builds on.
+
 ## Feature: `eri_approve()` signposts the no-measure (four-axis) form (ADR-0012, #175 phase 4)
 
 - When `eri_approve()` runs without a `data_type`, the dataset is filed and catalogued at the channel
