@@ -78,6 +78,8 @@ sheets:
       - "#mmdptrn_target"
       - "#mmdptrn_trained"
 
+  # Surgery training shares the MMDP-training field codes; it is a distinct sheet,
+  # so it stages as a distinct file in the same rblf/programmatic/training/ dir.
   "PCMPI Formation Chirurgie":
     field_code_prefix: "#mmdptrn_"
     disease: rblf
