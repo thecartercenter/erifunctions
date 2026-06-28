@@ -440,6 +440,9 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
   **\[experimental\]** : Trigger a registered GitHub Actions pipeline
 - [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
   **\[experimental\]** : Read and parse a CMR monthly report Excel file
+- [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  **\[experimental\]** : Split a CMR monthly report into per-disease,
+  per-measure staged datasets
 - [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
   **\[experimental\]** : Stage CMR monthly report files into the data/
   blob

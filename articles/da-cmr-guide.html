@@ -112,7 +112,8 @@ flowchart TD
     B --&gt; C["eri_stage_cmr(): projects -&gt; staged/"]
     C --&gt; D["eri_ingest_cmr(): parse each sheet by its #field codes"]
     D --&gt; E["Review the numbers"]
-    E --&gt; F["eri_approve(): staged -&gt; processed/ + catalog"]
+    E --&gt; F["eri_split_cmr(): route each sheet to {disease}/programmatic/{measure}/staged/"]
+    F --&gt; G["eri_approve() each disease/measure -&gt; processed/ + catalog"]
 </div>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
@@ -234,14 +235,15 @@ you approve with
 <code>eri_approve(country, "rblf", "cmr", period)</code>. Scaffolding a
 new country’s CMR with <code>eri_onboard_cmr(create_dirs = TRUE)</code>
 creates those same <code>{country}/rblf/cmr/</code> folders.</p>
-<p><strong>Transitional vocabulary.</strong> <code>rblf</code> and
-<code>cmr</code> are interim coordinates: under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
+<p><strong>From <code>rblf</code>/<code>cmr</code> to
+per-disease.</strong> <code>rblf</code>/<code>cmr</code> were interim
+coordinates: under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
 ≠ measure model (ADR-0012)</a>, CMR is a <em>format</em> of the
-<code>programmatic</code> channel, and each sheet splits to its own
-disease and measure (e.g. RB Treatment →
-<code>{country}/oncho/programmatic/treatment/</code>). Until that split
-ships, keep using <code>rblf</code>/<code>cmr</code> as shown here —
-don’t adopt them as the canonical addressing model.</p>
+<code>programmatic</code> channel, and <a href="#split"><code>eri_split_cmr()</code></a> (below) routes each sheet
+to its own disease and measure — e.g. RB Treatment →
+<code>{country}/oncho/programmatic/treatment/</code>. You then approve
+<strong>each disease/measure</strong>, not one combined
+<code>rblf</code>/<code>cmr</code> bucket.</p>
 </blockquote>
 </div>
 <div class="section level2">
@@ -295,32 +297,74 @@ slug</strong> and the country, and the schema’s
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="approve">4. Approve it<a class="anchor" aria-label="anchor" href="#approve"></a>
+<h2 id="split">4. Split it by disease and measure<a class="anchor" aria-label="anchor" href="#split"></a>
 </h2>
-<p>Once the numbers look right, promote the staged report to the
-canonical <code>processed/</code> layer with the same human gate every
-dataset passes through. CMR uses <code>disease = "rblf"</code> and
-<code>data_type = "cmr"</code>:</p>
+<p>The sheets are per-programme, but the canonical store is
+<strong>per-disease</strong>. <a href="../reference/eri_split_cmr.html"><code>eri_split_cmr()</code></a>
+reads every routable sheet and routes its rows to
+<code>{country}/{disease}/programmatic/{measure}/staged/</code> — the
+<strong>disease from the sheet</strong> (RB Treatment →
+<code>oncho</code>, SCH Treatment → <code>sch</code>, LF MMDP →
+<code>lf</code>), the <strong>measure from its category</strong>. It
+reads the Excel <strong>directly</strong> (here the bundled example; in
+real work the file you uploaded), independently of the
+<code>rblf/cmr/staged/</code> copy <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> made —
+that copy is the raw archive; this is the parse + route. Preview the
+routing first with <code>dry_run</code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"rblf"</span>, <span class="st">"cmr"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Catalog: registered uga_cmr_2024_06.xlsx.</span></span>
-<span><span class="co">#&gt; ✔ Approved: uga_cmr_2024_06.xlsx</span></span>
-<span><span class="co">#&gt; ✔ Approval log: uga/rblf/cmr/processed/202406_approval_log.yaml</span></span>
-<span><span class="co">#&gt; ── ✔ Approved "202406" ─────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: uga / rblf / cmr</span></span>
-<span><span class="co">#&gt; Files: 1 moved to processed</span></span>
-<span><span class="co">#&gt; Approver: your.name</span></span>
-<span><span class="co">#&gt; Location: uga/rblf/cmr/processed</span></span>
-<span><span class="co">#&gt; ℹ Operation log: uga/rblf/cmr/logs/20240705_141500_eri_approve_202406.yaml</span></span></code></pre></div>
-<p>The month’s report is now canonical and discoverable in the catalog
-like any other approved dataset:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.</span></span>
+<span><span class="co">#&gt; ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.</span></span>
+<span><span class="co">#&gt; ℹ Dry run -- nothing written. Routing plan:</span></span>
+<span><span class="co">#&gt;   "RB Treatment"  -&gt; uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)</span></span>
+<span><span class="co">#&gt;   "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)</span></span></code></pre></div>
+<blockquote>
+<p><strong>Why the sheet, not the row?</strong> Each sheet carries a
+per-row <code>#…_disease</code> field whose values are
+<em>programme-coverage</em> codes (<code>RB</code> / <code>RBLF</code> /
+<code>RBLFSCH</code> — which programmes run at that location),
+<strong>not</strong> a single disease. <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>
+keeps that field as a data column and takes the routing disease from the
+sheet, so the same treatment numbers are <strong>never
+duplicated</strong> across diseases. Cross-programme
+<strong>Training</strong> sheets, which serve all programmes at once,
+route together under the combined <code>rblf</code> disease.</p>
+</blockquote>
+<p>Then stage for real — one parquet per sheet, in its disease/measure
+folder:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"cmr"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 13</span></span>
-<span><span class="co">#&gt;   path                              country disease data_source data_type layer …</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;                             &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;     &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 uga/rblf/cmr/processed/uga_cmr_2… uga     rblf    cmr         NA        proces…</span></span></code></pre></div>
-<p>That’s the monthly loop: <strong>upload → stage → parse →
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ "RB Treatment"  -&gt; uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet</span></span>
+<span><span class="co">#&gt; ✔ "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet</span></span>
+<span><span class="co">#&gt; ── ✔ Split CMR by disease/measure ───────────────────────</span></span>
+<span><span class="co">#&gt; Sheets: 2 routed</span></span>
+<span><span class="co">#&gt; Diseases: oncho, sch</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="approve">5. Approve each disease/measure<a class="anchor" aria-label="anchor" href="#approve"></a>
+</h2>
+<p>Each split dataset passes through the same human gate — once per
+disease/measure:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"oncho"</span>, <span class="st">"programmatic"</span>, <span class="st">"202406"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Approved: cmr-example_rb_treatment.parquet</span></span>
+<span><span class="co">#&gt; ── ✔ Approved "202406" ──────────────────────────────────</span></span>
+<span><span class="co">#&gt; Dataset: uga / oncho / programmatic / treatment</span></span>
+<span><span class="co">#&gt; Location: uga/oncho/programmatic/treatment/processed</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"sch"</span>, <span class="st">"programmatic"</span>, <span class="st">"202406"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ── ✔ Approved "202406" ──────────────────────────────────</span></span>
+<span><span class="co">#&gt; Dataset: uga / sch / programmatic / treatment</span></span></code></pre></div>
+<p>Each disease’s data is now canonical and discoverable in the catalog
+on its own coordinates:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 13</span></span>
+<span><span class="co">#&gt;   path                              country disease data_source  data_type layer …</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                             &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;        &lt;chr&gt;     &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uga/oncho/programmatic/treatmen…  uga     oncho   programmatic treatment proce…</span></span>
+<span><span class="co">#&gt; 2 uga/sch/programmatic/treatment/…  uga     sch     programmatic treatment proce…</span></span></code></pre></div>
+<p>That’s the monthly loop: <strong>upload → stage → split →
 approve.</strong></p>
 </div>
 <div class="section level2">
@@ -332,6 +376,14 @@ approve.</strong></p>
 schema (which sheets, which field codes) has to exist first — see the
 CMR section of the <a href="da-onboard-guide.html">onboarding guide</a>
 (<code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code>).</li>
+<li>
+<strong><code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> says “No routable
+sheets”?</strong> A sheet only routes when its schema entry declares a
+<code>disease</code> and a <code>data_type</code>. <code>uga</code> is
+the worked example; other countries’ routing keys are being filled in —
+add them to the country’s <code>inst/schemas/cmr/{code}.yaml</code> (one
+<code>disease</code> + <code>data_type</code> per sheet) to enable the
+split there.</li>
 <li>The <a href="da-ingest-guide.html">surveillance ingest guide</a>
 covers the same <code>raw → staged → approved</code> gate for line-list
 data, and the data-catalog mechanics in more depth.</li>

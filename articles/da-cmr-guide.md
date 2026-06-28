@@ -22,8 +22,9 @@ exactly the same way.
 flowchart TD A\["Country files the monthly CMR Excel"\] --\> B\["Upload
 to the projects blob"\] B --\> C\["eri_stage_cmr(): projects -\>
 staged/"\] C --\> D\["eri_ingest_cmr(): parse each sheet by its \#field
-codes"\] D --\> E\["Review the numbers"\] E --\> F\["eri_approve():
-staged -\> processed/ + catalog"\]
+codes"\] D --\> E\["Review the numbers"\] E --\> F\["eri_split_cmr():
+route each sheet to {disease}/programmatic/{measure}/staged/"\] F --\>
+G\["eri_approve() each disease/measure -\> processed/ + catalog"\]
 
 ## Before you start
 
@@ -129,14 +130,14 @@ Only the registered RB-expansion countries — `eth`, `nga`, `sdn`, `ssd`,
 > country’s CMR with `eri_onboard_cmr(create_dirs = TRUE)` creates those
 > same `{country}/rblf/cmr/` folders.
 >
-> **Transitional vocabulary.** `rblf` and `cmr` are interim coordinates:
-> under the [source ≠ measure model
+> **From `rblf`/`cmr` to per-disease.** `rblf`/`cmr` were interim
+> coordinates: under the [source ≠ measure model
 > (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
-> CMR is a *format* of the `programmatic` channel, and each sheet splits
-> to its own disease and measure (e.g. RB Treatment →
-> `{country}/oncho/programmatic/treatment/`). Until that split ships,
-> keep using `rblf`/`cmr` as shown here — don’t adopt them as the
-> canonical addressing model.
+> CMR is a *format* of the `programmatic` channel, and
+> [`eri_split_cmr()`](#split) (below) routes each sheet to its own
+> disease and measure — e.g. RB Treatment →
+> `{country}/oncho/programmatic/treatment/`. You then approve **each
+> disease/measure**, not one combined `rblf`/`cmr` bucket.
 
 ## 3. Parse each sheet
 
@@ -199,39 +200,86 @@ on across every monthly file. This is the moment to eyeball the numbers
 > #> ✔ CMR sheet "Oncho Traitement": 24 data rows, 6 field codes.
 > ```
 
-## 4. Approve it
+## 4. Split it by disease and measure
 
-Once the numbers look right, promote the staged report to the canonical
-`processed/` layer with the same human gate every dataset passes
-through. CMR uses `disease = "rblf"` and `data_type = "cmr"`:
-
-``` r
-
-eri_approve("uga", "rblf", "cmr", "202406")
-#> ✔ Catalog: registered uga_cmr_2024_06.xlsx.
-#> ✔ Approved: uga_cmr_2024_06.xlsx
-#> ✔ Approval log: uga/rblf/cmr/processed/202406_approval_log.yaml
-#> ── ✔ Approved "202406" ─────────────────────────────────
-#> Dataset: uga / rblf / cmr
-#> Files: 1 moved to processed
-#> Approver: your.name
-#> Location: uga/rblf/cmr/processed
-#> ℹ Operation log: uga/rblf/cmr/logs/20240705_141500_eri_approve_202406.yaml
-```
-
-The month’s report is now canonical and discoverable in the catalog like
-any other approved dataset:
+The sheets are per-programme, but the canonical store is
+**per-disease**.
+[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+reads every routable sheet and routes its rows to
+`{country}/{disease}/programmatic/{measure}/staged/` — the **disease
+from the sheet** (RB Treatment → `oncho`, SCH Treatment → `sch`, LF MMDP
+→ `lf`), the **measure from its category**. It reads the Excel
+**directly** (here the bundled example; in real work the file you
+uploaded), independently of the `rblf/cmr/staged/` copy
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+made — that copy is the raw archive; this is the parse + route. Preview
+the routing first with `dry_run`:
 
 ``` r
 
-eri_catalog_query(country = "uga", data_source = "cmr")
-#> # A tibble: 1 × 13
-#>   path                              country disease data_source data_type layer …
-#>   <chr>                             <chr>   <chr>   <chr>       <chr>     <chr>
-#> 1 uga/rblf/cmr/processed/uga_cmr_2… uga     rblf    cmr         NA        proces…
+eri_split_cmr(report, "uga", dry_run = TRUE)
+#> ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.
+#> ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.
+#> ℹ Dry run -- nothing written. Routing plan:
+#>   "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)
+#>   "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)
 ```
 
-That’s the monthly loop: **upload → stage → parse → approve.**
+> **Why the sheet, not the row?** Each sheet carries a per-row
+> `#…_disease` field whose values are *programme-coverage* codes (`RB` /
+> `RBLF` / `RBLFSCH` — which programmes run at that location), **not** a
+> single disease.
+> [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+> keeps that field as a data column and takes the routing disease from
+> the sheet, so the same treatment numbers are **never duplicated**
+> across diseases. Cross-programme **Training** sheets, which serve all
+> programmes at once, route together under the combined `rblf` disease.
+
+Then stage for real — one parquet per sheet, in its disease/measure
+folder:
+
+``` r
+
+eri_split_cmr(report, "uga")
+#> ✔ "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet
+#> ✔ "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet
+#> ── ✔ Split CMR by disease/measure ───────────────────────
+#> Sheets: 2 routed
+#> Diseases: oncho, sch
+```
+
+## 5. Approve each disease/measure
+
+Each split dataset passes through the same human gate — once per
+disease/measure:
+
+``` r
+
+eri_approve("uga", "oncho", "programmatic", "202406", data_type = "treatment")
+#> ✔ Approved: cmr-example_rb_treatment.parquet
+#> ── ✔ Approved "202406" ──────────────────────────────────
+#> Dataset: uga / oncho / programmatic / treatment
+#> Location: uga/oncho/programmatic/treatment/processed
+
+eri_approve("uga", "sch", "programmatic", "202406", data_type = "treatment")
+#> ── ✔ Approved "202406" ──────────────────────────────────
+#> Dataset: uga / sch / programmatic / treatment
+```
+
+Each disease’s data is now canonical and discoverable in the catalog on
+its own coordinates:
+
+``` r
+
+eri_catalog_query(country = "uga", data_source = "programmatic")
+#> # A tibble: 2 × 13
+#>   path                              country disease data_source  data_type layer …
+#>   <chr>                             <chr>   <chr>   <chr>        <chr>     <chr>
+#> 1 uga/oncho/programmatic/treatmen…  uga     oncho   programmatic treatment proce…
+#> 2 uga/sch/programmatic/treatment/…  uga     sch     programmatic treatment proce…
+```
+
+That’s the monthly loop: **upload → stage → split → approve.**
 
 ## What’s next
 
@@ -240,6 +288,12 @@ That’s the monthly loop: **upload → stage → parse → approve.**
   the [onboarding
   guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
   ([`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md)).
+- **[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  says “No routable sheets”?** A sheet only routes when its schema entry
+  declares a `disease` and a `data_type`. `uga` is the worked example;
+  other countries’ routing keys are being filled in — add them to the
+  country’s `inst/schemas/cmr/{code}.yaml` (one `disease` + `data_type`
+  per sheet) to enable the split there.
 - The [surveillance ingest
   guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
   covers the same `raw → staged → approved` gate for line-list data, and
