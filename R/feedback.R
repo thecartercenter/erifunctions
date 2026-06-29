@@ -311,3 +311,295 @@ eri_feedback_board <- function(data_con = NULL) {
   }
   invisible(tbl)
 }
+
+#### eri_feedback_report ####
+
+.ERI_FEEDBACK_OPEN   <- c("submitted", "planned", "in_progress")
+.ERI_FEEDBACK_CLOSED <- c("fixed", "declined")
+
+# Parse an ISO-8601 "...Z" timestamp to POSIXct (UTC); NA on empty/unparseable.
+#' @keywords internal
+.eri_parse_ts <- function(x) {
+  if (is.null(x) || length(x) != 1L || is.na(x) || !nzchar(x)) return(as.POSIXct(NA))
+  suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+}
+
+# The closing note = the note on the ticket's most recent history transition.
+#' @keywords internal
+.eri_feedback_last_note <- function(e) {
+  h <- e$history
+  if (is.null(h) || length(h) == 0L) return(NA_character_)
+  note <- h[[length(h)]]$note
+  if (is.null(note) || length(note) == 0L || is.na(note)) NA_character_ else as.character(note)
+}
+
+# Split the entries into the report's three buckets relative to a `since` cutoff.
+#' @keywords internal
+.eri_feedback_buckets <- function(entries, since_days) {
+  cutoff   <- Sys.time() - since_days * 86400
+  status_of <- function(e) tolower(e$status %||% "submitted")
+
+  ord <- function(es, ts_field, decreasing) {
+    if (length(es) == 0L) return(es)
+    ts <- as.numeric(vapply(es, function(e) {
+      t <- .eri_parse_ts(e[[ts_field]] %||% e$submitted_at %||% "")
+      if (is.na(t)) 0 else as.numeric(t)
+    }, numeric(1L)))
+    es[order(ts, decreasing = decreasing)]
+  }
+
+  is_new <- vapply(entries, function(e) {
+    ts <- .eri_parse_ts(e$submitted_at %||% ""); !is.na(ts) && ts >= cutoff
+  }, logical(1L))
+  is_closed_recent <- vapply(entries, function(e) {
+    status_of(e) %in% .ERI_FEEDBACK_CLOSED && {
+      ts <- .eri_parse_ts(e$updated_at %||% e$submitted_at %||% "")
+      !is.na(ts) && ts >= cutoff
+    }
+  }, logical(1L))
+  is_open <- vapply(entries, function(e) status_of(e) %in% .ERI_FEEDBACK_OPEN, logical(1L))
+
+  # Open backlog ordered by lifecycle stage, then id.
+  open <- entries[is_open]
+  if (length(open) > 0L) {
+    stage <- match(vapply(open, status_of, character(1L)), .ERI_FEEDBACK_STATUSES)
+    ids   <- vapply(open, function(e) as.integer(e$id %||% 0L), integer(1L))
+    open  <- open[order(stage, ids)]
+  }
+
+  list(
+    new    = ord(entries[is_new],           "submitted_at", decreasing = TRUE),
+    closed = ord(entries[is_closed_recent], "updated_at",   decreasing = TRUE),
+    open   = open
+  )
+}
+
+#' Write a weekly feedback report (HTML or markdown)
+#'
+#' Renders the feedback backlog from `_feedback/feedback_log.yaml` to a
+#' self-contained file: a status **board**, then a weekly digest — **new** tickets
+#' filed within `since_days`, tickets **closed** (fixed/declined) within
+#' `since_days` with their closing note, and the **open** backlog in lifecycle
+#' order. Built for a quick standing review so the team stays current (ADR-0014).
+#'
+#' @param file `chr` or `NULL` Output path. If `NULL`, writes
+#'   `feedback-report-<date>.<ext>` in the working directory.
+#' @param format `chr` `"html"` (default, self-contained, open in a browser) or
+#'   `"md"` (GitHub-flavoured markdown).
+#' @param since_days `num` The digest window in days. Default `7` (a weekly report).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns The output file path (invisibly).
+#' @examples
+#' \dontrun{
+#' eri_feedback_report()                       # feedback-report-<today>.html
+#' eri_feedback_report(format = "md", since_days = 14)
+#' }
+#' @seealso [eri_feedback_board()] for the console summary, [eri_feedback_status()] to triage.
+#' @export
+eri_feedback_report <- function(file = NULL, format = c("html", "md"),
+                                since_days = 7, data_con = NULL) {
+  format <- match.arg(format)
+  if (!is.numeric(since_days) || length(since_days) != 1L || is.na(since_days) || since_days < 0) {
+    cli::cli_abort("{.arg since_days} must be a single non-negative number.")
+  }
+
+  data_con <- .eri_feedback_con(data_con)
+  log      <- .eri_yaml_read_versioned(data_con, .ERI_FEEDBACK_PATH,
+                                       default = list(entries = list()))$data
+  entries  <- log$entries %||% list()
+
+  ext  <- if (format == "html") "html" else "md"
+  if (is.null(file)) {
+    file <- file.path(getwd(), paste0("feedback-report-", format(Sys.Date()), ".", ext))
+  }
+
+  content <- if (format == "html") {
+    .eri_feedback_render_html(entries, since_days)
+  } else {
+    .eri_feedback_render_md(entries, since_days)
+  }
+  writeLines(content, file, useBytes = TRUE)
+
+  n_open <- sum(vapply(entries, function(e) {
+    tolower(e$status %||% "submitted") %in% .ERI_FEEDBACK_OPEN
+  }, logical(1L)))
+  cli::cli_alert_success(
+    "Feedback report ({length(entries)} ticket{?s} · {n_open} open) written to {.path {file}}."
+  )
+  invisible(file)
+}
+
+# Shared bits ------------------------------------------------------------------
+
+#' @keywords internal
+.eri_feedback_counts <- function(entries) {
+  statuses <- vapply(entries, function(e) tolower(e$status %||% "submitted"), character(1L))
+  vapply(.ERI_FEEDBACK_STATUSES, function(s) sum(statuses == s), integer(1L))
+}
+
+#' @keywords internal
+.eri_html_escape <- function(x) {
+  x <- as.character(x)
+  x <- gsub("&", "&amp;", x, fixed = TRUE)
+  x <- gsub("<", "&lt;",  x, fixed = TRUE)
+  x <- gsub(">", "&gt;",  x, fixed = TRUE)
+  x
+}
+
+# HTML renderer ----------------------------------------------------------------
+
+#' @keywords internal
+.eri_feedback_render_html <- function(entries, since_days) {
+  esc      <- .eri_html_escape
+  gen      <- format(Sys.time(), "%Y-%m-%d %H:%M UTC", tz = "UTC")
+  counts   <- .eri_feedback_counts(entries)
+  n_total  <- length(entries)
+  n_open   <- sum(counts[.ERI_FEEDBACK_OPEN])
+
+  css <- paste(
+    "body{font-family:'Source Sans 3',system-ui,Segoe UI,Roboto,sans-serif;color:#1c2638;",
+    "max-width:960px;margin:2rem auto;padding:0 1.2rem;line-height:1.45}",
+    "h1{font-family:'Source Serif 4',Georgia,serif;color:#001737;margin-bottom:.2rem}",
+    "h2{font-family:'Source Serif 4',Georgia,serif;color:#001737;margin-top:2rem;",
+    "border-bottom:1px solid #dde6ef;padding-bottom:.3rem}",
+    ".meta{color:#5b6678;margin-bottom:1rem}",
+    ".board{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}",
+    ".chip{border-radius:999px;padding:.25rem .7rem;font-size:.85rem;font-weight:600;",
+    "background:#f3f6fa;border:1px solid #dde6ef;color:#1c2638}",
+    ".chip b{color:#001737}",
+    ".chip.fixed{background:#e7f5ec;border-color:#cfe6d6;color:#00873f}",
+    "table{border-collapse:collapse;width:100%;margin:.5rem 0;font-size:.92rem}",
+    "th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid #eef2f7;vertical-align:top}",
+    "th{color:#5b6678;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}",
+    "td.id{font-variant-numeric:tabular-nums;color:#135aa6;font-weight:700;white-space:nowrap}",
+    ".tag{font-size:.74rem;font-weight:700;border-radius:6px;padding:.1rem .4rem;background:#eef2f7;color:#41617f}",
+    ".empty{color:#5b6678;font-style:italic}",
+    sep = ""
+  )
+
+  row <- function(cells) paste0("<tr>", paste0(cells, collapse = ""), "</tr>")
+  td  <- function(x, cls = "") paste0("<td", if (nzchar(cls)) paste0(" class='", cls, "'") else "", ">", x, "</td>")
+  th  <- function(xs) paste0("<tr>", paste0("<th>", xs, "</th>", collapse = ""), "</tr>")
+
+  fmt_date <- function(x) { d <- substr(x %||% "", 1L, 10L); if (is.na(d) || !nzchar(d)) "—" else d }
+
+  tbl_new <- function(es) {
+    if (length(es) == 0L) return("<p class='empty'>Nothing new this week.</p>")
+    rows <- vapply(es, function(e) row(c(
+      td(paste0("#", e$id), "id"), td(paste0("<span class='tag'>", esc(e$area), "</span>")),
+      td(esc(e$message)), td(esc(e$submitted_by)), td(fmt_date(e$submitted_at))
+    )), character(1L))
+    paste0("<table>", th(c("Ticket", "Area", "Feedback", "From", "Filed")),
+           paste0(rows, collapse = ""), "</table>")
+  }
+  tbl_closed <- function(es) {
+    if (length(es) == 0L) return("<p class='empty'>Nothing closed this week.</p>")
+    rows <- vapply(es, function(e) {
+      note <- .eri_feedback_last_note(e); note <- if (is.na(note)) "—" else esc(note)
+      row(c(
+        td(paste0("#", e$id), "id"), td(paste0("<span class='tag'>", esc(tolower(e$status)), "</span>")),
+        td(esc(e$message)), td(note), td(fmt_date(e$updated_at %||% e$submitted_at))
+      ))
+    }, character(1L))
+    paste0("<table>", th(c("Ticket", "Status", "Feedback", "Note", "When")),
+           paste0(rows, collapse = ""), "</table>")
+  }
+  tbl_open <- function(es) {
+    if (length(es) == 0L) return("<p class='empty'>Nothing open — backlog clear.</p>")
+    rows <- vapply(es, function(e) row(c(
+      td(paste0("#", e$id), "id"), td(paste0("<span class='tag'>", esc(tolower(e$status %||% "submitted")), "</span>")),
+      td(paste0("<span class='tag'>", esc(e$area), "</span>")), td(esc(e$message)),
+      td(fmt_date(e$submitted_at)), td(fmt_date(e$updated_at))
+    )), character(1L))
+    paste0("<table>", th(c("Ticket", "Status", "Area", "Feedback", "Filed", "Updated")),
+           paste0(rows, collapse = ""), "</table>")
+  }
+
+  if (n_total == 0L) {
+    body <- "<p class='empty'>No feedback logged yet.</p>"
+  } else {
+    b <- .eri_feedback_buckets(entries, since_days)
+    chips <- paste0(vapply(.ERI_FEEDBACK_STATUSES, function(s) {
+      cls <- if (s == "fixed") "chip fixed" else "chip"
+      paste0("<span class='", cls, "'><b>", counts[[s]], "</b> ", s, "</span>")
+    }, character(1L)), collapse = "")
+    body <- paste0(
+      "<div class='board'>", chips, "</div>",
+      "<h2>New this week (", length(b$new), ")</h2>", tbl_new(b$new),
+      "<h2>Closed this week (", length(b$closed), ")</h2>", tbl_closed(b$closed),
+      "<h2>Open backlog (", length(b$open), ")</h2>", tbl_open(b$open)
+    )
+  }
+
+  paste0(
+    "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>",
+    "<title>ERI feedback backlog</title>",
+    "<link href='https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&",
+    "family=Source+Sans+3:wght@400;600;700&display=swap' rel='stylesheet'>",
+    "<style>", css, "</style></head><body>",
+    "<h1>ERI feedback backlog</h1>",
+    "<p class='meta'>Generated ", gen, " · ", n_total, " ticket", if (n_total == 1L) "" else "s",
+    " · ", n_open, " open · last ", since_days, " days highlighted</p>",
+    body, "</body></html>"
+  )
+}
+
+# Markdown renderer ------------------------------------------------------------
+
+#' @keywords internal
+.eri_feedback_render_md <- function(entries, since_days) {
+  gen     <- format(Sys.time(), "%Y-%m-%d %H:%M UTC", tz = "UTC")
+  counts  <- .eri_feedback_counts(entries)
+  n_total <- length(entries)
+  n_open  <- sum(counts[.ERI_FEEDBACK_OPEN])
+
+  # Escape pipes/newlines so messages don't break the markdown table.
+  cell <- function(x) {
+    x <- as.character(x %||% "")
+    x <- gsub("\\|", "\\\\|", x); x <- gsub("[\r\n]+", " ", x)
+    if (!nzchar(x)) "—" else x
+  }
+  fmt_date <- function(x) { d <- substr(x %||% "", 1L, 10L); if (is.na(d) || !nzchar(d)) "—" else d }
+  mdrow <- function(cells) paste0("| ", paste0(cells, collapse = " | "), " |")
+
+  header <- c(
+    "# ERI feedback backlog",
+    "",
+    paste0("_Generated ", gen, " · ", n_total, " ticket", if (n_total == 1L) "" else "s",
+           " · ", n_open, " open · last ", since_days, " days highlighted_"),
+    ""
+  )
+
+  if (n_total == 0L) return(c(header, "_No feedback logged yet._"))
+
+  b <- .eri_feedback_buckets(entries, since_days)
+  board <- paste0("**Board:** ",
+    paste0(vapply(.ERI_FEEDBACK_STATUSES, function(s) paste0("**", counts[[s]], "** ", s),
+                  character(1L)), collapse = " · "))
+
+  sec_new <- if (length(b$new) == 0L) "_Nothing new this week._" else c(
+    mdrow(c("#", "Area", "Feedback", "From", "Filed")),
+    mdrow(rep("---", 5L)),
+    vapply(b$new, function(e) mdrow(c(paste0("#", e$id), cell(e$area), cell(e$message),
+                                      cell(e$submitted_by), fmt_date(e$submitted_at))), character(1L))
+  )
+  sec_closed <- if (length(b$closed) == 0L) "_Nothing closed this week._" else c(
+    mdrow(c("#", "Status", "Feedback", "Note", "When")),
+    mdrow(rep("---", 5L)),
+    vapply(b$closed, function(e) mdrow(c(paste0("#", e$id), cell(tolower(e$status)), cell(e$message),
+                                         cell(.eri_feedback_last_note(e)),
+                                         fmt_date(e$updated_at %||% e$submitted_at))), character(1L))
+  )
+  sec_open <- if (length(b$open) == 0L) "_Nothing open — backlog clear._" else c(
+    mdrow(c("#", "Status", "Area", "Feedback", "Filed", "Updated")),
+    mdrow(rep("---", 6L)),
+    vapply(b$open, function(e) mdrow(c(paste0("#", e$id), cell(tolower(e$status %||% "submitted")),
+                                       cell(e$area), cell(e$message),
+                                       fmt_date(e$submitted_at), fmt_date(e$updated_at))), character(1L))
+  )
+
+  c(header, board, "",
+    paste0("## New this week (", length(b$new), ")"),    "", sec_new, "",
+    paste0("## Closed this week (", length(b$closed), ")"), "", sec_closed, "",
+    paste0("## Open backlog (", length(b$open), ")"),    "", sec_open)
+}

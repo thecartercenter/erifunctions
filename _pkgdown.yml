@@ -197,6 +197,7 @@ reference:
   - eri_feedback_list
   - eri_feedback_status
   - eri_feedback_board
+  - eri_feedback_report
 
 - title: ODK
   desc: Register forms, sync submissions, monitor surveys, and manage users.
