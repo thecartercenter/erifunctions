@@ -1,0 +1,125 @@
+---
+title: "Branded tables, figures, and decks for outputs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Branded tables, figures, and decks for outputs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+Once data is approved, a lot of the job is turning it into **outputs** — a table for a memo, a figure
+for proceedings, a workbook for a partner, a slide deck for a meeting. `erifunctions` ships a small,
+consistent **reporting toolkit** so those come out on-brand without fiddling with styling each time.
+
+This guide is the general toolkit (it runs on any data frame). Specific recurring reports get their own
+templates as they're defined; the domain figures — **maps** and **epidemic curves** — live in the
+[spatial workflow](spatial-workflow.html) and [epi analytics](epi-analytics.html) guides.
+
+## Before you start {#before-you-start}
+
+```{r library}
+library(erifunctions)
+```
+
+In practice you'd pull approved data first — `eri_query()` for a roll-up (see the
+[ad-hoc guide](da-adhoc-guide.html)) or `eri_read()` for one dataset. Here we use a small frame so every
+chunk runs as-is:
+
+```{r data}
+dat <- data.frame(
+  province   = c("North", "South", "East", "West"),
+  cases      = c(420, 180, 260, 95),
+  tested     = c(1200, 600, 900, 400)
+)
+dat$positivity <- round(dat$cases / dat$tested * 100, 1)
+```
+
+## A branded table {#table}
+
+[`eri_table()`](../reference/eri_table.html) turns a data frame into a styled
+[`flextable`](https://davidgohel.github.io/flextable/) — ERI navy header, banded rows, an optional
+title and footnote — ready to drop into an HTML/Word/PowerPoint output:
+
+```{r table}
+eri_table(
+  dat,
+  title          = "Malaria cases by province, 2026",
+  footnote       = "Source: sandbox data",
+  highlight_cols = "positivity"
+)
+```
+
+It returns a `flextable` object; print it in a report, or hand it to the Word/PowerPoint/HTML helpers.
+`highlight_cols` shades the columns you want the eye to land on.
+
+## An on-brand figure {#figure}
+
+Any `ggplot` becomes on-brand by adding [`eri_brand_ggplot_theme()`](../reference/eri_brand_ggplot_theme.html):
+
+```{r plot}
+library(ggplot2)
+p <- ggplot(dat, aes(x = province, y = cases)) +
+  geom_col() +
+  labs(title = "Cases by province", x = NULL, y = "Cases") +
+  eri_brand_ggplot_theme()
+p
+```
+
+For domain figures there are purpose-built helpers — `eri_plot_theme("map" | "epicurve")` and
+`eri_color_scheme()` (e.g. the standard `"malaria.incidence"` bins), and the `eri_map_*` family for
+choropleths and point maps. Those need boundary data; the [spatial workflow](spatial-workflow.html)
+guide covers them end-to-end, and [epi analytics](epi-analytics.html) covers `eri_epidemic_curve()`.
+
+## An Excel workbook {#excel}
+
+For a partner who wants the numbers, [`eri_report_excel()`](../reference/eri_report_excel.html) writes a
+styled multi-sheet workbook in one call — each named element of `sheets` becomes a tab:
+
+```{r excel}
+eri_report_excel(
+  sheets = list(Cases = dat),
+  path   = "malaria_summary_2026.xlsx",
+  title  = "Malaria summary 2026"
+)
+#> ✔ Workbook saved to 'malaria_summary_2026.xlsx'
+```
+
+Need finer control (multiple sheets, added titles)? Build it up with `eri_wb_create()` →
+`eri_wb_add_sheet()` → `eri_wb_save()`.
+
+## A slide deck for proceedings {#pptx}
+
+The `eri_pptx_*` family builds a PowerPoint slide by slide — title, sections, tables, and plots — so a
+meeting deck is reproducible code, not manual copy-paste:
+
+```{r pptx}
+deck <- eri_pptx_create()
+deck <- eri_pptx_add_title(deck, "Malaria Summary 2026", subtitle = "ERI")
+deck <- eri_pptx_add_table(deck, dat, title = "Cases by province")
+deck <- eri_pptx_add_plot(deck, p, title = "Cases by province")
+eri_pptx_save(deck, "malaria_summary_2026.pptx")
+#> ✔ Presentation saved to 'malaria_summary_2026.pptx'
+```
+
+Each `eri_pptx_add_*` call returns the updated deck, so you pipe or reassign as you go. `eri_pptx_create()`
+accepts a `template =` to start from a branded master.
+
+## An HTML report {#html}
+
+[`eri_report_html()`](../reference/eri_report_html.html) assembles a self-contained HTML page from
+`sections` (text, tables, and plots), for a quick shareable write-up. For a full parameterised report,
+`eri_report_qmd_template()` scaffolds a Quarto document you fill in.
+
+## What's next
+
+- **Maps:** the [spatial workflow](spatial-workflow.html) — choropleths, incidence maps, insets.
+- **Curves & indicators:** [epi analytics](epi-analytics.html) — `eri_epidemic_curve()`, incidence,
+  disease helpers.
+- **Where the data comes from:** the [ad-hoc guide](da-adhoc-guide.html) (`eri_query`) and the
+  [ingest guide](da-ingest-guide.html).
+- The [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md).
+```
