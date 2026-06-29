@@ -16,16 +16,8 @@
   cat
 }
 
-# Write catalog list back to Azure.
-#' @keywords internal
-.eri_catalog_write <- function(catalog, data_con) {
-  tmp <- tempfile(fileext = ".yaml")
-  withr::defer(unlink(tmp))
-  yaml::write_yaml(catalog, tmp)
-  dir_path <- dirname(.ERI_CATALOG_PATH)
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, tmp, .ERI_CATALOG_PATH)
-}
+# All catalog writes now go through `.eri_yaml_update()` (ADR-0002); there is no
+# unconditional whole-file writer, so a future edit can't reintroduce the race.
 
 # Resolve data container from arg or env vars.
 #' @keywords internal
@@ -104,19 +96,23 @@ eri_catalog_register <- function(
 ) {
   data_con <- .eri_catalog_con(data_con)
   analyst  <- .eri_analyst_id(data_con)
-  catalog  <- .eri_catalog_read(data_con)
 
   entry    <- .eri_catalog_entry(path, country, disease, data_source, layer,
                                   period, row_count, analyst, data_type = data_type)
 
-  existing <- vapply(catalog$entries, function(e) identical(e$path, path), logical(1L))
-  if (any(existing)) {
-    catalog$entries[[which(existing)[[1L]]]] <- entry
-  } else {
-    catalog$entries <- c(catalog$entries, list(entry))
-  }
+  # Concurrency-safe upsert by path (ADR-0002): re-applied on each retry so a
+  # racing writer's entry is preserved rather than clobbered.
+  .eri_yaml_update(data_con, .ERI_CATALOG_PATH, function(catalog) {
+    if (is.null(catalog$entries)) catalog$entries <- list()
+    existing <- vapply(catalog$entries, function(e) identical(e$path, path), logical(1L))
+    if (any(existing)) {
+      catalog$entries[[which(existing)[[1L]]]] <- entry
+    } else {
+      catalog$entries <- c(catalog$entries, list(entry))
+    }
+    catalog
+  }, default = list(entries = list()))
 
-  .eri_catalog_write(catalog, data_con)
   cli::cli_alert_success("Catalog: registered {.path {basename(path)}}.")
   invisible(entry)
 }
@@ -155,8 +151,14 @@ eri_catalog_remove <- function(path, data_con = NULL) {
     return(invisible(FALSE))
   }
 
-  catalog$entries <- catalog$entries[!matches]
-  .eri_catalog_write(catalog, data_con)
+  # Concurrency-safe removal by path (ADR-0002).
+  .eri_yaml_update(data_con, .ERI_CATALOG_PATH, function(catalog) {
+    if (is.null(catalog$entries)) catalog$entries <- list()
+    drop <- vapply(catalog$entries, function(e) identical(e$path, path), logical(1L))
+    catalog$entries <- catalog$entries[!drop]
+    catalog
+  }, default = list(entries = list()))
+
   cli::cli_alert_success("Catalog: removed {.path {basename(path)}}.")
   invisible(TRUE)
 }
@@ -304,7 +306,21 @@ eri_catalog_verify <- function(data_con = NULL) {
     if (exists) catalog$entries[[i]]$last_verified_at <- now
   }
 
-  .eri_catalog_write(catalog, data_con)
+  # Persist the new last_verified_at stamps concurrency-safely (ADR-0002): the
+  # existence checks above ran on a snapshot, so re-stamp by path on the freshly
+  # read catalog rather than writing our whole stale copy back (which would clobber
+  # a register that landed during verification). The expensive existence checks
+  # stay out of the retry loop.
+  verified_paths <- vapply(catalog$entries[exists_vec], function(e) e$path, character(1L))
+  .eri_yaml_update(data_con, .ERI_CATALOG_PATH, function(cat_fresh) {
+    if (is.null(cat_fresh$entries)) cat_fresh$entries <- list()
+    for (i in seq_along(cat_fresh$entries)) {
+      if (cat_fresh$entries[[i]]$path %in% verified_paths) {
+        cat_fresh$entries[[i]]$last_verified_at <- now
+      }
+    }
+    cat_fresh
+  }, default = list(entries = list()))
 
   n_ok      <- sum(exists_vec)
   n_missing <- sum(!exists_vec)
@@ -336,4 +352,88 @@ eri_catalog_verify <- function(data_con = NULL) {
     last_verified_at = vapply(entries, function(e) .na_chr(e$last_verified_at), character(1L)),
     exists           = exists_vec
   )
+}
+
+#### eri_catalog_rebuild ####
+
+# Reconstruct a single catalog entry from a processed-layer blob path.
+# Canonical shapes (ADR-0012):
+#   {country}/{disease}/{data_source}/{data_type}/processed/{file}   (five-axis)
+#   {country}/{disease}/{data_source}/processed/{file}               (legacy four-axis)
+# Returns NULL for any path that is not a processed-layer parquet under those shapes.
+#' @keywords internal
+.eri_catalog_entry_from_path <- function(path) {
+  parts <- strsplit(path, "/", fixed = TRUE)[[1L]]
+  parts <- parts[nzchar(parts)]
+  proc  <- which(parts == "processed")
+  # Need exactly one "processed" segment with the file immediately after it, and
+  # either 3 (four-axis) or 4 (five-axis) axis segments before it.
+  if (length(proc) != 1L) return(NULL)
+  proc <- proc[[1L]]
+  if (proc != 4L && proc != 5L) return(NULL)
+  if (length(parts) != proc + 1L) return(NULL)
+
+  file <- parts[[proc + 1L]]
+  if (!identical(tolower(tools::file_ext(file)), "parquet")) return(NULL)
+
+  data_type <- if (proc == 5L) parts[[4L]] else NULL
+  .eri_catalog_entry(
+    path        = path,
+    country     = parts[[1L]],
+    disease     = parts[[2L]],
+    data_source = parts[[3L]],
+    layer       = "processed",
+    period      = tools::file_path_sans_ext(file),
+    row_count   = NULL,
+    analyst     = "rebuilt",
+    data_type   = data_type
+  )
+}
+
+#' Rebuild the data catalog by scanning the processed layer
+#'
+#' Reconstructs `_catalog/data_catalog.yaml` from the actual processed-layer
+#' Parquet files in the `data/` Azure blob, making the catalog a **derivable
+#' cache** rather than an irreplaceable record (ADR-0002). Every
+#' `*/processed/*.parquet` path matching the five-axis data model
+#' (`{country}/{disease}/{data_source}/{data_type}/processed/`) — or the legacy
+#' four-axis form — becomes an entry. `registered_by` is set to `"rebuilt"` and
+#' `row_count` is left `NA` (the file is not opened). Use it to recover from a
+#' lost or corrupted catalog, or to pick up files written outside
+#' [eri_catalog_register()].
+#'
+#' The rebuilt catalog **replaces** the existing one; entries for files that no
+#' longer exist are dropped. Provenance fields that can only come from the
+#' original registration (the real `registered_by`, `row_count`) are not
+#' recovered — re-run [eri_catalog_verify()] afterwards if needed.
+#'
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns The rebuilt catalog tibble (invisibly), as from [eri_catalog_query()].
+#' @examples
+#' \dontrun{
+#' eri_catalog_rebuild()
+#' }
+#' @export
+eri_catalog_rebuild <- function(data_con = NULL) {
+  data_con <- .eri_catalog_con(data_con)
+
+  all_files <- AzureStor::list_storage_files(
+    data_con, "/", info = "name", recursive = TRUE
+  )
+  all_files <- as.character(all_files)
+
+  entries <- Filter(Negate(is.null), lapply(all_files, .eri_catalog_entry_from_path))
+
+  # Rebuild is a deliberate "replace from ground truth" operation: the mutate
+  # discards the freshly-read catalog and writes the reconstruction wholesale, so
+  # under contention it is intentionally last-writer-wins against a concurrent
+  # register (the conditional write still guarantees the replacement is atomic).
+  .eri_yaml_update(
+    data_con, .ERI_CATALOG_PATH,
+    function(catalog) list(entries = entries),
+    default = list(entries = list())
+  )
+
+  cli::cli_alert_success("Rebuilt catalog: {length(entries)} entr{?y/ies}.")
+  invisible(suppressMessages(eri_catalog_query(data_con = data_con)))
 }

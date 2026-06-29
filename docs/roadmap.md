@@ -145,15 +145,18 @@ identity load-bearing.
 > zero-config browser auth via baked non-secret defaults ([ADR-0008](adr/0008-baked-azure-auth-defaults.md)) —
 > because epidemiologists couldn't use the package without it. Token-derived approver identity
 > (`.eri_token_identity()`, below) remains the Phase 2 work.
-- Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
-  `R/artifacts.R`); add `eri_catalog_rebuild()`.
+- ~~Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
+  `R/artifacts.R`); add `eri_catalog_rebuild()`.~~ **Shipped** — catalog/registry/artifact writes go
+  through `.eri_yaml_update()` (read-with-ETag, conditional `If-Match`/`If-None-Match` write, re-read +
+  retry on 412); `eri_catalog_rebuild()` reconstructs the catalog from the processed-layer parquet
+  listing (ADR-0002). **Closes Phase 2.**
 - ~~`.eri_token_identity()`; `eri_approve()` uses verified identity.~~ **Shipped** — governed actions
   (approve `approved_by`, catalog `registered_by`, op-logs) record the verified Azure AD token identity;
   `ERI_ANALYST_ID` is the service-principal fallback (ADR-0003).
 - ~~`eri_query()` DuckDB-over-parquet read layer.~~ **Shipped** — catalog-driven roll-ups + explicit-table
   joins over processed parquet via an in-process DuckDB session (`duckdb`/`DBI` as Suggests). Brought
-  forward to close the DA ad-hoc-request task; the rest of Phase 2 (concurrency-safe metadata, token
-  identity) remains.
+  forward to close the DA ad-hoc-request task ahead of the rest of Phase 2 (concurrency-safe metadata
+  and token identity), which has since shipped.
 
 **Verification:** concurrent-writer unit test shows no lost updates; a spoofed
 `ERI_ANALYST_ID` no longer changes `approved_by`; `eri_query()` SQL across two processed

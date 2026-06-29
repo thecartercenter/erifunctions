@@ -34,16 +34,8 @@ make_entry <- function(
 # --- register -----------------------------------------------------------------
 
 test_that("eri_catalog_register adds a new entry", {
-  stored <- list(entries = list())
-
-  local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored$entries <<- yaml::read_yaml(src)$entries
-    },
-    .package = "AzureStor"
-  )
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
     .package = "erifunctions"
@@ -61,22 +53,13 @@ test_that("eri_catalog_register adds a new entry", {
   expect_equal(out$path, "uga/oncho/surveillance/processed/2024_W01.parquet")
   expect_equal(out$country, "uga")
   expect_equal(out$file_format, "parquet")
-  expect_length(stored$entries, 1L)
+  expect_length(store$data$entries, 1L)
 })
 
 test_that("eri_catalog_register upserts existing entry by path", {
   entry1 <- make_entry()
-  stored <- make_catalog(entry1)
-
-  local_mocked_bindings(
-    storage_file_exists = function(...) TRUE,
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
-    .package = "AzureStor"
-  )
+  store  <- new_yaml_store(make_catalog(entry1))
+  local_yaml_store(store)
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
     .package = "erifunctions"
@@ -92,21 +75,13 @@ test_that("eri_catalog_register upserts existing entry by path", {
     row_count   = 500L
   )
 
-  expect_length(stored$entries, 1L)
-  expect_equal(stored$entries[[1]]$row_count, 500L)
+  expect_length(store$data$entries, 1L)
+  expect_equal(store$data$entries[[1]]$row_count, 500L)
 })
 
 test_that("eri_catalog_register records data_source and the optional data_type measure", {
-  stored <- list(entries = list())
-
-  local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored$entries <<- yaml::read_yaml(src)$entries
-    },
-    .package = "AzureStor"
-  )
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
     .package = "erifunctions"
@@ -124,21 +99,13 @@ test_that("eri_catalog_register records data_source and the optional data_type m
 
   expect_equal(out$data_source, "programmatic")
   expect_equal(out$data_type, "treatment")
-  expect_equal(stored$entries[[1]]$data_source, "programmatic")
-  expect_equal(stored$entries[[1]]$data_type, "treatment")
+  expect_equal(store$data$entries[[1]]$data_source, "programmatic")
+  expect_equal(store$data$entries[[1]]$data_type, "treatment")
 })
 
 test_that("eri_catalog_register leaves data_type NA for the four-axis (no-measure) form", {
-  stored <- list(entries = list())
-
-  local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored$entries <<- yaml::read_yaml(src)$entries
-    },
-    .package = "AzureStor"
-  )
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
     .package = "erifunctions"
@@ -321,22 +288,16 @@ test_that("eri_catalog_verify returns exists column", {
   e1 <- make_entry(path = "uga/oncho/surveillance/processed/exists.parquet")
   e2 <- make_entry(path = "uga/oncho/surveillance/processed/missing.parquet",
                    period = "2024-W02")
-  stored <- make_catalog(e1, e2)
+  store <- new_yaml_store(make_catalog(e1, e2))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      if (path == erifunctions:::.ERI_CATALOG_PATH) return(TRUE)
-      grepl("exists\\.parquet", path)
-    },
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
+    storage_file_exists = function(container, path, ...) grepl("exists\\.parquet", path),
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
+    .eri_catalog_read = function(data_con) store$data,   # pre-read snapshot
     .package = "erifunctions"
   )
 
@@ -347,28 +308,22 @@ test_that("eri_catalog_verify returns exists column", {
 })
 
 test_that("eri_catalog_verify updates last_verified_at for existing entries", {
-  e1 <- make_entry()
-  stored <- make_catalog(e1)
+  e1    <- make_entry()
+  store <- new_yaml_store(make_catalog(e1))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      if (path == erifunctions:::.ERI_CATALOG_PATH) return(TRUE)
-      TRUE
-    },
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
+    storage_file_exists = function(container, path, ...) TRUE,   # entry exists in Azure
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
+    .eri_catalog_read = function(data_con) store$data,           # pre-read snapshot
     .package = "erifunctions"
   )
 
   eri_catalog_verify()
-  expect_false(is.na(stored$entries[[1]]$last_verified_at))
+  expect_false(is.na(store$data$entries[[1]]$last_verified_at))
 })
 
 # --- remove -------------------------------------------------------------------
@@ -377,26 +332,18 @@ test_that("eri_catalog_remove deletes the matching entry by path", {
   e1 <- make_entry(path = "atlantis/malaria/surveillance/processed/keep.parquet")
   e2 <- make_entry(path = "atlantis/malaria/surveillance/processed/drop.parquet",
                    period = "2024-02")
-  stored <- make_catalog(e1, e2)
-
-  local_mocked_bindings(
-    storage_file_exists = function(...) TRUE,
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
-    .package = "AzureStor"
-  )
+  store <- new_yaml_store(make_catalog(e1, e2))
+  local_yaml_store(store)
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
+    .eri_catalog_read = function(data_con) store$data,
     .package = "erifunctions"
   )
 
   out <- eri_catalog_remove("atlantis/malaria/surveillance/processed/drop.parquet")
   expect_true(out)
-  expect_length(stored$entries, 1L)
-  expect_equal(stored$entries[[1]]$path, e1$path)
+  expect_length(store$data$entries, 1L)
+  expect_equal(store$data$entries[[1]]$path, e1$path)
 })
 
 test_that("eri_catalog_remove returns FALSE when no entry matches", {

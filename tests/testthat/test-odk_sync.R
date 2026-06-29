@@ -98,32 +98,19 @@ test_that("eri_odk_sync warns and returns invisible NULL on zero submissions", {
 # --- successful sync ----------------------------------------------------------
 
 test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
-  entry      <- make_sync_entry()
-  stored_reg <- make_sync_reg(entry)
+  entry <- make_sync_entry()
+  store <- new_yaml_store(make_sync_reg(entry))
+  local_yaml_store(store)
 
   written_path <- NULL
   written_obj  <- NULL
 
-  local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      grepl("registry\\.yaml$", path) && length(stored_reg$forms) > 0
-    },
-    storage_download = function(container, src, dest, ...) {
-      yaml::write_yaml(stored_reg, dest)
-    },
-    storage_dir_exists = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      if (grepl("registry\\.yaml$", dest)) {
-        stored_reg <<- yaml::read_yaml(src)
-      }
-    },
-    .package = "AzureStor"
-  )
-
   fake_data <- tibble::tibble(id = 1:3, value = letters[1:3])
 
   local_mocked_bindings(
-    download_odk_form = function(...) list(RiverProspection = fake_data),
+    .eri_log_session   = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
+    download_odk_form  = function(...) list(RiverProspection = fake_data),
     eri_write = function(obj, file_loc, ...) {
       written_obj  <<- obj
       written_path <<- file_loc
@@ -140,7 +127,7 @@ test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
 
   expect_equal(written_path, "uga/oncho/research/raw/RiverProspection.parquet")
   expect_equal(written_obj, fake_data)
-  expect_false(is.null(stored_reg$forms[[1]]$last_synced))
+  expect_false(is.null(store$data$forms[[1]]$last_synced))
   expect_invisible(
     eri_odk_sync(
       project_id = 7L, form_id = "RiverProspection",
@@ -152,23 +139,16 @@ test_that("eri_odk_sync writes to correct blob path and updates last_synced", {
 # --- blob path construction ---------------------------------------------------
 
 test_that("eri_odk_sync uses correct blob path: {country}/{disease}/research/raw/{form_id}.parquet", {
-  entry      <- make_sync_entry(project_id = 3L, country = "nga", disease = "lf", form_id = "LFSurvey")
-  stored_reg <- make_sync_reg(entry)
+  entry <- make_sync_entry(project_id = 3L, country = "nga", disease = "lf", form_id = "LFSurvey")
+  store <- new_yaml_store(make_sync_reg(entry))
+  local_yaml_store(store)
 
   written_path <- NULL
 
   local_mocked_bindings(
-    storage_file_exists = function(...) TRUE,
-    storage_download = function(container, src, dest, ...) {
-      yaml::write_yaml(stored_reg, dest)
-    },
-    storage_dir_exists = function(...) TRUE,
-    storage_upload     = function(...) invisible(NULL),
-    .package = "AzureStor"
-  )
-
-  local_mocked_bindings(
-    download_odk_form = function(...) list(LFSurvey = tibble::tibble(x = 1L)),
+    .eri_log_session   = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
+    download_odk_form  = function(...) list(LFSurvey = tibble::tibble(x = 1L)),
     eri_write = function(obj, file_loc, ...) {
       written_path <<- file_loc
       invisible(NULL)
@@ -185,20 +165,15 @@ test_that("eri_odk_sync uses correct blob path: {country}/{disease}/research/raw
 # --- repeat groups: multiple tables -> multiple Parquets ----------------------
 
 test_that("eri_odk_sync writes one Parquet per table for a repeat-group form", {
-  entry      <- make_sync_entry(form_id = "RiverRepeat")
-  stored_reg <- make_sync_reg(entry)
+  entry <- make_sync_entry(form_id = "RiverRepeat")
+  store <- new_yaml_store(make_sync_reg(entry))
+  local_yaml_store(store)
 
   written_paths <- character(0)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) TRUE,
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored_reg, dest),
-    storage_dir_exists = function(...) TRUE,
-    storage_upload     = function(...) invisible(NULL),
-    .package = "AzureStor"
-  )
-
-  local_mocked_bindings(
+    .eri_log_session   = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
     download_odk_form = function(...) list(
       RiverRepeat               = tibble::tibble(KEY = c("a", "b")),               # main: 2 submissions
       `RiverRepeat-larva_sample` = tibble::tibble(PARENT_KEY = c("a", "a", "b"))   # repeat: 3 rows

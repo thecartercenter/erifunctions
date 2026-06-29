@@ -52,26 +52,20 @@ test_that("eri_artifact_upload registers entry in registry and uploads file", {
   withr::defer(unlink(tmp))
 
   uploaded <- character(0)
-  registered <- NULL
+  store    <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
     storage_dir_exists  = function(...) FALSE,
     create_storage_dir  = function(...) invisible(NULL),
     storage_upload      = function(con, src, dest, ...) {
       uploaded <<- c(uploaded, dest)
       invisible(NULL)
     },
-    storage_download    = function(...) invisible(NULL),
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
-    .eri_artifact_registry_read  = function(...) list(entries = list()),
-    .eri_artifact_registry_write = function(registry, ...) {
-      registered <<- registry$entries[[1L]]
-      invisible(NULL)
-    },
     .package = "erifunctions"
   )
 
@@ -82,7 +76,8 @@ test_that("eri_artifact_upload registers entry in registry and uploads file", {
   expect_equal(result$description, "IRS data DR 2024")
   expect_false(result$archived)
   expect_match(result$azure_path, "artifacts/study_data/dr_irs_2024/")
-  expect_false(is.null(registered))
+  expect_length(store$data$entries, 1L)
+  expect_equal(store$data$entries[[1L]]$name, "dr_irs_2024")
 })
 
 test_that("eri_artifact_upload upserts an existing entry by name", {
@@ -99,29 +94,23 @@ test_that("eri_artifact_upload upserts an existing entry by name", {
     archived = FALSE
   )
 
-  final_registry <- NULL
+  store <- new_yaml_store(list(entries = list(existing_entry)))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
     storage_dir_exists  = function(...) TRUE,
     create_storage_dir  = function(...) invisible(NULL),
     storage_upload      = function(...) invisible(NULL),
-    storage_download    = function(...) invisible(NULL),
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
-    .eri_artifact_registry_read  = function(...) list(entries = list(existing_entry)),
-    .eri_artifact_registry_write = function(registry, ...) {
-      final_registry <<- registry
-      invisible(NULL)
-    },
     .package = "erifunctions"
   )
 
   eri_artifact_upload(tmp, "my_artifact", "reference", "new desc")
-  expect_equal(length(final_registry$entries), 1L)
-  expect_equal(final_registry$entries[[1L]]$description, "new desc")
+  expect_equal(length(store$data$entries), 1L)
+  expect_equal(store$data$entries[[1L]]$description, "new desc")
 })
 
 # --- eri_artifact_list --------------------------------------------------------
@@ -316,27 +305,22 @@ test_that("eri_artifact_archive sets archived flag without deleting file", {
     uploaded_at = "t", uploaded_by = "u", archived = FALSE
   )
 
-  final_registry <- NULL
+  store <- new_yaml_store(list(entries = list(entry)))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
     storage_dir_exists  = function(...) TRUE,
-    storage_upload      = function(...) invisible(NULL),
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
-    .eri_artifact_registry_read  = function(...) list(entries = list(entry)),
-    .eri_artifact_registry_write = function(registry, ...) {
-      final_registry <<- registry
-      invisible(NULL)
-    },
+    .eri_artifact_registry_read  = function(...) store$data,
     .package = "erifunctions"
   )
 
   result <- eri_artifact_archive("dr_irs_2024")
   expect_null(result)
-  expect_true(final_registry$entries[[1L]]$archived)
+  expect_true(store$data$entries[[1L]]$archived)
 })
 
 test_that("eri_artifact_archive is idempotent when already archived", {

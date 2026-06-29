@@ -134,26 +134,20 @@ test_that("eri_odk_purge removes both active and inactive matching entries", {
   active   <- make_entry(form_id = "SandboxForm", active = TRUE)
   inactive <- make_entry(form_id = "SandboxForm", active = FALSE)   # already soft-deleted
   other    <- make_entry(form_id = "RealForm", project_id = 7L, active = TRUE)
-  reg      <- make_reg(active, inactive, other)
-  stored   <- NULL
+  store    <- new_yaml_store(make_reg(active, inactive, other))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) TRUE,
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(reg, dest),
-    storage_dir_exists = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) { stored <<- yaml::read_yaml(src) },
-    .package = "AzureStor"
-  )
-  local_mocked_bindings(
-    .eri_write_log = function(...) invisible(NULL),
+    .eri_write_log     = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
     .package = "erifunctions"
   )
 
   n <- eri_odk_purge(project_id = 7L, form_id = "SandboxForm", data_con = "mock")
   expect_equal(n, 2L)
   # The real form survives; both SandboxForm rows are gone.
-  expect_length(stored$forms, 1L)
-  expect_equal(stored$forms[[1]]$form_id, "RealForm")
+  expect_length(store$data$forms, 1L)
+  expect_equal(store$data$forms[[1]]$form_id, "RealForm")
 })
 
 test_that("eri_odk_purge errors when no entry (active or inactive) matches", {
@@ -178,26 +172,15 @@ test_that("eri_odk_purge errors when no entry (active or inactive) matches", {
 # --- round-trip ---------------------------------------------------------------
 
 test_that("register / deregister / list round-trip works", {
-  stored_reg <- list(forms = list())
-  uploaded_yaml <- NULL
+  store <- new_yaml_store(list(forms = list()))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      path == erifunctions:::.ODK_REGISTRY_PATH && length(stored_reg$forms) > 0
+    .eri_write_log     = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) {
+      if (is.null(store$data) || length(store$data$forms) == 0L) list(forms = list())
+      else store$data
     },
-    storage_download = function(container, src, dest, ...) {
-      yaml::write_yaml(stored_reg, dest)
-    },
-    storage_dir_exists = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      if (grepl("registry\\.yaml$", dest)) {
-        stored_reg <<- yaml::read_yaml(src)
-      }
-    },
-    .package = "AzureStor"
-  )
-  local_mocked_bindings(
-    .eri_write_log = function(...) invisible(NULL),
     .package = "erifunctions"
   )
 
@@ -247,20 +230,15 @@ test_that("eri_odk_list_registered returns typed empty tibble when no forms", {
 })
 
 test_that("form_display_name defaults to form_id when not supplied", {
-  stored_reg <- list(forms = list())
+  store <- new_yaml_store(list(forms = list()))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(...) FALSE,
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      if (grepl("registry\\.yaml$", dest)) {
-        stored_reg <<- yaml::read_yaml(src)
-      }
+    .eri_write_log     = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) {
+      if (is.null(store$data) || length(store$data$forms) == 0L) list(forms = list())
+      else store$data
     },
-    .package = "AzureStor"
-  )
-  local_mocked_bindings(
-    .eri_write_log = function(...) invisible(NULL),
     .package = "erifunctions"
   )
 
@@ -271,5 +249,5 @@ test_that("form_display_name defaults to form_id when not supplied", {
     data_con = "mock"
   )
 
-  expect_equal(stored_reg$forms[[1]]$form_display_name, "MyForm")
+  expect_equal(store$data$forms[[1]]$form_display_name, "MyForm")
 })

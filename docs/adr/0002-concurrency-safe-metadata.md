@@ -1,6 +1,6 @@
 # ADR-0002 — Concurrency-safe, rebuildable metadata stores
 
-- **Status:** Accepted
+- **Status:** Accepted — **implemented in Phase 2 (2026-06-29, #235)**
 - **Date:** 2026-06-05
 
 ## Context
@@ -27,7 +27,9 @@ This is the real concern behind "should we move to a formal database?" — the i
    of derivable truth, not an irreplaceable system of record.
 
 Implemented in **Phase 2** (architecture hardening), before concurrent surveillance approval
-becomes load-bearing.
+becomes load-bearing. The read-with-ETag / conditional-write / retry loop is the internal
+`.eri_yaml_update()` (`R/metadata.R`); the catalog, ODK registry and artifact registry writers
+all route through it, and `eri_catalog_rebuild()` provides the rebuild path.
 
 ## Consequences
 
