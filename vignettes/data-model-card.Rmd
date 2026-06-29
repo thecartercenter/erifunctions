@@ -1,10 +1,15 @@
-# Data-model decision card — channel vs. measure
+---
+title: "Data-model decision card: channel vs. measure"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data-model decision card: channel vs. measure}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
 
 *The one concept everything else rests on. If you can answer the four questions below for a dataset,
 you can address it, ingest it, and approve it. Run `eri_data_model()` to see the live list of allowed
 values.*
-
----
 
 ## A path has five axes
 
@@ -26,8 +31,6 @@ Two of them — `data_source` and `data_type` — are the ones people mix up. Th
   surveys…).
 - DR malaria **surveillance** is **`case`** (one row per patient); Haiti malaria surveillance is
   **`aggregate`** (facility × month counts). Same source, same disease — different measure.
-
----
 
 ## Answer these four, in order
 
@@ -57,8 +60,6 @@ Two of them — `data_source` and `data_type` — are the ones people mix up. Th
                       └─ entomology
 ```
 
----
-
 ## Worked examples
 
 | You have… | country | disease | data_source | data_type |
@@ -69,8 +70,6 @@ Two of them — `data_source` and `data_type` — are the ones people mix up. Th
 | Uganda CMR "LF MMDP" sheet | `uga` | `lf` | `programmatic` | `mmdp` |
 | A TAS survey pulled from ODK | `uga` | `lf` | `research` | `tas` |
 
----
-
 ## Two things that trip people up
 
 - **`format` ≠ `data_source`.** "CMR" and "ODK" are input *formats*, recorded in a `format` field —
@@ -78,4 +77,5 @@ Two of them — `data_source` and `data_type` — are the ones people mix up. Th
   see in older data are transitional and being retired — ADR-0012.)
 - **A missing combination is normal.** If `load_dq_schema()` / `eri_data_path()` doesn't recognise a
   value, you get a **warning**, not an error — adding a new country/disease/source/measure is a *data*
-  change (a schema + a registry entry), not a code change. See `da-onboard-guide`.
+  change (a schema + a registry entry), not a code change. See the
+  [onboarding a new program guide](da-onboard-guide.html).

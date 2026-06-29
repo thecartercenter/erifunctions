@@ -16,12 +16,12 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 
 ## New here? Do these in order
 
-**New Data Analysts:** follow the paced **[onboarding path](onboarding.md)** (Week 0 → Week 2), and keep
-the quick-reference cards in [`training/`](training/) open — the
-[DA cheat sheet](training/da-cheatsheet.md), the [data-model card](training/data-model-card.md), and the
-[connections](training/connections-card.md) / [troubleshooting](training/troubleshooting-card.md) cards.
-There's an [orientation deck](training/orientation-deck.qmd) (Quarto source — `quarto render` it to
-slides) for a first training session.
+**New Data Analysts:** follow the paced **[onboarding path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**
+(Week 0 → Week 2), and keep the quick-reference articles open — the
+[orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html),
+[DA cheat sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html),
+[data-model card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html), and
+[troubleshooting card](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html).
 
 First run `eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure)
 the guides assume. Then follow your role's path; dip into the rest as your work needs them.
@@ -48,6 +48,16 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 |------|-------|--------|
 | Orientation: the data model + your role's path | [`getting-started`](https://thecartercenter.github.io/erifunctions/articles/getting-started.html) | ✅ Shipped |
 | Authenticate and connect to Azure / ODK / SharePoint / Teams | [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | ✅ Shipped |
+
+### Quick reference & onboarding
+
+| Task | Guide | Status |
+|------|-------|--------|
+| The big picture (data system, pipeline, where tasks live) | [`orientation`](https://thecartercenter.github.io/erifunctions/articles/orientation.html) | ✅ Shipped |
+| Paced new-analyst path (Week 0 → Week 2 + competency checklist) | [`onboarding`](https://thecartercenter.github.io/erifunctions/articles/onboarding.html) | ✅ Shipped |
+| One-page cheat sheet (functions, path, "which pipeline?") | [`da-cheatsheet`](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html) | ✅ Shipped |
+| Data-model decision card (channel vs. measure) | [`data-model-card`](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html) | ✅ Shipped |
+| Troubleshooting (errors → fixes + log triage) | [`troubleshooting`](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html) | ✅ Shipped |
 
 ### For data analysts
 

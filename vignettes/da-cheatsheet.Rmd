@@ -1,11 +1,15 @@
-# erifunctions — Data Analyst cheat sheet
+---
+title: "Data Analyst cheat sheet"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data Analyst cheat sheet}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
 
 *One page. The functions you actually use, the path model, and which pipeline to reach for. Pair with
-[`data-model-card.md`](data-model-card.md) for the channel-vs-measure decision, and the
-[run-it-live guides](https://thecartercenter.github.io/erifunctions/articles/) when you want the full
-walkthrough.*
-
----
+[the data-model card](data-model-card.html) for the channel-vs-measure decision, and the role guides
+when you want the full walkthrough.*
 
 ## The data system in one picture
 
@@ -28,8 +32,6 @@ data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
 > **The golden rule:** nothing reaches **`processed/`** without **`eri_approve()`** — the human gate.
 > It moves staged → processed, writes an approval log, and registers the file in the catalog. Never
 > hand-edit or delete `processed/` data.
-
----
 
 ## Which pipeline do I use?
 
@@ -60,8 +62,6 @@ eri_write(res$data, eri_data_path(c, d, src, mea, "staged", file), azcontainer =
 eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the gate
 ```
 
----
-
 ## The ~15 functions a DA actually uses
 
 | Need | Function | Canonical call |
@@ -77,6 +77,7 @@ eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the 
 | DQ a dataset | `load_dq_schema` + `run_dq_checks` + `dq_report` | `run_dq_checks(data, schema)` |
 | **Approve (the gate)** | `eri_approve` | `eri_approve(country, disease, data_source, period, data_type =)` |
 | Find approved data | `eri_catalog_query` | `eri_catalog_query(country =, disease =)` |
+| Query across datasets | `eri_query` | `eri_query(sql, disease =, data_type =)` |
 | Register an ODK form | `eri_odk_register` | `eri_odk_register(project_id, form_id, country, disease, server_url, data_con)` |
 | Pull ODK submissions | `eri_odk_sync` | `eri_odk_sync(project_id, form_id, con, data_con)` |
 | Backfill ODK from a table | `eri_odk_upload` | `eri_odk_upload(data, project_id, form_id, key_col =)` |
@@ -86,8 +87,6 @@ eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the 
 *Signatures to mind:* `eri_onboard_disease(disease, country, …)` takes **disease first** (unlike the
 others); `eri_approve()`'s **5th arg is `data_type`** (the measure) — omit it and the catalog records
 the measure as `NA`.
-
----
 
 ## Quick analytics (for initial epi QC products)
 

@@ -56,6 +56,19 @@ articles:
   - getting-started
   - connections-guide
 
+- title: Quick reference & onboarding
+  navbar: Quick reference
+  desc: >
+    Desk references and the new-analyst path: the big-picture orientation, the paced onboarding
+    track, the one-page cheat sheet, the channel-vs-measure data-model card, and the troubleshooting
+    card.
+  contents:
+  - orientation
+  - onboarding
+  - da-cheatsheet
+  - data-model-card
+  - troubleshooting
+
 - title: For data analysts
   navbar: Data analysts
   desc: >

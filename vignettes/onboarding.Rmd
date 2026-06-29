@@ -1,9 +1,16 @@
-# Onboarding a new Data Analyst
+---
+title: "Onboarding a new Data Analyst"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Onboarding a new Data Analyst}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
 
-This is the **starting URL** for a new ERI Data Analyst. It strings the reference and the run-it-live
+This is the **starting page** for a new ERI Data Analyst. It strings the reference and the run-it-live
 guides into a paced path with checkpoints, so onboarding is repeatable and self-serve rather than
-tribal knowledge. It lives in the repo so it versions with the package — when a guide or function
-changes, this path changes with it.
+tribal knowledge. It ships with the package, so when a guide or function changes, this path changes
+with it.
 
 > **Who this is for:** a new DA who can run R scripts and edit code but isn't yet fluent. Every step is
 > copy-paste on **safe sandbox data** — you cannot harm real country data by following it.
@@ -20,32 +27,28 @@ You practice in throwaway namespaces that are designed to be created and deleted
 Every guide ends with a **Clean up** section that removes what it created. Real `processed/` data is
 never deleted casually — the sandbox is where you make mistakes.
 
----
-
 ## Week 0 — Setup (before day one)
 
 Get the environment standing so day one is learning, not yak-shaving. Use the
-[connections card](training/connections-card.md).
+[connections guide](connections-guide.html).
 
 - [ ] Install **R + RStudio**.
 - [ ] Install the package: `renv` + `remotes::install_github("thecartercenter/erifunctions")`.
 - [ ] **Azure access granted** — your account needs RBAC on the `data` blob (a ticket to an ERI admin;
       this is the long-lead item — start it first).
 - [ ] **ODK Central account** with access to the `testing` project.
-- [ ] `.Renviron` set: `ERI_ANALYST_ID`, `ODK_URL/USER/PASS` (see the connections card). **Restart R.**
-- [ ] **Verify:** `eri_list("", azcontainer = get_azure_storage_connection(storage_name = "data"))` returns a tibble,
-      and `list_odk_projects(con = init_odk_connection())` lists projects.
+- [ ] `.Renviron` set: `ERI_ANALYST_ID`, `ODK_URL/USER/PASS` (see the connections guide). **Restart R.**
+- [ ] **Verify:** `eri_list("", azcontainer = get_azure_storage_connection(storage_name = "data"))`
+      returns a tibble, and `list_odk_projects(con = init_odk_connection())` lists projects.
 
 ✅ **Gate:** you can connect to Azure and ODK.
 
 ## Day 1 — Orientation
 
-- [ ] Read [`getting-started`](https://thecartercenter.github.io/erifunctions/articles/getting-started.html).
-- [ ] Run **`eri_data_model()`** and read the [data-model card](training/data-model-card.md) until the
+- [ ] Read [Getting started](getting-started.html) and the [Orientation](orientation.html) overview.
+- [ ] Run **`eri_data_model()`** and read the [data-model card](data-model-card.html) until the
       *channel vs. measure* split makes sense. This is the one idea everything rests on.
-- [ ] Skim the orientation deck (`training/orientation-deck.qmd`) for the big picture: the Azure
-      three-layer + 5-axis system, the human-gated pipeline, and where your 11 tasks live.
-- [ ] Keep the [DA cheat sheet](training/da-cheatsheet.md) open from here on.
+- [ ] Keep the [DA cheat sheet](da-cheatsheet.html) open from here on.
 
 ✅ **Gate:** you can explain what the five path axes mean and why `eri_approve()` is the gate.
 
@@ -53,37 +56,31 @@ Get the environment standing so day one is learning, not yak-shaving. Use the
 
 Work these guides in order, on the sandbox, running every chunk. Stop at each checkpoint.
 
-- [ ] [`connections-guide`](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html)
-      — connect to all four services.
-- [ ] [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html)
-      — stand up a new `atlantis` space (schema + dirs). *Checkpoint: you scaffolded a space and
-      validated its schema.*
-- [ ] [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html)
-      — raw → DQ → staged → **approve** a surveillance extract. *Checkpoint: you approved a dataset and
-      saw it in the catalog.*
-- [ ] [`da-cmr-guide`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html)
-      — upload → split → approve a monthly CMR. *Checkpoint: you split a CMR per disease.*
-- [ ] [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html)
-      — connect → monitor → register → sync → approve an ODK form. *Checkpoint: you synced submissions
-      into the pipeline.*
-- [ ] [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html)
-      — triage and resolve a log. *Checkpoint: you closed an item in the backlog.*
+- [ ] [Connections guide](connections-guide.html) — connect to all four services.
+- [ ] [Onboard a space](da-onboard-guide.html) — stand up a new `atlantis` space (schema + dirs).
+      *Checkpoint: you scaffolded a space and validated its schema.*
+- [ ] [Ingest a surveillance dataset](da-ingest-guide.html) — raw → DQ → staged → **approve**.
+      *Checkpoint: you approved a dataset and saw it in the catalog.*
+- [ ] [Upload & split a CMR](da-cmr-guide.html) — upload → split → approve a monthly CMR.
+      *Checkpoint: you split a CMR per disease.*
+- [ ] [Work with ODK Central](da-odk-guide.html) — connect → monitor → register → sync → approve.
+      *Checkpoint: you synced submissions into the pipeline.*
+- [ ] [Triage the log backlog](da-logs-guide.html) — triage and resolve a log.
+      *Checkpoint: you closed an item in the backlog.*
 
 ✅ **Gate:** you can take a file from each of the three channels through to `processed/` on the sandbox.
 
 ## Week 2 — Downstream work + shadowing
 
-The downstream guides (QC + country feedback, routine reporting, final survey reports, ad-hoc requests)
-ship as they land — check the [guide index](guides.md) for what's available. Then:
-
+- [ ] [Answer an ad-hoc request](da-adhoc-guide.html) with `eri_query()`. Other downstream guides (QC +
+      country feedback, routine reporting, final survey reports) ship as they land — check the
+      [Articles menu](https://thecartercenter.github.io/erifunctions/articles/) for what's available.
 - [ ] **Pair** with a senior DA on a real (but sandboxed) task end-to-end.
 - [ ] Take a **first supervised real task** — a real ingest or QC review, reviewed before you approve.
 - [ ] Make your **first contribution**: fix a typo or unclear line in a guide via a PR. This teaches the
       issue → branch → PR workflow and how the docs are maintained.
 
 ✅ **Gate:** you completed one real task under supervision and opened one PR.
-
----
 
 ## Competency checklist (DA + mentor sign off)
 
@@ -96,14 +93,15 @@ A DA is "onboarded" when both of you can tick every box from observed work, not 
 - [ ] Registers, syncs, and approves an **ODK** form.
 - [ ] Runs `run_dq_checks()` and reads the flags.
 - [ ] Triages the log backlog with `eri_logs()` / `eri_logs_resolve()`.
-- [ ] Produces one routine figure/table for an output.
+- [ ] Answers an ad-hoc request with `eri_query()`.
 - [ ] Knows the boundaries: never deletes `processed/`; ODK **forms are authored in the ODK UI**, the
       package begins at *sync*; real country data never leaves the system.
 
 ## Staying productive after onboarding
 
-- The [DA cheat sheet](training/da-cheatsheet.md) and the cards are your desk reference.
-- The [guide index](guides.md) is the **"how do I do X?"** lookup — start there, not the function
-  reference.
+- The [DA cheat sheet](da-cheatsheet.html) and the [troubleshooting card](troubleshooting.html) are your
+  desk reference.
+- The [Articles menu](https://thecartercenter.github.io/erifunctions/articles/) is the **"how do I do
+  X?"** lookup — start there, not the function reference.
 - Keep a **buddy/mentor** for the first month; questions are faster than docs at first.
 - When you hit something the guides don't cover, that's a gap worth filing — open an issue.
