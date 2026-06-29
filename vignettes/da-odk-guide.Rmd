@@ -211,12 +211,12 @@ list_odk_form_users(con = con, project_id = project_id, form_id = form_id)
 #> # A tibble: 2 × 2
 #>   actorId roleId
 #>     <int>  <int>
-#> 1    1112      7
-#> 2    1153      2
+#> 1     198      7
+#> 2     250      2
 ```
 
 Each row pairs an `actorId` (an app user) with the `roleId` it holds on this form — your new collector
-(`roleId 2`, ODK's App User role) is now listed.
+(`actorId 250`, `roleId 2` = ODK's App User role) is now listed alongside anyone already assigned.
 
 ### Managing a whole team at once
 
