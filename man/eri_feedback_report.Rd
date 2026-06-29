@@ -13,7 +13,8 @@ eri_feedback_report(
 }
 \arguments{
 \item{file}{\code{chr} or \code{NULL} Output path. If \code{NULL}, writes
-\verb{feedback-report-<date>.<ext>} in the working directory.}
+\verb{feedback-report-<date>.<ext>} in the working directory (a same-day re-run
+overwrites it).}
 
 \item{format}{\code{chr} \code{"html"} (default, self-contained, open in a browser) or
 \code{"md"} (GitHub-flavoured markdown).}

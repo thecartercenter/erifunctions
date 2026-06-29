@@ -317,7 +317,17 @@ eri_feedback_board <- function(data_con = NULL) {
 .ERI_FEEDBACK_OPEN   <- c("submitted", "planned", "in_progress")
 .ERI_FEEDBACK_CLOSED <- c("fixed", "declined")
 
+# A ticket's status, normalised: NULL or NA falls back to "submitted" (matches
+# how eri_feedback_board() defends against odd statuses).
+#' @keywords internal
+.eri_feedback_status_of <- function(e) {
+  s <- e$status %||% "submitted"
+  if (length(s) != 1L || is.na(s)) "submitted" else tolower(s)
+}
+
 # Parse an ISO-8601 "...Z" timestamp to POSIXct (UTC); NA on empty/unparseable.
+# Tightly matches what eri_feedback() writes; both sides of the window comparison
+# are absolute POSIXct instants, so the digest cutoff is timezone-independent.
 #' @keywords internal
 .eri_parse_ts <- function(x) {
   if (is.null(x) || length(x) != 1L || is.na(x) || !nzchar(x)) return(as.POSIXct(NA))
@@ -336,8 +346,8 @@ eri_feedback_board <- function(data_con = NULL) {
 # Split the entries into the report's three buckets relative to a `since` cutoff.
 #' @keywords internal
 .eri_feedback_buckets <- function(entries, since_days) {
-  cutoff   <- Sys.time() - since_days * 86400
-  status_of <- function(e) tolower(e$status %||% "submitted")
+  cutoff    <- Sys.time() - since_days * 86400
+  status_of <- .eri_feedback_status_of
 
   ord <- function(es, ts_field, decreasing) {
     if (length(es) == 0L) return(es)
@@ -383,7 +393,8 @@ eri_feedback_board <- function(data_con = NULL) {
 #' order. Built for a quick standing review so the team stays current (ADR-0014).
 #'
 #' @param file `chr` or `NULL` Output path. If `NULL`, writes
-#'   `feedback-report-<date>.<ext>` in the working directory.
+#'   `feedback-report-<date>.<ext>` in the working directory (a same-day re-run
+#'   overwrites it).
 #' @param format `chr` `"html"` (default, self-contained, open in a browser) or
 #'   `"md"` (GitHub-flavoured markdown).
 #' @param since_days `num` The digest window in days. Default `7` (a weekly report).
@@ -404,6 +415,8 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
   }
 
   data_con <- .eri_feedback_con(data_con)
+  # Read the raw entries (not eri_feedback_list()): the report needs `updated_at`
+  # and the nested `history` list, which the flat list tibble deliberately omits.
   log      <- .eri_yaml_read_versioned(data_con, .ERI_FEEDBACK_PATH,
                                        default = list(entries = list()))$data
   entries  <- log$entries %||% list()
@@ -421,7 +434,7 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
   writeLines(content, file, useBytes = TRUE)
 
   n_open <- sum(vapply(entries, function(e) {
-    tolower(e$status %||% "submitted") %in% .ERI_FEEDBACK_OPEN
+    .eri_feedback_status_of(e) %in% .ERI_FEEDBACK_OPEN
   }, logical(1L)))
   cli::cli_alert_success(
     "Feedback report ({length(entries)} ticket{?s} · {n_open} open) written to {.path {file}}."
@@ -433,7 +446,7 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
 
 #' @keywords internal
 .eri_feedback_counts <- function(entries) {
-  statuses <- vapply(entries, function(e) tolower(e$status %||% "submitted"), character(1L))
+  statuses <- vapply(entries, .eri_feedback_status_of, character(1L))
   vapply(.ERI_FEEDBACK_STATUSES, function(s) sum(statuses == s), integer(1L))
 }
 
@@ -447,7 +460,13 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
 }
 
 # HTML renderer ----------------------------------------------------------------
-
+#
+# Deliberately hand-rolled rather than reusing eri_report_html(): that helper
+# hard-requires a Quarto install (so a one-line standing report would fail for a
+# user without Quarto) and its section/table/figure model doesn't fit a
+# status-bucketed digest. The CSS below uses the Carter Center *org* palette
+# (navy #001737 / green #00873f) for a shared artifact — intentionally not the
+# package's eri_brand_colors(), which brands data products.
 #' @keywords internal
 .eri_feedback_render_html <- function(entries, since_days) {
   esc      <- .eri_html_escape
@@ -553,7 +572,9 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
   n_total <- length(entries)
   n_open  <- sum(counts[.ERI_FEEDBACK_OPEN])
 
-  # Escape pipes/newlines so messages don't break the markdown table.
+  # Escape only the table-structural characters (pipes/newlines) so a message
+  # can't break the row. Inline markdown in a message (e.g. `*`, backticks) is
+  # left as-is by design — md output is plaintext, so this is fidelity not safety.
   cell <- function(x) {
     x <- as.character(x %||% "")
     x <- gsub("\\|", "\\\\|", x); x <- gsub("[\r\n]+", " ", x)

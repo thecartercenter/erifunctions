@@ -237,3 +237,15 @@ test_that("eri_feedback_report handles an empty backlog", {
   suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock"))
   expect_match(paste(readLines(f, warn = FALSE), collapse = "\n"), "No feedback logged yet")
 })
+
+test_that("eri_feedback_report treats a missing/NA status as submitted without crashing", {
+  store <- new_yaml_store(list(entries = list(
+    list(id = 1L, submitted_at = iso_ago(1), submitted_by = "u", area = "general",
+         status = NA_character_, message = "status went missing")
+  )))
+  local_yaml_store(store)
+  f <- withr::local_tempfile(fileext = ".md")
+
+  expect_no_error(suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock")))
+  expect_match(paste(readLines(f, warn = FALSE), collapse = "\n"), "Open backlog \\(1\\)")
+})
