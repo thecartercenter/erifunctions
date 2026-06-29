@@ -39,6 +39,7 @@ Imports:
     utils,
     withr,
     writexl,
+    xml2,
     yaml
 Suggests:
     cowplot,
