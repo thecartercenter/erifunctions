@@ -35,8 +35,11 @@ flowchart LR
 ## Before you start {#before-you-start}
 
 ```{r install}
-# eri_query needs two optional packages, installed once:
+# eri_query needs two optional packages — install them once:
 install.packages(c("duckdb", "DBI"))
+```
+
+```{r library}
 library(erifunctions)
 ```
 
@@ -78,6 +81,9 @@ eri_query(
 #> 1 ht      12345
 #> 2 dr       9876
 ```
+
+*(Illustrative numbers — your catalog will differ. The in-memory examples below are real output you can
+reproduce.)*
 
 Because every row is stamped with its provenance, you can `GROUP BY country`, `period`, `data_type`,
 etc. without joining anything. (Those five names are reserved in this mode — see
@@ -166,8 +172,8 @@ a population table you supply.
 
 `eri_query()` returns an ordinary tibble, so the result flows straight into the rest of the toolkit —
 [`eri_table()`](../reference/eri_table.html) for a branded table, `ggplot2` / the `eri_map_*` helpers
-for a figure, or `eri_case_summary()` / `eri_incidence_rate()` for standard epi summaries. The
-[reporting helpers](da-ingest-guide.html) take it from there.
+for a figure, or `eri_case_summary()` / `eri_incidence_rate()` for standard epi summaries — see the
+[function reference](../reference/index.html) for the full reporting toolkit.
 
 ## Tips
 
