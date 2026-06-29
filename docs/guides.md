@@ -71,6 +71,7 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 | Answer ad-hoc data requests with SQL (`eri_query`) | [`da-adhoc-guide`](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | ✅ Shipped |
 | Branded tables, figures, and decks for outputs | [`da-reporting-guide`](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | ✅ Shipped |
 | QC an extract and give a country feedback | [`da-qc-feedback-guide`](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | ✅ Shipped |
+| Final summaries and reports from an ODK survey | [`da-survey-report-guide`](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.html) | ✅ Shipped |
 
 ### For epidemiologists
 
