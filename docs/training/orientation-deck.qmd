@@ -1,0 +1,153 @@
+---
+title: "erifunctions for Data Analysts"
+subtitle: "Orientation — the data system, the pipeline, and your tasks"
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    incremental: false
+# Render with: quarto render orientation-deck.qmd
+# (or open in RStudio and click Render). Export to PowerPoint with: format: pptx
+---
+
+## What erifunctions is
+
+The ERI team's R package — the **API to TCC's Azure data system** across countries
+(Haiti, DR, Uganda, OEPA, …) and diseases (malaria, oncho, LF, SCH, STH).
+
+- You are a **domain expert**, not a software developer.
+- You **install it and call functions** — you don't edit the package.
+- Every function is built to make *your* work clearer and more reliable.
+
+::: notes
+Set expectations: this is a tool you use, not a codebase you maintain. The whole design optimizes for
+analyst clarity and reliability.
+:::
+
+## The data lives in three layers
+
+```
+data/{country}/{disease}/{data_source}/{data_type}/
+   raw/        as-received from the source
+   staged/     DQ-checked, awaiting sign-off
+   processed/  analyst-approved — the data the whole team trusts
+```
+
+Data flows **one way**: `raw → staged → processed`.
+
+::: notes
+Raw is untouched. Staged is cleaned but provisional. Processed is canonical and trusted. The direction
+never reverses.
+:::
+
+## The golden rule
+
+> **Nothing reaches `processed/` without `eri_approve()` — the human gate.**
+
+`eri_approve()` moves staged → processed, writes an approval log, and registers the file in the catalog.
+
+- You are the gate. Nothing is "official" until you sign off.
+- Never hand-edit or delete `processed/` data.
+
+::: notes
+This is the single most important concept. The approve step is a deliberate human checkpoint, with an
+audit trail attached to your `ERI_ANALYST_ID`.
+:::
+
+## A path has five axes
+
+```
+data / country / disease / data_source / data_type / layer
+        uga      oncho     programmatic  treatment   staged
+```
+
+- **`data_source`** = the **channel** (how it arrives): surveillance · programmatic · research
+- **`data_type`** = the **measure** (what it counts): case · aggregate · treatment · mmdp · survey · …
+
+Run **`eri_data_model()`** to print the live vocabulary.
+
+::: notes
+Channel and measure are independent. This is the concept new DAs find hardest — spend time here. Use the
+data-model card.
+:::
+
+## Channel ≠ measure
+
+The same channel carries different measures; the same (channel, disease) differs by country:
+
+- One **CMR** (programmatic) → **7 measures across 3 diseases**.
+- DR malaria surveillance = **case** (line-list); Haiti malaria surveillance = **aggregate** (counts).
+
+A missing combination is **normal** — it warns, it doesn't error.
+
+::: notes
+Hammer the DR-vs-HT example: same source, same disease, different measure. That's why measure can't be
+inferred and must be an explicit axis.
+:::
+
+## Which pipeline for which data?
+
+| You received… | Pipeline |
+|---------------|----------|
+| Monthly CMR Excel | `eri_stage_cmr` → `eri_split_cmr` → `eri_approve` |
+| Surveillance extract | `eri_ingest` (or the primitives) → `eri_approve` |
+| ODK submissions | `eri_odk_register` → `eri_odk_sync` → clean → `eri_approve` |
+| A brand-new space | `eri_onboard_*` first, then one of the above |
+
+Everything ends at **`eri_approve()`**.
+
+::: notes
+This table is the daily decision. It's also on the cheat sheet. The four on-ramps differ, but they all
+converge on the same gate and the same catalog.
+:::
+
+## Your 11 tasks → where they live
+
+- **Load CMR / surveillance** → `da-cmr-guide` · `da-ingest-guide`
+- **Process OEPA** → general pipeline (oncho treatment + prevalence)
+- **QC + analytic products + country feedback** → `run_dq_checks` · `dq_report` · `eri_notify_dq`
+- **Figures / routine reports** → `eri_table` · `eri_map_*` · `eri_pptx_*` · `eri_report_*`
+- **ODK: monitor + pull + backfill + final reports** → `da-odk-guide` · `eri_survey_status` · `eri_odk_upload`
+- **Ad-hoc requests** → read processed parquet (a query layer is coming)
+- **Errors & logs** → `eri_logs` · `eri_logs_resolve`
+
+::: notes
+Walk the list against the cheat sheet. Note honestly what's a guide today vs. primitives-only vs.
+coming. Set expectations.
+:::
+
+## A boundary worth stating
+
+**Creating ODK forms is *not* an erifunctions task.**
+
+- Survey **forms are authored in the ODK Central UI** (XLSForm).
+- erifunctions picks up at **sync** — it pulls submissions, monitors deployment, and backfills records.
+
+::: notes
+This avoids a common new-DA confusion ("how do I make a form in R?"). You don't — you make it in ODK,
+then the package takes over.
+:::
+
+## Three golden rules to leave with
+
+1. **The gate is sacred.** Nothing is real until `eri_approve()`; never touch `processed/` by hand.
+2. **Secrets live only in `.Renviron`** — never in a script, never in git. Set `ERI_ANALYST_ID` first.
+3. **Real country data never leaves the system.** Practice on the sandbox; protect the real thing.
+
+::: notes
+End on the three non-negotiables. These are the things that, if violated, cause real harm — everything
+else is recoverable.
+:::
+
+## Where to learn
+
+- **Cheat sheets** (`docs/training/`): the DA cheat sheet + the data-model, connections, and
+  troubleshooting cards — your desk reference.
+- **Run-it-live guides** (the Articles menu): copy-paste walkthroughs on safe data.
+- **Onboarding path** (`docs/onboarding.md`): the paced Week-0 → Week-2 track.
+- **`eri_data_model()`** and the [guide index](../guides.md): your "how do I…?" lookups.
+
+::: notes
+Point them at the cheat sheet for daily work, the guides for learning a new task, and onboarding.md for
+the order to do it in.
+:::
