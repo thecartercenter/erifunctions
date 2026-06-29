@@ -69,6 +69,14 @@ work needs them.
 
 ### New Data Analyst
 
+For the paced version of this with checkpoints, follow the [**onboarding
+path**](https://github.com/thecartercenter/erifunctions/blob/main/docs/onboarding.md),
+and keep the [**DA cheat
+sheet**](https://github.com/thecartercenter/erifunctions/blob/main/docs/training/da-cheatsheet.md)
+and the [data-model
+card](https://github.com/thecartercenter/erifunctions/blob/main/docs/training/data-model-card.md)
+open as you work.
+
 1.  [Connecting to the
     services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
 2.  [Onboarding a new country / disease / data

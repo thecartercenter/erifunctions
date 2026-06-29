@@ -2,6 +2,21 @@
 
 ## erifunctions (development version)
 
+### Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck ([\#219](https://github.com/thecartercenter/erifunctions/issues/219))
+
+- **New quick-reference cards** under `docs/training/`: a **DA cheat
+  sheet** (the ~15 functions a DA uses, the 5-axis path, and a “which
+  pipeline?” decision tree), a **data-model card** (channel vs.
+  measure), and **connections** and **troubleshooting** cards. Aimed at
+  a “still learning R” analyst as a desk reference.
+- **New `docs/onboarding.md`** — a paced Week-0 → Week-2 onboarding path
+  with checkpoints and a competency checklist, built on the existing
+  sandbox namespaces (`atlantis`, `uga/demo`, the `eri_test_*` ODK
+  forms). Linked from the README, the guide index, and the
+  getting-started article.
+- **New orientation deck** (`docs/training/orientation-deck.qmd`,
+  revealjs) for a first training session.
+
 ### Feature: `eri_odk_upload()` — bulk-create ODK submissions from a table (ADR-0013, [\#211](https://github.com/thecartercenter/erifunctions/issues/211))
 
 - **New `eri_odk_upload(data, project_id, form_id, …)`** — the inverse
