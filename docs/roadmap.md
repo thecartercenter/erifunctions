@@ -148,7 +148,10 @@ identity load-bearing.
 - Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
   `R/artifacts.R`); add `eri_catalog_rebuild()`.
 - `.eri_token_identity()`; `eri_approve()` uses verified identity.
-- `eri_query()` DuckDB-over-parquet read layer.
+- ~~`eri_query()` DuckDB-over-parquet read layer.~~ **Shipped** — catalog-driven roll-ups + explicit-table
+  joins over processed parquet via an in-process DuckDB session (`duckdb`/`DBI` as Suggests). Brought
+  forward to close the DA ad-hoc-request task; the rest of Phase 2 (concurrency-safe metadata, token
+  identity) remains.
 
 **Verification:** concurrent-writer unit test shows no lost updates; a spoofed
 `ERI_ANALYST_ID` no longer changes `approved_by`; `eri_query()` SQL across two processed

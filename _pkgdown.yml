@@ -160,6 +160,11 @@ reference:
   - eri_catalog_query
   - eri_catalog_verify
 
+- title: Querying
+  desc: Run SQL across processed datasets with a serverless DuckDB layer.
+  contents:
+  - eri_query
+
 - title: Logs & triage
   desc: Persist data-quality flags and triage the error / DQ log backlog.
   contents:

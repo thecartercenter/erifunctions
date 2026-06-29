@@ -1,5 +1,17 @@
 # erifunctions (development version)
 
+## Feature: `eri_query()` — serverless SQL across processed data (ADR-0004, roadmap Phase 2)
+
+- **New `eri_query(sql, …)`** runs SQL across **processed** parquet without a database server, by
+  attaching the files into an in-process **DuckDB** session (the Azure blob stays the system of record).
+  Two composable ways to put data in scope: **catalog-driven** — pass `country`/`disease`/`data_type`/…
+  and it looks up the matching processed files, stamps each row with its provenance, and unions them into
+  one table (`SELECT country, SUM(total_cases) FROM data GROUP BY country`); and **explicit** —
+  `tables = list(name = df_or_path)` to register data.frames / parquet paths for joins (e.g. cases ⨝
+  population). Returns a tibble. `duckdb` + `DBI` are **Suggests** (install once;
+  `install.packages(c("duckdb", "DBI"))`) — analysts who never query don't pay for them. Closes the
+  ad-hoc-data-request gap (DA task 10).
+
 ## Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck (#219)
 
 - **New quick-reference cards** under `docs/training/`: a **DA cheat sheet** (the ~15 functions a DA
