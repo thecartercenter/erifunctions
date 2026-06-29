@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-adhoc-guide.html">Answering ad-hoc data requests with SQL (eri_query)</a></li>
     <li><a class="dropdown-item" href="../articles/da-reporting-guide.html">Branded tables, figures, and decks for outputs</a></li>
+    <li><a class="dropdown-item" href="../articles/da-qc-feedback-guide.html">Quality-check an extract and give a country feedback</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Epidemiologists</h6></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
@@ -71,6 +72,11 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
+<div class="section level3">
+<h3 id="docs-da-qc-feedback-guide--quality-check-an-extract-and-give-a-country-feedback-development-version">Docs: <code>da-qc-feedback-guide</code> — quality-check an extract and give a country feedback (<a href="https://github.com/thecartercenter/erifunctions/issues/229" class="external-link">#229</a>)<a class="anchor" aria-label="anchor" href="#docs-da-qc-feedback-guide--quality-check-an-extract-and-give-a-country-feedback-development-version"></a></h3>
+<ul><li>
+<strong>New <code>da-qc-feedback-guide</code> article</strong> (DA tasks: QC data + provide feedback to countries) walks a real <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> → <code><a href="../reference/dq_report.html">dq_report()</a></code> run on a seeded DR malaria extract: the auto-corrections (<code>res$log</code>) vs the review flags (<code>res$flags</code>), turning the flags into a country-feedback table with <code><a href="../reference/eri_table.html">eri_table()</a></code> and posting a summary with <code><a href="../reference/eri_notify_dq.html">eri_notify_dq()</a></code>. Runs offline on a plain data frame.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="docs-da-reporting-guide--branded-tables-figures-and-decks-development-version">Docs: <code>da-reporting-guide</code> — branded tables, figures, and decks (<a href="https://github.com/thecartercenter/erifunctions/issues/227" class="external-link">#227</a>)<a class="anchor" aria-label="anchor" href="#docs-da-reporting-guide--branded-tables-figures-and-decks-development-version"></a></h3>
 <ul><li>

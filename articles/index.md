@@ -48,6 +48,8 @@ ODK as those feeds arrive.
   (eri_query)](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.md):
 - [Branded tables, figures, and decks for
   outputs](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md):
+- [Quality-check an extract and give a country
+  feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.md):
 
 ### For epidemiologists
 

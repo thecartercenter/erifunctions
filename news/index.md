@@ -2,6 +2,21 @@
 
 ## erifunctions (development version)
 
+### Docs: `da-qc-feedback-guide` — quality-check an extract and give a country feedback ([\#229](https://github.com/thecartercenter/erifunctions/issues/229))
+
+- **New `da-qc-feedback-guide` article** (DA tasks: QC data + provide
+  feedback to countries) walks a real
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+  →
+  [`dq_report()`](https://thecartercenter.github.io/erifunctions/reference/dq_report.md)
+  run on a seeded DR malaria extract: the auto-corrections (`res$log`)
+  vs the review flags (`res$flags`), turning the flags into a
+  country-feedback table with
+  [`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
+  and posting a summary with
+  [`eri_notify_dq()`](https://thecartercenter.github.io/erifunctions/reference/eri_notify_dq.md).
+  Runs offline on a plain data frame.
+
 ### Docs: `da-reporting-guide` — branded tables, figures, and decks ([\#227](https://github.com/thecartercenter/erifunctions/issues/227))
 
 - **New `da-reporting-guide` article** walks the reporting toolkit on
