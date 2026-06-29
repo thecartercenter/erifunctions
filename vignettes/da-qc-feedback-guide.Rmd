@@ -123,19 +123,22 @@ flags, the most-flagged columns) to Teams — handy for a shared channel that tr
 submissions:
 
 ```{r notify}
-eri_notify_dq(res, country = "dr", disease = "malaria", team = "ERI", channel = "DQ")
+eri_notify_dq(res, country = "dr", disease = "malaria")
 #> ℹ Sending Teams message via incoming webhook.
 ```
 
-It posts a compact, at-a-glance summary to the channel:
+It posts a compact, at-a-glance summary to the channel your webhook points at:
 
 ```
 [DQ Report] DR - MALARIA
 Rows processed : 5
 Corrections    : 3
 Flags          : 5
-Top flagged    : <the most-flagged columns>
+Top flagged    : Age, EpiWeek, Province_Residence, SampleDate, Sex
 ```
+
+To target a specific Teams channel instead of the default webhook, pass `team =` / `channel =` with a
+token (the Graph-API path) — see the [connections guide](connections-guide.html#teams).
 
 ## What's next
 
