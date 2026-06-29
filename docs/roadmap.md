@@ -67,6 +67,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0009](adr/0009-research-data-lifecycle.md) | Azure is the source, the research project the versioned working copy; pulls archive + dedup, canonical writes gated | Reproducible research inputs (Phase 1) |
 | [0010](adr/0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables (one Parquet per export table), approved together | ODK repeat-form fidelity (Phase 4) |
 | [0012](adr/0012-source-measure-data-model.md) | Address data by 5 axes splitting data_source (channel) from data_type (measure); general ingest core + legacy adapters | Coherent data-addressing model (#175); supersedes ADR-0011 |
+| [0013](adr/0013-odk-submission-backfill.md) | Write records *into* ODK Central (submission backfill): deterministic instanceID idempotency, columns map by field name, repeats reuse ADR-0010 | `eri_odk_upload()` (Phase 4, #211) |
 
 ---
 
@@ -191,6 +192,18 @@ tracking, and dashboard below all build on:
   `cleaning_rules` concept layered on the DQ schema engine (`R/dq.R`).
 - **Manual-edit tracking**: capture ODK Central submission edit history during
   `eri_odk_sync()` so direct edits are auditable.
+- **Submission backfill** (`eri_odk_upload()`) — the inverse of `download_odk_form()` /
+  `eri_odk_sync()`: bulk-create submissions on an existing **published** form from a CSV/Excel table,
+  for migrating paper or legacy records into ODK Central. Maps columns → form fields via the form's
+  `/fields` schema,
+  builds one instance XML per row, and POSTs each to `.../forms/{id}/submissions` with a
+  **deterministic `instanceID`** so re-runs are idempotent (HTTP 409 = already loaded → skip).
+  A `dry_run`/validation pass (required-field, choice-list, and type/format checks — dates and
+  geopoints especially) runs before anything is sent, and the call returns a per-row outcome
+  tibble (`created` / `skipped` / `failed`) rather than aborting the batch on one bad row. Flat
+  forms first; **repeat groups** reuse the ADR-0010 relational-table convention (parent + child
+  CSVs joined on `PARENT_KEY`) as a fast-follow. Attachments are out of scope — the REST
+  submission endpoint excludes them. Independent of the live-pilot timing.
 - Quarto **survey dashboard** template (replacing PowerBI) built on `R/reports_html.R`.
 
 **Verification:** sync the form; introduce a manual edit and confirm capture; a cleaning rule

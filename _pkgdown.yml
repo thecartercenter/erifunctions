@@ -175,6 +175,7 @@ reference:
   - eri_odk_purge
   - eri_odk_list_registered
   - eri_odk_sync
+  - eri_odk_upload
   - eri_survey_status
   - print.survey_status
   - eri_odk_bulk_users
