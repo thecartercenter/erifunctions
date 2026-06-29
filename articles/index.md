@@ -50,6 +50,8 @@ ODK as those feeds arrive.
   outputs](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md):
 - [Quality-check an extract and give a country
   feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.md):
+- [Final summaries and reports from an ODK
+  survey](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.md):
 
 ### For epidemiologists
 
