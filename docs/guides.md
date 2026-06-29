@@ -58,6 +58,7 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 | Upload, split & approve a monthly country report (CMR) | [`da-cmr-guide`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | ✅ Shipped |
 | Work with ODK Central (connect → monitor → manage → pull) | [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | ✅ Shipped |
 | Triage the error / DQ log backlog | [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | ✅ Shipped |
+| Answer ad-hoc data requests with SQL (`eri_query`) | [`da-adhoc-guide`](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | ✅ Shipped |
 
 ### For epidemiologists
 
