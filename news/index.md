@@ -2,6 +2,41 @@
 
 ## erifunctions (development version)
 
+### Feature: concurrency-safe + rebuildable metadata stores (ADR-0002, Phase 2)
+
+- **The shared YAML metadata stores are now race-safe.** The data
+  catalog (`_catalog/data_catalog.yaml`), the ODK registry
+  (`odk/registry.yaml`), and the artifact registry
+  (`artifacts/_registry.yaml`) were each updated by a full
+  read-modify-write, so two analysts editing at once would both read the
+  old version and the slower writer would silently clobber the other’s
+  entry. Writes now go through a new internal `.eri_yaml_update()` that
+  reads the blob **with its ETag** and writes back **conditionally**
+  (`If-Match` for an update, `If-None-Match: *` for a first create); on
+  a `412` conflict it re-reads, re-applies the change to the fresh
+  version, and retries — so no entry is lost. Routed:
+  [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md)
+  /
+  [`eri_catalog_remove()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_remove.md),
+  [`eri_odk_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_register.md)
+  /
+  [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
+  /
+  [`eri_odk_purge()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_purge.md)
+  / the sync `last_synced` update, and
+  [`eri_artifact_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_upload.md)
+  /
+  [`eri_artifact_archive()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_archive.md).
+- **New
+  [`eri_catalog_rebuild()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_rebuild.md)**
+  reconstructs the catalog by scanning the `*/processed/*.parquet` files
+  in the `data/` blob, making the catalog a **derivable cache** rather
+  than an irreplaceable record: recover from a lost or corrupted
+  catalog, or pick up files written outside
+  [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md).
+  Entries are derived from the five-axis (or legacy four-axis) path;
+  `registered_by` is `"rebuilt"` and `row_count` is left `NA`.
+
 ### Feature: token-derived approver identity (ADR-0003, Phase 2)
 
 - **Governed actions now record the *verified* signed-in identity.**

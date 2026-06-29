@@ -104,7 +104,7 @@ Schema-driven DQ checks and anomaly detection.
 
 ## Data catalog
 
-Register, query, and verify processed-layer data.
+Register, query, verify, and rebuild processed-layer data.
 
 - [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md)
   : Register a processed-layer file in the data catalog
@@ -114,6 +114,8 @@ Register, query, and verify processed-layer data.
   : Query the data catalog
 - [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md)
   : Verify that catalog entries still exist in Azure
+- [`eri_catalog_rebuild()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_rebuild.md)
+  : Rebuild the data catalog by scanning the processed layer
 
 ## Querying
 
