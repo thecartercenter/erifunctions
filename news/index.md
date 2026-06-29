@@ -2,6 +2,20 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_feedback()` — in-package feedback / ticket log
+
+- **New `eri_feedback(message, area = "general")`** lets any DA or Epi
+  file feedback straight from R — a bug, a rough edge, a wish, or a
+  general comment — into a durable backlog at
+  `_feedback/feedback_log.yaml` in the `data/` blob. Each ticket records
+  the **verified** signed-in author (ADR-0003), a UTC timestamp, an
+  auto-incrementing id, the `area` (`"general"` or a section like
+  `"odk"`/`"ingest"`/`"reporting"`), and `status = "submitted"`. Writes
+  are concurrency-safe (ADR-0002), so the id is unique even when two
+  people file at once. **New `eri_feedback_list(area, status)`** reads
+  the backlog into a tibble. Updating a ticket’s status through triage
+  is a separate workflow built on this log.
+
 ### Feature: concurrency-safe + rebuildable metadata stores (ADR-0002, Phase 2)
 
 - **The shared YAML metadata stores are now race-safe.** The data

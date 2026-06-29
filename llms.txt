@@ -536,6 +536,15 @@ Persist data-quality flags and triage the error / DQ log backlog.
 - [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
   : Mark a log entry as handled
 
+## Feedback
+
+File and read the team’s internal feedback / ticket log.
+
+- [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md)
+  : Log a piece of feedback to the shared ticket log
+- [`eri_feedback_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_list.md)
+  : List logged feedback
+
 ## ODK
 
 Register forms, sync submissions, monitor surveys, and manage users.
