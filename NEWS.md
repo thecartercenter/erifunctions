@@ -1,5 +1,15 @@
 # erifunctions (development version)
 
+## Feature: `eri_feedback_status()` — triage the feedback backlog
+
+- **New `eri_feedback_status(id, status, note = NULL)`** moves a ticket through the lifecycle
+  (`submitted` → `planned` → `in_progress` → `fixed`, or `declined`) and records an audit-trail entry of
+  the transition (from, to, who, when, optional note) on the ticket's `history`. The actor is the
+  **verified** signed-in identity (ADR-0003) and the update is concurrency-safe (ADR-0002); an unknown id
+  aborts without writing and `status` is validated against the lifecycle. **New `eri_feedback_board()`**
+  prints a one-line-per-status count of the backlog (the triage-meeting view) and returns the rows. This
+  is the triage half of the feedback log (ADR-0014); capture is [`eri_feedback()`].
+
 ## Feature: `eri_feedback()` — in-package feedback / ticket log
 
 - **New `eri_feedback(message, area = "general")`** lets any DA or Epi file feedback straight from R — a

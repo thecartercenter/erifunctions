@@ -3,9 +3,10 @@
 # A durable, attributable backlog of feedback from DAs and Epis, kept in the
 # `data/` blob as a single YAML log. `eri_feedback()` is the **capture** side:
 # it appends a ticket with the verified author identity (ADR-0003) and a
-# concurrency-safe write (ADR-0002). Reading is `eri_feedback_list()`. Updating a
-# ticket's status (submitted -> planned -> fixed) is a separate triage feature
-# built on top of this log; this file only writes and reads.
+# concurrency-safe write (ADR-0002). `eri_feedback_list()` reads it. The triage
+# side -- `eri_feedback_status()` moves a ticket through the lifecycle (with an
+# audit trail) and `eri_feedback_board()` summarises the backlog -- lives here
+# too (ADR-0014). All writes go through `.eri_yaml_update()`.
 
 .ERI_FEEDBACK_PATH <- "_feedback/feedback_log.yaml"
 
@@ -15,6 +16,11 @@
   "general", "ingest", "dq", "catalog", "query", "odk", "cmr",
   "reporting", "research", "spatial", "auth", "docs", "other"
 )
+
+# The ticket status lifecycle. Unlike `area`, this IS a controlled set: a typo
+# would make the board meaningless. Ordered for board/summary display; tickets
+# are born "submitted" (see eri_feedback()).
+.ERI_FEEDBACK_STATUSES <- c("submitted", "planned", "in_progress", "fixed", "declined")
 
 # Resolve the data container from the arg or env vars (mirrors .eri_catalog_con).
 #' @keywords internal
@@ -175,4 +181,130 @@ eri_feedback_list <- function(area = NULL, status = NULL, data_con = NULL) {
     status       = vapply(entries, function(e) .na_chr(e$status),       character(1L)),
     message      = vapply(entries, function(e) .na_chr(e$message),      character(1L))
   )
+}
+
+#### eri_feedback_status ####
+
+#' Move a feedback ticket through the triage lifecycle
+#'
+#' Updates the `status` of one ticket in `_feedback/feedback_log.yaml` and records
+#' an audit-trail entry of the transition (from, to, who, when, and an optional
+#' note). This is the triage side of the feedback log (ADR-0014): file a ticket
+#' with [eri_feedback()], then move it as you work it — typically
+#' `submitted` -> `planned` -> `in_progress` -> `fixed` (or `declined`).
+#'
+#' The change records the **verified** signed-in actor (ADR-0003) and is
+#' concurrency-safe (ADR-0002). The status is validated against the controlled
+#' lifecycle; an unknown id aborts without writing.
+#'
+#' @param id `int` The ticket id (as shown by [eri_feedback()] / [eri_feedback_list()]).
+#' @param status `chr` The new status. One of `r paste(.ERI_FEEDBACK_STATUSES, collapse = ", ")`.
+#' @param note `chr` or `NULL` An optional one-line note recorded with the transition
+#'   (e.g. a PR number or a reason for `declined`).
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns The updated ticket (invisibly), as a named list (including its `history`).
+#' @examples
+#' \dontrun{
+#' eri_feedback_status(142, "planned")
+#' eri_feedback_status(142, "fixed", note = "shipped in #251")
+#' eri_feedback_status(7, "declined", note = "works as intended")
+#' }
+#' @seealso [eri_feedback()] to file, [eri_feedback_board()] to summarise.
+#' @export
+eri_feedback_status <- function(id, status, note = NULL, data_con = NULL) {
+  if (length(id) != 1L || is.na(suppressWarnings(as.integer(id)))) {
+    cli::cli_abort("{.arg id} must be a single ticket id (an integer).")
+  }
+  id       <- as.integer(id)
+  id_label <- paste0("#", id)
+  status   <- tolower(as.character(status))
+  valid_statuses <- .ERI_FEEDBACK_STATUSES
+  if (!status %in% valid_statuses) {
+    cli::cli_abort(c(
+      "{.arg status} {.val {status}} is not a valid status.",
+      "i" = "Valid statuses: {.val {valid_statuses}}."
+    ))
+  }
+  if (!is.null(note) && (length(note) != 1L || !is.character(note))) {
+    cli::cli_abort("{.arg note} must be a single string or {.code NULL}.")
+  }
+
+  data_con <- .eri_feedback_con(data_con)
+  actor    <- .eri_analyst_id(data_con)
+  now      <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+
+  # Find + update by id inside the mutate so the change is race-safe and an
+  # unknown id aborts (propagating out of .eri_yaml_update without writing).
+  updated <- NULL
+  from    <- NULL
+  .eri_yaml_update(data_con, .ERI_FEEDBACK_PATH, function(log) {
+    entries <- log$entries %||% list()
+    idx <- which(vapply(entries, function(e) identical(as.integer(e$id %||% NA_integer_), id),
+                        logical(1L)))
+    if (length(idx) == 0L) {
+      cli::cli_abort(c(
+        "No feedback ticket {.field {id_label}} found.",
+        "i" = "List tickets with {.fn eri_feedback_list}."
+      ))
+    }
+    e        <- entries[[idx[[1L]]]]
+    from    <<- e$status %||% "submitted"
+    e$status <- status
+    e$updated_at <- now
+    e$updated_by <- actor
+    transition <- list(from = from, to = status, by = actor, at = now,
+                       note = if (is.null(note)) NA_character_ else note)
+    e$history <- c(e$history %||% list(), list(transition))
+    entries[[idx[[1L]]]] <- e
+    updated <<- e
+    log$entries <- entries
+    log
+  }, default = list(entries = list()))
+
+  cli::cli_alert_success(
+    "Ticket {.field {id_label}}: {.val {from}} → {.val {status}} (by {actor})."
+  )
+  invisible(updated)
+}
+
+#### eri_feedback_board ####
+
+#' Summarise the feedback backlog by status
+#'
+#' Prints a one-line-per-status count of the tickets in
+#' `_feedback/feedback_log.yaml`, in lifecycle order — the triage-meeting view of
+#' the board. Returns the full backlog tibble (as [eri_feedback_list()]) invisibly
+#' so it can be piped or inspected.
+#'
+#' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Invisibly, the backlog tibble from [eri_feedback_list()].
+#' @examples
+#' \dontrun{
+#' eri_feedback_board()
+#' }
+#' @seealso [eri_feedback_status()] to move a ticket, [eri_feedback_list()] for the rows.
+#' @export
+eri_feedback_board <- function(data_con = NULL) {
+  data_con <- .eri_feedback_con(data_con)
+  tbl <- suppressMessages(eri_feedback_list(data_con = data_con))
+
+  if (nrow(tbl) == 0L) {
+    cli::cli_inform("No feedback logged yet.")
+    return(invisible(tbl))
+  }
+
+  counts <- vapply(.ERI_FEEDBACK_STATUSES,
+                   function(s) sum(tbl$status == s, na.rm = TRUE), integer(1L))
+  # Any statuses not in the known lifecycle (shouldn't happen, but don't hide them).
+  other <- setdiff(unique(stats::na.omit(tbl$status)), .ERI_FEEDBACK_STATUSES)
+
+  cli::cli_h3("Feedback board ({nrow(tbl)} ticket{?s})")
+  for (s in .ERI_FEEDBACK_STATUSES) {
+    cli::cli_text("{.strong {counts[[s]]}} {s}")
+  }
+  for (s in other) {
+    n <- sum(tbl$status == s, na.rm = TRUE)
+    cli::cli_text("{.strong {n}} {s} {.emph (unknown status)}")
+  }
+  invisible(tbl)
 }

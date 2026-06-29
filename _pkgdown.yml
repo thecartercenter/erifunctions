@@ -191,10 +191,12 @@ reference:
   - eri_logs_resolve
 
 - title: Feedback
-  desc: File and read the team's internal feedback / ticket log.
+  desc: File, read, triage, and summarise the team's internal feedback / ticket log.
   contents:
   - eri_feedback
   - eri_feedback_list
+  - eri_feedback_status
+  - eri_feedback_board
 
 - title: ODK
   desc: Register forms, sync submissions, monitor surveys, and manage users.
