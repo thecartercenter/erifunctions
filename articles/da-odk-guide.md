@@ -226,7 +226,16 @@ Check the form’s assignments — your new collector should be listed:
 ``` r
 
 list_odk_form_users(con = con, project_id = project_id, form_id = form_id)
+#> # A tibble: 2 × 2
+#>   actorId roleId
+#>     <int>  <int>
+#> 1     198      7
+#> 2     250      2
 ```
+
+Each row pairs an `actorId` (an app user) with the `roleId` it holds on
+this form — your new collector (`actorId 250`, `roleId 2` = ODK’s App
+User role) is now listed alongside anyone already assigned.
 
 ### Managing a whole team at once
 
@@ -289,11 +298,12 @@ eri_odk_register(
 #> ✔ Registered "eri_test_river_prospection" (uga/demo) on <https://your-odk-server.org/>.
 
 eri_odk_list_registered(data_con = data_con)
-#> ℹ 1 registered form.
-#> # A tibble: 1 × 9
+#> ℹ 5 registered forms.
+#> # A tibble: 5 × 9
 #>   server_url               project_id form_id                    form_display_name … country disease added_by  added_at   last_synced
 #>   <chr>                         <int> <chr>                      <chr>                <chr>   <chr>   <chr>     <chr>      <chr>
-#> 1 https://your-odk-server…         11 eri_test_river_prospection ERI Test — River …   uga     demo    your.name 2026-06-26 NA
+#> 1 https://your-odk-server…         11 eri_test_river_prospection ERI Test — River …   uga     demo    your.name 2026-06-29 NA
+#> # ℹ 4 more rows — the registry is shared, so you also see teammates' registered forms
 ```
 
 ### Sync the submissions
@@ -307,7 +317,8 @@ the **raw** layer, then stamps the registry with the sync time:
 eri_odk_sync(project_id = project_id, form_id = form_id, con = con, data_con = data_con)
 #> ℹ Downloading submissions for "eri_test_river_prospection" (uga/demo)...
 #> ℹ Downloaded 3 records from "eri_test_river_prospection".
-#> ✔ Synced 3 records from "eri_test_river_prospection" to uga/demo/research/raw/eri_test_river_prospection.parquet.
+#> ℹ Operation log: 'uga/demo/research/logs/20260629_135631_eri_odk_sync.yaml'
+#> ✔ Synced 3 records from "eri_test_river_prospection" to 'uga/demo/research/raw/eri_test_river_prospection.parquet'.
 ```
 
 Read it back to see what landed. ODK expands the form fields plus its
@@ -354,16 +365,17 @@ eri_write(raw, staged_path, azcontainer = data_con)
 
 # Channel-level approve (no measure yet); pass data_type = once you assign one.
 eri_approve("uga", "demo", "research", "2026-06", azcontainer = data_con)
-#> ℹ Approving the channel-level (no-measure) form; the catalog entry's data_type will be NA.
-#>   Pass data_type (e.g. "case", "aggregate", "treatment") to record a measure (ADR-0012).
-#> ✔ Catalog: registered eri_test_river_prospection_2026-06.parquet.
-#> ✔ Approved: eri_test_river_prospection_2026-06.parquet
-#> ✔ Approval log: uga/demo/research/processed/2026-06_approval_log.yaml
+#> ℹ Approving the channel-level (no-measure) form; the catalog entry's data_type will be "NA".
+#>   Pass `data_type` (e.g. "case", "aggregate", "treatment") to record a measure (ADR-0012).
+#> ✔ Catalog: registered 'eri_test_river_prospection_2026-06.parquet'.
+#> ✔ Approved: 'eri_test_river_prospection_2026-06.parquet'
+#> ✔ Approval log: 'uga/demo/research/processed/2026-06_approval_log.yaml'
 #> ── ✔ Approved "2026-06" ─────────────────────────────────
 #> Dataset: uga / demo / research
 #> Files: 1 moved to processed
 #> Approver: your.name
 #> Location: uga/demo/research/processed
+#> ℹ Operation log: 'uga/demo/research/logs/20260629_135633_eri_approve_2026-06.yaml'
 ```
 
 Your ODK submissions are now canonical, discoverable in the catalog like
@@ -373,10 +385,16 @@ any other approved dataset:
 
 eri_catalog_query(country = "uga", disease = "demo", data_con = data_con)
 #> # A tibble: 1 × 13
-#>   path                              country disease data_source data_type layer …
-#>   <chr>                             <chr>   <chr>   <chr>       <chr>     <chr>
-#> 1 uga/demo/research/processed/eri…  uga     demo    research    NA        proces…
+#>   path   country disease data_source data_type layer  period  file_format row_count
+#>   <chr>  <chr>   <chr>   <chr>       <chr>     <chr>  <chr>   <chr>           <int>
+#> 1 uga/…  uga     demo    research    <NA>      proc…  2026-…  parquet            NA
+#> # ℹ 4 more variables: size_bytes <int>, registered_at <chr>,
+#> #   registered_by <chr>, last_verified_at <chr>
 ```
+
+(`data_type` is `<NA>` because we approved at the channel level;
+`row_count` is `NA` until the entry is verified. Assign a measure on
+approval — `eri_approve(…, data_type = "prevalence")` — to fill it in.)
 
 ## 4. Forms with repeat groups
 
