@@ -18,6 +18,13 @@
   per-row outcome tibble (`created` / `skipped` / `failed`) and continues past a bad row rather than
   aborting the batch. Attachments at creation are out of scope (an ODK API limitation). Adds a dependency
   on `xml2`. See [ADR-0013](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0013-odk-submission-backfill.md).
+- **`mapping` argument** (#213) — for extracts whose headers don't already match the form, pass
+  `mapping = c(input_header = "field-column", …)` to rename columns to field names before validation
+  (e.g. a paper CSV with `village` → `site_name`); columns you don't list are left as-is. The
+  `da-odk-guide` "Backfilling records into a form" section is now **captured live** against the
+  `eri_test_river_prospection` sandbox form (real `created` / 409-`skipped` round-trip), and the
+  field↔column mapping now normalizes ODK Central's root-relative `/fields` paths (e.g. `/site_name`)
+  so submissions carry their data on servers that omit the instance-root name from field paths.
 
 ## Feature: harden analyst attribution + `eri_odk_purge()` for sandbox cleanup (#175 polish)
 

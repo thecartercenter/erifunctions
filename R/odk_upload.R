@@ -71,11 +71,16 @@
   if (inherits(inst_root, "xml_missing"))
     cli::cli_abort("Could not locate the primary instance in form {.val {form_id}}'s XML.")
 
+  root_name <- xml2::xml_name(inst_root)
+  choices   <- .odk_extract_choices(doc)
+  # Form-XML refs include the root (`/data/...`); normalize to match the `/fields` paths.
+  if (length(choices)) names(choices) <- .odk_norm_path(names(choices), root_name)
+
   list(
-    root_name = xml2::xml_name(inst_root),
+    root_name = root_name,
     id        = xml2::xml_attr(inst_root, "id"),
     version   = xml2::xml_attr(inst_root, "version"),
-    choices   = .odk_extract_choices(doc)
+    choices   = choices
   )
 }
 
@@ -133,6 +138,42 @@
   cli::cli_abort("{.arg data} must be a file path, a data.frame, or a named list of tables.")
 }
 
+# Rename columns per a `mapping` (input header -> canonical field-column name), applied to
+# the parent and every child table. A rename only fires where the source column is present,
+# so the same mapping can be handed every table harmlessly. Returns the renamed input list.
+#' @keywords internal
+.odk_apply_mapping <- function(input, mapping) {
+  if (is.null(mapping) || length(mapping) == 0L) return(input)
+  mapping <- unlist(mapping)
+  if (is.null(names(mapping)) || any(!nzchar(names(mapping))))
+    cli::cli_abort("{.arg mapping} must be named: {.code c(input_header = \"field-column\")}.")
+
+  rename_one <- function(tbl) {
+    hit <- intersect(names(mapping), names(tbl))
+    if (length(hit)) {
+      targets <- unname(mapping[hit])
+      collide <- intersect(targets, setdiff(names(tbl), hit))
+      if (length(collide))
+        cli::cli_warn(c(
+          "{.arg mapping} target{?s} {.val {collide}} already exist in the table; the mapped column will duplicate the name.",
+          "i" = "Rename or drop the existing column before mapping onto it."
+        ))
+      names(tbl)[match(hit, names(tbl))] <- targets
+    }
+    tbl
+  }
+  used <- intersect(names(mapping), c(names(input$parent), unlist(lapply(input$children, names))))
+  if (length(setdiff(names(mapping), used)))
+    cli::cli_warn(c(
+      "{.arg mapping} source column{?s} {.val {setdiff(names(mapping), used)}} not found in any table.",
+      "i" = "Map from the column names as they appear in {.arg data}."
+    ))
+
+  input$parent   <- rename_one(input$parent)
+  input$children <- lapply(input$children, rename_one)
+  input
+}
+
 # --- Deterministic instanceID -------------------------------------------------
 
 # uuid:<hash> derived from the key column(s), or the whole row when none given, so a
@@ -183,15 +224,24 @@
 
 # --- Validation ---------------------------------------------------------------
 
+# Normalize an ODK node path to a single convention: relative to the instance root, with
+# the root element name stripped. ODK Central's `/fields` endpoint returns paths *without*
+# the root (e.g. `/site_name`), while form-XML `ref`/`nodeset` attributes include it
+# (`/data/site_name`); normalizing both to `/site_name` lets them line up. Idempotent.
+#' @keywords internal
+.odk_norm_path <- function(path, root_name) {
+  sub(paste0("^/", root_name, "/"), "/", path)
+}
+
 # Build column -> relative-path map from the fields list (leaf fields only). The expected
 # column name is the dash-joined relative path under the root (download convention).
 #' @keywords internal
 .odk_colmap <- function(fields, root_name, under = NULL) {
   leaves <- fields[!fields$type %in% "structure" & !is.na(fields$path), ]
-  prefix <- paste0("/", root_name, "/", if (!is.null(under)) paste0(under, "/") else "")
+  prefix <- paste0("/", if (!is.null(under)) paste0(under, "/") else "")
   map <- list()
   for (i in seq_len(nrow(leaves))) {
-    p <- leaves$path[i]
+    p <- .odk_norm_path(leaves$path[i], root_name)
     if (!startsWith(p, prefix)) next
     rel <- substr(p, nchar(prefix) + 1L, nchar(p))
     if (!nzchar(rel)) next
@@ -223,13 +273,14 @@
     add("parent", col, NA_integer_, "column does not match any form field")
 
   # Missing required fields are reported by ODK at POST; here we surface unmapped columns
-  # and best-effort type/choice problems on mapped ones.
-  type_of <- stats::setNames(fields$type, fields$path)
+  # and best-effort type/choice problems on mapped ones. Keys are normalized (root stripped)
+  # so the field-type and choice lookups line up regardless of ODK's path convention.
+  type_of <- stats::setNames(fields$type, .odk_norm_path(fields$path, tmpl$root_name))
   choices <- tmpl$choices
 
   check_cell <- function(tbl_name, col, parts, value, rowi, under = NULL) {
     if (is.na(value) || !nzchar(as.character(value))) return(invisible())
-    path <- paste0("/", tmpl$root_name, "/", if (!is.null(under)) paste0(under, "/") else "",
+    path <- paste0("/", if (!is.null(under)) paste0(under, "/") else "",
                    paste(parts, collapse = "/"))
     ty <- type_of[[path]]
     if (!is.null(ty)) {
@@ -329,6 +380,13 @@
 #' @param key_col `chr` Column name(s) whose values seed the deterministic
 #'   `instanceID`. `NULL` (default) hashes the whole parent row. To preserve the
 #'   original submission identity on a round-trip, pass the id column (e.g. `"KEY"`).
+#'   Names refer to the columns *after* any `mapping` is applied.
+#' @param mapping Named character vector mapping **input column headers to
+#'   field-column names**, for extracts whose headers don't already match the
+#'   form (e.g. a paper CSV): `c(village = "site_name", date_seen = "visit-date")`.
+#'   Targets use the same `download_odk_form()` flattening (`group-field`). The
+#'   rename is applied to the parent and every child table before validation, so
+#'   columns you don't list are left as-is. `NULL` (default) maps nothing.
 #' @param dry_run `lgl` If `TRUE`, run validation only and POST nothing; returns
 #'   the validation-issue tibble.
 #' @param data_con Azure container for optional operation logging; `NULL` skips it.
@@ -357,6 +415,14 @@
 #' # Create the submissions (re-runs skip already-present rows via HTTP 409).
 #' eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
 #'                con = con, key_col = "KEY")
+#'
+#' # A paper CSV whose headers don't match the form: map them. `key_col` names a
+#' # column left unmapped (mapping is applied first), so key on `rec`, not `village`.
+#' paper <- read.csv("historical_records.csv")   # cols: village, date_seen, stage, rec
+#' eri_odk_upload(paper, project_id = 7, form_id = "RiverProspection", con = con,
+#'                mapping = c(village = "site_name", date_seen = "prospection_date",
+#'                            stage = "river_stage"),
+#'                key_col = "rec", dry_run = TRUE)
 #' }
 #' @export
 eri_odk_upload <- function(
@@ -367,12 +433,13 @@ eri_odk_upload <- function(
     url      = Sys.getenv("ODK_URL"),
     auth     = Sys.getenv("ODK_TOKEN"),
     key_col  = NULL,
+    mapping  = NULL,
     dry_run  = FALSE,
     data_con = NULL
 ) {
   creds <- .odk_creds(con, url, auth)
 
-  input    <- .odk_normalize_input(data, form_id)
+  input    <- .odk_apply_mapping(.odk_normalize_input(data, form_id), mapping)
   parent   <- input$parent
   children <- input$children
 

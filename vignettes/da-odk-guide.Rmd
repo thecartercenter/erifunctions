@@ -474,8 +474,8 @@ to land in ODK Central so they sit alongside the field submissions and flow thro
 [`eri_odk_upload()`](../reference/eri_odk_upload.html) does exactly that: it reads a table and **creates
 one submission per row** on an existing **published** form.
 
-The mapping is the mirror image of a download: columns are matched to form fields **by name**, using the
-same flattening you saw above — a field at `/data/visit/date` is the column `visit-date`, and repeat
+It is the mirror image of a download: columns are matched to form fields **by name**, using the same
+flattening you saw above — a field nested in a `visit` group is the column `visit-date`, and repeat
 groups are supplied as the same `{form_id}-{repeat}` child tables linked by `PARENT_KEY`. So a
 `download_odk_form(tables = TRUE)` result is itself a valid input — **download and upload round-trip.**
 
@@ -515,10 +515,10 @@ eri_odk_upload(backfill, project_id = project_id, form_id = form_id,
 #> ✔ Validation clean: all columns map to form fields.
 #> ✔ Uploaded to "eri_test_river_prospection": 2 created, 0 already present.
 #> # A tibble: 2 × 4
-#>   instance_id     status  http_status message
-#>   <chr>           <chr>         <int> <chr>
-#> 1 uuid:9f2c1a…    created         201 NA
-#> 2 uuid:4a7b86…    created         201 NA
+#>   instance_id                           status  http_status message
+#>   <chr>                                 <chr>         <int> <chr>
+#> 1 uuid:682c06225e8949547e6c34a6b6834ee4 created         200 NA
+#> 2 uuid:80a4e16d30398e85e78b4c18799a63ab created         200 NA
 ```
 
 The `instanceID` of each submission is **derived deterministically** from `key_col` (here `record_id`).
@@ -533,6 +533,36 @@ eri_odk_upload(backfill, project_id = project_id, form_id = form_id,
 
 — and if you fix a couple of rows and run again, only those change while the rest skip. A bad row never
 aborts the batch: it comes back as `failed` (with the server's message) while its neighbours load.
+
+### Headers that don't match the form
+
+A paper or legacy spreadsheet rarely uses the form's exact column names. Rather than editing the source
+file, pass a **`mapping`** — `c(your_header = "field-column", …)` — and `eri_odk_upload()` renames the
+columns before it validates:
+
+```{r backfill-mapping}
+paper <- data.frame(
+  village   = c("Old Ford", "Bend Camp"),
+  date_seen = c("2025-11-03", "2025-11-04"),
+  stage     = c("low", "medium"),
+  flies     = c(12L, 7L),
+  recorder  = c("paper-archive", "paper-archive"),
+  rec       = c("hist-101", "hist-102")
+)
+
+eri_odk_upload(paper, project_id = project_id, form_id = form_id, con = con,
+               mapping = c(village = "site_name", date_seen = "prospection_date",
+                           stage = "river_stage", flies = "blackfly_count",
+                           recorder = "collector"),
+               key_col = "rec", dry_run = TRUE)
+#> ✔ Validation clean: all columns map to form fields.
+#> ℹ `dry_run` is on -- no submissions were sent.
+#> # A tibble: 0 × 4
+#> # ℹ 4 variables: table <chr>, column <chr>, row <int>, issue <chr>
+```
+
+Map only the columns that differ — anything already matching a field is left alone — then drop
+`dry_run` to send. The targets are the same flattened field-column names (`group-field`).
 
 > **Forms with repeats.** Pass the same named-list shape you got from `download_odk_form(tables = TRUE)`
 > — the parent table first, then each `{form_id}-{repeat}` child table with a `PARENT_KEY` column linking

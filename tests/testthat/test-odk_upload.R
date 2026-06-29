@@ -44,29 +44,34 @@ fixture_form_xml <- function() {
   </h:html>'
 }
 
+# Paths mirror what ODK Central's /fields endpoint really returns: relative to the
+# instance root, with the root element name omitted (e.g. "/site_name", not "/data/...").
 fixture_fields <- function() {
   tibble::tribble(
-    ~name,         ~path,                          ~type,
-    "site_name",   "/data/site_name",              "string",
-    "visit",       "/data/visit",                  "structure",
-    "visit_date",  "/data/visit/visit_date",       "date",
-    "river_stage", "/data/visit/river_stage",      "string",
-    "larva_sample","/data/larva_sample",           "structure",
-    "species",     "/data/larva_sample/species",   "string",
-    "larva_count", "/data/larva_sample/larva_count","int",
-    "meta",        "/data/meta",                   "structure",
-    "instanceID",  "/data/meta/instanceID",        "string"
+    ~name,         ~path,                     ~type,
+    "site_name",   "/site_name",              "string",
+    "visit",       "/visit",                  "structure",
+    "visit_date",  "/visit/visit_date",       "date",
+    "river_stage", "/visit/river_stage",      "string",
+    "larva_sample","/larva_sample",           "structure",
+    "species",     "/larva_sample/species",   "string",
+    "larva_count", "/larva_sample/larva_count","int",
+    "meta",        "/meta",                   "structure",
+    "instanceID",  "/meta/instanceID",        "string"
   )
 }
 
-# tmpl as .odk_form_template() would return it (parsed from fixture_form_xml()).
+# tmpl as .odk_form_template() would return it (parsed from fixture_form_xml()): choice
+# keys are normalized (root stripped) to line up with the /fields paths.
 fixture_tmpl <- function() {
   doc <- xml2::read_xml(fixture_form_xml())
+  ch  <- erifunctions:::.odk_extract_choices(doc)
+  names(ch) <- erifunctions:::.odk_norm_path(names(ch), "data")
   list(
     root_name = "data",
     id        = "rivertest",
     version   = "3",
-    choices   = erifunctions:::.odk_extract_choices(doc)
+    choices   = ch
   )
 }
 
@@ -119,6 +124,61 @@ test_that(".odk_normalize_input handles data.frame, list, and bad inputs", {
       list(p = tibble::tibble(x = 1), wrongname = tibble::tibble(y = 2)), "rivertest"
     ),
     "rivertest-"
+  )
+})
+
+# --- .odk_colmap path conventions ---------------------------------------------
+
+test_that(".odk_colmap handles both root-omitted and root-included /fields paths", {
+  # root-omitted (what ODK Central actually returns)
+  m1 <- erifunctions:::.odk_colmap(fixture_fields(), "data")
+  expect_true(all(c("site_name", "visit-visit_date", "larva_sample-species") %in% names(m1)))
+  expect_equal(m1[["visit-visit_date"]], c("visit", "visit_date"))
+
+  # root-included (e.g. "/data/site_name") normalizes to the same columns
+  rooted <- fixture_fields()
+  rooted$path <- sub("^/", "/data/", rooted$path)
+  m2 <- erifunctions:::.odk_colmap(rooted, "data")
+  expect_equal(m1, m2)
+})
+
+# --- .odk_apply_mapping -------------------------------------------------------
+
+test_that(".odk_apply_mapping renames matching columns in parent and children", {
+  input <- list(
+    parent = tibble::tibble(village = "S1", stage = "low", record_id = "h1"),
+    children = list(larva_sample = tibble::tibble(bug = "anopheles", PARENT_KEY = "a"))
+  )
+  out <- erifunctions:::.odk_apply_mapping(
+    input, c(village = "site_name", stage = "visit-river_stage", bug = "species")
+  )
+  expect_true(all(c("site_name", "visit-river_stage", "record_id") %in% names(out$parent)))
+  expect_false("village" %in% names(out$parent))
+  expect_true("species" %in% names(out$children$larva_sample))  # child renamed too
+  expect_true("PARENT_KEY" %in% names(out$children$larva_sample))  # untouched
+})
+
+test_that(".odk_apply_mapping warns on a source column that matches no table", {
+  input <- list(parent = tibble::tibble(village = "S1"), children = list())
+  expect_warning(
+    erifunctions:::.odk_apply_mapping(input, c(village = "site_name", ghost = "nope")),
+    "not found in any table"
+  )
+})
+
+test_that(".odk_apply_mapping is a no-op for NULL/empty mapping", {
+  input <- list(parent = tibble::tibble(x = 1), children = list())
+  expect_identical(erifunctions:::.odk_apply_mapping(input, NULL), input)
+})
+
+test_that(".odk_apply_mapping warns when a target collides with an existing column", {
+  input <- list(
+    parent = tibble::tibble(village = "S1", site_name = "already-here"),
+    children = list()
+  )
+  expect_warning(
+    erifunctions:::.odk_apply_mapping(input, c(village = "site_name")),
+    "already exist"
   )
 })
 
@@ -229,6 +289,34 @@ test_that("eri_odk_upload dry_run validates and POSTs nothing", {
   ))
   expect_equal(posted, 0L)                          # nothing sent
   expect_true(any(out$column == "bad"))             # validation tibble returned
+})
+
+test_that("eri_odk_upload applies mapping so non-conventional headers validate clean", {
+  posted <- list()
+  local_mocked_bindings(
+    .odk_form_fields     = function(...) fixture_fields(),
+    .odk_form_template   = function(...) fixture_tmpl(),
+    .odk_post_submission = function(creds, project_id, form_id, xml) {
+      posted[[length(posted) + 1L]] <<- xml
+      list(status = "created", http = 201L, message = NA_character_)
+    },
+    .package = "erifunctions"
+  )
+
+  paper <- tibble::tibble(
+    village = "S1", stage = "low", seen = "2026-06-01", rec = "h1"
+  )
+  res <- suppressMessages(eri_odk_upload(
+    paper, project_id = 1L, form_id = "rivertest", url = "https://x/", auth = "tok",
+    mapping = c(village = "site_name", stage = "visit-river_stage",
+                seen = "visit-visit_date"),
+    key_col = "rec"
+  ))
+  expect_equal(res$status, "created")
+  # the mapped values made it into the submission under the real field paths
+  doc <- xml2::read_xml(posted[[1]])
+  expect_equal(xml2::xml_text(xml2::xml_find_first(doc, "/data/site_name")), "S1")
+  expect_equal(xml2::xml_text(xml2::xml_find_first(doc, "/data/visit/river_stage")), "low")
 })
 
 test_that("eri_odk_upload reports per-row outcomes and never aborts the batch", {
