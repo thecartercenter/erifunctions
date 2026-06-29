@@ -2,6 +2,18 @@
 
 ## erifunctions (development version)
 
+### Docs: `da-reporting-guide` — branded tables, figures, and decks ([\#227](https://github.com/thecartercenter/erifunctions/issues/227))
+
+- **New `da-reporting-guide` article** walks the reporting toolkit on
+  safe data:
+  [`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
+  (branded flextable),
+  [`eri_brand_ggplot_theme()`](https://thecartercenter.github.io/erifunctions/reference/eri_brand_ggplot_theme.md),
+  [`eri_report_excel()`](https://thecartercenter.github.io/erifunctions/reference/eri_report_excel.md)
+  (styled workbook), and the `eri_pptx_*` deck builder, with pointers to
+  the spatial/epi-analytics guides for maps and curves. Every chunk runs
+  on a plain data frame (verified end-to-end).
+
 ### Feature: `eri_query()` — serverless SQL across processed data (ADR-0004, roadmap Phase 2)
 
 - **New `eri_query(sql, …)`** runs SQL across **processed** parquet

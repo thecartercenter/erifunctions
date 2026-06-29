@@ -11,6 +11,7 @@ articles:
   da-logs-guide: da-logs-guide.html
   da-odk-guide: da-odk-guide.html
   da-onboard-guide: da-onboard-guide.html
+  da-reporting-guide: da-reporting-guide.html
   data-model-card: data-model-card.html
   dq-pipeline: dq-pipeline.html
   epi-analytics: epi-analytics.html
@@ -23,7 +24,7 @@ articles:
   sharepoint-workflow: sharepoint-workflow.html
   spatial-workflow: spatial-workflow.html
   troubleshooting: troubleshooting.html
-last_built: 2026-06-29T16:20Z
+last_built: 2026-06-29T16:34Z
 urls:
   reference: https://thecartercenter.github.io/erifunctions/reference
   article: https://thecartercenter.github.io/erifunctions/articles

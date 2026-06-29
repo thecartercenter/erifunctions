@@ -46,6 +46,8 @@ ODK as those feeds arrive.
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
 - [Answering ad-hoc data requests with SQL
   (eri_query)](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.md):
+- [Branded tables, figures, and decks for
+  outputs](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md):
 
 ### For epidemiologists
 
