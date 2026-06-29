@@ -12,6 +12,7 @@ eri_odk_upload(
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
   key_col = NULL,
+  mapping = NULL,
   dry_run = FALSE,
   data_con = NULL
 )
@@ -32,7 +33,15 @@ the \code{ODK_URL} / \code{ODK_TOKEN} environment variables.}
 
 \item{key_col}{\code{chr} Column name(s) whose values seed the deterministic
 \code{instanceID}. \code{NULL} (default) hashes the whole parent row. To preserve the
-original submission identity on a round-trip, pass the id column (e.g. \code{"KEY"}).}
+original submission identity on a round-trip, pass the id column (e.g. \code{"KEY"}).
+Names refer to the columns \emph{after} any \code{mapping} is applied.}
+
+\item{mapping}{Named character vector mapping \strong{input column headers to
+field-column names}, for extracts whose headers don't already match the
+form (e.g. a paper CSV): \code{c(village = "site_name", date_seen = "visit-date")}.
+Targets use the same \code{download_odk_form()} flattening (\code{group-field}). The
+rename is applied to the parent and every child table before validation, so
+columns you don't list are left as-is. \code{NULL} (default) maps nothing.}
 
 \item{dry_run}{\code{lgl} If \code{TRUE}, run validation only and POST nothing; returns
 the validation-issue tibble.}
@@ -90,5 +99,12 @@ eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
 # Create the submissions (re-runs skip already-present rows via HTTP 409).
 eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
                con = con, key_col = "KEY")
+
+# A paper CSV whose headers don't match the form: map them.
+paper <- read.csv("historical_records.csv")   # cols: village, date_seen, stage
+eri_odk_upload(paper, project_id = 7, form_id = "RiverProspection", con = con,
+               mapping = c(village = "site_name", date_seen = "prospection_date",
+                           stage = "river_stage"),
+               key_col = "village", dry_run = TRUE)
 }
 }
