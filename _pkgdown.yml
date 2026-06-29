@@ -190,6 +190,12 @@ reference:
   - eri_logs
   - eri_logs_resolve
 
+- title: Feedback
+  desc: File and read the team's internal feedback / ticket log.
+  contents:
+  - eri_feedback
+  - eri_feedback_list
+
 - title: ODK
   desc: Register forms, sync submissions, monitor surveys, and manage users.
   contents:
