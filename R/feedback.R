@@ -212,10 +212,11 @@ eri_feedback_list <- function(area = NULL, status = NULL, data_con = NULL) {
 #' @seealso [eri_feedback()] to file, [eri_feedback_board()] to summarise.
 #' @export
 eri_feedback_status <- function(id, status, note = NULL, data_con = NULL) {
-  if (length(id) != 1L || is.na(suppressWarnings(as.integer(id)))) {
-    cli::cli_abort("{.arg id} must be a single ticket id (an integer).")
+  id_num <- suppressWarnings(as.numeric(id))
+  if (length(id) != 1L || is.na(id_num) || id_num != round(id_num) || id_num < 1) {
+    cli::cli_abort("{.arg id} must be a single positive integer ticket id.")
   }
-  id       <- as.integer(id)
+  id       <- as.integer(id_num)
   id_label <- paste0("#", id)
   status   <- tolower(as.character(status))
   valid_statuses <- .ERI_FEEDBACK_STATUSES
@@ -234,7 +235,9 @@ eri_feedback_status <- function(id, status, note = NULL, data_con = NULL) {
   now      <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 
   # Find + update by id inside the mutate so the change is race-safe and an
-  # unknown id aborts (propagating out of .eri_yaml_update without writing).
+  # unknown id aborts (propagating out of .eri_yaml_update without writing). The
+  # `default` below only satisfies the shared signature -- a status change
+  # presupposes the log exists, and an absent log aborts on "no id" anyway.
   updated <- NULL
   from    <- NULL
   .eri_yaml_update(data_con, .ERI_FEEDBACK_PATH, function(log) {
@@ -262,7 +265,7 @@ eri_feedback_status <- function(id, status, note = NULL, data_con = NULL) {
   }, default = list(entries = list()))
 
   cli::cli_alert_success(
-    "Ticket {.field {id_label}}: {.val {from}} → {.val {status}} (by {actor})."
+    "Ticket {.field {id_label}}: {.val {from}} → {.val {status}} (by {.val {actor}})."
   )
   invisible(updated)
 }

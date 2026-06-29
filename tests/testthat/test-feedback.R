@@ -151,6 +151,7 @@ test_that("eri_feedback_status rejects an unknown status and an unknown id", {
 
   expect_error(eri_feedback_status(1L, "donezo", data_con = "mock"), "not a valid status")
   expect_error(eri_feedback_status(999L, "fixed", data_con = "mock"), "No feedback ticket")
+  expect_error(eri_feedback_status(2.7, "fixed", data_con = "mock"), "positive integer")
 })
 
 # --- eri_feedback_board -------------------------------------------------------
