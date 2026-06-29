@@ -237,7 +237,9 @@
 # column name is the dash-joined relative path under the root (download convention).
 #' @keywords internal
 .odk_colmap <- function(fields, root_name, under = NULL) {
-  leaves <- fields[!fields$type %in% "structure" & !is.na(fields$path), ]
+  # Exclude container nodes: groups are "structure", repeats are "repeat" -- neither is a
+  # leaf that takes a value (repeat *leaves* live under the repeat and are kept).
+  leaves <- fields[!fields$type %in% c("structure", "repeat") & !is.na(fields$path), ]
   prefix <- paste0("/", if (!is.null(under)) paste0(under, "/") else "")
   map <- list()
   for (i in seq_len(nrow(leaves))) {

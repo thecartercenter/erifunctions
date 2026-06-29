@@ -53,7 +53,7 @@ fixture_fields <- function() {
     "visit",       "/visit",                  "structure",
     "visit_date",  "/visit/visit_date",       "date",
     "river_stage", "/visit/river_stage",      "string",
-    "larva_sample","/larva_sample",           "structure",
+    "larva_sample","/larva_sample",           "repeat",
     "species",     "/larva_sample/species",   "string",
     "larva_count", "/larva_sample/larva_count","int",
     "meta",        "/meta",                   "structure",
@@ -140,6 +140,11 @@ test_that(".odk_colmap handles both root-omitted and root-included /fields paths
   rooted$path <- sub("^/", "/data/", rooted$path)
   m2 <- erifunctions:::.odk_colmap(rooted, "data")
   expect_equal(m1, m2)
+
+  # the repeat *container* (type "repeat") is not a parent leaf; its children are
+  expect_false("larva_sample" %in% names(m1))
+  cc <- erifunctions:::.odk_colmap(fixture_fields(), "data", under = "larva_sample")
+  expect_true(all(c("species", "larva_count") %in% names(cc)))
 })
 
 # --- .odk_apply_mapping -------------------------------------------------------
