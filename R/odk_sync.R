@@ -138,15 +138,18 @@ eri_odk_sync <- function(
 # Update last_synced for the matching entry and persist the registry.
 #' @keywords internal
 .odk_sync_update_last_synced <- function(reg, data_con, project_id, form_id) {
-  idx <- which(vapply(reg$forms, function(f) {
-    isTRUE(f$active) &&
-      identical(as.integer(f$project_id), as.integer(project_id)) &&
-      identical(f$form_id, form_id)
-  }, logical(1L)))
-
-  if (length(idx) == 0L) return(invisible(NULL))
-
-  reg$forms[[idx[1L]]]$last_synced <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  .odk_registry_write(reg, data_con)
+  now <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  # Concurrency-safe timestamp update (ADR-0002): re-find on the freshly-read
+  # registry so a parallel sync/registration isn't clobbered.
+  .eri_yaml_update(data_con, .ODK_REGISTRY_PATH, function(reg) {
+    if (is.null(reg$forms)) reg$forms <- list()
+    idx <- which(vapply(reg$forms, function(f) {
+      isTRUE(f$active) &&
+        identical(as.integer(f$project_id), as.integer(project_id)) &&
+        identical(f$form_id, form_id)
+    }, logical(1L)))
+    if (length(idx) > 0L) reg$forms[[idx[[1L]]]]$last_synced <- now
+    reg
+  }, default = list(forms = list()))
   invisible(NULL)
 }

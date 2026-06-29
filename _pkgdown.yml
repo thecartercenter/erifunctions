@@ -170,12 +170,13 @@ reference:
   - add_anomaly_spatial
 
 - title: Data catalog
-  desc: Register, query, and verify processed-layer data.
+  desc: Register, query, verify, and rebuild processed-layer data.
   contents:
   - eri_catalog_register
   - eri_catalog_remove
   - eri_catalog_query
   - eri_catalog_verify
+  - eri_catalog_rebuild
 
 - title: Querying
   desc: Run SQL across processed datasets with a serverless DuckDB layer.

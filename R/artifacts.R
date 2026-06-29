@@ -102,14 +102,17 @@ eri_artifact_upload <- function(
     archived    = FALSE
   )
 
-  registry <- .eri_artifact_registry_read(data_con)
-  existing <- vapply(registry$entries, function(e) identical(e$name, name), logical(1L))
-  if (any(existing)) {
-    registry$entries[[which(existing)[[1L]]]] <- entry
-  } else {
-    registry$entries <- c(registry$entries, list(entry))
-  }
-  .eri_artifact_registry_write(registry, data_con)
+  # Concurrency-safe upsert by name (ADR-0002).
+  .eri_yaml_update(data_con, .ERI_ARTIFACT_REGISTRY_PATH, function(registry) {
+    if (is.null(registry$entries)) registry$entries <- list()
+    existing <- vapply(registry$entries, function(e) identical(e$name, name), logical(1L))
+    if (any(existing)) {
+      registry$entries[[which(existing)[[1L]]]] <- entry
+    } else {
+      registry$entries <- c(registry$entries, list(entry))
+    }
+    registry
+  }, default = list(entries = list()))
 
   cli::cli_alert_success(
     "Artifact {.val {name}} ({type}) uploaded to {.path {azure_path}}."
@@ -300,8 +303,13 @@ eri_artifact_archive <- function(name, data_con = NULL) {
     return(invisible(NULL))
   }
 
-  registry$entries[[idx[[1L]]]]$archived <- TRUE
-  .eri_artifact_registry_write(registry, data_con)
+  # Concurrency-safe flag flip by name (ADR-0002).
+  .eri_yaml_update(data_con, .ERI_ARTIFACT_REGISTRY_PATH, function(registry) {
+    if (is.null(registry$entries)) registry$entries <- list()
+    hit <- which(vapply(registry$entries, function(e) identical(e$name, name), logical(1L)))
+    if (length(hit) > 0L) registry$entries[[hit[[1L]]]]$archived <- TRUE
+    registry
+  }, default = list(entries = list()))
 
   cli::cli_alert_success("Artifact {.val {name}} archived (file preserved in Azure).")
   invisible(NULL)
