@@ -61,7 +61,8 @@ summary
 #> 6 Saut-d'Eau Positive   Positive       1  16.7
 ```
 
-Read it per commune: Saut-d'Eau has **2 of 6** FTS-positive children, Mirebalais **3 of 6**. In a real
+Read it per commune by summing the `Positive` FTS rows: Saut-d'Eau has **2 of 6** FTS-positive children,
+Mirebalais **3 of 6**. In a real
 TAS you compare that antigen-positive count against the survey's **critical cutoff** to decide
 pass/fail — the helper gives you the counts the decision rests on.
 
