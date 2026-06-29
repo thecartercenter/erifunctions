@@ -132,7 +132,7 @@ test_that(".odk_normalize_input handles data.frame, list, and bad inputs", {
 test_that(".odk_colmap handles both root-omitted and root-included /fields paths", {
   # root-omitted (what ODK Central actually returns)
   m1 <- erifunctions:::.odk_colmap(fixture_fields(), "data")
-  expect_true(all(c("site_name", "visit-visit_date", "larva_sample-species") %in% names(m1)))
+  expect_true(all(c("site_name", "visit-visit_date") %in% names(m1)))
   expect_equal(m1[["visit-visit_date"]], c("visit", "visit_date"))
 
   # root-included (e.g. "/data/site_name") normalizes to the same columns
@@ -141,8 +141,10 @@ test_that(".odk_colmap handles both root-omitted and root-included /fields paths
   m2 <- erifunctions:::.odk_colmap(rooted, "data")
   expect_equal(m1, m2)
 
-  # the repeat *container* (type "repeat") is not a parent leaf; its children are
-  expect_false("larva_sample" %in% names(m1))
+  # the parent map excludes both the repeat *container* and its descendant leaves --
+  # those belong only to the repeat's child table.
+  expect_false(any(c("larva_sample", "larva_sample-species", "larva_sample-larva_count")
+                   %in% names(m1)))
   cc <- erifunctions:::.odk_colmap(fixture_fields(), "data", under = "larva_sample")
   expect_true(all(c("species", "larva_count") %in% names(cc)))
 })
