@@ -530,7 +530,7 @@ eri_odk_upload <- function(
         n_created   = n_ok,
         n_skipped   = n_skip,
         n_failed    = n_fail,
-        analyst     = .eri_analyst_id(),
+        analyst     = .eri_analyst_id(data_con),
         timestamp   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
       ),
       data_con,

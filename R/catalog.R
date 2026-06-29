@@ -103,7 +103,7 @@ eri_catalog_register <- function(
     data_type = NULL
 ) {
   data_con <- .eri_catalog_con(data_con)
-  analyst  <- .eri_analyst_id()
+  analyst  <- .eri_analyst_id(data_con)
   catalog  <- .eri_catalog_read(data_con)
 
   entry    <- .eri_catalog_entry(path, country, disease, data_source, layer,

@@ -92,7 +92,7 @@ eri_odk_register <- function(
   }
 
   data_con  <- .odk_data_con(data_con)
-  analyst   <- .eri_analyst_id()
+  analyst   <- .eri_analyst_id(data_con)
   reg       <- .odk_registry_read(data_con)
 
   # Duplicate check: active entry with same (server_url, project_id, form_id)
@@ -175,7 +175,7 @@ eri_odk_deregister <- function(
     data_con   = NULL
 ) {
   data_con <- .odk_data_con(data_con)
-  analyst  <- .eri_analyst_id()
+  analyst  <- .eri_analyst_id(data_con)
   reg      <- .odk_registry_read(data_con)
 
   idx <- which(vapply(reg$forms, function(f) {
@@ -253,7 +253,7 @@ eri_odk_purge <- function(
     data_con   = NULL
 ) {
   data_con <- .odk_data_con(data_con)
-  analyst  <- .eri_analyst_id()
+  analyst  <- .eri_analyst_id(data_con)
   reg      <- .odk_registry_read(data_con)
 
   # Match active and inactive entries alike, so sandbox rows already
