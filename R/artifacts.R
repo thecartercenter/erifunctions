@@ -80,7 +80,7 @@ eri_artifact_upload <- function(
   type <- match.arg(type, .ERI_ARTIFACT_TYPES)
 
   data_con <- .eri_artifact_con(data_con)
-  analyst  <- .eri_analyst_id()
+  analyst  <- .eri_analyst_id(data_con)
 
   filename   <- basename(local_path)
   azure_path <- paste0("artifacts/", type, "/", name, "/", filename)

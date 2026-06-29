@@ -209,7 +209,7 @@ download_odk_form <- function(
         form_id    = form_id,
         project_id = project_id,
         n_records  = main_n,
-        analyst    = .eri_analyst_id(),
+        analyst    = .eri_analyst_id(data_con),
         timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
       ),
       data_con,

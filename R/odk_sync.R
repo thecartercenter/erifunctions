@@ -42,7 +42,7 @@ eri_odk_sync <- function(
 ) {
   .eri_log_session()
   data_con <- .odk_data_con(data_con)
-  analyst  <- .eri_analyst_id()
+  analyst  <- .eri_analyst_id(data_con)
 
   reg      <- .odk_registry_read(data_con)
   entry    <- .odk_sync_find_entry(reg, project_id, form_id)

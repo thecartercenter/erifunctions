@@ -994,7 +994,7 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
     )
   }
 
-  analyst_id    <- .eri_analyst_id()
+  analyst_id    <- .eri_analyst_id(azcontainer)
   staged_dir    <- eri_data_path(country, disease, data_source, data_type, "staged")
   processed_dir <- eri_data_path(country, disease, data_source, data_type, "processed")
   log_dir       <- paste(c(country, disease, data_source, data_type, "logs"), collapse = "/")
@@ -1277,7 +1277,7 @@ eri_stage <- function(pipeline, country, disease,
 
   op_log <- list(
     operation  = "eri_stage",
-    analyst    = .eri_analyst_id(),
+    analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(pipeline = pipeline, country = country,
                       disease = disease, pattern = pattern),
@@ -1476,7 +1476,7 @@ eri_ingest <- function(path, country, disease,
 
   op_log <- list(
     operation  = "eri_ingest",
-    analyst    = .eri_analyst_id(),
+    analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(path = path, country = country, disease = disease,
                       data_source = data_source, data_type = data_type,
@@ -1582,9 +1582,31 @@ eri_ingest <- function(path, country, disease,
   )
 )
 
+#' Verified actor identity from the connection's Azure AD token
+#'
+#' Extracts the authenticated user's identity (`upn` / `preferred_username`) from
+#' the AzureAuth token carried by an interactive storage connection (ADR-0003).
+#' This is the trustworthy approver identity: unlike `ERI_ANALYST_ID`, it cannot
+#' be self-declared. Returns `NULL` when there is no user claim (a service-principal
+#' token) or no decodable token (a mock / SAS-based container) — callers then fall
+#' back to `ERI_ANALYST_ID`.
+#' @keywords internal
+.eri_token_identity <- function(con) {
+  tryCatch({
+    token <- con$endpoint$token
+    if (is.null(token)) return(NULL)
+    claims <- AzureAuth::decode_jwt(token)$payload
+    id <- claims$upn %||% claims$preferred_username %||% claims$unique_name %||% claims$email
+    if (is.null(id) || !nzchar(id)) NULL else id
+  }, error = function(e) NULL)
+}
+
 #' Resolve the analyst identity for governed actions and audit logs
 #'
-#' Returns `ERI_ANALYST_ID` when set. When it is not, the behaviour depends on
+#' When a storage connection is supplied, prefers the **verified** identity from
+#' its Azure AD token (`.eri_token_identity()`, ADR-0003) — the trustworthy
+#' approver. Otherwise (or for service-principal connections with no user claim)
+#' returns `ERI_ANALYST_ID` when set. When it is not, the behaviour depends on
 #' `ERI_REQUIRE_ANALYST_ID`: if that is truthy (`1`/`true`/`yes`/`on`), governed
 #' actions are **refused** (an error). Otherwise it falls back to
 #' `"<os-username> (unverified)"` — the OS account, explicitly **marked** so the
@@ -1592,7 +1614,15 @@ eri_ingest <- function(path, country, disease,
 #' analyst id — and warns **once per R session** (via
 #' `options(erifunctions.warned_analyst_id)`).
 #' @keywords internal
-.eri_analyst_id <- function() {
+.eri_analyst_id <- function(con = NULL) {
+  # Prefer the verified token identity when an interactive connection is available
+  # (ADR-0003): the signed-in user's claim is authoritative and unspoofable, so it
+  # takes precedence over the self-declared ERI_ANALYST_ID.
+  if (!is.null(con)) {
+    verified <- .eri_token_identity(con)
+    if (!is.null(verified)) return(verified)
+  }
+
   id <- Sys.getenv("ERI_ANALYST_ID", unset = "")
   if (nzchar(id)) return(id)
 

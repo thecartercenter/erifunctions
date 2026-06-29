@@ -147,7 +147,9 @@ identity load-bearing.
 > (`.eri_token_identity()`, below) remains the Phase 2 work.
 - Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
   `R/artifacts.R`); add `eri_catalog_rebuild()`.
-- `.eri_token_identity()`; `eri_approve()` uses verified identity.
+- ~~`.eri_token_identity()`; `eri_approve()` uses verified identity.~~ **Shipped** — governed actions
+  (approve `approved_by`, catalog `registered_by`, op-logs) record the verified Azure AD token identity;
+  `ERI_ANALYST_ID` is the service-principal fallback (ADR-0003).
 - ~~`eri_query()` DuckDB-over-parquet read layer.~~ **Shipped** — catalog-driven roll-ups + explicit-table
   joins over processed parquet via an in-process DuckDB session (`duckdb`/`DBI` as Suggests). Brought
   forward to close the DA ad-hoc-request task; the rest of Phase 2 (concurrency-safe metadata, token

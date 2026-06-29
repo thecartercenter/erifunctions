@@ -242,7 +242,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   log_dir <- paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
   op_log  <- list(
     operation  = "eri_split_cmr",
-    analyst    = .eri_analyst_id(),
+    analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(country = country, path = path),
     status     = "in_progress", steps = list(), error = NULL, files = NULL
@@ -379,7 +379,7 @@ eri_stage_cmr <- function(country,
 
   op_log <- list(
     operation  = "eri_stage_cmr",
-    analyst    = .eri_analyst_id(),
+    analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(country = country, period = period),
     status     = "in_progress",

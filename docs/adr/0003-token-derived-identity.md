@@ -1,6 +1,6 @@
 # ADR-0003 — Approver identity from the auth token
 
-- **Status:** Accepted
+- **Status:** Accepted — **implemented in Phase 2 (2026-06-29, #233)**
 - **Date:** 2026-06-05
 
 ## Context

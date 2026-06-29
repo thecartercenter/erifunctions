@@ -4,10 +4,13 @@
 \alias{.eri_analyst_id}
 \title{Resolve the analyst identity for governed actions and audit logs}
 \usage{
-.eri_analyst_id()
+.eri_analyst_id(con = NULL)
 }
 \description{
-Returns \code{ERI_ANALYST_ID} when set. When it is not, the behaviour depends on
+When a storage connection is supplied, prefers the \strong{verified} identity from
+its Azure AD token (\code{.eri_token_identity()}, ADR-0003) — the trustworthy
+approver. Otherwise (or for service-principal connections with no user claim)
+returns \code{ERI_ANALYST_ID} when set. When it is not, the behaviour depends on
 \code{ERI_REQUIRE_ANALYST_ID}: if that is truthy (\code{1}/\code{true}/\code{yes}/\code{on}), governed
 actions are \strong{refused} (an error). Otherwise it falls back to
 \code{"<os-username> (unverified)"} — the OS account, explicitly \strong{marked} so the

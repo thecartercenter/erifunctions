@@ -233,7 +233,7 @@ eri_dq_log <- function(result, country, disease, data_source,
 
   envelope <- list(
     operation     = "dq_flags",
-    analyst       = .eri_analyst_id(),
+    analyst       = .eri_analyst_id(data_con),
     timestamp     = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters    = list(country = country, disease = disease,
                          data_source = data_source, data_type = data_type,
@@ -404,7 +404,7 @@ eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL) {
 
   entry$triage <- list(
     handled    = TRUE,
-    handled_by = .eri_analyst_id(),
+    handled_by = .eri_analyst_id(data_con),
     handled_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     note       = if (is.null(note)) NA_character_ else note
   )
