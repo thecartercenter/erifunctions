@@ -2,6 +2,23 @@
 
 ## erifunctions (development version)
 
+### Feature: token-derived approver identity (ADR-0003, Phase 2)
+
+- **Governed actions now record the *verified* signed-in identity.**
+  When an analyst connects interactively with their own Azure AD
+  account,
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)’s
+  `approved_by`, the catalog’s `registered_by`, and the operation logs
+  (ingest, stage, CMR, ODK register/sync/upload, DQ logs, artifacts) are
+  stamped with the identity from the **auth token** — a new internal
+  [`.eri_token_identity()`](https://thecartercenter.github.io/erifunctions/reference/dot-eri_token_identity.md)
+  extracts the verified `upn` / `preferred_username` — rather than the
+  self-declared `ERI_ANALYST_ID`. This closes the spoofable-approver gap
+  so the approval gate is a real control, not a convention.
+  `ERI_ANALYST_ID` is retained as the fallback for service-principal /
+  non-interactive runs (which carry no user claim). Backward compatible
+  — nothing changes for callers without a connection.
+
 ### Docs: `da-survey-report-guide` — final summaries and reports from an ODK survey ([\#231](https://github.com/thecartercenter/erifunctions/issues/231))
 
 - **New `da-survey-report-guide` article** (DA task: create/assist final
