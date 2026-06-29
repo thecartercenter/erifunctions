@@ -20,16 +20,8 @@
   reg
 }
 
-# Write registry list back to Azure.
-#' @keywords internal
-.odk_registry_write <- function(reg, data_con) {
-  tmp <- tempfile(fileext = ".yaml")
-  withr::defer(unlink(tmp))
-  yaml::write_yaml(reg, tmp)
-  dir_path <- dirname(.ODK_REGISTRY_PATH)
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, tmp, .ODK_REGISTRY_PATH)
-}
+# All registry writes now go through `.eri_yaml_update()` (ADR-0002); there is no
+# unconditional whole-file writer left to reintroduce the lost-update race.
 
 # Return the data/ blob container, either from the passed object or env vars.
 #' @keywords internal
@@ -95,7 +87,9 @@ eri_odk_register <- function(
   analyst   <- .eri_analyst_id(data_con)
   reg       <- .odk_registry_read(data_con)
 
-  # Duplicate check: active entry with same (server_url, project_id, form_id)
+  # Advisory pre-read duplicate check: gives a fast, clear error before we build
+  # the entry. The *authoritative* check is re-run inside the `.eri_yaml_update()`
+  # mutate below against the freshly-read registry (ADR-0002) — keep both.
   is_dup <- vapply(reg$forms, function(f) {
     isTRUE(f$active) &&
       identical(f$server_url, server_url) &&
@@ -240,7 +234,13 @@ eri_odk_deregister <- function(
     reg
   }, default = list(forms = list()))
 
-  if (is.null(deregistered)) deregistered <- reg$forms[[idx]]
+  # If a concurrent writer already deactivated/removed it between our pre-read and
+  # the committed mutate, fall back to the pre-read entry but reflect the intended
+  # post-state (active = FALSE) so the returned value isn't misleadingly "active".
+  if (is.null(deregistered)) {
+    deregistered <- reg$forms[[idx]]
+    deregistered$active <- FALSE
+  }
 
   op_log <- list(
     operation  = "eri_odk_deregister",
@@ -300,8 +300,7 @@ eri_odk_purge <- function(
       (is.null(server_url) || identical(f$server_url, server_url))
   }, logical(1L))
 
-  n <- sum(match)
-  if (n == 0L) {
+  if (sum(match) == 0L) {
     cli::cli_abort(c(
       "No registered form (active or inactive) found to purge.",
       "i" = "project_id: {.val {project_id}}",
@@ -309,7 +308,9 @@ eri_odk_purge <- function(
     ))
   }
 
-  # Concurrency-safe hard-delete (ADR-0002): re-match on the freshly-read registry.
+  # Concurrency-safe hard-delete (ADR-0002): re-match on the freshly-read registry
+  # and report the count actually committed (not the possibly-stale pre-read).
+  n <- 0L
   .eri_yaml_update(data_con, .ODK_REGISTRY_PATH, function(reg) {
     if (is.null(reg$forms)) reg$forms <- list()
     drop <- vapply(reg$forms, function(f) {
@@ -317,6 +318,7 @@ eri_odk_purge <- function(
         identical(f$form_id, form_id) &&
         (is.null(server_url) || identical(f$server_url, server_url))
     }, logical(1L))
+    n <<- sum(drop)
     reg$forms <- reg$forms[!drop]
     reg
   }, default = list(forms = list()))

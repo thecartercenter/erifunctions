@@ -26,15 +26,8 @@
   reg
 }
 
-#' @keywords internal
-.eri_artifact_registry_write <- function(registry, data_con) {
-  tmp <- tempfile(fileext = ".yaml")
-  withr::defer(unlink(tmp))
-  yaml::write_yaml(registry, tmp)
-  dir_path <- dirname(.ERI_ARTIFACT_REGISTRY_PATH)
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, tmp, .ERI_ARTIFACT_REGISTRY_PATH)
-}
+# All artifact-registry writes now go through `.eri_yaml_update()` (ADR-0002);
+# there is no unconditional whole-file writer left to reintroduce the race.
 
 #### eri_artifact_upload ####
 

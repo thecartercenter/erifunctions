@@ -314,28 +314,22 @@ test_that("eri_catalog_verify returns exists column", {
 })
 
 test_that("eri_catalog_verify updates last_verified_at for existing entries", {
-  e1 <- make_entry()
-  stored <- make_catalog(e1)
+  e1    <- make_entry()
+  store <- new_yaml_store(make_catalog(e1))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      if (path == erifunctions:::.ERI_CATALOG_PATH) return(TRUE)
-      TRUE
-    },
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
+    storage_file_exists = function(container, path, ...) TRUE,   # entry exists in Azure
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
+    .eri_catalog_read = function(data_con) store$data,           # pre-read snapshot
     .package = "erifunctions"
   )
 
   eri_catalog_verify()
-  expect_false(is.na(stored$entries[[1]]$last_verified_at))
+  expect_false(is.na(store$data$entries[[1]]$last_verified_at))
 })
 
 # --- remove -------------------------------------------------------------------

@@ -16,16 +16,8 @@
   cat
 }
 
-# Write catalog list back to Azure.
-#' @keywords internal
-.eri_catalog_write <- function(catalog, data_con) {
-  tmp <- tempfile(fileext = ".yaml")
-  withr::defer(unlink(tmp))
-  yaml::write_yaml(catalog, tmp)
-  dir_path <- dirname(.ERI_CATALOG_PATH)
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, tmp, .ERI_CATALOG_PATH)
-}
+# All catalog writes now go through `.eri_yaml_update()` (ADR-0002); there is no
+# unconditional whole-file writer, so a future edit can't reintroduce the race.
 
 # Resolve data container from arg or env vars.
 #' @keywords internal
@@ -314,7 +306,21 @@ eri_catalog_verify <- function(data_con = NULL) {
     if (exists) catalog$entries[[i]]$last_verified_at <- now
   }
 
-  .eri_catalog_write(catalog, data_con)
+  # Persist the new last_verified_at stamps concurrency-safely (ADR-0002): the
+  # existence checks above ran on a snapshot, so re-stamp by path on the freshly
+  # read catalog rather than writing our whole stale copy back (which would clobber
+  # a register that landed during verification). The expensive existence checks
+  # stay out of the retry loop.
+  verified_paths <- vapply(catalog$entries[exists_vec], function(e) e$path, character(1L))
+  .eri_yaml_update(data_con, .ERI_CATALOG_PATH, function(cat_fresh) {
+    if (is.null(cat_fresh$entries)) cat_fresh$entries <- list()
+    for (i in seq_along(cat_fresh$entries)) {
+      if (cat_fresh$entries[[i]]$path %in% verified_paths) {
+        cat_fresh$entries[[i]]$last_verified_at <- now
+      }
+    }
+    cat_fresh
+  }, default = list(entries = list()))
 
   n_ok      <- sum(exists_vec)
   n_missing <- sum(!exists_vec)
@@ -418,6 +424,10 @@ eri_catalog_rebuild <- function(data_con = NULL) {
 
   entries <- Filter(Negate(is.null), lapply(all_files, .eri_catalog_entry_from_path))
 
+  # Rebuild is a deliberate "replace from ground truth" operation: the mutate
+  # discards the freshly-read catalog and writes the reconstruction wholesale, so
+  # under contention it is intentionally last-writer-wins against a concurrent
+  # register (the conditional write still guarantees the replacement is atomic).
   .eri_yaml_update(
     data_con, .ERI_CATALOG_PATH,
     function(catalog) list(entries = entries),
