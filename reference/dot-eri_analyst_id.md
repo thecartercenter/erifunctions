@@ -1,10 +1,12 @@
 # Resolve the analyst identity for governed actions and audit logs
 
-Returns `ERI_ANALYST_ID` when set. When it is not, falls back to the
-operating system username and warns **once per R session** (via
-`options(erifunctions.warned_analyst_id)`) so the analyst knows the
-shared audit trail will be stamped with that fallback rather than their
-identity.
+Returns `ERI_ANALYST_ID` when set. When it is not, the behaviour depends
+on `ERI_REQUIRE_ANALYST_ID`: if that is truthy (`1`/`true`/`yes`/`on`),
+governed actions are **refused** (an error). Otherwise it falls back to
+`"<os-username> (unverified)"` — the OS account, explicitly **marked**
+so the shared audit trail records the attribution as provisional rather
+than as a real analyst id — and warns **once per R session** (via
+`options(erifunctions.warned_analyst_id)`).
 
 ## Usage
 

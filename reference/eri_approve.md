@@ -6,10 +6,11 @@ The human approval gate in the three-layer pipeline. Finds all files in
 the `staged/` directory whose names contain `period`, moves them to
 `processed/`, and writes a YAML approval log alongside them.
 
-Analyst identity is read from the `ERI_ANALYST_ID` environment variable,
-falling back to `Sys.info()[["user"]]` if it is unset or empty (in which
-case a one-time warning is emitted so the fallback attribution is not
-silent).
+Analyst identity is read from the `ERI_ANALYST_ID` environment variable.
+If it is unset, the approver is recorded as
+`"<os-username> (unverified)"` (a one-time warning is emitted so the
+fallback is not silent); set `ERI_REQUIRE_ANALYST_ID` truthy to refuse
+approving without a configured identity instead.
 
 An operation log capturing every step (including errors) is always
 written to `{country}/{disease}/{data_source}/{data_type}/logs/` in the

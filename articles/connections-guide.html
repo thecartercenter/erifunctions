@@ -121,10 +121,13 @@ your <code>.Renviron</code> — <code>usethis::edit_r_environ()</code>,
 add <code>ERI_ANALYST_ID=firstname.lastname</code>, save, and
 <strong>restart R</strong>. Every approval log, catalog entry, and
 operation log is stamped with it. If it is unset,
-<code>erifunctions</code> warns once and falls back to your
-<strong>operating-system username</strong> — so the shared audit trail
-records <code>jsmith</code> instead of <code>jane.smith</code>. Set it
-once and the attribution is correct everywhere.</p>
+<code>erifunctions</code> warns once and records the approver as
+<strong><code>jsmith (unverified)</code></strong> (your OS username,
+marked so the audit trail shows the attribution is provisional). Set it
+once and the attribution is correct everywhere. A team or automated run
+can <strong>require</strong> it — set
+<code>ERI_REQUIRE_ANALYST_ID=true</code> and governed actions refuse to
+run until <code>ERI_ANALYST_ID</code> is configured.</p>
 </blockquote>
 <div class="mermaid">
 flowchart TD
@@ -356,6 +359,8 @@ ERIFUNCTIONS_DATA_STORAGE_NAME=data
 
 # Your identity (appears in approval and access logs)
 ERI_ANALYST_ID=firstname.lastname
+# Optional: refuse governed actions when ERI_ANALYST_ID is unset (teams / CI)
+# ERI_REQUIRE_ANALYST_ID=true
 
 # --- ODK Central ----------------------------------------------------------
 ODK_URL=https://your-odk-server.org/

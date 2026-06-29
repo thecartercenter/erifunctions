@@ -347,13 +347,15 @@ each one feeds.</p>
 <blockquote>
 <p><strong>The registry is shared and team-visible.</strong> Your
 registration lands in the <strong>same</strong>
-<code>odk/registry.yaml</code> as everyone’s real forms, and <a href="#clean-up">Clean up</a>’s <code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> is a
-<strong>soft-delete</strong> (<code>active: false</code>) that preserves
-the audit trail — so a practice entry lingers (inactive) rather than
-vanishing. Use an obviously-fake
-<code>project_id</code>/<code>country</code> for sandbox work, and don’t
-be surprised to see a deregistered practice form still listed as
-inactive.</p>
+<code>odk/registry.yaml</code> as everyone’s real forms. For a real
+form, <a href="#clean-up">Clean up</a>’s
+<code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> is a <strong>soft-delete</strong>
+(<code>active: false</code>) that preserves the audit trail — so a
+practice entry would linger (inactive) rather than vanishing. For
+<strong>sandbox</strong> work, use an obviously-fake
+<code>project_id</code>/<code>country</code>, and tear the entry down
+completely with <code><a href="../reference/eri_odk_purge.html">eri_odk_purge()</a></code> (a hard-delete) so no
+practice rows are left behind in the shared registry.</p>
 </blockquote>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
@@ -586,15 +588,17 @@ trace.</p>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"delete"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Deregister the form (soft-delete: it is marked inactive, keeping the sync history).</span></span>
-<span><span class="fu"><a href="../reference/eri_odk_deregister.html">eri_odk_deregister</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
-<span>                   server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Deregistered "eri_test_river_prospection" (project 11).</span></span>
+<code class="sourceCode R"><span><span class="co"># This was a sandbox, so PURGE the registry entry (hard-delete) to leave no trace.</span></span>
+<span><span class="co"># For a real form you'd use eri_odk_deregister() instead, which soft-deletes</span></span>
+<span><span class="co"># (active: false) and keeps the sync history for audit.</span></span>
+<span><span class="fu"><a href="../reference/eri_odk_purge.html">eri_odk_purge</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
+<span>              server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Purged 1 registry entry for "eri_test_river_prospection" (project 11).</span></span>
 <span></span>
-<span><span class="co"># If you also tried the repeat form in section 4, deregister it too.</span></span>
-<span><span class="fu"><a href="../reference/eri_odk_deregister.html">eri_odk_deregister</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="st">"eri_test_river_repeat"</span>,</span>
-<span>                   server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Deregistered "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
+<span><span class="co"># If you also tried the repeat form in section 4, purge it too.</span></span>
+<span><span class="fu"><a href="../reference/eri_odk_purge.html">eri_odk_purge</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="st">"eri_test_river_repeat"</span>,</span>
+<span>              server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Purged 1 registry entry for "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
 <span><span class="co"># eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.</span></span>
@@ -603,12 +607,15 @@ trace.</p>
 ▸ ⋯ ▸ Delete) from your <code>test</code> project if you want it gone
 there too.</p>
 <blockquote>
-<p><strong>One thing that intentionally stays:</strong>
-<code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> <em>soft</em>-deletes — it flips the
-registry entry to <code>active: false</code> rather than erasing it, so
-the record of what was once tracked (and its sync history) survives for
-audit. That inactive entry is harmless; it will not show up in
-<code><a href="../reference/eri_odk_list_registered.html">eri_odk_list_registered()</a></code>.</p>
+<p><strong>Deregister vs purge.</strong> For a <strong>real</strong>
+form, <code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> <em>soft</em>-deletes — it flips
+the registry entry to <code>active: false</code> rather than erasing it,
+so the record of what was once tracked (and its sync history) survives
+for audit; the inactive entry is harmless and won’t show up in
+<code><a href="../reference/eri_odk_list_registered.html">eri_odk_list_registered()</a></code>. We used
+<strong><code><a href="../reference/eri_odk_purge.html">eri_odk_purge()</a></code></strong> above because this was a
+sandbox: it <em>hard</em>-deletes the entry (active or already-inactive)
+so the shared registry is left exactly as we found it.</p>
 </blockquote>
 <blockquote>
 <p><strong>Why we could delete freely here:</strong> the form and its

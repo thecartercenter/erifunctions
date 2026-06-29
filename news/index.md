@@ -2,6 +2,25 @@
 
 ## erifunctions (development version)
 
+### Feature: harden analyst attribution + `eri_odk_purge()` for sandbox cleanup ([\#175](https://github.com/thecartercenter/erifunctions/issues/175) polish)
+
+- **Analyst identity is now honest in the audit trail.** When
+  `ERI_ANALYST_ID` is unset, governed actions are attributed to
+  `"<os-user> (unverified)"` (was a bare OS username that looked like a
+  real analyst id), so approval logs, the catalog `registered_by`, and
+  `eri_logs`’ `analyst` column show the attribution is provisional. A
+  team or CI run can **require** a configured identity by setting
+  `ERI_REQUIRE_ANALYST_ID=true`, which makes governed actions *refuse*
+  rather than fall back. The once-per-session warning now points at both
+  options. Surfaced by both red-team runs.
+- **New `eri_odk_purge(project_id, form_id, …)`** hard-deletes an ODK
+  registry entry (active **or** already soft-deleted), unlike
+  [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
+  which soft-deletes to preserve sync history. Use it to tear down
+  **practice/sandbox** registrations so they don’t linger in the shared
+  `odk/registry.yaml`; the `da-odk-guide` cleanup now uses it. Flagged
+  by the fresh-DA red-team run.
+
 ### Fix: `eri_dir_delete()` prunes the catalog; `eri_split_cmr()` summarizes skipped sheets ([\#175](https://github.com/thecartercenter/erifunctions/issues/175) polish)
 
 - [`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md)

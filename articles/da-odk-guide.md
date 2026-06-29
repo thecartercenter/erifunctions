@@ -263,14 +263,16 @@ Registering records the form in the shared **ODK registry**
 forms are tracked, and which country/disease each one feeds.
 
 > **The registry is shared and team-visible.** Your registration lands
-> in the **same** `odk/registry.yaml` as everyone’s real forms, and
-> [Clean up](#clean-up)’s
+> in the **same** `odk/registry.yaml` as everyone’s real forms. For a
+> real form, [Clean up](#clean-up)’s
 > [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
 > is a **soft-delete** (`active: false`) that preserves the audit trail
-> — so a practice entry lingers (inactive) rather than vanishing. Use an
-> obviously-fake `project_id`/`country` for sandbox work, and don’t be
-> surprised to see a deregistered practice form still listed as
-> inactive.
+> — so a practice entry would linger (inactive) rather than vanishing.
+> For **sandbox** work, use an obviously-fake `project_id`/`country`,
+> and tear the entry down completely with
+> [`eri_odk_purge()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_purge.md)
+> (a hard-delete) so no practice rows are left behind in the shared
+> registry.
 
 ``` r
 
@@ -539,15 +541,17 @@ update_odk_app_user_role(action = "delete", con = con, project_id = project_id,
 
 ``` r
 
-# Deregister the form (soft-delete: it is marked inactive, keeping the sync history).
-eri_odk_deregister(project_id = project_id, form_id = form_id,
-                   server_url = "https://your-odk-server.org/", data_con = data_con)
-#> ✔ Deregistered "eri_test_river_prospection" (project 11).
+# This was a sandbox, so PURGE the registry entry (hard-delete) to leave no trace.
+# For a real form you'd use eri_odk_deregister() instead, which soft-deletes
+# (active: false) and keeps the sync history for audit.
+eri_odk_purge(project_id = project_id, form_id = form_id,
+              server_url = "https://your-odk-server.org/", data_con = data_con)
+#> ✔ Purged 1 registry entry for "eri_test_river_prospection" (project 11).
 
-# If you also tried the repeat form in section 4, deregister it too.
-eri_odk_deregister(project_id = project_id, form_id = "eri_test_river_repeat",
-                   server_url = "https://your-odk-server.org/", data_con = data_con)
-#> ✔ Deregistered "eri_test_river_repeat" (project 11).
+# If you also tried the repeat form in section 4, purge it too.
+eri_odk_purge(project_id = project_id, form_id = "eri_test_river_repeat",
+              server_url = "https://your-odk-server.org/", data_con = data_con)
+#> ✔ Purged 1 registry entry for "eri_test_river_repeat" (project 11).
 ```
 
 ``` r
@@ -560,13 +564,18 @@ eri_dir_delete("uga/demo", azcontainer = data_con)
 Finally, in the ODK Central web interface, delete the test form (Form ▸
 ⋯ ▸ Delete) from your `test` project if you want it gone there too.
 
-> **One thing that intentionally stays:**
+> **Deregister vs purge.** For a **real** form,
 > [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
 > *soft*-deletes — it flips the registry entry to `active: false` rather
 > than erasing it, so the record of what was once tracked (and its sync
-> history) survives for audit. That inactive entry is harmless; it will
-> not show up in
+> history) survives for audit; the inactive entry is harmless and won’t
+> show up in
 > [`eri_odk_list_registered()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_list_registered.md).
+> We used
+> **[`eri_odk_purge()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_purge.md)**
+> above because this was a sandbox: it *hard*-deletes the entry (active
+> or already-inactive) so the shared registry is left exactly as we
+> found it.
 
 > **Why we could delete freely here:** the form and its submissions are
 > invented. **Real ODK forms and field submissions are never deleted

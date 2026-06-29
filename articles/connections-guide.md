@@ -21,9 +21,12 @@ you need; skip the rest.
 > `usethis::edit_r_environ()`, add `ERI_ANALYST_ID=firstname.lastname`,
 > save, and **restart R**. Every approval log, catalog entry, and
 > operation log is stamped with it. If it is unset, `erifunctions` warns
-> once and falls back to your **operating-system username** — so the
-> shared audit trail records `jsmith` instead of `jane.smith`. Set it
-> once and the attribution is correct everywhere.
+> once and records the approver as **`jsmith (unverified)`** (your OS
+> username, marked so the audit trail shows the attribution is
+> provisional). Set it once and the attribution is correct everywhere. A
+> team or automated run can **require** it — set
+> `ERI_REQUIRE_ANALYST_ID=true` and governed actions refuse to run until
+> `ERI_ANALYST_ID` is configured.
 
 flowchart TD You\["Your R session"\] --\> P\["erifunctions"\] P --\>
 AZ\["Azure Storage — where the data lives"\] P --\> ODK\["ODK Central —
@@ -245,6 +248,8 @@ All your settings live in one file. Open it with
 
     # Your identity (appears in approval and access logs)
     ERI_ANALYST_ID=firstname.lastname
+    # Optional: refuse governed actions when ERI_ANALYST_ID is unset (teams / CI)
+    # ERI_REQUIRE_ANALYST_ID=true
 
     # --- ODK Central ----------------------------------------------------------
     ODK_URL=https://your-odk-server.org/

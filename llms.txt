@@ -512,6 +512,8 @@ Register forms, sync submissions, monitor surveys, and manage users.
   : Register an ODK form in the shared Azure registry
 - [`eri_odk_deregister()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_deregister.md)
   : Deregister an ODK form from the shared Azure registry
+- [`eri_odk_purge()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_purge.md)
+  : Permanently remove an ODK form from the shared Azure registry
 - [`eri_odk_list_registered()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_list_registered.md)
   : List all actively registered ODK forms
 - [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)

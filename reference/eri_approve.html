@@ -3,9 +3,10 @@
 The human approval gate in the three-layer pipeline. Finds all files in the
 staged/ directory whose names contain period, moves them to processed/,
 and writes a YAML approval log alongside them.
-Analyst identity is read from the ERI_ANALYST_ID environment variable,
-falling back to Sys.info()[["user"]] if it is unset or empty (in which case a
-one-time warning is emitted so the fallback attribution is not silent).
+Analyst identity is read from the ERI_ANALYST_ID environment variable. If it is
+unset, the approver is recorded as "&amp;lt;os-username&amp;gt; (unverified)" (a one-time
+warning is emitted so the fallback is not silent); set ERI_REQUIRE_ANALYST_ID
+truthy to refuse approving without a configured identity instead.
 An operation log capturing every step (including errors) is always written to
 {country}/{disease}/{data_source}/{data_type}/logs/ in the data container,
 regardless of whether the approval succeeds or fails. This log is the primary
@@ -13,9 +14,10 @@ debugging artifact for pipeline issues.'><meta property="og:description" content
 The human approval gate in the three-layer pipeline. Finds all files in the
 staged/ directory whose names contain period, moves them to processed/,
 and writes a YAML approval log alongside them.
-Analyst identity is read from the ERI_ANALYST_ID environment variable,
-falling back to Sys.info()[["user"]] if it is unset or empty (in which case a
-one-time warning is emitted so the fallback attribution is not silent).
+Analyst identity is read from the ERI_ANALYST_ID environment variable. If it is
+unset, the approver is recorded as "&amp;lt;os-username&amp;gt; (unverified)" (a one-time
+warning is emitted so the fallback is not silent); set ERI_REQUIRE_ANALYST_ID
+truthy to refuse approving without a configured identity instead.
 An operation log capturing every step (including errors) is always written to
 {country}/{disease}/{data_source}/{data_type}/logs/ in the data container,
 regardless of whether the approval succeeds or fails. This log is the primary
@@ -86,9 +88,10 @@ debugging artifact for pipeline issues.'><meta property="og:image" content="http
 <p>The human approval gate in the three-layer pipeline. Finds all files in the
 <code>staged/</code> directory whose names contain <code>period</code>, moves them to <code>processed/</code>,
 and writes a YAML approval log alongside them.</p>
-<p>Analyst identity is read from the <code>ERI_ANALYST_ID</code> environment variable,
-falling back to <code>Sys.info()[["user"]]</code> if it is unset or empty (in which case a
-one-time warning is emitted so the fallback attribution is not silent).</p>
+<p>Analyst identity is read from the <code>ERI_ANALYST_ID</code> environment variable. If it is
+unset, the approver is recorded as <code>"&lt;os-username&gt; (unverified)"</code> (a one-time
+warning is emitted so the fallback is not silent); set <code>ERI_REQUIRE_ANALYST_ID</code>
+truthy to refuse approving without a configured identity instead.</p>
 <p>An operation log capturing every step (including errors) is always written to
 <code>{country}/{disease}/{data_source}/{data_type}/logs/</code> in the data container,
 regardless of whether the approval succeeds or fails. This log is the primary
