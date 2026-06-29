@@ -17,6 +17,10 @@
   Returns a tibble. `duckdb` + `DBI` are **Suggests** (install once;
   `install.packages(c("duckdb", "DBI"))`) — analysts who never query
   don’t pay for them. Closes the ad-hoc-data-request gap (DA task 10).
+- **New `da-adhoc-guide` article** — a run-it-live walkthrough of
+  [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+  (catalog roll-ups, joins, window functions) for answering ad-hoc
+  requests; the in-memory examples run with no Azure.
 
 ### Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck ([\#219](https://github.com/thecartercenter/erifunctions/issues/219))
 

@@ -29,6 +29,7 @@
     <li><a class="dropdown-item" href="../articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/da-adhoc-guide.html">Answering ad-hoc data requests with SQL (eri_query)</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Epidemiologists</h6></li>
     <li><a class="dropdown-item" href="../articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></li>
@@ -66,6 +67,8 @@
 <h3 id="feature-eri_query--serverless-sql-across-processed-data-adr-roadmap-phase-development-version">Feature: <code>eri_query()</code> — serverless SQL across processed data (ADR-0004, roadmap Phase 2)<a class="anchor" aria-label="anchor" href="#feature-eri_query--serverless-sql-across-processed-data-adr-roadmap-phase-development-version"></a></h3>
 <ul><li>
 <strong>New <code>eri_query(sql, …)</code></strong> runs SQL across <strong>processed</strong> parquet without a database server, by attaching the files into an in-process <strong>DuckDB</strong> session (the Azure blob stays the system of record). Two composable ways to put data in scope: <strong>catalog-driven</strong> — pass <code>country</code>/<code>disease</code>/<code>data_type</code>/… and it looks up the matching processed files, stamps each row with its provenance, and unions them into one table (<code>SELECT country, SUM(total_cases) FROM data GROUP BY country</code>); and <strong>explicit</strong> — <code>tables = list(name = df_or_path)</code> to register data.frames / parquet paths for joins (e.g. cases ⨝ population). Returns a tibble. <code>duckdb</code> + <code>DBI</code> are <strong>Suggests</strong> (install once; <code>install.packages(c("duckdb", "DBI"))</code>) — analysts who never query don’t pay for them. Closes the ad-hoc-data-request gap (DA task 10).</li>
+<li>
+<strong>New <code>da-adhoc-guide</code> article</strong> — a run-it-live walkthrough of <code><a href="../reference/eri_query.html">eri_query()</a></code> (catalog roll-ups, joins, window functions) for answering ad-hoc requests; the in-memory examples run with no Azure.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="docs-data-analyst-training-bundle--cheat-sheets-onboarding-path-orientation-deck-development-version">Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck (<a href="https://github.com/thecartercenter/erifunctions/issues/219" class="external-link">#219</a>)<a class="anchor" aria-label="anchor" href="#docs-data-analyst-training-bundle--cheat-sheets-onboarding-path-orientation-deck-development-version"></a></h3>

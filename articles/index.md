@@ -27,6 +27,8 @@ ODK as those feeds arrive.
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
 - [Triaging the error & data-quality log backlog (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
+- [Answering ad-hoc data requests with SQL
+  (eri_query)](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.md):
 
 ### For epidemiologists
 

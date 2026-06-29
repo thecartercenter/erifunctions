@@ -1,0 +1,219 @@
+# Answering ad-hoc data requests with SQL (eri_query)
+
+“How many malaria cases by province this year?” “Pull treatment coverage
+for these three countries.” Ad-hoc requests are a daily part of the job,
+and they usually mean the same thing: **combine a few approved datasets
+and compute a number.**
+[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+does that with **SQL**, so you don’t hand-read and merge parquet files
+one at a time.
+
+## The golden rule
+
+> **[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+> runs SQL across *processed* data — the approved, trustworthy layer —
+> without moving it out of Azure or standing up a database.** It
+> attaches the relevant parquet into an in-process
+> [DuckDB](https://duckdb.org) session, runs your query, and hands back
+> a tibble.
+
+flowchart LR C\["Approved data (processed/)"\] --\> Q\["eri_query(sql,
+...)"\] Cat\["Data catalog (which files to attach)"\] --\> Q Q --\>
+R\["a tibble"\] R --\> O\["table / figure / answer"\]
+
+## Before you start
+
+``` r
+
+# eri_query needs two optional packages — install them once:
+install.packages(c("duckdb", "DBI"))
+```
+
+``` r
+
+library(erifunctions)
+```
+
+Querying approved data in Azure also needs a connection (the browser
+opens on first use); pure in-memory queries — the examples in [Joins and
+aggregations](#explicit) below — need nothing.
+
+``` r
+
+data_con <- get_azure_storage_connection(storage_name = "data")
+```
+
+## Two ways to put data in scope
+
+[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+gives you two ways to choose what your SQL can see, and they combine:
+
+1.  **Catalog-driven** — name the data by its axes (`country`,
+    `disease`, `data_type`, …) and
+    [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+    finds the matching **processed** files, stamps each row with its
+    `country`/`disease`/`data_source`/`data_type`/`period`, and unions
+    them into one table called `data`. This is how you roll up across
+    countries or periods.
+2.  **Explicit tables** — hand it named tables directly
+    (`tables = list(name = …)`), where each is a data.frame, a local
+    `.parquet`, or a `data/` blob path. This is how you join your own
+    inputs (a population table, a lookup) to approved data.
+
+## Roll up across the catalog
+
+The catalog is the index of approved data;
+[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+reads it for you. To total malaria cases by country from every approved
+aggregate dataset:
+
+``` r
+
+eri_query(
+  "SELECT country, SUM(total_cases) AS cases
+     FROM data GROUP BY country ORDER BY cases DESC",
+  disease = "malaria", data_type = "aggregate", data_con = data_con
+)
+#> ℹ Querying 1 table: "data".
+#> ✔ Returned 2 rows.
+#> # A tibble: 2 × 2
+#>   country  cases
+#>   <chr>    <dbl>
+#> 1 ht      12345
+#> 2 dr       9876
+```
+
+*(Illustrative numbers — your catalog will differ. The in-memory
+examples below are real output you can reproduce.)*
+
+Because every row is stamped with its provenance, you can
+`GROUP BY country`, `period`, `data_type`, etc. without joining
+anything. (Those five names are reserved in this mode — see
+[`?eri_query`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md).)
+Not sure what’s available?
+[`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
+with the same filters lists the files that would be attached.
+
+## Joins and aggregations
+
+The explicit mode runs entirely in memory, so these you can run right
+now. Say a request lands as two small tables — weekly case counts and a
+population denominator:
+
+``` r
+
+cases <- data.frame(
+  province = c("North", "North", "South", "South", "East"),
+  epiweek  = c(1, 2, 1, 2, 1),
+  cases    = c(40, 55, 12, 9, 30)
+)
+pop <- data.frame(
+  province = c("North", "South", "East"),
+  pop      = c(120000, 45000, 80000)
+)
+```
+
+**Aggregate** — total cases by province:
+
+``` r
+
+eri_query(
+  "SELECT province, SUM(cases) AS cases
+     FROM cases GROUP BY province ORDER BY cases DESC",
+  tables = list(cases = cases)
+)
+#> ℹ Querying 1 table: "cases".
+#> ✔ Returned 3 rows.
+#> # A tibble: 3 × 2
+#>   province cases
+#>   <chr>    <dbl>
+#> 1 North       95
+#> 2 East        30
+#> 3 South       21
+```
+
+**Join** — incidence per 1,000, combining the two tables:
+
+``` r
+
+eri_query(
+  "SELECT c.province, SUM(c.cases) * 1000.0 / p.pop AS incidence_per_1000
+     FROM cases c JOIN pop p USING (province)
+     GROUP BY c.province, p.pop ORDER BY incidence_per_1000 DESC",
+  tables = list(cases = cases, pop = pop)
+)
+#> ℹ Querying 2 tables: "cases" and "pop".
+#> ✔ Returned 3 rows.
+#> # A tibble: 3 × 2
+#>   province incidence_per_1000
+#>   <chr>                 <dbl>
+#> 1 North                 0.792
+#> 2 South                 0.467
+#> 3 East                  0.375
+```
+
+**Window functions** — week-over-week change, which is awkward in base R
+but one line of SQL:
+
+``` r
+
+eri_query(
+  "SELECT province, epiweek, cases,
+          cases - LAG(cases) OVER (PARTITION BY province ORDER BY epiweek) AS wow_change
+     FROM cases ORDER BY province, epiweek",
+  tables = list(cases = cases)
+)
+#> ℹ Querying 1 table: "cases".
+#> ✔ Returned 5 rows.
+#> # A tibble: 5 × 4
+#>   province epiweek cases wow_change
+#>   <chr>      <dbl> <dbl>      <dbl>
+#> 1 East           1    30         NA
+#> 2 North          1    40         NA
+#> 3 North          2    55         15
+#> 4 South          1    12         NA
+#> 5 South          2     9         -3
+```
+
+You can mix the modes — pass catalog filters **and**
+`tables = list(pop = …)` to join approved cases to a population table
+you supply.
+
+## Turn the answer into an output
+
+[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+returns an ordinary tibble, so the result flows straight into the rest
+of the toolkit —
+[`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
+for a branded table, `ggplot2` / the `eri_map_*` helpers for a figure,
+or
+[`eri_case_summary()`](https://thecartercenter.github.io/erifunctions/reference/eri_case_summary.md)
+/
+[`eri_incidence_rate()`](https://thecartercenter.github.io/erifunctions/reference/eri_incidence_rate.md)
+for standard epi summaries — see the [function
+reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
+for the full reporting toolkit.
+
+## Tips
+
+- **It queries *approved* data.**
+  [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+  reads the `processed/` layer through the catalog — the data the team
+  trusts — not `raw/` or `staged/`.
+- **Big scans are bounded by memory/download** (ADR-0004): filter tight
+  (`country`/`disease`/`period`) so you attach only what you need.
+- **It’s DuckDB SQL** — joins, `GROUP BY`, window functions, CTEs, date
+  functions all work; see the [DuckDB
+  docs](https://duckdb.org/docs/sql/introduction).
+
+## What’s next
+
+- The [data catalog
+  reference](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
+  — see what approved data exists before you query it.
+- The [surveillance ingest
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+  — how data *gets* approved in the first place.
+- The [guide
+  index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md).
+  \`\`\`

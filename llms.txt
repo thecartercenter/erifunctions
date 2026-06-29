@@ -89,6 +89,7 @@ The full set:
 | [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |
 | [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows |
 | [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) |
+| [Answering ad-hoc requests with SQL](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | Data analysts running SQL across approved datasets (roll-ups, joins) with the [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md) DuckDB layer |
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
 | [Reconciling localities to admin units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review) |
@@ -779,6 +780,8 @@ ODK as those feeds arrive.
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
 - [Triaging the error & data-quality log backlog (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
+- [Answering ad-hoc data requests with SQL
+  (eri_query)](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.md):
 
 ### For epidemiologists
 
