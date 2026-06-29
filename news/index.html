@@ -23,6 +23,13 @@
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with erifunctions</a></li>
     <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
+    <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
+    <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
+    <li><a class="dropdown-item" href="../articles/data-model-card.html">Data-model decision card: channel vs. measure</a></li>
+    <li><a class="dropdown-item" href="../articles/troubleshooting.html">Troubleshooting card</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Data analysts</h6></li>
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
@@ -71,14 +78,18 @@
 <strong>New <code>da-adhoc-guide</code> article</strong> — a run-it-live walkthrough of <code><a href="../reference/eri_query.html">eri_query()</a></code> (catalog roll-ups, joins, window functions) for answering ad-hoc requests; the in-memory examples run with no Azure.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="docs-data-analyst-training-bundle--cheat-sheets-onboarding-path-orientation-deck-development-version">Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck (<a href="https://github.com/thecartercenter/erifunctions/issues/219" class="external-link">#219</a>)<a class="anchor" aria-label="anchor" href="#docs-data-analyst-training-bundle--cheat-sheets-onboarding-path-orientation-deck-development-version"></a></h3>
+<h3 id="docs-data-analyst-training-bundle-now-lives-on-the-documentation-site-development-version">Docs: Data Analyst training bundle now lives on the documentation site (<a href="https://github.com/thecartercenter/erifunctions/issues/219" class="external-link">#219</a>, <a href="https://github.com/thecartercenter/erifunctions/issues/225" class="external-link">#225</a>)<a class="anchor" aria-label="anchor" href="#docs-data-analyst-training-bundle-now-lives-on-the-documentation-site-development-version"></a></h3>
+<p>The reference/training materials for a “still learning R” analyst are now <strong>pkgdown articles</strong> (one source of truth on the site, in a new <strong>Quick reference &amp; onboarding</strong> navbar group), rather than loose files under <code>docs/</code>:</p>
 <ul><li>
-<strong>New quick-reference cards</strong> under <code>docs/training/</code>: a <strong>DA cheat sheet</strong> (the ~15 functions a DA uses, the 5-axis path, and a “which pipeline?” decision tree), a <strong>data-model card</strong> (channel vs. measure), and <strong>connections</strong> and <strong>troubleshooting</strong> cards. Aimed at a “still learning R” analyst as a desk reference.</li>
+<strong>Orientation</strong> — the big picture (data system, pipeline, where each task lives).</li>
 <li>
-<strong>New <code>docs/onboarding.md</code></strong> — a paced Week-0 → Week-2 onboarding path with checkpoints and a competency checklist, built on the existing sandbox namespaces (<code>atlantis</code>, <code>uga/demo</code>, the <code>eri_test_*</code> ODK forms). Linked from the README, the guide index, and the getting-started article.</li>
+<strong>Onboarding</strong> — a paced Week-0 → Week-2 path with checkpoints and a competency checklist, built on the existing sandbox namespaces (<code>atlantis</code>, <code>uga/demo</code>, the <code>eri_test_*</code> ODK forms).</li>
 <li>
-<strong>New orientation deck</strong> (<code>docs/training/orientation-deck.qmd</code>, revealjs) for a first training session.</li>
-</ul></div>
+<strong>DA cheat sheet</strong> — the ~15 functions a DA uses, the 5-axis path, and a “which pipeline?” decision tree.</li>
+<li>
+<strong>Data-model card</strong> (channel vs. measure) and a <strong>Troubleshooting card</strong> (errors → fixes + the <code>eri_logs</code> triage loop).</li>
+</ul><p>Linked from the README, the guide index, and the getting-started article. (The standalone connections <em>card</em> was folded into the existing connections <em>guide</em> to avoid duplication.)</p>
+</div>
 <div class="section level3">
 <h3 id="feature-eri_odk_upload--bulk-create-odk-submissions-from-a-table-adr-development-version">Feature: <code>eri_odk_upload()</code> — bulk-create ODK submissions from a table (ADR-0013, <a href="https://github.com/thecartercenter/erifunctions/issues/211" class="external-link">#211</a>)<a class="anchor" aria-label="anchor" href="#feature-eri_odk_upload--bulk-create-odk-submissions-from-a-table-adr-development-version"></a></h3>
 <ul><li>

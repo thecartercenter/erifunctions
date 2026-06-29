@@ -10,6 +10,23 @@ path, then how to connect to the services erifunctions talks to.
 - [Connecting to Azure, ODK Central, SharePoint, and
   Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md):
 
+### Quick reference & onboarding
+
+Desk references and the new-analyst path: the big-picture orientation,
+the paced onboarding track, the one-page cheat sheet, the
+channel-vs-measure data-model card, and the troubleshooting card.
+
+- [Orientation: the data system at a
+  glance](https://thecartercenter.github.io/erifunctions/articles/orientation.md):
+- [Onboarding a new Data
+  Analyst](https://thecartercenter.github.io/erifunctions/articles/onboarding.md):
+- [Data Analyst cheat
+  sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.md):
+- [Data-model decision card: channel vs.
+  measure](https://thecartercenter.github.io/erifunctions/articles/data-model-card.md):
+- [Troubleshooting
+  card](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.md):
+
 ### For data analysts
 
 The daily DA workflow, in order: stand up a space, bring data through

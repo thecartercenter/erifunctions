@@ -30,25 +30,23 @@ started**](https://thecartercenter.github.io/erifunctions/articles/getting-start
 article is the front door.
 
 **New Data Analyst?** Start with the **[onboarding
-path](https://thecartercenter.github.io/erifunctions/docs/onboarding.md)**
+path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**
 — a paced Week-0 → Week-2 track through the guides below — and keep the
-quick-reference cards open as you work:
+quick-reference articles open as you work:
 
+- [Orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html)
+  — the big picture: the data system, the pipeline, and where your tasks
+  live
 - [DA cheat
-  sheet](https://thecartercenter.github.io/erifunctions/docs/training/da-cheatsheet.md)
+  sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html)
   — the ~15 functions you use, the path model, and the “which pipeline?”
   decision tree
 - [Data-model
-  card](https://thecartercenter.github.io/erifunctions/docs/training/data-model-card.md)
+  card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html)
   — channel (`data_source`) vs. measure (`data_type`)
-- [Connections & secrets
-  card](https://thecartercenter.github.io/erifunctions/docs/training/connections-card.md)
-  · [Troubleshooting
-  card](https://thecartercenter.github.io/erifunctions/docs/training/troubleshooting-card.md)
-- [Orientation
-  deck](https://thecartercenter.github.io/erifunctions/docs/training/orientation-deck.qmd)
-  — the big picture for a first training session (Quarto source;
-  `quarto render` it to slides)
+- [Troubleshooting
+  card](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html)
+  — common errors → fixes + the log-triage loop
 
 **New here? Do these in order** (then dip into the rest as your work
 needs them). First, run
