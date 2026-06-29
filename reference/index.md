@@ -137,12 +137,17 @@ Persist data-quality flags and triage the error / DQ log backlog.
 
 ## Feedback
 
-File and read the team’s internal feedback / ticket log.
+File, read, triage, and summarise the team’s internal feedback / ticket
+log.
 
 - [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md)
   : Log a piece of feedback to the shared ticket log
 - [`eri_feedback_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_list.md)
   : List logged feedback
+- [`eri_feedback_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_status.md)
+  : Move a feedback ticket through the triage lifecycle
+- [`eri_feedback_board()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_board.md)
+  : Summarise the feedback backlog by status
 
 ## ODK
 
