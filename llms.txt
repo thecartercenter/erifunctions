@@ -518,6 +518,8 @@ Register forms, sync submissions, monitor surveys, and manage users.
   : List all actively registered ODK forms
 - [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
   : Sync an ODK form's submissions to Azure
+- [`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md)
+  : Bulk-create ODK Central submissions from a tabular extract
 - [`eri_survey_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_survey_status.md)
   : ODK form submission metrics
 - [`print(`*`<survey_status>`*`)`](https://thecartercenter.github.io/erifunctions/reference/print.survey_status.md)

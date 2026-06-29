@@ -526,7 +526,101 @@ Each table then flows through the same quality-check → stage →
 **approve** gate as any other extract. Approve the parent and its
 repeats together so they stay in step.
 
-## 5. Clean up
+## 5. Backfilling records into a form
+
+Everything so far moved data **out of** ODK Central. Sometimes you need
+the other direction: a stack of records that already exist — collected
+on **paper**, or living in an **old spreadsheet** — that you want to
+land in ODK Central so they sit alongside the field submissions and flow
+through the same pipeline.
+[`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md)
+does exactly that: it reads a table and **creates one submission per
+row** on an existing **published** form.
+
+The mapping is the mirror image of a download: columns are matched to
+form fields **by name**, using the same flattening you saw above — a
+field at `/data/visit/date` is the column `visit-date`, and repeat
+groups are supplied as the same `{form_id}-{repeat}` child tables linked
+by `PARENT_KEY`. So a `download_odk_form(tables = TRUE)` result is
+itself a valid input — **download and upload round-trip.**
+
+Say you have a few historical river-prospection records to backfill.
+Build (or read) a table whose columns match the form’s fields:
+
+``` r
+
+backfill <- data.frame(
+  site_name       = c("Old Ford", "Bend Camp"),
+  prospection_date = c("2025-11-03", "2025-11-04"),
+  river_stage     = c("low", "medium"),
+  blackfly_count  = c(12L, 7L),
+  collector       = c("paper-archive", "paper-archive"),
+  record_id       = c("hist-001", "hist-002")    # a stable key we'll hash for the instanceID
+)
+```
+
+**Always dry-run first.** `dry_run = TRUE` validates the table against
+the live form — unknown columns, required fields, value types (dates,
+numbers, geopoints), and select-value choice lists — and sends
+**nothing**:
+
+``` r
+
+eri_odk_upload(backfill, project_id = project_id, form_id = form_id,
+               con = con, key_col = "record_id", dry_run = TRUE)
+#> ✔ Validation clean: all columns map to form fields.
+#> ℹ `dry_run` is on -- no submissions were sent.
+#> # A tibble: 0 × 4
+#> # ℹ 4 variables: table <chr>, column <chr>, row <int>, issue <chr>
+```
+
+A non-empty tibble tells you exactly which cell to fix
+(e.g. `river_stage` value `"purple"` → *“value(s) not in the choice
+list”*). Once it is clean, drop `dry_run` to send them:
+
+``` r
+
+eri_odk_upload(backfill, project_id = project_id, form_id = form_id,
+               con = con, key_col = "record_id")
+#> ✔ Validation clean: all columns map to form fields.
+#> ✔ Uploaded to "eri_test_river_prospection": 2 created, 0 already present.
+#> # A tibble: 2 × 4
+#>   instance_id     status  http_status message
+#>   <chr>           <chr>         <int> <chr>
+#> 1 uuid:9f2c1a…    created         201 NA
+#> 2 uuid:4a7b86…    created         201 NA
+```
+
+The `instanceID` of each submission is **derived deterministically**
+from `key_col` (here `record_id`). That makes the upload **safe to
+re-run**: the second time, ODK Central recognises the same ids and
+rejects them, so nothing is duplicated —
+
+``` r
+
+eri_odk_upload(backfill, project_id = project_id, form_id = form_id,
+               con = con, key_col = "record_id")
+#> ✔ Uploaded to "eri_test_river_prospection": 0 created, 2 already present.
+```
+
+— and if you fix a couple of rows and run again, only those change while
+the rest skip. A bad row never aborts the batch: it comes back as
+`failed` (with the server’s message) while its neighbours load.
+
+> **Forms with repeats.** Pass the same named-list shape you got from
+> `download_odk_form(tables = TRUE)` — the parent table first, then each
+> `{form_id}-{repeat}` child table with a `PARENT_KEY` column linking to
+> the parent’s `KEY`.
+> [`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md)
+> rebuilds the nested submission and attaches each repeat to the right
+> parent.
+
+> **Two limits to know.** The form must be **published** (you can’t
+> backfill into a draft), and **attachments can’t be sent at creation**
+> — that is an ODK Central API constraint, so photos/GPS traces are out
+> of scope for the upload.
+
+## 6. Clean up
 
 Practice run done — remove everything you created so you leave no trace.
 
@@ -592,6 +686,10 @@ sync to the governed pipeline, and approve into the canonical layer.
 - **Incremental sync** (only the new/edited submissions, rather than
   re-downloading everything) is on the roadmap (Phase 4) — the registry
   already reserves a `last_cursor` for it.
+- **Backfilling the other direction** — pushing a CSV/Excel table of
+  historical records *into* a form — is
+  [`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md),
+  shown in section 5 above.
 - **Attachments** (photos, GPS traces) come down with
   [`download_form_attachments()`](https://thecartercenter.github.io/erifunctions/reference/download_form_attachments.md).
 - For the full data-quality and approval mechanics, see the

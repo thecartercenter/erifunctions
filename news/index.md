@@ -2,6 +2,37 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_odk_upload()` — bulk-create ODK submissions from a table (ADR-0013, [\#211](https://github.com/thecartercenter/erifunctions/issues/211))
+
+- **New `eri_odk_upload(data, project_id, form_id, …)`** — the inverse
+  of
+  [`download_odk_form()`](https://thecartercenter.github.io/erifunctions/reference/download_odk_form.md)
+  /
+  [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md):
+  take a CSV/Excel table of already-collected records (a paper backfill,
+  a legacy export, or a `download_odk_form(tables = TRUE)` result) and
+  **create them as submissions** on an existing **published** ODK
+  Central form, one POST per row. Columns map to form fields **by name**
+  using the same flattening
+  [`download_odk_form()`](https://thecartercenter.github.io/erifunctions/reference/download_odk_form.md)
+  emits (groups as `group-field`; repeat groups as separate
+  `"{form_id}-{repeat}"` child tables linked by `PARENT_KEY` → parent
+  `KEY`, per ADR-0010), so a download round-trips back to an upload.
+- **Idempotent by construction.** Each submission’s `meta/instanceID` is
+  derived **deterministically** from `key_col` (or the whole row), so
+  re-running the same extract re-derives the same ids and ODK Central
+  rejects duplicates with HTTP 409 — reported as `skipped`, never
+  double-loaded.
+- **Validate first, report per row.** A `dry_run = TRUE` pass checks
+  column reconciliation, required fields, type/format (dates, geopoints,
+  numbers), and — best-effort — select-value choice lists (parsed from
+  the form XML; skipped for external/dataset choices), and POSTs
+  nothing. A real run returns a per-row outcome tibble (`created` /
+  `skipped` / `failed`) and continues past a bad row rather than
+  aborting the batch. Attachments at creation are out of scope (an ODK
+  API limitation). Adds a dependency on `xml2`. See
+  [ADR-0013](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0013-odk-submission-backfill.md).
+
 ### Feature: harden analyst attribution + `eri_odk_purge()` for sandbox cleanup ([\#175](https://github.com/thecartercenter/erifunctions/issues/175) polish)
 
 - **Analyst identity is now honest in the audit trail.** When

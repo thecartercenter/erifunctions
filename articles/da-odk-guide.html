@@ -577,17 +577,100 @@ and its repeats together so they stay in step.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="clean-up">5. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
+<h2 id="backfill">5. Backfilling records into a form<a class="anchor" aria-label="anchor" href="#backfill"></a>
+</h2>
+<p>Everything so far moved data <strong>out of</strong> ODK Central.
+Sometimes you need the other direction: a stack of records that already
+exist — collected on <strong>paper</strong>, or living in an <strong>old
+spreadsheet</strong> — that you want to land in ODK Central so they sit
+alongside the field submissions and flow through the same pipeline. <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>
+does exactly that: it reads a table and <strong>creates one submission
+per row</strong> on an existing <strong>published</strong> form.</p>
+<p>The mapping is the mirror image of a download: columns are matched to
+form fields <strong>by name</strong>, using the same flattening you saw
+above — a field at <code>/data/visit/date</code> is the column
+<code>visit-date</code>, and repeat groups are supplied as the same
+<code>{form_id}-{repeat}</code> child tables linked by
+<code>PARENT_KEY</code>. So a
+<code>download_odk_form(tables = TRUE)</code> result is itself a valid
+input — <strong>download and upload round-trip.</strong></p>
+<p>Say you have a few historical river-prospection records to backfill.
+Build (or read) a table whose columns match the form’s fields:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">backfill</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  site_name       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Old Ford"</span>, <span class="st">"Bend Camp"</span><span class="op">)</span>,</span>
+<span>  prospection_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2025-11-03"</span>, <span class="st">"2025-11-04"</span><span class="op">)</span>,</span>
+<span>  river_stage     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"medium"</span><span class="op">)</span>,</span>
+<span>  blackfly_count  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">7L</span><span class="op">)</span>,</span>
+<span>  collector       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"paper-archive"</span>, <span class="st">"paper-archive"</span><span class="op">)</span>,</span>
+<span>  record_id       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hist-001"</span>, <span class="st">"hist-002"</span><span class="op">)</span>    <span class="co"># a stable key we'll hash for the instanceID</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Always dry-run first.</strong> <code>dry_run = TRUE</code>
+validates the table against the live form — unknown columns, required
+fields, value types (dates, numbers, geopoints), and select-value choice
+lists — and sends <strong>nothing</strong>:</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">backfill</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
+<span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"record_id"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Validation clean: all columns map to form fields.</span></span>
+<span><span class="co">#&gt; ℹ `dry_run` is on -- no submissions were sent.</span></span>
+<span><span class="co">#&gt; # A tibble: 0 × 4</span></span>
+<span><span class="co">#&gt; # ℹ 4 variables: table &lt;chr&gt;, column &lt;chr&gt;, row &lt;int&gt;, issue &lt;chr&gt;</span></span></code></pre></div>
+<p>A non-empty tibble tells you exactly which cell to fix
+(e.g. <code>river_stage</code> value <code>"purple"</code> →
+<em>“value(s) not in the choice list”</em>). Once it is clean, drop
+<code>dry_run</code> to send them:</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">backfill</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
+<span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"record_id"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Validation clean: all columns map to form fields.</span></span>
+<span><span class="co">#&gt; ✔ Uploaded to "eri_test_river_prospection": 2 created, 0 already present.</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 4</span></span>
+<span><span class="co">#&gt;   instance_id     status  http_status message</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;           &lt;chr&gt;         &lt;int&gt; &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uuid:9f2c1a…    created         201 NA</span></span>
+<span><span class="co">#&gt; 2 uuid:4a7b86…    created         201 NA</span></span></code></pre></div>
+<p>The <code>instanceID</code> of each submission is <strong>derived
+deterministically</strong> from <code>key_col</code> (here
+<code>record_id</code>). That makes the upload <strong>safe to
+re-run</strong>: the second time, ODK Central recognises the same ids
+and rejects them, so nothing is duplicated —</p>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">backfill</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
+<span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"record_id"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Uploaded to "eri_test_river_prospection": 0 created, 2 already present.</span></span></code></pre></div>
+<p>— and if you fix a couple of rows and run again, only those change
+while the rest skip. A bad row never aborts the batch: it comes back as
+<code>failed</code> (with the server’s message) while its neighbours
+load.</p>
+<blockquote>
+<p><strong>Forms with repeats.</strong> Pass the same named-list shape
+you got from <code>download_odk_form(tables = TRUE)</code> — the parent
+table first, then each <code>{form_id}-{repeat}</code> child table with
+a <code>PARENT_KEY</code> column linking to the parent’s
+<code>KEY</code>. <code><a href="../reference/eri_odk_upload.html">eri_odk_upload()</a></code> rebuilds the nested
+submission and attaches each repeat to the right parent.</p>
+</blockquote>
+<blockquote>
+<p><strong>Two limits to know.</strong> The form must be
+<strong>published</strong> (you can’t backfill into a draft), and
+<strong>attachments can’t be sent at creation</strong> — that is an ODK
+Central API constraint, so photos/GPS traces are out of scope for the
+upload.</p>
+</blockquote>
+</div>
+<div class="section level2">
+<h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
 <p>Practice run done — remove everything you created so you leave no
 trace.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Remove the demo collector from ODK Central (revoke its form access, then delete the account).</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"revoke"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         form_id <span class="op">=</span> <span class="va">form_id</span>, role_id <span class="op">=</span> <span class="fl">2</span>, actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"delete"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># This was a sandbox, so PURGE the registry entry (hard-delete) to leave no trace.</span></span>
 <span><span class="co"># For a real form you'd use eri_odk_deregister() instead, which soft-deletes</span></span>
 <span><span class="co"># (active: false) and keeps the sync history for audit.</span></span>
@@ -599,7 +682,7 @@ trace.</p>
 <span><span class="fu"><a href="../reference/eri_odk_purge.html">eri_odk_purge</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="st">"eri_test_river_repeat"</span>,</span>
 <span>              server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Purged 1 registry entry for "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
 <span><span class="co"># eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"uga/demo"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
@@ -636,6 +719,10 @@ sync to the governed pipeline, and approve into the canonical layer.</p>
 <strong>Incremental sync</strong> (only the new/edited submissions,
 rather than re-downloading everything) is on the roadmap (Phase 4) — the
 registry already reserves a <code>last_cursor</code> for it.</li>
+<li>
+<strong>Backfilling the other direction</strong> — pushing a
+CSV/Excel table of historical records <em>into</em> a form — is <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>,
+shown in section 5 above.</li>
 <li>
 <strong>Attachments</strong> (photos, GPS traces) come down with <a href="../reference/download_form_attachments.html"><code>download_form_attachments()</code></a>.</li>
 <li>For the full data-quality and approval mechanics, see the <a href="da-ingest-guide.html">surveillance ingest guide</a>; for the whole
