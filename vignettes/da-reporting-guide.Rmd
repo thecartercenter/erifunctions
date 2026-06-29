@@ -49,12 +49,13 @@ eri_table(
   dat,
   title          = "Malaria cases by province, 2026",
   footnote       = "Source: sandbox data",
-  highlight_cols = "positivity"
+  highlight_cols = list(positivity = "#FFC000")
 )
 ```
 
 It returns a `flextable` object; print it in a report, or hand it to the Word/PowerPoint/HTML helpers.
-`highlight_cols` shades the columns you want the eye to land on.
+`highlight_cols` is a **named list** mapping a column to a fill colour (`list(col = "#hex")`) — use it to
+shade the column you want the eye to land on.
 
 ## An on-brand figure {#figure}
 
