@@ -124,6 +124,13 @@ Run SQL across processed datasets with a serverless DuckDB layer.
 - [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
   : Query processed data with SQL (serverless DuckDB)
 
+## Reconciliation
+
+Diff a new dataset against a reference to validate the cutover.
+
+- [`eri_compare()`](https://thecartercenter.github.io/erifunctions/reference/eri_compare.md)
+  : Reconcile two datasets and report the differences
+
 ## Logs & triage
 
 Persist data-quality flags and triage the error / DQ log backlog.

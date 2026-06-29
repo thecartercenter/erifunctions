@@ -2,6 +2,23 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_compare()` — reconcile two datasets (Phase 3 cutover validation)
+
+- **New `eri_compare(new, old, by, ...)`** diffs a candidate dataset
+  against a reference and reports the differences — the linchpin of the
+  Phase 3 parallel run: prove
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)’s
+  `data/staged` output matches the legacy `projects/intermediate`
+  (hsp-mal) output before any cutover. `new`/`old` are data frames or
+  Azure blob paths (read via
+  [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)).
+  With key columns (`by`) it reconciles row-for-row — which keys were
+  **added**/**dropped** and exactly which **cells** differ (numeric
+  `tolerance`- and NA-aware); without keys it reports the **schema**
+  diff and set-based row membership. Returns an `eri_comparison` object
+  (`equivalent`, `summary`, `schema`, `rows`, `values`) with a
+  [`print()`](https://rdrr.io/r/base/print.html) method.
+
 ### Feature: `eri_feedback_report()` — weekly feedback digest
 
 - **New `eri_feedback_report(file, format, since_days = 7)`** renders
