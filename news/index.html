@@ -74,6 +74,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="feature-eri_feedback_report--weekly-feedback-digest-development-version">Feature: <code>eri_feedback_report()</code> — weekly feedback digest<a class="anchor" aria-label="anchor" href="#feature-eri_feedback_report--weekly-feedback-digest-development-version"></a></h3>
+<ul><li>
+<strong>New <code>eri_feedback_report(file, format, since_days = 7)</code></strong> renders the feedback backlog to a self-contained <strong>HTML</strong> (default) or <strong>markdown</strong> file: a status board, then <strong>new this week</strong>, <strong>closed this week</strong> (with each ticket’s closing note), and the <strong>open backlog</strong> in lifecycle order. Built as a quick standing review so the team stays current on the tickets (ADR-0014).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="feature-eri_feedback_status--triage-the-feedback-backlog-development-version">Feature: <code>eri_feedback_status()</code> — triage the feedback backlog<a class="anchor" aria-label="anchor" href="#feature-eri_feedback_status--triage-the-feedback-backlog-development-version"></a></h3>
 <ul><li>
 <strong>New <code>eri_feedback_status(id, status, note = NULL)</code></strong> moves a ticket through the lifecycle (<code>submitted</code> → <code>planned</code> → <code>in_progress</code> → <code>fixed</code>, or <code>declined</code>) and records an audit-trail entry of the transition (from, to, who, when, optional note) on the ticket’s <code>history</code>. The actor is the <strong>verified</strong> signed-in identity (ADR-0003) and the update is concurrency-safe (ADR-0002); an unknown id aborts without writing and <code>status</code> is validated against the lifecycle. <strong>New <code><a href="../reference/eri_feedback_board.html">eri_feedback_board()</a></code></strong> prints a one-line-per-status count of the backlog (the triage-meeting view) and returns the rows. This is the triage half of the feedback log (ADR-0014); capture is [<code><a href="../reference/eri_feedback.html">eri_feedback()</a></code>].</li>

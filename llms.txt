@@ -549,6 +549,8 @@ log.
   : Move a feedback ticket through the triage lifecycle
 - [`eri_feedback_board()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_board.md)
   : Summarise the feedback backlog by status
+- [`eri_feedback_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_report.md)
+  : Write a weekly feedback report (HTML or markdown)
 
 ## ODK
 
