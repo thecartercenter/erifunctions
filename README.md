@@ -71,6 +71,7 @@ The full set:
 | [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows |
 | [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) |
 | [Answering ad-hoc requests with SQL](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | Data analysts running SQL across approved datasets (roll-ups, joins) with the `eri_query()` DuckDB layer |
+| [Branded tables, figures & decks](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | Data analysts turning approved data into on-brand tables, plots, Excel workbooks, and PowerPoint decks |
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
 | [Reconciling localities to admin units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review) |
