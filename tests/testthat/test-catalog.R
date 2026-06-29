@@ -288,22 +288,16 @@ test_that("eri_catalog_verify returns exists column", {
   e1 <- make_entry(path = "uga/oncho/surveillance/processed/exists.parquet")
   e2 <- make_entry(path = "uga/oncho/surveillance/processed/missing.parquet",
                    period = "2024-W02")
-  stored <- make_catalog(e1, e2)
+  store <- new_yaml_store(make_catalog(e1, e2))
+  local_yaml_store(store)
 
   local_mocked_bindings(
-    storage_file_exists = function(container, path, ...) {
-      if (path == erifunctions:::.ERI_CATALOG_PATH) return(TRUE)
-      grepl("exists\\.parquet", path)
-    },
-    storage_download = function(container, src, dest, ...) yaml::write_yaml(stored, dest),
-    storage_dir_exists  = function(...) TRUE,
-    storage_upload = function(container, src, dest, ...) {
-      stored <<- yaml::read_yaml(src)
-    },
+    storage_file_exists = function(container, path, ...) grepl("exists\\.parquet", path),
     .package = "AzureStor"
   )
   local_mocked_bindings(
     get_azure_storage_connection = function(...) "mock_con",
+    .eri_catalog_read = function(data_con) store$data,   # pre-read snapshot
     .package = "erifunctions"
   )
 
