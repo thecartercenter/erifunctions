@@ -10,6 +10,7 @@ eri_compare(
   by = NULL,
   ignore = NULL,
   tolerance = 0,
+  strict_schema = TRUE,
   new_con = NULL,
   old_con = NULL
 )
@@ -29,6 +30,11 @@ datasets. Required for per-cell value reconciliation; must be unique.}
 
 \item{tolerance}{\code{num} Absolute tolerance for numeric columns; \verb{|new - old|}
 within \code{tolerance} counts as equal. Default \code{0} (exact).}
+
+\item{strict_schema}{\code{lgl} If \code{TRUE} (default), added/dropped columns and type
+mismatches count against \code{equivalent}. If \code{FALSE}, columns present only in
+\code{new} are tolerated (value/row parity alone gates equivalence); dropped
+columns and type mismatches still count. See \strong{Details}.}
 
 \item{new_con, old_con}{Azure containers used only when \code{new}/\code{old} are paths.
 If \code{NULL}, connect automatically (\code{new} → \code{data} blob, \code{old} → \code{projects} blob).}
@@ -50,6 +56,19 @@ With key columns (\code{by}) it reconciles row-for-row: which keys were added or
 dropped, and — for keys present in both — exactly which cells differ. Without
 \code{by} it still reports the schema diff and set-based row membership, but cannot
 pinpoint per-cell value changes.
+
+A key present in \strong{both} datasets is never counted as added or dropped — only
+as a possible \strong{value} mismatch. So \code{rows$added} / \code{rows$dropped} are purely
+key-membership deltas, and \code{values} holds the same-key-different-value cells.
+
+\code{equivalent} always requires the rows and values to match. Whether a \emph{column}
+difference also breaks equivalence is governed by \code{strict_schema}: by default
+(\code{TRUE}) any added or dropped column, or a type mismatch, makes it \code{FALSE}.
+Set \code{strict_schema = FALSE} to gate on \strong{value/row parity alone} while
+tolerating extra columns in \code{new} (e.g. provenance the new pipeline adds that
+the legacy mirror never had) — dropped columns and type mismatches still count,
+since those are genuine regressions. Numeric classes (integer/double) are
+treated as one type, so they never flag as a mismatch on their own.
 }
 \examples{
 a <- data.frame(id = 1:3, n = c(10, 20, 30), site = c("x", "y", "z"))

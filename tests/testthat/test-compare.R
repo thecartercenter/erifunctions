@@ -84,6 +84,31 @@ test_that("eri_compare aborts when a key column is missing", {
   expect_error(eri_compare(a, b, by = "id"), "not found in both")
 })
 
+test_that("strict_schema = FALSE tolerates extra columns in new, still gates on values/dropped", {
+  a <- data.frame(id = 1:2, n = c(1, 2), prov = c("p", "q"))  # extra column
+  b <- data.frame(id = 1:2, n = c(1, 2))
+
+  expect_false(eri_compare(a, b, by = "id")$equivalent)                       # strict: added col fails
+  expect_true(eri_compare(a, b, by = "id", strict_schema = FALSE)$equivalent) # relaxed: tolerated
+
+  # a dropped column (only in old) still fails, even relaxed
+  b_extra <- data.frame(id = 1:2, n = c(1, 2), gone = c("r", "s"))
+  expect_false(eri_compare(data.frame(id = 1:2, n = c(1, 2)), b_extra,
+                           by = "id", strict_schema = FALSE)$equivalent)
+
+  # a value mismatch still fails, even relaxed
+  b_val <- data.frame(id = 1:2, n = c(1, 9))
+  expect_false(eri_compare(a, b_val, by = "id", strict_schema = FALSE)$equivalent)
+})
+
+test_that("eri_compare does not flag integer vs double as a type mismatch", {
+  a <- data.frame(id = 1:2, n = c(1L, 2L))    # integer
+  b <- data.frame(id = 1:2, n = c(1.0, 2.0))  # double
+  r <- eri_compare(a, b, by = "id")
+  expect_equal(nrow(r$schema$type_mismatch), 0L)
+  expect_true(r$equivalent)
+})
+
 test_that("eri_compare ignores specified columns", {
   a <- data.frame(id = 1:2, n = c(1, 2), ts = c("t1", "t2"))
   b <- data.frame(id = 1:2, n = c(1, 2), ts = c("t9", "t8"))

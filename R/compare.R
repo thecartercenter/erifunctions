@@ -52,6 +52,20 @@
 #' `by` it still reports the schema diff and set-based row membership, but cannot
 #' pinpoint per-cell value changes.
 #'
+#' @details
+#' A key present in **both** datasets is never counted as added or dropped — only
+#' as a possible **value** mismatch. So `rows$added` / `rows$dropped` are purely
+#' key-membership deltas, and `values` holds the same-key-different-value cells.
+#'
+#' `equivalent` always requires the rows and values to match. Whether a *column*
+#' difference also breaks equivalence is governed by `strict_schema`: by default
+#' (`TRUE`) any added or dropped column, or a type mismatch, makes it `FALSE`.
+#' Set `strict_schema = FALSE` to gate on **value/row parity alone** while
+#' tolerating extra columns in `new` (e.g. provenance the new pipeline adds that
+#' the legacy mirror never had) — dropped columns and type mismatches still count,
+#' since those are genuine regressions. Numeric classes (integer/double) are
+#' treated as one type, so they never flag as a mismatch on their own.
+#'
 #' @param new A data frame, or a single Azure blob path read with [eri_read()]
 #'   (defaults to the `data` blob). The candidate / new-pipeline output.
 #' @param old A data frame, or a single Azure blob path read with [eri_read()]
@@ -62,6 +76,10 @@
 #'   (e.g. a run timestamp that is expected to differ).
 #' @param tolerance `num` Absolute tolerance for numeric columns; `|new - old|`
 #'   within `tolerance` counts as equal. Default `0` (exact).
+#' @param strict_schema `lgl` If `TRUE` (default), added/dropped columns and type
+#'   mismatches count against `equivalent`. If `FALSE`, columns present only in
+#'   `new` are tolerated (value/row parity alone gates equivalence); dropped
+#'   columns and type mismatches still count. See **Details**.
 #' @param new_con,old_con Azure containers used only when `new`/`old` are paths.
 #'   If `NULL`, connect automatically (`new` → `data` blob, `old` → `projects` blob).
 #' @returns An `eri_comparison` object (a list) with `equivalent` (logical),
@@ -83,7 +101,7 @@
 #' }
 #' @export
 eri_compare <- function(new, old, by = NULL, ignore = NULL, tolerance = 0,
-                        new_con = NULL, old_con = NULL) {
+                        strict_schema = TRUE, new_con = NULL, old_con = NULL) {
   if (!is.numeric(tolerance) || length(tolerance) != 1L || is.na(tolerance) || tolerance < 0) {
     cli::cli_abort("{.arg tolerance} must be a single non-negative number.")
   }
@@ -103,7 +121,13 @@ eri_compare <- function(new, old, by = NULL, ignore = NULL, tolerance = 0,
   common   <- intersect(cols_new, cols_old)
 
   # --- schema -----------------------------------------------------------------
-  type_of <- function(df, cols) vapply(cols, function(c) class(df[[c]])[[1L]], character(1L))
+  # Collapse the numeric classes (integer/double/numeric) to one type, so a
+  # legacy double vs a new integer of the same value isn't a spurious mismatch
+  # (they already compare value-equal).
+  type_of <- function(df, cols) vapply(cols, function(c) {
+    cl <- class(df[[c]])[[1L]]
+    if (cl %in% c("integer", "double", "numeric")) "numeric" else cl
+  }, character(1L))
   tn <- type_of(new, common); to <- type_of(old, common)
   type_mismatch <- tibble::tibble(
     column   = common[tn != to],
@@ -141,9 +165,16 @@ eri_compare <- function(new, old, by = NULL, ignore = NULL, tolerance = 0,
         "i" = if (length(miss_old)) "Missing from {.arg old}: {.val {miss_old}}." else NULL
       ))
     }
-    if (anyDuplicated(new[, by, drop = FALSE]) || anyDuplicated(old[, by, drop = FALSE])) {
+    dup_new <- anyDuplicated(new[, by, drop = FALSE])
+    dup_old <- anyDuplicated(old[, by, drop = FALSE])
+    if (dup_new || dup_old) {
+      side    <- if (dup_new) "new" else "old"
+      df_dup  <- if (dup_new) new else old
+      dup_key <- vapply(by, function(k) as.character(df_dup[[k]][[if (dup_new) dup_new else dup_old]]),
+                        character(1L))
       cli::cli_abort(c(
-        "{.arg by} does not uniquely identify rows.",
+        "{.arg by} does not uniquely identify rows in {.arg {side}}.",
+        "i" = "First duplicate key: {.val {paste(by, dup_key, sep = '=')}}.",
         "i" = "Per-cell reconciliation needs a unique key; add columns to {.arg by}."
       ))
     }
@@ -184,8 +215,12 @@ eri_compare <- function(new, old, by = NULL, ignore = NULL, tolerance = 0,
     n_val_rows <- if (n_val_mismatch > 0L) nrow(dplyr::distinct(values[, by, drop = FALSE])) else 0L
   }
 
-  equivalent <- length(schema$added) == 0L && length(schema$dropped) == 0L &&
-    nrow(schema$type_mismatch) == 0L && n_added == 0L && n_dropped == 0L &&
+  # Columns only in `new` (additions) count against equivalence only under
+  # strict_schema; columns dropped from `new` and type mismatches always do
+  # (those are real regressions, and dropped columns are never value-compared).
+  schema_ok <- length(schema$dropped) == 0L && nrow(schema$type_mismatch) == 0L &&
+    (!strict_schema || length(schema$added) == 0L)
+  equivalent <- schema_ok && n_added == 0L && n_dropped == 0L &&
     (is.na(n_val_mismatch) || n_val_mismatch == 0L)
 
   structure(
