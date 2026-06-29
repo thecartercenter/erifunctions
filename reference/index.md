@@ -115,6 +115,13 @@ Register, query, and verify processed-layer data.
 - [`eri_catalog_verify()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.md)
   : Verify that catalog entries still exist in Azure
 
+## Querying
+
+Run SQL across processed datasets with a serverless DuckDB layer.
+
+- [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
+  : Query processed data with SQL (serverless DuckDB)
+
 ## Logs & triage
 
 Persist data-quality flags and triage the error / DQ log backlog.
