@@ -65,6 +65,25 @@ test_that("eri_query stamps provenance and unions matching processed files", {
   expect_equal(out$cases[out$country == "ht"], 3)
 })
 
+test_that("eri_query warns when a provenance column collides with the data", {
+  cat_rows <- tibble::tibble(
+    path = "uga/malaria/surveillance/aggregate/processed/2026-01.parquet",
+    country = "uga", disease = "malaria", data_source = "surveillance",
+    data_type = "aggregate", period = "2026-01"
+  )
+  local_mocked_bindings(
+    eri_catalog_query = function(...) cat_rows,
+    .eri_query_read_one = function(value, data_con) tibble::tibble(period = "in-file", cases = 1),
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  expect_warning(
+    out <- suppressMessages(eri_query("SELECT period, cases FROM data", disease = "malaria")),
+    "Provenance column"
+  )
+  expect_equal(out$period, "2026-01")   # catalog value wins
+})
+
 test_that("eri_query aborts when no processed dataset matches", {
   local_mocked_bindings(
     eri_catalog_query = function(...) tibble::tibble(),

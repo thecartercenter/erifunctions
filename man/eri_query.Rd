@@ -52,6 +52,10 @@ There are two ways to put data in scope, and they compose:
 into a single table named by \code{table} (default \code{"data"}). This makes
 cross-country / cross-period aggregation a one-liner:
 \verb{SELECT country, SUM(total_cases) FROM data GROUP BY country}.
+Those five column names are \strong{reserved} in this mode — if a dataset already
+carries one, it is overwritten with the catalog value (the path is
+authoritative for these axes) and a warning is issued. Matched files with
+differing columns are unioned by name; missing columns become \code{NA}.
 \item \strong{Explicit tables (joins).} Pass \code{tables = list(name = x)} where each \code{x} is a
 data.frame, a local \code{.parquet} path, or a \verb{data/} blob path. Each is registered
 under its name so you can join, e.g. cases to a population table.

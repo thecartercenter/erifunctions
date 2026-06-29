@@ -33,6 +33,10 @@
 #'   into a single table named by `table` (default `"data"`). This makes
 #'   cross-country / cross-period aggregation a one-liner:
 #'   `SELECT country, SUM(total_cases) FROM data GROUP BY country`.
+#'   Those five column names are **reserved** in this mode — if a dataset already
+#'   carries one, it is overwritten with the catalog value (the path is
+#'   authoritative for these axes) and a warning is issued. Matched files with
+#'   differing columns are unioned by name; missing columns become `NA`.
 #' * **Explicit tables (joins).** Pass `tables = list(name = x)` where each `x` is a
 #'   data.frame, a local `.parquet` path, or a `data/` blob path. Each is registered
 #'   under its name so you can join, e.g. cases to a population table.
@@ -78,7 +82,11 @@ eri_query <- function(sql,
                       table       = "data",
                       tables      = NULL,
                       data_con    = NULL) {
-  rlang::check_installed(c("duckdb", "DBI"), reason = "for `eri_query()` (the DuckDB query layer).")
+  if (!requireNamespace("duckdb", quietly = TRUE) || !requireNamespace("DBI", quietly = TRUE))
+    cli::cli_abort(c(
+      "{.pkg duckdb} and {.pkg DBI} are required for {.fn eri_query}.",
+      "i" = 'Install them with {.code install.packages(c("duckdb", "DBI"))}.'
+    ))
   if (!is.character(sql) || length(sql) != 1L)
     cli::cli_abort("{.arg sql} must be a single SQL string.")
 
@@ -112,12 +120,21 @@ eri_query <- function(sql,
         "No processed datasets in the catalog match those filters.",
         "i" = "Check {.fn eri_catalog_query} with the same filters."
       ))
-    prov <- c("country", "disease", "data_source", "data_type", "period")
+    prov     <- c("country", "disease", "data_source", "data_type", "period")
+    collided <- character(0)
     frames <- lapply(seq_len(nrow(cat_rows)), function(i) {
-      df <- .eri_query_read_one(cat_rows$path[i], data_con)
+      df  <- .eri_query_read_one(cat_rows$path[i], data_con)
+      hit <- intersect(prov, names(df))
+      if (length(hit)) collided <<- union(collided, hit)
       for (col in prov) df[[col]] <- cat_rows[[col]][i]   # stamp provenance for roll-ups
       df
     })
+    if (length(collided))
+      cli::cli_warn(c(
+        "Provenance column{?s} {.val {collided}} already in the data; overwriting with the catalog value (the path is authoritative for these axes).",
+        "i" = "The in-file column is not preserved -- rename it upstream if you need both."
+      ))
+    # Differing schemas across the matched files are unioned by name; missing columns become NA.
     duckdb::duckdb_register(con, table, dplyr::bind_rows(frames))
     registered <- c(registered, table)
   }
