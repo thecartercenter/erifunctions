@@ -22,6 +22,7 @@ eri_odk_upload(
   url = Sys.getenv("ODK_URL"),
   auth = Sys.getenv("ODK_TOKEN"),
   key_col = NULL,
+  mapping = NULL,
   dry_run = FALSE,
   data_con = NULL
 )
@@ -60,7 +61,18 @@ eri_odk_upload(
   `chr` Column name(s) whose values seed the deterministic `instanceID`.
   `NULL` (default) hashes the whole parent row. To preserve the original
   submission identity on a round-trip, pass the id column (e.g.
-  `"KEY"`).
+  `"KEY"`). Names refer to the columns *after* any `mapping` is applied.
+
+- mapping:
+
+  Named character vector mapping **input column headers to field-column
+  names**, for extracts whose headers don't already match the form (e.g.
+  a paper CSV): `c(village = "site_name", date_seen = "visit-date")`.
+  Targets use the same
+  [`download_odk_form()`](https://thecartercenter.github.io/erifunctions/reference/download_odk_form.md)
+  flattening (`group-field`). The rename is applied to the parent and
+  every child table before validation, so columns you don't list are
+  left as-is. `NULL` (default) maps nothing.
 
 - dry_run:
 
@@ -122,5 +134,13 @@ eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
 # Create the submissions (re-runs skip already-present rows via HTTP 409).
 eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
                con = con, key_col = "KEY")
+
+# A paper CSV whose headers don't match the form: map them. `key_col` names a
+# column left unmapped (mapping is applied first), so key on `rec`, not `village`.
+paper <- read.csv("historical_records.csv")   # cols: village, date_seen, stage, rec
+eri_odk_upload(paper, project_id = 7, form_id = "RiverProspection", con = con,
+               mapping = c(village = "site_name", date_seen = "prospection_date",
+                           stage = "river_stage"),
+               key_col = "rec", dry_run = TRUE)
 } # }
 ```

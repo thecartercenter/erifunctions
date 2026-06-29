@@ -586,9 +586,9 @@ spreadsheet</strong> — that you want to land in ODK Central so they sit
 alongside the field submissions and flow through the same pipeline. <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>
 does exactly that: it reads a table and <strong>creates one submission
 per row</strong> on an existing <strong>published</strong> form.</p>
-<p>The mapping is the mirror image of a download: columns are matched to
-form fields <strong>by name</strong>, using the same flattening you saw
-above — a field at <code>/data/visit/date</code> is the column
+<p>It is the mirror image of a download: columns are matched to form
+fields <strong>by name</strong>, using the same flattening you saw above
+— a field nested in a <code>visit</code> group is the column
 <code>visit-date</code>, and repeat groups are supplied as the same
 <code>{form_id}-{repeat}</code> child tables linked by
 <code>PARENT_KEY</code>. So a
@@ -626,10 +626,10 @@ lists — and sends <strong>nothing</strong>:</p>
 <span><span class="co">#&gt; ✔ Validation clean: all columns map to form fields.</span></span>
 <span><span class="co">#&gt; ✔ Uploaded to "eri_test_river_prospection": 2 created, 0 already present.</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 4</span></span>
-<span><span class="co">#&gt;   instance_id     status  http_status message</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;           &lt;chr&gt;         &lt;int&gt; &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 uuid:9f2c1a…    created         201 NA</span></span>
-<span><span class="co">#&gt; 2 uuid:4a7b86…    created         201 NA</span></span></code></pre></div>
+<span><span class="co">#&gt;   instance_id                           status  http_status message</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;                                 &lt;chr&gt;         &lt;int&gt; &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uuid:682c06225e8949547e6c34a6b6834ee4 created         200 NA</span></span>
+<span><span class="co">#&gt; 2 uuid:80a4e16d30398e85e78b4c18799a63ab created         200 NA</span></span></code></pre></div>
 <p>The <code>instanceID</code> of each submission is <strong>derived
 deterministically</strong> from <code>key_col</code> (here
 <code>record_id</code>). That makes the upload <strong>safe to
@@ -643,6 +643,37 @@ and rejects them, so nothing is duplicated —</p>
 while the rest skip. A bad row never aborts the batch: it comes back as
 <code>failed</code> (with the server’s message) while its neighbours
 load.</p>
+<div class="section level3">
+<h3 id="headers-that-dont-match-the-form">Headers that don’t match the form<a class="anchor" aria-label="anchor" href="#headers-that-dont-match-the-form"></a>
+</h3>
+<p>A paper or legacy spreadsheet rarely uses the form’s exact column
+names. Rather than editing the source file, pass a
+<strong><code>mapping</code></strong> —
+<code>c(your_header = "field-column", …)</code> — and
+<code><a href="../reference/eri_odk_upload.html">eri_odk_upload()</a></code> renames the columns before it
+validates:</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">paper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  village   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Old Ford"</span>, <span class="st">"Bend Camp"</span><span class="op">)</span>,</span>
+<span>  date_seen <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2025-11-03"</span>, <span class="st">"2025-11-04"</span><span class="op">)</span>,</span>
+<span>  stage     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"low"</span>, <span class="st">"medium"</span><span class="op">)</span>,</span>
+<span>  flies     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">12L</span>, <span class="fl">7L</span><span class="op">)</span>,</span>
+<span>  recorder  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"paper-archive"</span>, <span class="st">"paper-archive"</span><span class="op">)</span>,</span>
+<span>  rec       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hist-101"</span>, <span class="st">"hist-102"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">paper</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>, con <span class="op">=</span> <span class="va">con</span>,</span>
+<span>               mapping <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>village <span class="op">=</span> <span class="st">"site_name"</span>, date_seen <span class="op">=</span> <span class="st">"prospection_date"</span>,</span>
+<span>                           stage <span class="op">=</span> <span class="st">"river_stage"</span>, flies <span class="op">=</span> <span class="st">"blackfly_count"</span>,</span>
+<span>                           recorder <span class="op">=</span> <span class="st">"collector"</span><span class="op">)</span>,</span>
+<span>               key_col <span class="op">=</span> <span class="st">"rec"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Validation clean: all columns map to form fields.</span></span>
+<span><span class="co">#&gt; ℹ `dry_run` is on -- no submissions were sent.</span></span>
+<span><span class="co">#&gt; # A tibble: 0 × 4</span></span>
+<span><span class="co">#&gt; # ℹ 4 variables: table &lt;chr&gt;, column &lt;chr&gt;, row &lt;int&gt;, issue &lt;chr&gt;</span></span></code></pre></div>
+<p>Map only the columns that differ — anything already matching a field
+is left alone — then drop <code>dry_run</code> to send. The targets are
+the same flattened field-column names (<code>group-field</code>).</p>
 <blockquote>
 <p><strong>Forms with repeats.</strong> Pass the same named-list shape
 you got from <code>download_odk_form(tables = TRUE)</code> — the parent
@@ -659,18 +690,19 @@ Central API constraint, so photos/GPS traces are out of scope for the
 upload.</p>
 </blockquote>
 </div>
+</div>
 <div class="section level2">
 <h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
 <p>Practice run done — remove everything you created so you leave no
 trace.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Remove the demo collector from ODK Central (revoke its form access, then delete the account).</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"revoke"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         form_id <span class="op">=</span> <span class="va">form_id</span>, role_id <span class="op">=</span> <span class="fl">2</span>, actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/update_odk_app_user_role.html">update_odk_app_user_role</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"delete"</span>, con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>,</span>
 <span>                         actor_id <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># This was a sandbox, so PURGE the registry entry (hard-delete) to leave no trace.</span></span>
 <span><span class="co"># For a real form you'd use eri_odk_deregister() instead, which soft-deletes</span></span>
 <span><span class="co"># (active: false) and keeps the sync history for audit.</span></span>
@@ -682,7 +714,7 @@ trace.</p>
 <span><span class="fu"><a href="../reference/eri_odk_purge.html">eri_odk_purge</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="st">"eri_test_river_repeat"</span>,</span>
 <span>              server_url <span class="op">=</span> <span class="st">"https://your-odk-server.org/"</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Purged 1 registry entry for "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
 <span><span class="co"># eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"uga/demo"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>

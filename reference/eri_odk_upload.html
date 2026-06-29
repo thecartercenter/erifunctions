@@ -87,6 +87,7 @@ See ADR-0013 for the design contract.</p>
 <span>  url <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ODK_URL"</span><span class="op">)</span>,</span>
 <span>  auth <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ODK_TOKEN"</span><span class="op">)</span>,</span>
 <span>  key_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mapping <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -122,7 +123,17 @@ the <code>ODK_URL</code> / <code>ODK_TOKEN</code> environment variables.</p></dd
 <dt id="arg-key-col">key_col<a class="anchor" aria-label="anchor" href="#arg-key-col"></a></dt>
 <dd><p><code>chr</code> Column name(s) whose values seed the deterministic
 <code>instanceID</code>. <code>NULL</code> (default) hashes the whole parent row. To preserve the
-original submission identity on a round-trip, pass the id column (e.g. <code>"KEY"</code>).</p></dd>
+original submission identity on a round-trip, pass the id column (e.g. <code>"KEY"</code>).
+Names refer to the columns <em>after</em> any <code>mapping</code> is applied.</p></dd>
+
+
+<dt id="arg-mapping">mapping<a class="anchor" aria-label="anchor" href="#arg-mapping"></a></dt>
+<dd><p>Named character vector mapping <strong>input column headers to
+field-column names</strong>, for extracts whose headers don't already match the
+form (e.g. a paper CSV): <code>c(village = "site_name", date_seen = "visit-date")</code>.
+Targets use the same <code><a href="download_odk_form.html">download_odk_form()</a></code> flattening (<code>group-field</code>). The
+rename is applied to the parent and every child table before validation, so
+columns you don't list are left as-is. <code>NULL</code> (default) maps nothing.</p></dd>
 
 
 <dt id="arg-dry-run">dry_run<a class="anchor" aria-label="anchor" href="#arg-dry-run"></a></dt>
@@ -182,6 +193,14 @@ built without an instance namespace, matching XLSForm-generated forms.</p>
 <span class="r-in"><span><span class="co"># Create the submissions (re-runs skip already-present rows via HTTP 409).</span></span></span>
 <span class="r-in"><span><span class="fu">eri_odk_upload</span><span class="op">(</span><span class="va">tabs</span>, project_id <span class="op">=</span> <span class="fl">7</span>, form_id <span class="op">=</span> <span class="st">"RiverProspection"</span>,</span></span>
 <span class="r-in"><span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"KEY"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A paper CSV whose headers don't match the form: map them. `key_col` names a</span></span></span>
+<span class="r-in"><span><span class="co"># column left unmapped (mapping is applied first), so key on `rec`, not `village`.</span></span></span>
+<span class="r-in"><span><span class="va">paper</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"historical_records.csv"</span><span class="op">)</span>   <span class="co"># cols: village, date_seen, stage, rec</span></span></span>
+<span class="r-in"><span><span class="fu">eri_odk_upload</span><span class="op">(</span><span class="va">paper</span>, project_id <span class="op">=</span> <span class="fl">7</span>, form_id <span class="op">=</span> <span class="st">"RiverProspection"</span>, con <span class="op">=</span> <span class="va">con</span>,</span></span>
+<span class="r-in"><span>               mapping <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>village <span class="op">=</span> <span class="st">"site_name"</span>, date_seen <span class="op">=</span> <span class="st">"prospection_date"</span>,</span></span>
+<span class="r-in"><span>                           stage <span class="op">=</span> <span class="st">"river_stage"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>               key_col <span class="op">=</span> <span class="st">"rec"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
