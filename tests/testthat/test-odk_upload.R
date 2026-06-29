@@ -195,6 +195,22 @@ test_that(".odk_validate_upload is clean on conforming data and skips external c
   expect_equal(nrow(prob), 0L)
 })
 
+test_that(".odk_validate_upload ignores the key column and ODK system columns", {
+  tmpl   <- fixture_tmpl()
+  fields <- fixture_fields()
+  colmap <- erifunctions:::.odk_colmap(fields, "data")
+
+  # record_id is a synthetic key (not a form field); FormVersion is a download system column.
+  parent <- tibble::tibble(
+    site_name = "S1", `visit-river_stage` = "low",
+    record_id = "hist-001", FormVersion = "3"
+  )
+  prob <- erifunctions:::.odk_validate_upload(
+    parent, list(), fields, tmpl, colmap, list(), key_col = "record_id"
+  )
+  expect_equal(nrow(prob), 0L)
+})
+
 # --- eri_odk_upload (orchestration, mocked network) ---------------------------
 
 test_that("eri_odk_upload dry_run validates and POSTs nothing", {

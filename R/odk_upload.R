@@ -204,16 +204,19 @@
 # Reconcile columns against the schema + best-effort type/choice checks. Returns a tibble
 # of issues (zero rows = clean). `meta`, `KEY`, `PARENT_KEY` columns are ignored.
 #' @keywords internal
-.odk_validate_upload <- function(parent, children, fields, tmpl, colmap, child_colmaps) {
+.odk_validate_upload <- function(parent, children, fields, tmpl, colmap, child_colmaps,
+                                 key_col = NULL) {
   issues <- list()
   add <- function(table, column, row, issue)
     issues[[length(issues) + 1L]] <<- tibble::tibble(
       table = table, column = column, row = row, issue = issue
     )
 
-  ignorable <- c("KEY", "PARENT_KEY", "meta-instanceID", "SubmissionDate", "SubmitterID",
-                 "SubmitterName", "AttachmentsPresent", "AttachmentsExpected", "Status",
-                 "ReviewState", "DeviceID", "Edits", "instanceID")
+  # ODK Central system columns from a download export, plus the caller's key column(s):
+  # a key column is used only to seed the instanceID and need not be a form field.
+  ignorable <- c("KEY", "PARENT_KEY", "meta-instanceID", "instanceID", "SubmissionDate",
+                 "SubmitterID", "SubmitterName", "AttachmentsPresent", "AttachmentsExpected",
+                 "Status", "ReviewState", "DeviceID", "Edits", "FormVersion", key_col)
 
   # Unknown parent columns.
   for (col in setdiff(names(parent), c(names(colmap), ignorable)))
@@ -235,7 +238,8 @@
       else if (ty %in% c("decimal") && is.na(suppressWarnings(as.numeric(value))))
         add(tbl_name, col, rowi, "not coercible to a number")
       else if (ty %in% c("date") &&
-               is.na(tryCatch(as.Date(as.character(value)), error = function(e) NA)))
+               is.na(tryCatch(as.Date(as.character(value), format = "%Y-%m-%d"),
+                              error = function(e) NA)))
         add(tbl_name, col, rowi, "not a parseable date (expected YYYY-MM-DD)")
       else if (ty %in% c("geopoint") &&
                !grepl("^-?[0-9.]+ -?[0-9.]+( -?[0-9.]+){0,2}$", trimws(as.character(value))))
@@ -386,7 +390,7 @@ eri_odk_upload <- function(
     names(children)
   )
 
-  problems <- .odk_validate_upload(parent, children, fields, tmpl, colmap, child_colmaps)
+  problems <- .odk_validate_upload(parent, children, fields, tmpl, colmap, child_colmaps, key_col)
 
   if (nrow(problems))
     cli::cli_warn("Validation found {nrow(problems)} issue{?s}; inspect the returned tibble.")

@@ -2,8 +2,8 @@
 
 ## Feature: `eri_odk_upload()` — bulk-create ODK submissions from a table (ADR-0013, #211)
 
-- **New `eri_odk_upload(data, project_id, form_id, …)`** — the inverse of `eri_odk_sync()` /
-  `download_odk_form()`: take a CSV/Excel table of already-collected records (a paper backfill, a legacy
+- **New `eri_odk_upload(data, project_id, form_id, …)`** — the inverse of `download_odk_form()` /
+  `eri_odk_sync()`: take a CSV/Excel table of already-collected records (a paper backfill, a legacy
   export, or a `download_odk_form(tables = TRUE)` result) and **create them as submissions** on an
   existing **published** ODK Central form, one POST per row. Columns map to form fields **by name** using
   the same flattening `download_odk_form()` emits (groups as `group-field`; repeat groups as separate

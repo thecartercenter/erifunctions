@@ -192,9 +192,10 @@ tracking, and dashboard below all build on:
   `cleaning_rules` concept layered on the DQ schema engine (`R/dq.R`).
 - **Manual-edit tracking**: capture ODK Central submission edit history during
   `eri_odk_sync()` so direct edits are auditable.
-- **Submission backfill** (`eri_odk_upload()`) — the inverse of `eri_odk_sync()`: bulk-create
-  submissions on an existing **published** form from a CSV/Excel table, for migrating paper or
-  legacy records into ODK Central. Maps columns → form fields via the form's `/fields` schema,
+- **Submission backfill** (`eri_odk_upload()`) — the inverse of `download_odk_form()` /
+  `eri_odk_sync()`: bulk-create submissions on an existing **published** form from a CSV/Excel table,
+  for migrating paper or legacy records into ODK Central. Maps columns → form fields via the form's
+  `/fields` schema,
   builds one instance XML per row, and POSTs each to `.../forms/{id}/submissions` with a
   **deterministic `instanceID`** so re-runs are idempotent (HTTP 409 = already loaded → skip).
   A `dry_run`/validation pass (required-field, choice-list, and type/format checks — dates and

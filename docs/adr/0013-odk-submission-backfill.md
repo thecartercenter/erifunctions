@@ -14,8 +14,9 @@ that history lives in ODK Central alongside genuine field submissions and flows 
 
 The ODK Central API supports this (verified):
 
-- `POST /v1/projects/{projectId}/forms/{xmlFormId}/submissions`, `Content-Type: text/xml`, body = one
-  **XML instance** per submission. There is **no bulk endpoint** — submissions are created one at a
+- `POST /v1/projects/{projectId}/forms/{xmlFormId}/submissions`, `Content-Type: application/xml` (or
+  `text/xml` — Central accepts both), body = one **XML instance** per submission. There is **no bulk
+  endpoint** — submissions are created one at a
   time (a loop, as with every other `eri_odk_*` call).
 - Each submission carries a `<meta><instanceID>`. Re-POSTing an existing instanceID returns **HTTP
   409**; the form must be **published**; **attachments cannot be supplied at creation** (a separate
