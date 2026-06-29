@@ -641,13 +641,49 @@ Map only the columns that differ — anything already matching a field is
 left alone — then drop `dry_run` to send. The targets are the same
 flattened field-column names (`group-field`).
 
-> **Forms with repeats.** Pass the same named-list shape you got from
-> `download_odk_form(tables = TRUE)` — the parent table first, then each
-> `{form_id}-{repeat}` child table with a `PARENT_KEY` column linking to
-> the parent’s `KEY`.
-> [`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md)
-> rebuilds the nested submission and attaches each repeat to the right
-> parent.
+### Forms with repeat groups
+
+Repeat-group forms upload too. Pass the same **named-list** shape
+`download_odk_form(tables = TRUE)` returns: the parent table first, then
+each `{form_id}-{repeat}` child table with a `PARENT_KEY` column whose
+value matches the parent row’s `KEY`.
+[`eri_odk_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_upload.md)
+rebuilds the nested submission and attaches each repeat instance to the
+right parent:
+
+``` r
+
+repeat_data <- list(
+  eri_test_river_repeat = data.frame(
+    site_name        = c("Old Ford", "Bend Camp"),
+    prospection_date = c("2025-11-03", "2025-11-04"),
+    river_stage      = c("low", "medium"),
+    collector        = c("paper-archive", "paper-archive"),
+    KEY              = c("p1", "p2")            # link key for the children
+  ),
+  `eri_test_river_repeat-larva_sample` = data.frame(
+    species     = c("s_neavei", "s_damnosum", "s_neavei"),
+    larva_count = c(3L, 4L, 2L),
+    PARENT_KEY  = c("p1", "p1", "p2")           # two samples for p1, one for p2
+  )
+)
+
+eri_odk_upload(repeat_data, project_id = project_id, form_id = "eri_test_river_repeat",
+               con = con, key_col = "KEY")
+#> ✔ Validation clean: all columns map to form fields.
+#> ✔ Uploaded to "eri_test_river_repeat": 2 created, 0 already present.
+#> # A tibble: 2 × 4
+#>   instance_id                           status  http_status message
+#>   <chr>                                 <chr>         <int> <chr>
+#> 1 uuid:5b017f95628125dba44505b9e366dff9 created         200 NA
+#> 2 uuid:ec5ea8c7e5364fa80c6a68dceeb4916b created         200 NA
+```
+
+Downloaded back, the first submission carries **two** `larva_sample`
+rows and the second **one** — each child attached to its parent by
+`PARENT_KEY`. (`KEY` is just the link column here; it seeds the
+deterministic `instanceID` via `key_col` and is otherwise treated as a
+system column.)
 
 > **Two limits to know.** The form must be **published** (you can’t
 > backfill into a draft), and **attachments can’t be sent at creation**

@@ -44,6 +44,15 @@
   mapping now normalizes ODK Central’s root-relative `/fields` paths
   (e.g. `/site_name`) so submissions carry their data on servers that
   omit the instance-root name from field paths.
+- **Repeat-group upload verified end-to-end**
+  ([\#215](https://github.com/thecartercenter/erifunctions/issues/215))
+  against a live form: a parent + its repeat children, supplied as the
+  `download_odk_form(tables = TRUE)` named-list shape, round-trips with
+  each child nested under the right parent. The `da-odk-guide` backfill
+  section gains a live-captured repeat example, and `.odk_colmap()` now
+  excludes the repeat *container* (`type: "repeat"`, not `"structure"`)
+  from the leaf map (latent edge; no behaviour change for current
+  forms).
 
 ### Feature: harden analyst attribution + `eri_odk_purge()` for sandbox cleanup ([\#175](https://github.com/thecartercenter/erifunctions/issues/175) polish)
 
