@@ -1,6 +1,6 @@
 # ADR-0014 — In-package feedback / ticket log
 
-- **Status:** Accepted — implemented 2026-06-29 (#237)
+- **Status:** Accepted — capture implemented 2026-06-29 (#237); triage 2026-06-29 (#239)
 - **Date:** 2026-06-29
 
 ## Context
@@ -30,8 +30,10 @@ Add `eri_feedback(message, area)` that appends a ticket to a single YAML log,
   `message`. `area` is `"general"` or a section (`"odk"`, `"ingest"`, `"reporting"`, …); it is free
   text (a typo must never reject a user's feedback) with a non-blocking nudge toward the known set so
   the vocabulary self-converges for triage.
-- **Status lifecycle:** tickets are born `"submitted"`. Advancing them (`planned`, `fixed`, …) is the
-  job of the separate triage workflow, **not** `eri_feedback()`.
+- **Status lifecycle:** tickets are born `"submitted"`. Advancing them (`planned`, `in_progress`,
+  `fixed`, `declined`) is the job of the triage surface — `eri_feedback_status(id, status, note)` (which
+  records a who/when/from/to audit entry on the ticket's `history`) and `eri_feedback_board()` (the
+  per-status summary) — **not** `eri_feedback()`. `status` is a controlled set; `area` is not.
 
 ## Consequences
 
@@ -39,6 +41,6 @@ Add `eri_feedback(message, area)` that appends a ticket to a single YAML log,
   one place; the triage feature has a stable store and schema to build on.
 - **Harder:** introduces a fifth shared metadata store to keep healthy (mitigated by reusing the
   ADR-0002 write path rather than a new mechanism).
-- **Not doing now:** status updates, assignment, or a tracking UI — deliberately deferred to the triage
-  feature so capture can ship immediately. Not standing up an external issue tracker; the blob stays
-  the system of record, consistent with ADR-0004.
+- **Not doing now:** assignment/owners or a graphical tracking UI — the status lifecycle ships
+  (`eri_feedback_status()`), but assignment and a richer board can follow. Not standing up an external
+  issue tracker; the blob stays the system of record, consistent with ADR-0004.

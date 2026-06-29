@@ -104,3 +104,76 @@ test_that("eri_feedback_list returns a typed empty tibble when nothing is logged
   expect_equal(nrow(out), 0L)
   expect_named(out, c("id", "submitted_at", "submitted_by", "area", "status", "message"))
 })
+
+# --- eri_feedback_status (triage) ---------------------------------------------
+
+mk_ticket <- function(id, status = "submitted", area = "general") {
+  list(id = id, submitted_at = "t", submitted_by = "u", area = area,
+       status = status, message = paste("msg", id))
+}
+
+test_that("eri_feedback_status moves a ticket and records the transition history", {
+  store <- new_yaml_store(list(entries = list(mk_ticket(1L), mk_ticket(2L))))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "triager", .package = "erifunctions")
+
+  out <- suppressMessages(eri_feedback_status(2L, "planned", note = "queued for v0.x", data_con = "mock"))
+
+  expect_equal(out$status, "planned")
+  expect_equal(out$updated_by, "triager")
+  expect_length(out$history, 1L)
+  expect_equal(out$history[[1]]$from, "submitted")
+  expect_equal(out$history[[1]]$to, "planned")
+  expect_equal(out$history[[1]]$note, "queued for v0.x")
+  # ticket #1 untouched
+  ticket1 <- Filter(function(e) e$id == 1L, store$data$entries)[[1]]
+  expect_equal(ticket1$status, "submitted")
+})
+
+test_that("eri_feedback_status appends successive transitions to the history", {
+  store <- new_yaml_store(list(entries = list(mk_ticket(1L))))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+
+  suppressMessages(eri_feedback_status(1L, "planned", data_con = "mock"))
+  out <- suppressMessages(eri_feedback_status(1L, "fixed", note = "#251", data_con = "mock"))
+
+  expect_equal(out$status, "fixed")
+  expect_length(out$history, 2L)
+  expect_equal(out$history[[2]]$from, "planned")
+  expect_equal(out$history[[2]]$to, "fixed")
+})
+
+test_that("eri_feedback_status rejects an unknown status and an unknown id", {
+  store <- new_yaml_store(list(entries = list(mk_ticket(1L))))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+
+  expect_error(eri_feedback_status(1L, "donezo", data_con = "mock"), "not a valid status")
+  expect_error(eri_feedback_status(999L, "fixed", data_con = "mock"), "No feedback ticket")
+  expect_error(eri_feedback_status(2.7, "fixed", data_con = "mock"), "positive integer")
+})
+
+# --- eri_feedback_board -------------------------------------------------------
+
+test_that("eri_feedback_board counts tickets by status and returns the backlog", {
+  store <- new_yaml_store(list(entries = list(
+    mk_ticket(1L, "submitted"), mk_ticket(2L, "planned"),
+    mk_ticket(3L, "fixed"),     mk_ticket(4L, "fixed")
+  )))
+  local_yaml_store(store)
+
+  out <- eri_feedback_board(data_con = "mock")
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 4L)
+  expect_equal(sum(out$status == "fixed"), 2L)
+})
+
+test_that("eri_feedback_board is a clean no-op on an empty backlog", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+
+  out <- suppressMessages(eri_feedback_board(data_con = "mock"))
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 0L)
+})
