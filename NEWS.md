@@ -14,16 +14,22 @@
 - **New `da-adhoc-guide` article** — a run-it-live walkthrough of `eri_query()` (catalog roll-ups,
   joins, window functions) for answering ad-hoc requests; the in-memory examples run with no Azure.
 
-## Docs: Data Analyst training bundle — cheat sheets, onboarding path, orientation deck (#219)
+## Docs: Data Analyst training bundle now lives on the documentation site (#219, #225)
 
-- **New quick-reference cards** under `docs/training/`: a **DA cheat sheet** (the ~15 functions a DA
-  uses, the 5-axis path, and a "which pipeline?" decision tree), a **data-model card** (channel vs.
-  measure), and **connections** and **troubleshooting** cards. Aimed at a "still learning R" analyst as
-  a desk reference.
-- **New `docs/onboarding.md`** — a paced Week-0 → Week-2 onboarding path with checkpoints and a
-  competency checklist, built on the existing sandbox namespaces (`atlantis`, `uga/demo`, the
-  `eri_test_*` ODK forms). Linked from the README, the guide index, and the getting-started article.
-- **New orientation deck** (`docs/training/orientation-deck.qmd`, revealjs) for a first training session.
+The reference/training materials for a "still learning R" analyst are now **pkgdown articles** (one
+source of truth on the site, in a new **Quick reference & onboarding** navbar group), rather than
+loose files under `docs/`:
+
+- **Orientation** — the big picture (data system, pipeline, where each task lives).
+- **Onboarding** — a paced Week-0 → Week-2 path with checkpoints and a competency checklist, built on
+  the existing sandbox namespaces (`atlantis`, `uga/demo`, the `eri_test_*` ODK forms).
+- **DA cheat sheet** — the ~15 functions a DA uses, the 5-axis path, and a "which pipeline?" decision
+  tree.
+- **Data-model card** (channel vs. measure) and a **Troubleshooting card** (errors → fixes + the
+  `eri_logs` triage loop).
+
+Linked from the README, the guide index, and the getting-started article. (The standalone connections
+*card* was folded into the existing connections *guide* to avoid duplication.)
 
 ## Feature: `eri_odk_upload()` — bulk-create ODK submissions from a table (ADR-0013, #211)
 
