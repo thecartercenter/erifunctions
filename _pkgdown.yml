@@ -183,6 +183,11 @@ reference:
   contents:
   - eri_query
 
+- title: Reconciliation
+  desc: Diff a new dataset against a reference to validate the cutover.
+  contents:
+  - eri_compare
+
 - title: Logs & triage
   desc: Persist data-quality flags and triage the error / DQ log backlog.
   contents:
