@@ -177,3 +177,75 @@ test_that("eri_feedback_board is a clean no-op on an empty backlog", {
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 0L)
 })
+
+# --- eri_feedback_report (weekly digest) --------------------------------------
+
+iso_ago <- function(days) format(Sys.time() - days * 86400, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+
+report_store <- function() {
+  new_yaml_store(list(entries = list(
+    list(id = 1L, submitted_at = iso_ago(1),  submitted_by = "dana", area = "odk",
+         status = "submitted", message = "sync slow on big forms"),
+    list(id = 2L, submitted_at = iso_ago(30), submitted_by = "eli",  area = "spatial",
+         status = "planned",   message = "reconcile wishlist"),
+    list(id = 3L, submitted_at = iso_ago(40), submitted_by = "dana", area = "catalog",
+         status = "fixed", updated_at = iso_ago(2), updated_by = "me",
+         history = list(list(from = "planned", to = "fixed", by = "me",
+                             at = iso_ago(2), note = "shipped in #251"))),
+    list(id = 4L, submitted_at = iso_ago(40), submitted_by = "eli",  area = "docs",
+         status = "fixed", updated_at = iso_ago(30), updated_by = "me",
+         history = list(list(from = "planned", to = "fixed", by = "me",
+                             at = iso_ago(30), note = "old fix")))
+  )))
+}
+
+test_that("eri_feedback_report writes an HTML digest bucketed by the weekly window", {
+  store <- report_store()
+  local_yaml_store(store)
+  f <- withr::local_tempfile(fileext = ".html")
+
+  out <- suppressMessages(eri_feedback_report(file = f, format = "html", data_con = "mock"))
+  expect_equal(out, f)
+
+  html <- paste(readLines(f, warn = FALSE), collapse = "\n")
+  expect_match(html, "ERI feedback backlog")
+  expect_match(html, "New this week \\(1\\)")      # only the 1-day-old ticket
+  expect_match(html, "Closed this week \\(1\\)")   # only the one fixed 2 days ago
+  expect_match(html, "Open backlog \\(2\\)")       # submitted + planned
+  expect_match(html, "shipped in #251")            # closing note surfaced
+  expect_no_match(html, "old fix")                 # fixed 30 days ago is not "this week"
+})
+
+test_that("eri_feedback_report writes a markdown digest", {
+  store <- report_store()
+  local_yaml_store(store)
+  f <- withr::local_tempfile(fileext = ".md")
+
+  suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock"))
+  md <- paste(readLines(f, warn = FALSE), collapse = "\n")
+  expect_match(md, "# ERI feedback backlog")
+  expect_match(md, "## New this week \\(1\\)")
+  expect_match(md, "## Open backlog \\(2\\)")
+  expect_match(md, "\\| #1 \\|")                   # table row for ticket #1
+})
+
+test_that("eri_feedback_report handles an empty backlog", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  f <- withr::local_tempfile(fileext = ".md")
+
+  suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock"))
+  expect_match(paste(readLines(f, warn = FALSE), collapse = "\n"), "No feedback logged yet")
+})
+
+test_that("eri_feedback_report treats a missing/NA status as submitted without crashing", {
+  store <- new_yaml_store(list(entries = list(
+    list(id = 1L, submitted_at = iso_ago(1), submitted_by = "u", area = "general",
+         status = NA_character_, message = "status went missing")
+  )))
+  local_yaml_store(store)
+  f <- withr::local_tempfile(fileext = ".md")
+
+  expect_no_error(suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock")))
+  expect_match(paste(readLines(f, warn = FALSE), collapse = "\n"), "Open backlog \\(1\\)")
+})

@@ -1,5 +1,12 @@
 # erifunctions (development version)
 
+## Feature: `eri_feedback_report()` — weekly feedback digest
+
+- **New `eri_feedback_report(file, format, since_days = 7)`** renders the feedback backlog to a
+  self-contained **HTML** (default) or **markdown** file: a status board, then **new this week**, **closed
+  this week** (with each ticket's closing note), and the **open backlog** in lifecycle order. Built as a
+  quick standing review so the team stays current on the tickets (ADR-0014).
+
 ## Feature: `eri_feedback_status()` — triage the feedback backlog
 
 - **New `eri_feedback_status(id, status, note = NULL)`** moves a ticket through the lifecycle
