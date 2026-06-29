@@ -70,6 +70,7 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 | Triage the error / DQ log backlog | [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | ✅ Shipped |
 | Answer ad-hoc data requests with SQL (`eri_query`) | [`da-adhoc-guide`](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | ✅ Shipped |
 | Branded tables, figures, and decks for outputs | [`da-reporting-guide`](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | ✅ Shipped |
+| QC an extract and give a country feedback | [`da-qc-feedback-guide`](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | ✅ Shipped |
 
 ### For epidemiologists
 

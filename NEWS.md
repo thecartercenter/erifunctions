@@ -1,5 +1,12 @@
 # erifunctions (development version)
 
+## Docs: `da-qc-feedback-guide` — quality-check an extract and give a country feedback (#229)
+
+- **New `da-qc-feedback-guide` article** (DA tasks: QC data + provide feedback to countries) walks a
+  real `run_dq_checks()` → `dq_report()` run on a seeded DR malaria extract: the auto-corrections
+  (`res$log`) vs the review flags (`res$flags`), turning the flags into a country-feedback table with
+  `eri_table()` and posting a summary with `eri_notify_dq()`. Runs offline on a plain data frame.
+
 ## Docs: `da-reporting-guide` — branded tables, figures, and decks (#227)
 
 - **New `da-reporting-guide` article** walks the reporting toolkit on safe data: `eri_table()` (branded
