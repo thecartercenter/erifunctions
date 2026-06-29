@@ -19,8 +19,8 @@ A tibble with columns \code{id}, \code{submitted_at}, \code{submitted_by}, \code
 }
 \description{
 Reads the team's feedback backlog from \verb{_feedback/feedback_log.yaml} in the
-\verb{data/} Azure blob into a tibble, newest-filed last. Optional filters narrow by
-\code{area} or \code{status}.
+\verb{data/} Azure blob into a tibble, in the order tickets were filed. Optional
+filters narrow by \code{area} or \code{status}.
 }
 \examples{
 \dontrun{

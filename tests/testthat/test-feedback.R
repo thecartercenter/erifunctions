@@ -37,6 +37,19 @@ test_that("eri_feedback auto-increments the ticket id and records the area (lowe
   expect_length(store$data$entries, 2L)
 })
 
+test_that("eri_feedback nudges toward known areas for an unfamiliar area but still files it", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+
+  expect_message(
+    out <- eri_feedback("x", area = "odk-sync", data_con = "mock"),
+    "new area"
+  )
+  expect_equal(out$area, "odk-sync")
+  expect_length(store$data$entries, 1L)
+})
+
 test_that("eri_feedback rejects an empty message or area before touching Azure", {
   expect_error(eri_feedback("   "), "non-empty")
   expect_error(eri_feedback("ok", area = ""), "non-empty")

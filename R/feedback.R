@@ -69,6 +69,15 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
     cli::cli_abort("{.arg area} must be a single non-empty string (e.g. {.val general}).")
   }
   area <- tolower(trimws(area))
+  # Never reject feedback over a typo'd area, but nudge toward the triage
+  # vocabulary so it self-converges (avoids "odk" vs "odk-sync" fragmentation).
+  if (!area %in% .ERI_FEEDBACK_AREAS) {
+    known_areas <- .ERI_FEEDBACK_AREAS
+    cli::cli_inform(c(
+      "i" = "Filing under a new area {.val {area}}.",
+      "*" = "Known areas: {.val {known_areas}}."
+    ))
+  }
 
   data_con <- .eri_feedback_con(data_con)
   author   <- .eri_analyst_id(data_con)
@@ -105,8 +114,8 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
 #' List logged feedback
 #'
 #' Reads the team's feedback backlog from `_feedback/feedback_log.yaml` in the
-#' `data/` Azure blob into a tibble, newest-filed last. Optional filters narrow by
-#' `area` or `status`.
+#' `data/` Azure blob into a tibble, in the order tickets were filed. Optional
+#' filters narrow by `area` or `status`.
 #'
 #' @param area `chr` or `NULL` Filter to one section (e.g. `"odk"`). `NULL` = all.
 #' @param status `chr` or `NULL` Filter by status (e.g. `"submitted"`). `NULL` = all.
