@@ -1,5 +1,12 @@
 # erifunctions (development version)
 
+## Docs: `da-survey-report-guide` — final summaries and reports from an ODK survey (#231)
+
+- **New `da-survey-report-guide` article** (DA task: create/assist final summaries/tables/reports after
+  ODK surveys) takes an approved LF TAS extract to a summary with `eri_lf_tas_summary()` and packages it
+  with the reporting toolkit (`eri_table()`, `eri_pptx_*`), pointing to the disease helpers and the
+  spatial map wrapper. Offline; real summary output captured. **Completes the Data-Analyst guide set.**
+
 ## Docs: `da-qc-feedback-guide` — quality-check an extract and give a country feedback (#229)
 
 - **New `da-qc-feedback-guide` article** (DA tasks: QC data + provide feedback to countries) walks a
