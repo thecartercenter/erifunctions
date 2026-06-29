@@ -33,7 +33,7 @@ Get the environment standing so day one is learning, not yak-shaving. Use the
       this is the long-lead item — start it first).
 - [ ] **ODK Central account** with access to the `testing` project.
 - [ ] `.Renviron` set: `ERI_ANALYST_ID`, `ODK_URL/USER/PASS` (see the connections card). **Restart R.**
-- [ ] **Verify:** `eri_list("", azcontainer = get_azure_storage_connection("data"))` returns a tibble,
+- [ ] **Verify:** `eri_list("", azcontainer = get_azure_storage_connection(storage_name = "data"))` returns a tibble,
       and `list_odk_projects(con = init_odk_connection())` lists projects.
 
 ✅ **Gate:** you can connect to Azure and ODK.

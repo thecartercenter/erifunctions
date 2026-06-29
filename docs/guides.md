@@ -20,7 +20,8 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 the quick-reference cards in [`training/`](training/) open — the
 [DA cheat sheet](training/da-cheatsheet.md), the [data-model card](training/data-model-card.md), and the
 [connections](training/connections-card.md) / [troubleshooting](training/troubleshooting-card.md) cards.
-There's an [orientation deck](training/orientation-deck.qmd) for a first training session.
+There's an [orientation deck](training/orientation-deck.qmd) (Quarto source — `quarto render` it to
+slides) for a first training session.
 
 First run `eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure)
 the guides assume. Then follow your role's path; dip into the rest as your work needs them.

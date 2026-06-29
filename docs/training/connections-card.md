@@ -9,7 +9,7 @@ detail: the [connections guide](https://thecartercenter.github.io/erifunctions/a
 
 | Service | Connect with | Sign-in | Setup | Verify it works |
 |---------|--------------|---------|-------|-----------------|
-| **Azure** (the data) | `get_azure_storage_connection("data")` | browser (your CC account) | **none** | `eri_list("", azcontainer = data_con)` |
+| **Azure** (the data) | `get_azure_storage_connection(storage_name = "data")` | browser (your CC account) | **none** | `eri_list("", azcontainer = data_con)` |
 | **ODK Central** | `init_odk_connection()` | email + password | 3 lines in `.Renviron` | `list_odk_projects(con = con)` |
 | **SharePoint** | `eri_sharepoint_connect(site_url)` | browser | site URL only | `eri_sharepoint_list(site, path)` |
 | **Teams** (optional) | `get_teams_connection()` | token / webhook | a webhook URL | `eri_teams_send(message = "…")` |
@@ -46,7 +46,7 @@ ODK_PASS=your-password
 
 ```r
 library(erifunctions)
-data_con <- get_azure_storage_connection("data")   # browser opens once
+data_con <- get_azure_storage_connection(storage_name = "data")   # browser opens once
 eri_list("", azcontainer = data_con)               # a tibble back = you're in
 
 con <- init_odk_connection()                        # ✔ Connected … session expires …

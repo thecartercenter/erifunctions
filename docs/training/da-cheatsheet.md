@@ -66,7 +66,7 @@ eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the 
 
 | Need | Function | Canonical call |
 |------|----------|----------------|
-| Connect to data | `get_azure_storage_connection` | `get_azure_storage_connection("data")` |
+| Connect to data | `get_azure_storage_connection` | `get_azure_storage_connection(storage_name = "data")` |
 | Connect to ODK | `init_odk_connection` | `init_odk_connection()` (creds in `.Renviron`) |
 | Build a path | `eri_data_path` | `eri_data_path(country, disease, source, measure, layer, file)` |
 | See the vocabulary | `eri_data_model` | `eri_data_model()` |

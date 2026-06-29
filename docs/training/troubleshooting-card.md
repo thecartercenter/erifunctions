@@ -43,6 +43,8 @@ eri_logs(include_handled = TRUE)           # confirm it's closed
 ```
 
 - `eri_logs()` hides handled items by default — the open list shrinks as you resolve.
-- Persist a DQ result's flags yourself with `eri_dq_log(result, country, disease, data_type)`.
+- Persist a DQ result's flags yourself with
+  `eri_dq_log(result, country, disease, data_source, data_type = )` (note: `data_source` is the 4th
+  argument, the measure `data_type` the 5th — mind the source/measure order).
 - Full walkthrough: the
   [log-triage guide](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html).

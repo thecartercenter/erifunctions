@@ -37,6 +37,7 @@ track through the guides below — and keep the quick-reference cards open as yo
 - [Data-model card](docs/training/data-model-card.md) — channel (`data_source`) vs. measure (`data_type`)
 - [Connections & secrets card](docs/training/connections-card.md) · [Troubleshooting card](docs/training/troubleshooting-card.md)
 - [Orientation deck](docs/training/orientation-deck.qmd) — the big picture for a first training session
+  (Quarto source; `quarto render` it to slides)
 
 **New here? Do these in order** (then dip into the rest as your work needs them). First, run
 `eri_data_model()` once — it prints the data-addressing vocabulary (channel vs. measure) every guide
