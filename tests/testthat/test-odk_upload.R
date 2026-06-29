@@ -171,6 +171,17 @@ test_that(".odk_apply_mapping is a no-op for NULL/empty mapping", {
   expect_identical(erifunctions:::.odk_apply_mapping(input, NULL), input)
 })
 
+test_that(".odk_apply_mapping warns when a target collides with an existing column", {
+  input <- list(
+    parent = tibble::tibble(village = "S1", site_name = "already-here"),
+    children = list()
+  )
+  expect_warning(
+    erifunctions:::.odk_apply_mapping(input, c(village = "site_name")),
+    "already exist"
+  )
+})
+
 # --- .odk_build_instance ------------------------------------------------------
 
 test_that(".odk_build_instance nests groups, duplicates repeats, and sets instanceID", {

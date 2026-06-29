@@ -150,7 +150,16 @@
 
   rename_one <- function(tbl) {
     hit <- intersect(names(mapping), names(tbl))
-    if (length(hit)) names(tbl)[match(hit, names(tbl))] <- unname(mapping[hit])
+    if (length(hit)) {
+      targets <- unname(mapping[hit])
+      collide <- intersect(targets, setdiff(names(tbl), hit))
+      if (length(collide))
+        cli::cli_warn(c(
+          "{.arg mapping} target{?s} {.val {collide}} already exist in the table; the mapped column will duplicate the name.",
+          "i" = "Rename or drop the existing column before mapping onto it."
+        ))
+      names(tbl)[match(hit, names(tbl))] <- targets
+    }
     tbl
   }
   used <- intersect(names(mapping), c(names(input$parent), unlist(lapply(input$children, names))))
@@ -407,12 +416,13 @@
 #' eri_odk_upload(tabs, project_id = 7, form_id = "RiverProspection",
 #'                con = con, key_col = "KEY")
 #'
-#' # A paper CSV whose headers don't match the form: map them.
-#' paper <- read.csv("historical_records.csv")   # cols: village, date_seen, stage
+#' # A paper CSV whose headers don't match the form: map them. `key_col` names a
+#' # column left unmapped (mapping is applied first), so key on `rec`, not `village`.
+#' paper <- read.csv("historical_records.csv")   # cols: village, date_seen, stage, rec
 #' eri_odk_upload(paper, project_id = 7, form_id = "RiverProspection", con = con,
 #'                mapping = c(village = "site_name", date_seen = "prospection_date",
 #'                            stage = "river_stage"),
-#'                key_col = "village", dry_run = TRUE)
+#'                key_col = "rec", dry_run = TRUE)
 #' }
 #' @export
 eri_odk_upload <- function(

@@ -84,7 +84,8 @@ rules that make the operation safe, repeatable, and auditable.**
   - **Form-definition upload** (XLSForm → a new ODK form) — a different endpoint and a separate
     feature; this ADR is only about *submissions*.
   - **An explicit arbitrary-header `mapping` argument** (for extracts whose columns don't follow the
-    download convention) — deferred to a fast-follow; v1 requires field-name-matching columns.
+    download convention) — deferred from v1 to a fast-follow (delivered in #213); v1 required
+    field-name-matching columns.
   - **Random per-row UUIDs** — rejected; they make re-runs duplicate (rule 1).
 
 ## References
