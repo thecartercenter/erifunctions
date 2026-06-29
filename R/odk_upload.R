@@ -237,12 +237,21 @@
 # column name is the dash-joined relative path under the root (download convention).
 #' @keywords internal
 .odk_colmap <- function(fields, root_name, under = NULL) {
-  leaves <- fields[!fields$type %in% "structure" & !is.na(fields$path), ]
+  # Exclude container nodes: groups are "structure", repeats are "repeat" -- neither is a
+  # leaf that takes a value (repeat *leaves* live under the repeat and are kept).
+  leaves <- fields[!fields$type %in% c("structure", "repeat") & !is.na(fields$path), ]
+  # Repeat-group node paths (normalized). Leaves beneath these belong to the repeat's own
+  # child table, never the parent, so the parent map (under = NULL) drops them.
+  repeat_paths <- .odk_norm_path(
+    fields$path[fields$type %in% "repeat" & !is.na(fields$path)], root_name
+  )
   prefix <- paste0("/", if (!is.null(under)) paste0(under, "/") else "")
   map <- list()
   for (i in seq_len(nrow(leaves))) {
     p <- .odk_norm_path(leaves$path[i], root_name)
     if (!startsWith(p, prefix)) next
+    if (is.null(under) && length(repeat_paths) &&
+        any(startsWith(p, paste0(repeat_paths, "/")))) next   # repeat descendant -> child only
     rel <- substr(p, nchar(prefix) + 1L, nchar(p))
     if (!nzchar(rel)) next
     col <- gsub("/", "-", rel)

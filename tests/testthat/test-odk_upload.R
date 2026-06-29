@@ -53,7 +53,7 @@ fixture_fields <- function() {
     "visit",       "/visit",                  "structure",
     "visit_date",  "/visit/visit_date",       "date",
     "river_stage", "/visit/river_stage",      "string",
-    "larva_sample","/larva_sample",           "structure",
+    "larva_sample","/larva_sample",           "repeat",
     "species",     "/larva_sample/species",   "string",
     "larva_count", "/larva_sample/larva_count","int",
     "meta",        "/meta",                   "structure",
@@ -132,7 +132,7 @@ test_that(".odk_normalize_input handles data.frame, list, and bad inputs", {
 test_that(".odk_colmap handles both root-omitted and root-included /fields paths", {
   # root-omitted (what ODK Central actually returns)
   m1 <- erifunctions:::.odk_colmap(fixture_fields(), "data")
-  expect_true(all(c("site_name", "visit-visit_date", "larva_sample-species") %in% names(m1)))
+  expect_true(all(c("site_name", "visit-visit_date") %in% names(m1)))
   expect_equal(m1[["visit-visit_date"]], c("visit", "visit_date"))
 
   # root-included (e.g. "/data/site_name") normalizes to the same columns
@@ -140,6 +140,13 @@ test_that(".odk_colmap handles both root-omitted and root-included /fields paths
   rooted$path <- sub("^/", "/data/", rooted$path)
   m2 <- erifunctions:::.odk_colmap(rooted, "data")
   expect_equal(m1, m2)
+
+  # the parent map excludes both the repeat *container* and its descendant leaves --
+  # those belong only to the repeat's child table.
+  expect_false(any(c("larva_sample", "larva_sample-species", "larva_sample-larva_count")
+                   %in% names(m1)))
+  cc <- erifunctions:::.odk_colmap(fixture_fields(), "data", under = "larva_sample")
+  expect_true(all(c("species", "larva_count") %in% names(cc)))
 })
 
 # --- .odk_apply_mapping -------------------------------------------------------
