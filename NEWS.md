@@ -1,5 +1,16 @@
 # erifunctions (development version)
 
+## Feature: cutover ledger — `eri_cutover_check()` / `eri_cutover_status()` (ADR-0015)
+
+- **New `eri_cutover_check(new, old, country, disease, data_source, period, by, …)`** runs the
+  cutover-standard comparison (`eri_compare(…, strict_schema = FALSE)`) for one stream's period and
+  records the outcome — stream, period, `equivalent`, delta counts, the `by`/`tolerance` used, and the
+  verified actor — to `_cutover/cutover_log.yaml` in the `data/` blob. **New `eri_cutover_status(country,
+  disease, data_source, …, n = 3)`** reads the ledger and reports the **streak** of consecutive most-recent
+  equivalent periods and whether the stream is *eligible* for cutover (streak ≥ `n`). Together they make
+  the Phase-3 cutover gate (ADR-0015) runnable period-over-period; the equivalence standard is encoded so
+  it can't drift from the policy.
+
 ## Feature: `eri_inject_anomalies()` — dirty clean data for the Phase 3 simulation
 
 - **New `eri_inject_anomalies(data, types, n, cols, seed)`** perturbs a clean data frame with controllable,
