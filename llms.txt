@@ -527,10 +527,13 @@ Run SQL across processed datasets with a serverless DuckDB layer.
 
 ## Reconciliation
 
-Diff a new dataset against a reference to validate the cutover.
+Diff a new dataset against a reference, and dirty clean data, to
+validate the cutover.
 
 - [`eri_compare()`](https://thecartercenter.github.io/erifunctions/reference/eri_compare.md)
   : Reconcile two datasets and report the differences
+- [`eri_inject_anomalies()`](https://thecartercenter.github.io/erifunctions/reference/eri_inject_anomalies.md)
+  : Inject controllable anomalies into a clean dataset
 
 ## Logs & triage
 
