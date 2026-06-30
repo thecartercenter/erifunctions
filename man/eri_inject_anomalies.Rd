@@ -6,7 +6,7 @@
 \usage{
 eri_inject_anomalies(
   data,
-  types = .ERI_ANOMALY_TYPES,
+  types = c("missing", "outlier", "negative", "typo", "duplicate", "drop"),
   n = 1L,
   cols = NULL,
   seed = NULL
@@ -55,7 +55,14 @@ Anomaly types:
 The result carries an \code{"eri_anomalies"} attribute: a tibble logging every
 injection (\code{type}, \code{row}, \code{column}, \code{original}, \code{new}) — the ground truth a
 simulation can check detection against. \code{row} is the row index in the input
-\code{data}.
+\code{data}. This attribute is \strong{in-session only}: it is dropped the moment the
+frame is written to Parquet or passed through most \code{dplyr} verbs, so capture it
+before staging the dirty data. \code{duplicate} rows are appended, then \code{drop}
+removes original rows, so the logged row indices stay valid.
+
+When the dirty data is destined for \code{\link[=eri_compare]{eri_compare()}}, pass \code{cols} to keep the
+cell-level types off the join keys — corrupting a key changes row-matching
+rather than producing a detectable value anomaly.
 }
 \examples{
 clean <- data.frame(
@@ -65,5 +72,5 @@ dirty <- eri_inject_anomalies(clean, types = c("missing", "outlier"), n = 2, see
 attr(dirty, "eri_anomalies")
 }
 \seealso{
-\code{\link[=eri_compare]{eri_compare()}} to reconcile, \code{run_dq_checks()} to detect.
+\code{\link[=eri_compare]{eri_compare()}} to reconcile, \code{\link[=run_dq_checks]{run_dq_checks()}} to detect.
 }

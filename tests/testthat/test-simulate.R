@@ -54,6 +54,29 @@ test_that("duplicate adds rows and drop removes them, both logged", {
   expect_equal(sum(attr(drp, "eri_anomalies")$type == "drop"), 3L)
 })
 
+test_that("cell-level sampling is distinct and capped at the eligible-cell count", {
+  df <- data.frame(id = 1:4, a = as.numeric(1:4))  # 4 eligible cells in col 'a'
+  d  <- suppressMessages(eri_inject_anomalies(df, types = "missing", n = 99, cols = "a", seed = 5))
+  log <- attr(d, "eri_anomalies")
+  expect_equal(nrow(log), 4L)                       # capped at 4 cells, not 99
+  expect_equal(nrow(unique(log[, c("row", "column")])), 4L)  # all distinct
+})
+
+test_that("numeric injection preserves an integer column's type", {
+  df <- data.frame(id = 1:10, cases = 1:10)  # integer
+  d  <- suppressMessages(eri_inject_anomalies(df, types = "outlier", n = 1, cols = "cases", seed = 1))
+  expect_type(d$cases, "integer")             # not promoted to double
+})
+
+test_that("combined duplicate + drop keeps logged indices valid", {
+  d <- suppressMessages(eri_inject_anomalies(clean_df(), types = c("duplicate", "drop"),
+                                             n = 2, seed = 3))
+  log <- attr(d, "eri_anomalies")
+  expect_equal(nrow(d), 10L)                   # +2 duplicated, -2 dropped
+  expect_equal(sum(log$type == "duplicate"), 2L)
+  expect_equal(sum(log$type == "drop"), 2L)
+})
+
 test_that("cols restricts cell-level injection", {
   df <- data.frame(id = 1:10, a = as.numeric(1:10), b = as.numeric(1:10))
   d  <- suppressMessages(eri_inject_anomalies(df, types = "missing", n = 5, cols = "a", seed = 1))

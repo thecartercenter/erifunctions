@@ -28,7 +28,14 @@
 #' The result carries an `"eri_anomalies"` attribute: a tibble logging every
 #' injection (`type`, `row`, `column`, `original`, `new`) — the ground truth a
 #' simulation can check detection against. `row` is the row index in the input
-#' `data`.
+#' `data`. This attribute is **in-session only**: it is dropped the moment the
+#' frame is written to Parquet or passed through most `dplyr` verbs, so capture it
+#' before staging the dirty data. `duplicate` rows are appended, then `drop`
+#' removes original rows, so the logged row indices stay valid.
+#'
+#' When the dirty data is destined for [eri_compare()], pass `cols` to keep the
+#' cell-level types off the join keys — corrupting a key changes row-matching
+#' rather than producing a detectable value anomaly.
 #'
 #' @param data A data frame to perturb.
 #' @param types `chr` Which anomalies to inject. Any of
@@ -50,10 +57,12 @@
 #' )
 #' dirty <- eri_inject_anomalies(clean, types = c("missing", "outlier"), n = 2, seed = 1)
 #' attr(dirty, "eri_anomalies")
-#' @seealso [eri_compare()] to reconcile, `run_dq_checks()` to detect.
+#' @seealso [eri_compare()] to reconcile, [run_dq_checks()] to detect.
 #' @export
-eri_inject_anomalies <- function(data, types = .ERI_ANOMALY_TYPES, n = 1L,
-                                 cols = NULL, seed = NULL) {
+eri_inject_anomalies <- function(data,
+                                 types = c("missing", "outlier", "negative",
+                                           "typo", "duplicate", "drop"),
+                                 n = 1L, cols = NULL, seed = NULL) {
   if (!is.data.frame(data)) cli::cli_abort("{.arg data} must be a data frame.")
   if (nrow(data) == 0L)     cli::cli_abort("{.arg data} has no rows to perturb.")
   bad <- setdiff(types, .ERI_ANOMALY_TYPES)
@@ -112,7 +121,7 @@ eri_inject_anomalies <- function(data, types = .ERI_ANOMALY_TYPES, n = 1L,
   }
   sample_rows <- function(k) sample.int(nrow(orig), min(k, nrow(orig)))
 
-  # --- cell-level (operate on original rows) ----------------------------------
+  # --- cell-level (operate on original rows; distinct cells per type) ---------
   for (type in intersect(c("missing", "outlier", "negative", "typo"), types)) {
     eligible <- switch(type,
       missing  = any_cols,
@@ -124,9 +133,13 @@ eri_inject_anomalies <- function(data, types = .ERI_ANOMALY_TYPES, n = 1L,
       cli::cli_warn("Skipping {.val {type}}: no eligible columns.")
       next
     }
-    for (i in seq_len(min(n, nrow(orig)))) {
-      col <- eligible[[sample.int(length(eligible), 1L)]]
-      rw  <- sample.int(nrow(orig), 1L)
+    # Sample n *distinct* (column, row) cells so the log counts each once and
+    # n is honoured up to the number of eligible cells.
+    grid  <- expand.grid(col = eligible, rw = seq_len(nrow(orig)),
+                         KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+    cells <- grid[sample.int(nrow(grid), min(n, nrow(grid))), , drop = FALSE]
+    for (k in seq_len(nrow(cells))) {
+      col <- cells$col[[k]]; rw <- cells$rw[[k]]
       old <- orig[[col]][[rw]]
       new <- switch(type,
         missing  = NA,
@@ -134,14 +147,14 @@ eri_inject_anomalies <- function(data, types = .ERI_ANOMALY_TYPES, n = 1L,
         negative = { v <- as.numeric(old); -abs(if (is.na(v)) 1 else v) - 1 },
         typo     = .eri_typo(as.character(old))
       )
-      if (type == "missing") {
-        out[[col]][[rw]] <- NA
-      } else if (type == "typo") {
-        if (is.factor(out[[col]])) out[[col]] <- as.character(out[[col]])
-        out[[col]][[rw]] <- new
-      } else {
-        out[[col]][[rw]] <- new
+      if (type == "typo" && is.factor(out[[col]])) out[[col]] <- as.character(out[[col]])
+      # Preserve an integer column's type, so a numeric injection surfaces as a
+      # value anomaly rather than a spurious int->double schema delta in
+      # eri_compare() (ADR-0015 does not tolerate type mismatches).
+      if (type %in% c("outlier", "negative") && is.integer(out[[col]])) {
+        new <- as.integer(round(new))
       }
+      out[[col]][[rw]] <- new
       add_log(type, rw, col, old, if (type == "missing") NA_character_ else new)
     }
   }
