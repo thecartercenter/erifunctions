@@ -416,7 +416,7 @@
       </dl></div><div class="section level2">
       <h2 id="reconciliation">Reconciliation<a class="anchor" aria-label="anchor" href="#reconciliation"></a></h2>
 
-      <div class="section-desc"><p>Diff a new dataset against a reference, and dirty clean data, to validate the cutover.</p></div>
+      <div class="section-desc"><p>Diff a new dataset against a reference, dirty clean data, and gate the cutover.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -436,6 +436,20 @@
 
         </dt>
         <dd>Inject controllable anomalies into a clean dataset</dd>
+
+        <dt>
+
+          <code><a href="eri_cutover_check.html">eri_cutover_check()</a></code>
+
+        </dt>
+        <dd>Compare a stream's period and record it in the cutover ledger</dd>
+
+        <dt>
+
+          <code><a href="eri_cutover_status.html">eri_cutover_status()</a></code>
+
+        </dt>
+        <dd>Report a stream's cutover readiness from the ledger</dd>
       </dl></div><div class="section level2">
       <h2 id="logs-triage">Logs &amp; triage<a class="anchor" aria-label="anchor" href="#logs-triage"></a></h2>
 
