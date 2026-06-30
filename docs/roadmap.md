@@ -5,6 +5,11 @@
 > ADR under [`docs/adr/`](adr/). See [`CLAUDE.md`](../CLAUDE.md) for the working conventions
 > that keep development aligned with this roadmap, and [`vision.md`](vision.md) for the
 > founding brief this plan derives from.
+>
+> **Where we are (2026-06-30):** Phases 0–2 complete. **Phase 3 cutover/simulation tooling is
+> complete and offline-tested — the next step is a real-data *pilot* (parallel run), not more
+> building**; the actual cutover and legacy-adapter retirement wait on real CMR/malaria uploads.
+> Phase 4 (ODK live pilot + the "Mimic" dashboard) is the next build, pending a direction call.
 
 ## Context
 
@@ -170,28 +175,39 @@ datasets returns a correct join.
 
 Make the `data/` blob authoritative and retire the contractor pipeline on evidence. Built
 against existing Azure data as a simulation; validated against real uploads when they land.
-- **Simulation harness**: pull existing `staged/`/`raw/` files to stand in for "new data."
-  Because that data is largely already clean, add an anomaly-injection helper so the DQ and
-  cleaning paths are genuinely exercised.
-- ~~**`eri_compare()`**: diff `eri_ingest()`'s `data/staged` output against the
-  `projects/intermediate` (hsp-mal) output the dual-write already produces — row/column/value
-  reconciliation.~~ **Shipped** (#244): keyed row+value reconciliation, schema diff, numeric/NA-aware,
-  `strict_schema` flag; returns an `eri_comparison` object.
-- ~~Define written **cutover criteria** (N consecutive periods of equivalence) as an ADR.~~ **Done** —
-  [ADR-0015](adr/0015-hsp-mal-cutover-criteria.md): per-stream value/row parity (`strict_schema = FALSE`)
-  for N=3 consecutive periods, recorded in a cutover ledger, human-triggered. Pins the `equivalent`
-  semantics so policy and `eri_compare()` don't drift. The ledger's read/write helpers land with the
-  simulation harness (next).
-- Harden `eri_ingest_cmr()` / `eri_stage()`; fold DQ failures into the log-triage surface
-  (Phase 5).
-- **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates from
-  the general ingest core: the `projects`-blob dual-write (now the opt-in `mirror_pipeline` parameter),
-  `.eri_pipeline_registry`, `.eri_schema_country_map`, and the `rblf` combined code all come out at the
-  cutover, leaving `eri_ingest()` purely general over the 5-axis model.
 
-**Verification:** simulation run ingests an Azure-sourced (anomaly-injected) file both ways;
-`eri_compare()` reports parity or precise deltas; approval promotes with token identity;
-catalog updated atomically. Re-run against the real June CMR + malaria files once uploaded.
+> **Status (2026-06-30): the cutover *tooling* is COMPLETE — the next step is a real-data
+> pilot, not more building.** Everything below the line is shipped and offline-tested; what
+> remains (the parallel run, the equivalence streak, the adapter retirement) is operational
+> work that needs real CMR/malaria uploads and a maintainer at the trigger.
+
+- ~~**`eri_compare()`**: diff `eri_ingest()`'s `data/staged` output against the
+  `projects/intermediate` (hsp-mal) output.~~ **Shipped** (#244): keyed row+value reconciliation,
+  schema diff, numeric/NA-aware, `strict_schema` flag; returns an `eri_comparison` object.
+- ~~Define written **cutover criteria** (N consecutive periods of equivalence) as an ADR.~~ **Done**
+  ([ADR-0015](adr/0015-hsp-mal-cutover-criteria.md), #246): per-stream value/row parity
+  (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger, human-triggered.
+  Pins the `equivalent` semantics so policy and `eri_compare()` can't drift.
+- ~~**Cutover ledger**: record each period's comparison + compute the streak.~~ **Shipped** (#250):
+  `eri_cutover_check()` records a period (the cutover-standard comparison) and `eri_cutover_status()`
+  reports the streak vs N and eligibility, ordered by the data period.
+- ~~**Simulation harness**: anomaly-injection so the DQ and reconciliation paths are genuinely
+  exercised against otherwise-clean data.~~ **Shipped**: `eri_inject_anomalies()` (#248) dirties clean
+  data reproducibly; `eri_simulate_check()` (#254) injects + reconciles in one call to confirm the gate
+  catches a divergence.
+- ~~Harden `eri_ingest_cmr()` / `eri_stage()`; fold DQ failures into the log-triage surface.~~ **Done**:
+  CMR period/sheet hardening (#252); the DQ→triage fold was already in place (`eri_ingest()` persists
+  flags via `eri_dq_log()` into the `eri_logs()` backlog), and stage/ingest already have full op-log +
+  tryCatch capture.
+- **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates — the
+  `projects`-blob dual-write (`mirror_pipeline`), `.eri_pipeline_registry`, `.eri_schema_country_map`,
+  and the `rblf` combined code. **Deferred to the cutover itself** (irreversible; only once a stream's
+  streak is met and a maintainer triggers it).
+
+**Pilot (the next operational step):** run `eri_ingest(..., mirror_pipeline = "hsp-mal")` on the real
+periods as they arrive; `eri_cutover_check()` each one; watch `eri_cutover_status()` reach the N-period
+streak; only then retire the adapters for that stream. The toolchain is ready and end-to-end tested
+offline — it needs real uploads, not more code.
 
 ---
 
