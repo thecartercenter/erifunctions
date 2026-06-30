@@ -1,5 +1,14 @@
 # erifunctions (development version)
 
+## Feature: `eri_inject_anomalies()` — dirty clean data for the Phase 3 simulation
+
+- **New `eri_inject_anomalies(data, types, n, cols, seed)`** perturbs a clean data frame with controllable,
+  reproducible anomalies — `missing`, `outlier`, `negative`, `typo`, `duplicate`, `drop` — so the
+  parallel-run simulation actually exercises the DQ pipeline and `eri_compare()` (existing staged data is
+  largely already clean). The result carries an `"eri_anomalies"` attribute logging every injection
+  (type, row, column, original, new) as ground truth for checking detection. The injection counterpart to
+  the `add_anomaly_*` detectors.
+
 ## Feature: `eri_compare()` — reconcile two datasets (Phase 3 cutover validation)
 
 - **New `eri_compare(new, old, by, ...)`** diffs a candidate dataset against a reference and reports the
