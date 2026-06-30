@@ -2,6 +2,21 @@
 
 ## erifunctions (development version)
 
+### Fixes: CMR ingest/stage hardening (Phase 3)
+
+- **`eri_stage_cmr(period = NULL)`** now auto-selects the most recent
+  period with a robust lexical
+  [`max()`](https://rdrr.io/r/base/Extremes.html) over the `YYYYMM`
+  directory labels, instead of
+  [`which.max()`](https://rspatial.github.io/terra/reference/summarize-generics.html)
+  on those character labels — which coerced them to numeric (a warning,
+  and `integer(0)` for any non-numeric label, so a future ISO/underscore
+  period format would have silently selected nothing).
+- **[`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)**
+  fails with a helpful, named error listing the available sheets when
+  the (alias-resolved) `sheet` isn’t in the workbook, instead of an
+  opaque `readxl` error.
+
 ### Feature: cutover ledger — `eri_cutover_check()` / `eri_cutover_status()` (ADR-0015)
 
 - **New

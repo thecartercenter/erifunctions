@@ -74,6 +74,13 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="fixes-cmr-ingeststage-hardening-phase-development-version">Fixes: CMR ingest/stage hardening (Phase 3)<a class="anchor" aria-label="anchor" href="#fixes-cmr-ingeststage-hardening-phase-development-version"></a></h3>
+<ul><li>
+<strong><code>eri_stage_cmr(period = NULL)</code></strong> now auto-selects the most recent period with a robust lexical <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max()</a></code> over the <code>YYYYMM</code> directory labels, instead of <code><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.max()</a></code> on those character labels — which coerced them to numeric (a warning, and <code>integer(0)</code> for any non-numeric label, so a future ISO/underscore period format would have silently selected nothing).</li>
+<li>
+<strong><code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code></strong> fails with a helpful, named error listing the available sheets when the (alias-resolved) <code>sheet</code> isn’t in the workbook, instead of an opaque <code>readxl</code> error.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="feature-cutover-ledger--eri_cutover_check--eri_cutover_status-adr-development-version">Feature: cutover ledger — <code>eri_cutover_check()</code> / <code>eri_cutover_status()</code> (ADR-0015)<a class="anchor" aria-label="anchor" href="#feature-cutover-ledger--eri_cutover_check--eri_cutover_status-adr-development-version"></a></h3>
 <ul><li>
 <strong>New <code>eri_cutover_check(new, old, country, disease, data_source, period, by, …)</code></strong> runs the cutover-standard comparison (<code>eri_compare(…, strict_schema = FALSE)</code>) for one stream’s period and records the outcome — stream, period, <code>equivalent</code>, delta counts, the <code>by</code>/<code>tolerance</code> used, and the verified actor — to <code>_cutover/cutover_log.yaml</code> in the <code>data/</code> blob. <strong>New <code>eri_cutover_status(country, disease, data_source, …, n = 3)</code></strong> reads the ledger and reports the <strong>streak</strong> of consecutive most-recent equivalent periods and whether the stream is <em>eligible</em> for cutover (streak ≥ <code>n</code>). Together they make the Phase-3 cutover gate (ADR-0015) runnable period-over-period; the equivalence standard is encoded so it can’t drift from the policy.</li>
