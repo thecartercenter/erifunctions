@@ -51,3 +51,5 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0011](0011-unified-schema-naming.md) | One vocabulary for addressing data and schemas (unified schema naming) | Superseded by ADR-0012 |
 | [0012](0012-source-measure-data-model.md) | Data is addressed by source *and* measure (the 5-axis path model) | Accepted |
 | [0013](0013-odk-submission-backfill.md) | Submission backfill: erifunctions writes records *into* ODK Central | Accepted |
+| [0014](0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob | Accepted |
+| [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
