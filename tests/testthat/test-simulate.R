@@ -101,3 +101,44 @@ test_that("a type with no eligible columns is skipped with a warning", {
     "No anomalies"
   )
 })
+
+# --- eri_simulate_check -------------------------------------------------------
+
+test_that("eri_simulate_check detects injected value anomalies, off the keys", {
+  clean <- data.frame(id = 1:8, cases = c(5, 8, 3, 6, 9, 4, 7, 2), site = letters[1:8])
+  sim   <- suppressMessages(eri_simulate_check(clean, by = "id",
+                                               types = c("missing", "outlier"), n = 2, seed = 1))
+  expect_true(sim$detected)
+  expect_s3_class(sim$comparison, "eri_comparison")
+  expect_false(sim$comparison$equivalent)
+  expect_true(all(sim$injected$column %in% c("cases", "site")))  # never the key
+})
+
+test_that("eri_simulate_check is reproducible with a seed", {
+  clean <- data.frame(id = 1:8, cases = as.numeric(1:8), site = letters[1:8])
+  a <- suppressMessages(eri_simulate_check(clean, by = "id", seed = 42))
+  b <- suppressMessages(eri_simulate_check(clean, by = "id", seed = 42))
+  expect_equal(a$injected, b$injected)
+  expect_equal(a$detected, b$detected)
+})
+
+test_that("eri_simulate_check catches a dropped row", {
+  clean <- data.frame(id = 1:8, cases = as.numeric(1:8))
+  sim   <- suppressMessages(eri_simulate_check(clean, by = "id", types = "drop", n = 1, seed = 1))
+  expect_true(sim$detected)
+  expect_equal(sim$comparison$summary$n_dropped, 1L)  # row present in reference, gone from dirty
+})
+
+test_that("eri_simulate_check signals a vacuous run (nothing injected) as detected = NA", {
+  num_only <- data.frame(id = 1:5, cases = as.numeric(1:5))  # no char column for typo
+  sim <- suppressWarnings(eri_simulate_check(num_only, by = "id", types = "typo", n = 1))
+  expect_true(is.na(sim$detected))
+  expect_equal(nrow(sim$injected), 0L)
+})
+
+test_that("eri_simulate_check rejects duplicate (incompatible with keyed compare) and bad inputs", {
+  clean <- data.frame(id = 1:4, cases = as.numeric(1:4))
+  expect_error(eri_simulate_check(clean, by = "id", types = "duplicate"), "duplicate")
+  expect_error(eri_simulate_check(clean, by = "nope"), "by")
+  expect_error(eri_simulate_check(data.frame(id = 1:4), by = "id"), "no non-key")
+})

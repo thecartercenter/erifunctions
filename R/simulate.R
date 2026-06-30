@@ -192,3 +192,86 @@ eri_inject_anomalies <- function(data,
     paste0(x, "?")
   )
 }
+
+#### eri_simulate_check ####
+
+#' Confirm the cutover comparison catches injected divergence
+#'
+#' Ties the Phase-3 simulation harness together: inject known anomalies into a
+#' clean `reference` dataset (in the value columns, off the join keys) and confirm
+#' [eri_compare()] — run with the cutover standard — flags the result as **not
+#' equivalent**. Use it to build confidence that the cutover gate
+#' ([eri_cutover_check()]) would catch a real divergence before relying on it.
+#'
+#' `duplicate` is excluded from the default `types`: a duplicate key cannot be
+#' reconciled per-cell, so it makes the keyed comparison abort rather than report
+#' a delta (that is a uniqueness check, separate from reconciliation).
+#'
+#' @param reference A clean data frame to perturb and compare against.
+#' @param by `chr` Key column(s) uniquely identifying a row. Anomalies are kept
+#'   off these so the divergence shows up as detectable row/value deltas.
+#' @param types `chr` Anomaly types to inject (see [eri_inject_anomalies()]).
+#'   Defaults to all except `duplicate`. Passing `duplicate` is an error.
+#' @param n `int` Anomalies per type. Default `1`.
+#' @param seed `int` or `NULL` Optional RNG seed for a reproducible run.
+#' @param tolerance `num` Numeric tolerance passed to [eri_compare()]. Default `0`.
+#' @returns Invisibly, a list with `detected` (`TRUE` the comparison flagged the
+#'   divergence, `FALSE` it missed the injected anomalies, `NA` nothing was
+#'   injected so detection wasn't exercised), `injected` (the anomaly log from
+#'   [eri_inject_anomalies()]), and `comparison` (the [eri_compare()] result, to
+#'   inspect which deltas were caught).
+#' @examples
+#' clean <- data.frame(id = 1:8, cases = c(5, 8, 3, 6, 9, 4, 7, 2), site = letters[1:8])
+#' sim <- eri_simulate_check(clean, by = "id", n = 2, seed = 1)
+#' sim$detected            # TRUE — eri_compare flagged the injected anomalies
+#' sim$comparison$values   # the per-cell mismatches it caught
+#' @seealso [eri_inject_anomalies()] to dirty data, [eri_compare()] to reconcile,
+#'   [eri_cutover_check()] for the real gate.
+#' @export
+eri_simulate_check <- function(reference, by,
+                               types = c("missing", "outlier", "negative", "typo", "drop"),
+                               n = 1L, seed = NULL, tolerance = 0) {
+  if (!is.data.frame(reference)) cli::cli_abort("{.arg reference} must be a data frame.")
+  if (is.null(by) || !length(by) || !all(by %in% names(reference))) {
+    cli::cli_abort("{.arg by} must name key column(s) present in {.arg reference}.")
+  }
+  if ("duplicate" %in% types) {
+    cli::cli_abort(c(
+      "{.val duplicate} can't be simulated against a keyed comparison.",
+      "i" = "A duplicate key aborts {.fn eri_compare} (it needs a unique key) rather than producing a delta."
+    ))
+  }
+
+  value_cols <- setdiff(names(reference), by)
+  if (length(value_cols) == 0L) {
+    cli::cli_abort("{.arg reference} has no non-key columns to perturb.")
+  }
+
+  dirty    <- suppressMessages(
+    eri_inject_anomalies(reference, types = types, n = n, cols = value_cols, seed = seed)
+  )
+  injected <- attr(dirty, "eri_anomalies")
+  cmp      <- eri_compare(dirty, reference, by = by, strict_schema = FALSE, tolerance = tolerance)
+  n_inj    <- nrow(injected)
+
+  # Three distinct outcomes: NA = nothing injected (detection not exercised),
+  # TRUE = the comparison flagged the divergence, FALSE = it missed injected anomalies.
+  if (n_inj == 0L) {
+    detected <- NA
+    cli::cli_alert_warning(
+      "Simulation injected nothing (no eligible columns for the requested types) - detection not exercised."
+    )
+  } else {
+    detected <- !isTRUE(cmp$equivalent)
+    if (detected) {
+      cli::cli_alert_success(
+        "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} flagged the divergence."
+      )
+    } else {
+      cli::cli_alert_warning(
+        "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} did NOT flag a divergence."
+      )
+    }
+  }
+  invisible(list(detected = detected, injected = injected, comparison = cmp))
+}

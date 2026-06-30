@@ -188,6 +188,7 @@ reference:
   contents:
   - eri_compare
   - eri_inject_anomalies
+  - eri_simulate_check
   - eri_cutover_check
   - eri_cutover_status
 
