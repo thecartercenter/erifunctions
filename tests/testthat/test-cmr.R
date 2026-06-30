@@ -409,10 +409,10 @@ test_that("eri_stage_cmr(period = NULL) auto-selects the most recent period", {
     list_storage_files  = function(container, dir, ...) {
       calls <<- calls + 1L
       if (calls == 1L) {
-        # period directories under the country's raw/filled_templates
-        tibble::tibble(name = paste0(dir, c("/2024_05", "/2024_06")), isdir = TRUE)
+        # period directories under raw/filled_templates/{country}/ are YYYYMM
+        tibble::tibble(name = paste0(dir, c("/202405", "/202406")), isdir = TRUE)
       } else {
-        tibble::tibble(name = paste0(dir, "/uga_", basename(dir), ".xlsx"), isdir = FALSE)
+        tibble::tibble(name = paste0(dir, "/uga_cmr_", basename(dir), ".xlsx"), isdir = FALSE)
       }
     },
     .package = "AzureStor"
@@ -429,9 +429,9 @@ test_that("eri_stage_cmr(period = NULL) auto-selects the most recent period", {
 
   expect_message(
     eri_stage_cmr("uga", data_con = mock_con),
-    "2024_06"   # most recent, not character(0)
+    "202406"   # most recent period, picked robustly via max()
   )
-  expect_match(read_src, "2024_06")   # staged from the 2024_06 source dir
+  expect_match(read_src, "202406")   # staged from the 202406 source dir
 })
 
 test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {

@@ -2,9 +2,10 @@
 
 ## Fixes: CMR ingest/stage hardening (Phase 3)
 
-- **`eri_stage_cmr(period = NULL)`** now correctly auto-selects the most recent period. It used
-  `which.max()` on the character period labels, which for the real underscore format (`"2024_06"`)
-  coerced to `NA` and selected *nothing*; it now uses `max()` (robust for zero-padded / ISO labels).
+- **`eri_stage_cmr(period = NULL)`** now auto-selects the most recent period with a robust lexical
+  `max()` over the `YYYYMM` directory labels, instead of `which.max()` on those character labels —
+  which coerced them to numeric (a warning, and `integer(0)` for any non-numeric label, so a future
+  ISO/underscore period format would have silently selected nothing).
 - **`eri_ingest_cmr()`** fails with a helpful, named error listing the available sheets when the
   (alias-resolved) `sheet` isn't in the workbook, instead of an opaque `readxl` error.
 

@@ -381,9 +381,12 @@ eri_stage_cmr <- function(country,
       )
     }
 
-    # Most recent = lexically greatest period label (zero-padded / ISO formats
-    # like "2024_06" or "2024-W01" sort correctly). `max()` not `which.max()` —
-    # which.max() coerces these strings to NA and returns nothing.
+    # Most recent = lexically greatest period label. Directories are zero-padded
+    # `YYYYMM` (and the lexical order also holds for ISO labels like "2024-W01"),
+    # so a string `max()` is correct and robust. Use `max()` not `which.max()`:
+    # which.max() coerces the labels to numeric, which is fragile (a warning, and
+    # an `integer(0)` result for any non-numeric label). Assumes fixed-width,
+    # zero-padded components.
     period <- max(period_dirs$period_name)
     cli::cli_alert_info("No period specified; staging most recent: {.val {period}}")
   }
