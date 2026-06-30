@@ -41,6 +41,11 @@
 #' value/row parity but tolerates extra columns the new pipeline adds. The `by`
 #' keys and `tolerance` are recorded with the entry so the bar is auditable.
 #'
+#' To **accept** a legitimately-expected difference (ADR-0015), record the period
+#' with that difference excluded — pass the differing column to `ignore`, or widen
+#' `tolerance` — so the period reconciles under the relaxed standard, which is
+#' itself recorded in the ledger entry (visible and attributable, not hidden).
+#'
 #' @param new,old The new (`data/staged`) and reference (legacy `projects/intermediate`)
 #'   datasets — data frames or Azure blob paths, as in [eri_compare()].
 #' @param country,disease,data_source `chr` The stream's axes.
@@ -132,8 +137,10 @@ eri_cutover_check <- function(new, old, country, disease, data_source, period, b
 #' Reads `_cutover/cutover_log.yaml`, takes the most recent entry per `period` for
 #' the stream, and computes the **streak**: the number of consecutive most-recent
 #' periods that are `equivalent` (ADR-0015). A stream is *eligible* for cutover
-#' when the streak reaches `n`. Periods are ordered by when they were last checked
-#' (the ledger is append-only), so re-checking a period updates its standing.
+#' when the streak reaches `n`. Periods are ordered by the **data `period`** (which
+#' for a stream uses one consistent, lexically-sortable label), and re-checking a
+#' period updates its standing — so backfilling an earlier period is handled
+#' correctly.
 #'
 #' @param country,disease,data_source `chr` The stream's axes.
 #' @param data_type `chr` or `NULL` The measure, where it splits the stream.
@@ -176,16 +183,17 @@ eri_cutover_status <- function(country, disease, data_source, data_type = NULL,
     return(invisible(list(eligible = FALSE, streak = 0L, n = n, periods = empty)))
   }
 
-  # Latest entry per period (by recorded_at; ISO timestamps sort lexically),
-  # then order periods by that timestamp = the order they were last checked.
-  periods <- unique(vapply(stream, function(e) as.character(e$period), character(1L)))
+  # Latest entry per period (re-checks win, by recorded_at), then order the
+  # periods by the *data period* itself (ADR-0015 §2) so the streak is over data
+  # periods, not check time — robust against backfilling an earlier period after
+  # a later one. A stream uses one consistent (zero-padded / ISO) period format,
+  # which sorts lexically.
+  periods <- sort(unique(vapply(stream, function(e) as.character(e$period), character(1L))))
   latest  <- lapply(periods, function(p) {
     es  <- Filter(function(e) identical(as.character(e$period), p), stream)
     ats <- vapply(es, function(e) as.character(e$recorded_at %||% ""), character(1L))
     es[[order(ats, decreasing = TRUE)[[1L]]]]  # most-recently recorded for this period
   })
-  ord    <- order(vapply(latest, function(e) as.character(e$recorded_at %||% ""), character(1L)))
-  latest <- latest[ord]
 
   eqv <- vapply(latest, function(e) isTRUE(e$equivalent), logical(1L))
   streak <- 0L

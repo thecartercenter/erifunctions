@@ -57,6 +57,11 @@ period of the parallel run, then check the streak with \code{\link[=eri_cutover_
 \code{strict_schema = FALSE} is fixed (not exposed): the cutover gate requires
 value/row parity but tolerates extra columns the new pipeline adds. The \code{by}
 keys and \code{tolerance} are recorded with the entry so the bar is auditable.
+
+To \strong{accept} a legitimately-expected difference (ADR-0015), record the period
+with that difference excluded — pass the differing column to \code{ignore}, or widen
+\code{tolerance} — so the period reconciles under the relaxed standard, which is
+itself recorded in the ledger entry (visible and attributable, not hidden).
 }
 \examples{
 \dontrun{

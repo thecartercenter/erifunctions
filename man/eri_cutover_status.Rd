@@ -31,8 +31,10 @@ in checked order).
 Reads \verb{_cutover/cutover_log.yaml}, takes the most recent entry per \code{period} for
 the stream, and computes the \strong{streak}: the number of consecutive most-recent
 periods that are \code{equivalent} (ADR-0015). A stream is \emph{eligible} for cutover
-when the streak reaches \code{n}. Periods are ordered by when they were last checked
-(the ledger is append-only), so re-checking a period updates its standing.
+when the streak reaches \code{n}. Periods are ordered by the \strong{data \code{period}} (which
+for a stream uses one consistent, lexically-sortable label), and re-checking a
+period updates its standing — so backfilling an earlier period is handled
+correctly.
 }
 \examples{
 \dontrun{

@@ -99,6 +99,21 @@ test_that("a non-equivalent period resets the streak to the trailing run", {
   expect_false(st$eligible)
 })
 
+test_that("the streak orders by data period, not check time (backfill-safe)", {
+  # 2024_06 checked first (equivalent); 2024_05 backfilled later (not equivalent).
+  store <- new_yaml_store(list(entries = list(
+    mk_entry("2024_06", TRUE,  "2026-06-29T01:00:00Z"),
+    mk_entry("2024_05", FALSE, "2026-06-29T02:00:00Z")
+  )))
+  local_yaml_store(store)
+
+  st <- suppressMessages(eri_cutover_status("uga", "oncho", "programmatic", n = 3, data_con = "mock"))
+  # period order is 2024_05 (F) -> 2024_06 (T); trailing run is just 2024_06 -> streak 1.
+  # (recorded_at order would have put 2024_05 last and given streak 0.)
+  expect_equal(st$streak, 1L)
+  expect_equal(st$periods$period, c("2024_05", "2024_06"))
+})
+
 test_that("the most recent entry per period wins", {
   store <- new_yaml_store(list(entries = list(
     mk_entry("2024_06", FALSE, "2026-06-29T01:00:00Z"),   # first check failed
