@@ -69,6 +69,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0012](adr/0012-source-measure-data-model.md) | Address data by 5 axes splitting data_source (channel) from data_type (measure); general ingest core + legacy adapters | Coherent data-addressing model (#175); supersedes ADR-0011 |
 | [0013](adr/0013-odk-submission-backfill.md) | Write records *into* ODK Central (submission backfill): deterministic instanceID idempotency, columns map by field name, repeats reuse ADR-0010 | `eri_odk_upload()` (Phase 4, #211) |
 | [0014](adr/0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob (capture now via `eri_feedback()`, reusing ADR-0002/0003); triage is a later feature | Tight adoption feedback loop (#237) |
+| [0015](adr/0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover gate: per-stream value/row parity (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger; human-triggered | Objective Phase-3 cutover criteria (#245) |
 
 ---
 
@@ -172,10 +173,15 @@ against existing Azure data as a simulation; validated against real uploads when
 - **Simulation harness**: pull existing `staged/`/`raw/` files to stand in for "new data."
   Because that data is largely already clean, add an anomaly-injection helper so the DQ and
   cleaning paths are genuinely exercised.
-- **`eri_compare()`**: diff `eri_ingest()`'s `data/staged` output against the
+- ~~**`eri_compare()`**: diff `eri_ingest()`'s `data/staged` output against the
   `projects/intermediate` (hsp-mal) output the dual-write already produces — row/column/value
-  reconciliation. No such tool exists today.
-- Define written **cutover criteria** (N consecutive periods of equivalence) as an ADR.
+  reconciliation.~~ **Shipped** (#244): keyed row+value reconciliation, schema diff, numeric/NA-aware,
+  `strict_schema` flag; returns an `eri_comparison` object.
+- ~~Define written **cutover criteria** (N consecutive periods of equivalence) as an ADR.~~ **Done** —
+  [ADR-0015](adr/0015-hsp-mal-cutover-criteria.md): per-stream value/row parity (`strict_schema = FALSE`)
+  for N=3 consecutive periods, recorded in a cutover ledger, human-triggered. Pins the `equivalent`
+  semantics so policy and `eri_compare()` don't drift. The ledger's read/write helpers land with the
+  simulation harness (next).
 - Harden `eri_ingest_cmr()` / `eri_stage()`; fold DQ failures into the log-triage surface
   (Phase 5).
 - **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates from
