@@ -2,6 +2,18 @@
 
 ## erifunctions (development version)
 
+### Feature: `eri_simulate_check()` — confirm the cutover gate catches divergence
+
+- **New `eri_simulate_check(reference, by, types, n, seed)`** ties the
+  Phase-3 simulation harness together: it injects known anomalies into a
+  clean dataset (in the value columns, off the join keys) and confirms
+  \[[`eri_compare()`](https://thecartercenter.github.io/erifunctions/reference/eri_compare.md)\]
+  — run with the cutover standard — flags the result as **not
+  equivalent**. Returns `detected`, the injected-anomaly log, and the
+  comparison so you can see which deltas were caught — a one-call way to
+  build confidence that the cutover gate would catch a real divergence
+  before relying on it.
+
 ### Fixes: CMR ingest/stage hardening (Phase 3)
 
 - **`eri_stage_cmr(period = NULL)`** now auto-selects the most recent

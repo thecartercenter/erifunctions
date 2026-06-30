@@ -74,6 +74,11 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="erifunctions-development-version">erifunctions (development version)<a class="anchor" aria-label="anchor" href="#erifunctions-development-version"></a></h2>
 <div class="section level3">
+<h3 id="feature-eri_simulate_check--confirm-the-cutover-gate-catches-divergence-development-version">Feature: <code>eri_simulate_check()</code> — confirm the cutover gate catches divergence<a class="anchor" aria-label="anchor" href="#feature-eri_simulate_check--confirm-the-cutover-gate-catches-divergence-development-version"></a></h3>
+<ul><li>
+<strong>New <code>eri_simulate_check(reference, by, types, n, seed)</code></strong> ties the Phase-3 simulation harness together: it injects known anomalies into a clean dataset (in the value columns, off the join keys) and confirms [<code><a href="../reference/eri_compare.html">eri_compare()</a></code>] — run with the cutover standard — flags the result as <strong>not equivalent</strong>. Returns <code>detected</code>, the injected-anomaly log, and the comparison so you can see which deltas were caught — a one-call way to build confidence that the cutover gate would catch a real divergence before relying on it.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fixes-cmr-ingeststage-hardening-phase-development-version">Fixes: CMR ingest/stage hardening (Phase 3)<a class="anchor" aria-label="anchor" href="#fixes-cmr-ingeststage-hardening-phase-development-version"></a></h3>
 <ul><li>
 <strong><code>eri_stage_cmr(period = NULL)</code></strong> now auto-selects the most recent period with a robust lexical <code><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max()</a></code> over the <code>YYYYMM</code> directory labels, instead of <code><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">which.max()</a></code> on those character labels — which coerced them to numeric (a warning, and <code>integer(0)</code> for any non-numeric label, so a future ISO/underscore period format would have silently selected nothing).</li>

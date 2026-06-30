@@ -133,6 +133,8 @@ cutover.
   : Reconcile two datasets and report the differences
 - [`eri_inject_anomalies()`](https://thecartercenter.github.io/erifunctions/reference/eri_inject_anomalies.md)
   : Inject controllable anomalies into a clean dataset
+- [`eri_simulate_check()`](https://thecartercenter.github.io/erifunctions/reference/eri_simulate_check.md)
+  : Confirm the cutover comparison catches injected divergence
 - [`eri_cutover_check()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_check.md)
   : Compare a stream's period and record it in the cutover ledger
 - [`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md)
