@@ -215,9 +215,11 @@ eri_inject_anomalies <- function(data,
 #' @param n `int` Anomalies per type. Default `1`.
 #' @param seed `int` or `NULL` Optional RNG seed for a reproducible run.
 #' @param tolerance `num` Numeric tolerance passed to [eri_compare()]. Default `0`.
-#' @returns Invisibly, a list with `detected` (lgl — did the comparison flag a
-#'   divergence?), `injected` (the anomaly log from [eri_inject_anomalies()]), and
-#'   `comparison` (the [eri_compare()] result, to inspect which deltas were caught).
+#' @returns Invisibly, a list with `detected` (`TRUE` the comparison flagged the
+#'   divergence, `FALSE` it missed the injected anomalies, `NA` nothing was
+#'   injected so detection wasn't exercised), `injected` (the anomaly log from
+#'   [eri_inject_anomalies()]), and `comparison` (the [eri_compare()] result, to
+#'   inspect which deltas were caught).
 #' @examples
 #' clean <- data.frame(id = 1:8, cases = c(5, 8, 3, 6, 9, 4, 7, 2), site = letters[1:8])
 #' sim <- eri_simulate_check(clean, by = "id", n = 2, seed = 1)
@@ -250,17 +252,26 @@ eri_simulate_check <- function(reference, by,
   )
   injected <- attr(dirty, "eri_anomalies")
   cmp      <- eri_compare(dirty, reference, by = by, strict_schema = FALSE, tolerance = tolerance)
-  detected <- !isTRUE(cmp$equivalent)
+  n_inj    <- nrow(injected)
 
-  n_inj <- nrow(injected)
-  if (detected) {
-    cli::cli_alert_success(
-      "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} flagged the divergence."
+  # Three distinct outcomes: NA = nothing injected (detection not exercised),
+  # TRUE = the comparison flagged the divergence, FALSE = it missed injected anomalies.
+  if (n_inj == 0L) {
+    detected <- NA
+    cli::cli_alert_warning(
+      "Simulation injected nothing (no eligible columns for the requested types) - detection not exercised."
     )
   } else {
-    cli::cli_alert_warning(
-      "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} did NOT flag a divergence."
-    )
+    detected <- !isTRUE(cmp$equivalent)
+    if (detected) {
+      cli::cli_alert_success(
+        "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} flagged the divergence."
+      )
+    } else {
+      cli::cli_alert_warning(
+        "Simulation: {n_inj} injected anomal{?y/ies} - {.fn eri_compare} did NOT flag a divergence."
+      )
+    }
   }
   invisible(list(detected = detected, injected = injected, comparison = cmp))
 }

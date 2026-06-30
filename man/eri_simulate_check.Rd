@@ -29,9 +29,11 @@ Defaults to all except \code{duplicate}. Passing \code{duplicate} is an error.}
 \item{tolerance}{\code{num} Numeric tolerance passed to \code{\link[=eri_compare]{eri_compare()}}. Default \code{0}.}
 }
 \value{
-Invisibly, a list with \code{detected} (lgl — did the comparison flag a
-divergence?), \code{injected} (the anomaly log from \code{\link[=eri_inject_anomalies]{eri_inject_anomalies()}}), and
-\code{comparison} (the \code{\link[=eri_compare]{eri_compare()}} result, to inspect which deltas were caught).
+Invisibly, a list with \code{detected} (\code{TRUE} the comparison flagged the
+divergence, \code{FALSE} it missed the injected anomalies, \code{NA} nothing was
+injected so detection wasn't exercised), \code{injected} (the anomaly log from
+\code{\link[=eri_inject_anomalies]{eri_inject_anomalies()}}), and \code{comparison} (the \code{\link[=eri_compare]{eri_compare()}} result, to
+inspect which deltas were caught).
 }
 \description{
 Ties the Phase-3 simulation harness together: inject known anomalies into a

@@ -129,6 +129,13 @@ test_that("eri_simulate_check catches a dropped row", {
   expect_equal(sim$comparison$summary$n_dropped, 1L)  # row present in reference, gone from dirty
 })
 
+test_that("eri_simulate_check signals a vacuous run (nothing injected) as detected = NA", {
+  num_only <- data.frame(id = 1:5, cases = as.numeric(1:5))  # no char column for typo
+  sim <- suppressWarnings(eri_simulate_check(num_only, by = "id", types = "typo", n = 1))
+  expect_true(is.na(sim$detected))
+  expect_equal(nrow(sim$injected), 0L)
+})
+
 test_that("eri_simulate_check rejects duplicate (incompatible with keyed compare) and bad inputs", {
   clean <- data.frame(id = 1:4, cases = as.numeric(1:4))
   expect_error(eri_simulate_check(clean, by = "id", types = "duplicate"), "duplicate")
