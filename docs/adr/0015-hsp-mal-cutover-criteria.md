@@ -36,11 +36,17 @@ the measure splits the stream) combination — and gated on all of:
    ingest (e.g. a monthly CMR period, a surveillance epiweek), which is also the ledger's indexing unit —
    *not* a wall-clock interval or an individual ingest event. One match can be luck; a streak is evidence
    the pipelines agree structurally.
-3. **No unexplained deltas.** Any delta seen during the parallel run must be explained and either fixed
-   or explicitly accepted (and documented) — not merely absent from the latest run. The **streak** is the
-   number of consecutive most-recent periods that are both `equivalent = TRUE` *and* carry no open
-   (unexplained) delta; **any** non-equivalent period, or a reappearing/unresolved delta, resets it to
-   zero. Eligibility needs streak ≥ N.
+3. **No unexplained deltas — the streak counts equivalence.** The **streak** is the number of
+   consecutive most-recent periods (ordered by the data `period`) recorded as `equivalent = TRUE`; **any**
+   non-equivalent period resets it to zero, and eligibility needs streak ≥ N. A delta is therefore
+   handled in one of two auditable ways: **fix it** (correct the data or pipeline so the period
+   reconciles), or — for a difference that is legitimately expected and **explicitly accepted** — record
+   the period with that difference excluded from the comparison, via `ignore` (a column that may
+   legitimately differ) or a widened `tolerance`, so the period reports `equivalent` under the relaxed
+   standard. The relaxation is itself recorded per ledger entry (the `by` keys, `tolerance`, and ignored
+   columns), so an accepted delta is visible and attributable rather than hidden. A delta that merely
+   disappears from the latest run does **not** count: if it reappears the period is non-equivalent again
+   and the streak resets.
 4. **Human gate.** Meeting 1–3 makes a stream *eligible*; the cutover itself is a deliberate human
    action, consistent with [`eri_approve()`](../../R/dal.R) — the system records the evidence, a person
    decides.
