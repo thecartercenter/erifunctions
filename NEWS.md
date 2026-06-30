@@ -1,5 +1,13 @@
 # erifunctions (development version)
 
+## Fixes: CMR ingest/stage hardening (Phase 3)
+
+- **`eri_stage_cmr(period = NULL)`** now correctly auto-selects the most recent period. It used
+  `which.max()` on the character period labels, which for the real underscore format (`"2024_06"`)
+  coerced to `NA` and selected *nothing*; it now uses `max()` (robust for zero-padded / ISO labels).
+- **`eri_ingest_cmr()`** fails with a helpful, named error listing the available sheets when the
+  (alias-resolved) `sheet` isn't in the workbook, instead of an opaque `readxl` error.
+
 ## Feature: cutover ledger — `eri_cutover_check()` / `eri_cutover_status()` (ADR-0015)
 
 - **New `eri_cutover_check(new, old, country, disease, data_source, period, by, …)`** runs the

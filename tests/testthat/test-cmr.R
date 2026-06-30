@@ -56,6 +56,13 @@ test_that("eri_ingest_cmr reads correct data values", {
   expect_equal(out[["#rbtrt_adm1"]], c("North", "South"))
 })
 
+test_that("eri_ingest_cmr errors helpfully when the sheet is missing", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp, sheet_name = "RB Treatment")
+  expect_error(eri_ingest_cmr(tmp, sheet = "No Such Sheet"),
+               "Sheet .* not found")
+})
+
 test_that("eri_ingest_cmr drops all-NA spacer rows", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
@@ -389,6 +396,42 @@ test_that("eri_split_cmr aborts when the workbook has none of the routable sheet
     suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE)),
     "None of the .* routable sheets were found"
   )
+})
+
+test_that("eri_stage_cmr(period = NULL) auto-selects the most recent period", {
+  calls    <- 0L
+  read_src <- NULL
+  mock_con <- structure(list(), class = "mock")
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
+      calls <<- calls + 1L
+      if (calls == 1L) {
+        # period directories under the country's raw/filled_templates
+        tibble::tibble(name = paste0(dir, c("/2024_05", "/2024_06")), isdir = TRUE)
+      } else {
+        tibble::tibble(name = paste0(dir, "/uga_", basename(dir), ".xlsx"), isdir = FALSE)
+      }
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_read   = function(con, src, dest, ...) { read_src <<- src; file.create(dest); invisible(dest) },
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .eri_analyst_id  = function(...) "tester",
+    get_azure_storage_connection = function(...) mock_con,
+    .package = "erifunctions"
+  )
+
+  expect_message(
+    eri_stage_cmr("uga", data_con = mock_con),
+    "2024_06"   # most recent, not character(0)
+  )
+  expect_match(read_src, "2024_06")   # staged from the 2024_06 source dir
 })
 
 test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {

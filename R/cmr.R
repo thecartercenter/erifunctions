@@ -90,6 +90,18 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
     }
   }
 
+  # Fail with a helpful, named error rather than readxl's opaque one when the
+  # sheet (after alias resolution) isn't in the workbook.
+  if (is.character(actual_sheet)) {
+    available <- readxl::excel_sheets(path)
+    if (!actual_sheet %in% available) {
+      cli::cli_abort(c(
+        "Sheet {.val {actual_sheet}} not found in {.path {basename(path)}}.",
+        "i" = "Available sheets: {.val {available}}."
+      ))
+    }
+  }
+
   raw <- readxl::read_excel(path, sheet = actual_sheet, skip = 4,
                              col_names = TRUE, .name_repair = "minimal")
 
@@ -369,7 +381,10 @@ eri_stage_cmr <- function(country,
       )
     }
 
-    period <- period_dirs$period_name[which.max(period_dirs$period_name)]
+    # Most recent = lexically greatest period label (zero-padded / ISO formats
+    # like "2024_06" or "2024-W01" sort correctly). `max()` not `which.max()` —
+    # which.max() coerces these strings to NA and returns nothing.
+    period <- max(period_dirs$period_name)
     cli::cli_alert_info("No period specified; staging most recent: {.val {period}}")
   }
 
