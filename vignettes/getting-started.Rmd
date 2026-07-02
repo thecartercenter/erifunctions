@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-`erifunctions` is the Carter Center ERI team's R package — the way **Data Analysts** and
+`erifunctions` is the Carter Center ERI team's R package, the way **Data Analysts** and
 **Epidemiologists** work with TCC's Azure-centred data system across countries (Haiti, DR, Uganda,
 OEPA, …) and diseases (malaria, oncho, LF, SCH, STH). You install it, authenticate through your
 browser, and call functions; you don't edit the package. This page is the **front door**: learn the
@@ -29,9 +29,9 @@ remotes::install_github("thecartercenter/erifunctions")
 library(erifunctions)
 ```
 
-Azure access is **zero-config** — the first command that needs it opens your browser to sign in. ODK,
+Azure access is **zero-config**, the first command that needs it opens your browser to sign in. ODK,
 SharePoint, and Teams need a little setup. The **[Connecting to Azure, ODK, SharePoint &
-Teams](connections-guide.html)** guide walks through each and how to confirm it works — including the
+Teams](connections-guide.html)** guide walks through each and how to confirm it works, including the
 one thing to do **before your first governed action**: set `ERI_ANALYST_ID` so approvals and logs
 carry your name, not your OS username.
 
@@ -49,7 +49,7 @@ what it measures (`data_type`)**. The same `surveillance` channel is a `case` li
 and an `aggregate` weekly count in another; one CMR fans out to `treatment`, `mmdp`, and survey
 measures across diseases.
 
-Run `eri_data_model()` once — it prints the whole vocabulary, so you never have to guess a value:
+Run `eri_data_model()` once, it prints the whole vocabulary, so you never have to guess a value:
 
 ```{r data-model}
 eri_data_model()
@@ -63,7 +63,7 @@ eri_data_model()
 #>   (… plus the measures, formats, and layers, and the transitional cmr/odk tokens.)
 ```
 
-Everything moves through three **layers** — `raw/` (as received) → `staged/` (DQ-checked) →
+Everything moves through three **layers**, `raw/` (as received) → `staged/` (DQ-checked) →
 `processed/` (the canonical data the whole team trusts). Nothing reaches `processed/` without a human
 calling `eri_approve()`.
 
@@ -79,9 +79,9 @@ keep the [**DA cheat sheet**](da-cheatsheet.html) and the [data-model card](data
 you work.
 
 1. [Connecting to the services](connections-guide.html)
-2. [Onboarding a new country / disease / data type](da-onboard-guide.html) — stand up the space
-3. [Ingesting a surveillance dataset](da-ingest-guide.html) — raw → DQ → staged → **approved**
-4. [Triaging the error & DQ log backlog](da-logs-guide.html) — find what failed and close it out
+2. [Onboarding a new country / disease / data type](da-onboard-guide.html): stand up the space
+3. [Ingesting a surveillance dataset](da-ingest-guide.html): raw → DQ → staged → **approved**
+4. [Triaging the error & DQ log backlog](da-logs-guide.html): find what failed and close it out
 
 Then, as those feeds arrive: [monthly **CMR** reports](da-cmr-guide.html) and
 [**ODK Central** forms](da-odk-guide.html).
@@ -89,9 +89,9 @@ Then, as those feeds arrive: [monthly **CMR** reports](da-cmr-guide.html) and
 ### New Epidemiologist
 
 1. [Connecting to the services](connections-guide.html)
-2. [A complete research workflow](epi-research-guide.html) — source approved data, analyse, tag a version
-3. [Reconciling localities to admin units](epi-reconcile-guide.html) — messy place names → canonical units
-4. [Catching anomalies in a new extract](epi-dq-guide.html) — QC for epidemiological sense
+2. [A complete research workflow](epi-research-guide.html): source approved data, analyse, tag a version
+3. [Reconciling localities to admin units](epi-reconcile-guide.html): messy place names → canonical units
+4. [Catching anomalies in a new extract](epi-dq-guide.html): QC for epidemiological sense
 
 Then the [epi analytics helpers](epi-analytics.html) for incidence, epiweeks, and curves.
 
@@ -100,7 +100,7 @@ Then the [epi analytics helpers](epi-analytics.html) for incidence, epiweeks, an
 - **Topic deep-dives** explain the engines behind the role guides: the
   [data-quality pipeline](dq-pipeline.html), the [spatial workflow](spatial-workflow.html), and
   [SharePoint & Teams](sharepoint-workflow.html).
-- **Extending the package** — [adding a new program](adding-a-program.html): contribute a schema and
+- **Extending the package**: [adding a new program](adding-a-program.html): contribute a schema and
   disease analytics for a new country/disease.
 - The [function reference](../reference/index.html) groups every function by purpose, and the
   [roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) tracks where the
