@@ -13,29 +13,29 @@ tribal knowledge. It ships with the package, so when a guide or function changes
 with it.
 
 > **Who this is for:** a new DA who can run R scripts and edit code but isn't yet fluent. Every step is
-> copy-paste on **safe sandbox data** — you cannot harm real country data by following it.
+> copy-paste on **safe sandbox data**, you cannot harm real country data by following it.
 
 ## How the learning is kept safe
 
 You practice in throwaway namespaces that are designed to be created and deleted:
 
-- **`atlantis`** — a make-believe country for the ingest/onboard guides.
-- **`uga/demo`** — a sandbox country/disease for the ODK pipeline (not the real `uga/oncho`).
-- **`eri_test_river_prospection` / `eri_test_river_repeat`** — practice ODK forms in the ODK `testing`
+- **`atlantis`**: a make-believe country for the ingest/onboard guides.
+- **`uga/demo`**: a sandbox country/disease for the ODK pipeline (not the real `uga/oncho`).
+- **`eri_test_river_prospection` / `eri_test_river_repeat`**: practice ODK forms in the ODK `testing`
   project.
 
 Every guide ends with a **Clean up** section that removes what it created. Real `processed/` data is
-never deleted casually — the sandbox is where you make mistakes.
+never deleted casually, the sandbox is where you make mistakes.
 
-## Week 0 — Setup (before day one)
+## Week 0, Setup (before day one)
 
 Get the environment standing so day one is learning, not yak-shaving. Use the
 [connections guide](connections-guide.html).
 
 - [ ] Install **R + RStudio**.
 - [ ] Install the package: `renv` + `remotes::install_github("thecartercenter/erifunctions")`.
-- [ ] **Azure access granted** — your account needs RBAC on the `data` blob (a ticket to an ERI admin;
-      this is the long-lead item — start it first).
+- [ ] **Azure access granted**, your account needs RBAC on the `data` blob (a ticket to an ERI admin;
+      this is the long-lead item, start it first).
 - [ ] **ODK Central account** with access to the `testing` project.
 - [ ] `.Renviron` set: `ERI_ANALYST_ID`, `ODK_URL/USER/PASS` (see the connections guide). **Restart R.**
 - [ ] **Verify:** `eri_list("", azcontainer = get_azure_storage_connection(storage_name = "data"))`
@@ -43,7 +43,7 @@ Get the environment standing so day one is learning, not yak-shaving. Use the
 
 ✅ **Gate:** you can connect to Azure and ODK.
 
-## Day 1 — Orientation
+## Day 1, Orientation
 
 - [ ] Read [Getting started](getting-started.html) and the [Orientation](orientation.html) overview.
 - [ ] Run **`eri_data_model()`** and read the [data-model card](data-model-card.html) until the
@@ -52,31 +52,31 @@ Get the environment standing so day one is learning, not yak-shaving. Use the
 
 ✅ **Gate:** you can explain what the five path axes mean and why `eri_approve()` is the gate.
 
-## Days 2–4 — The ingestion spine (do it live)
+## Days 2–4, The ingestion spine (do it live)
 
 Work these guides in order, on the sandbox, running every chunk. Stop at each checkpoint.
 
-- [ ] [Connections guide](connections-guide.html) — connect to all four services.
-- [ ] [Onboard a space](da-onboard-guide.html) — stand up a new `atlantis` space (schema + dirs).
+- [ ] [Connections guide](connections-guide.html), connect to all four services.
+- [ ] [Onboard a space](da-onboard-guide.html), stand up a new `atlantis` space (schema + dirs).
       *Checkpoint: you scaffolded a space and validated its schema.*
-- [ ] [Ingest a surveillance dataset](da-ingest-guide.html) — raw → DQ → staged → **approve**.
+- [ ] [Ingest a surveillance dataset](da-ingest-guide.html), raw → DQ → staged → **approve**.
       *Checkpoint: you approved a dataset and saw it in the catalog.*
-- [ ] [Upload & split a CMR](da-cmr-guide.html) — upload → split → approve a monthly CMR.
+- [ ] [Upload & split a CMR](da-cmr-guide.html), upload → split → approve a monthly CMR.
       *Checkpoint: you split a CMR per disease.*
-- [ ] [Work with ODK Central](da-odk-guide.html) — connect → monitor → register → sync → approve.
+- [ ] [Work with ODK Central](da-odk-guide.html), connect → monitor → register → sync → approve.
       *Checkpoint: you synced submissions into the pipeline.*
-- [ ] [Triage the log backlog](da-logs-guide.html) — triage and resolve a log.
+- [ ] [Triage the log backlog](da-logs-guide.html), triage and resolve a log.
       *Checkpoint: you closed an item in the backlog.*
 
 ✅ **Gate:** you can take a file from each of the three channels through to `processed/` on the sandbox.
 
-## Week 2 — Downstream work + shadowing
+## Week 2, Downstream work + shadowing
 
 - [ ] [Answer an ad-hoc request](da-adhoc-guide.html) with `eri_query()`. Other downstream guides (QC +
-      country feedback, routine reporting, final survey reports) ship as they land — check the
+      country feedback, routine reporting, final survey reports) ship as they land, check the
       [Articles menu](https://thecartercenter.github.io/erifunctions/articles/) for what's available.
 - [ ] **Pair** with a senior DA on a real (but sandboxed) task end-to-end.
-- [ ] Take a **first supervised real task** — a real ingest or QC review, reviewed before you approve.
+- [ ] Take a **first supervised real task**, a real ingest or QC review, reviewed before you approve.
 - [ ] Make your **first contribution**: fix a typo or unclear line in a guide via a PR. This teaches the
       issue → branch → PR workflow and how the docs are maintained.
 
@@ -102,6 +102,6 @@ A DA is "onboarded" when both of you can tick every box from observed work, not 
 - The [DA cheat sheet](da-cheatsheet.html) and the [troubleshooting card](troubleshooting.html) are your
   desk reference.
 - The [Articles menu](https://thecartercenter.github.io/erifunctions/articles/) is the **"how do I do
-  X?"** lookup — start there, not the function reference.
+  X?"** lookup, start there, not the function reference.
 - Keep a **buddy/mentor** for the first month; questions are faster than docs at first.
-- When you hit something the guides don't cover, that's a gap worth filing — open an issue.
+- When you hit something the guides don't cover, that's a gap worth filing, open an issue.

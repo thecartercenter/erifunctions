@@ -15,13 +15,13 @@ knitr::opts_chunk$set(
 )
 ```
 
-Every operation `erifunctions` runs — an ingest, an approval, an ODK sync — **leaves a log** in
+Every operation `erifunctions` runs, an ingest, an approval, an ODK sync, **leaves a log** in
 Azure. When something fails, or a data-quality check raises issues, that log is the record. This guide
 is for a **Data Analyst** working the **backlog**: finding what failed or needs review with
 [`eri_logs()`](../reference/eri_logs.html), and closing items out with
 [`eri_logs_resolve()`](../reference/eri_logs_resolve.html).
 
-Because the logs live in Azure, the backlog is **shared** — if a teammate is out, you can run
+Because the logs live in Azure, the backlog is **shared**, if a teammate is out, you can run
 `eri_logs()`, see exactly what broke, and pick up where they left off. We will practise on the
 **`atlantis`** sandbox from the [ingest](da-ingest-guide.html) and [onboarding](da-onboard-guide.html)
 guides.
@@ -31,7 +31,7 @@ guides.
 > **Nothing fails silently, and nothing stays open by accident.** Operations write structured logs as
 > they go; data-quality flags are persisted with [`eri_dq_log()`](../reference/eri_dq_log.html) (and
 > `eri_ingest()` does it for you). `eri_logs()` turns that pile into a triage list, and
-> `eri_logs_resolve()` marks an item handled — with *who* handled it and *when* — so it drops off the
+> `eri_logs_resolve()` marks an item handled, with *who* handled it and *when*, so it drops off the
 > open backlog without ever erasing the record.
 
 ```{=html}
@@ -39,9 +39,9 @@ guides.
 flowchart TD
     A["An operation runs (ingest / approve / sync)"] --> B["Writes a log to …/logs/"]
     C["run_dq_checks() flags issues"] --> D["eri_dq_log() persists them"]
-    B --> E["eri_logs() — the backlog"]
+    B --> E["eri_logs(), the backlog"]
     D --> E
-    E --> F["eri_logs_resolve() — mark handled"]
+    E --> F["eri_logs_resolve(), mark handled"]
     F --> G["Drops off the open backlog (record kept)"]
 </div>
 ```
@@ -58,12 +58,12 @@ library(erifunctions)
 ## 1. Where logs come from {#sources}
 
 Two kinds of log end up in `{country}/{disease}/{data_source}/[{data_type}/]logs/` (the measure level
-is present when the data was approved with one — `eri_logs()` reads both layouts):
+is present when the data was approved with one, `eri_logs()` reads both layouts):
 
-- **Operation logs** — written automatically by `eri_ingest()`, `eri_approve()`, `eri_stage()`,
-  `eri_odk_sync()`, and friends. Each records the operation, who ran it, its parameters, and — if it
-  failed — the **error**.
-- **Data-quality logs** — the `$flags` from [`run_dq_checks()`](../reference/run_dq_checks.html) are
+- **Operation logs**: written automatically by `eri_ingest()`, `eri_approve()`, `eri_stage()`,
+  `eri_odk_sync()`, and friends. Each records the operation, who ran it, its parameters, and, if it
+  failed, the **error**.
+- **Data-quality logs**: the `$flags` from [`run_dq_checks()`](../reference/run_dq_checks.html) are
   only in your R session until you persist them. `eri_dq_log()` writes them to the same place (and
   `eri_ingest()` calls it automatically), so a data-quality issue someone hit last month is still
   discoverable today.
@@ -86,7 +86,7 @@ eri_dq_log(result, "atlantis", "malaria", "surveillance", data_type = "case", pe
 
 ### Cause a failure
 
-Now a common slip: you try to approve a period before the file is staged. It errors — **and leaves an
+Now a common slip: you try to approve a period before the file is staged. It errors, **and leaves an
 error log** behind:
 
 ```{r approve-fail}
@@ -110,7 +110,7 @@ eri_logs("atlantis", "malaria", "surveillance")
 #> 2 2026-06-26T09:30:00Z dq_flags    needs_review 2024-01 2 flags           da.one
 ```
 
-(The tibble also carries `log_path`, `n_issues`, and the `handled*` columns — shown trimmed here.)
+(The tibble also carries `log_path`, `n_issues`, and the `handled*` columns, shown trimmed here.)
 Filter to just the failures:
 
 ```{r logs-error}
@@ -130,7 +130,7 @@ out scans the whole data blob for a **system-wide backlog** (scoping is faster).
 ## 3. Resolve an item {#resolve}
 
 You investigate the failure, stage the file, and re-approve it successfully. Now close out the original
-error so it leaves the open backlog — with a note for whoever reads it next:
+error so it leaves the open backlog, with a note for whoever reads it next:
 
 ```{r resolve}
 backlog <- eri_logs("atlantis", "malaria", "surveillance", status = "error")
@@ -142,7 +142,7 @@ eri_logs_resolve(
 #> ✔ Marked 20260626_100000_eri_approve_2024-02.yaml handled.
 ```
 
-Re-list, and the error is gone from the open backlog — only the data-quality item remains:
+Re-list, and the error is gone from the open backlog, only the data-quality item remains:
 
 ```{r relist}
 eri_logs("atlantis", "malaria", "surveillance")
@@ -153,7 +153,7 @@ eri_logs("atlantis", "malaria", "surveillance")
 #> 1 dq_flags  needs_review 2024-01 2 flags
 ```
 
-Resolving never deletes the log — it adds a `triage` record. Pass `include_handled = TRUE` to see the
+Resolving never deletes the log, it adds a `triage` record. Pass `include_handled = TRUE` to see the
 closed item, with who handled it and your note:
 
 ```{r include-handled}
@@ -167,7 +167,7 @@ eri_logs("atlantis", "malaria", "surveillance",
 
 ## 4. When a teammate steps in {#teammate}
 
-This is the point of a *shared* backlog. The logs live in Azure, not on anyone's laptop — so when an
+This is the point of a *shared* backlog. The logs live in Azure, not on anyone's laptop, so when an
 analyst is away and something needs attention, a colleague can run one command to see the whole
 picture:
 
@@ -176,7 +176,7 @@ picture:
 eri_logs(status = "error")
 ```
 
-They see the same failures, the same error messages, and — for anything already handled — *who* dealt
+They see the same failures, the same error messages, and, for anything already handled, *who* dealt
 with it and the note they left. No "what was going on with the DR upload last week?" guesswork.
 
 ## 5. Clean up {#clean-up}
@@ -195,11 +195,11 @@ eri_dir_delete("atlantis", azcontainer = con)
 
 ## What's next
 
-You can now find, filter, and close out the error/data-quality backlog — solo or covering for a
+You can now find, filter, and close out the error/data-quality backlog, solo or covering for a
 teammate. The logs you are reading are written by the workflows in the other guides:
 
-- [Ingesting a surveillance dataset](da-ingest-guide.html) — where DQ flags and approval logs come from.
-- [Working with ODK Central](da-odk-guide.html) — sync logs.
+- [Ingesting a surveillance dataset](da-ingest-guide.html): where DQ flags and approval logs come from.
+- [Working with ODK Central](da-odk-guide.html): sync logs.
 
 See the [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md) and the
 **Logs & triage** group in the [reference](../reference/index.html).
