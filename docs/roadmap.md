@@ -1,4 +1,4 @@
-# erifunctions V2 — Development Phases Roadmap
+# erifunctions V2: Development Phases Roadmap
 
 > **Status:** living document. This is the shared, version-controlled north star for V2.
 > Update it as phases land or decisions change, and record any architectural decision as an
@@ -7,7 +7,7 @@
 > founding brief this plan derives from.
 >
 > **Where we are (2026-06-30):** Phases 0–2 complete. **Phase 3 cutover/simulation tooling is
-> complete and offline-tested — the next step is a real-data *pilot* (parallel run), not more
+> complete and offline-tested, the next step is a real-data *pilot* (parallel run), not more
 > building**; the actual cutover and legacy-adapter retirement wait on real CMR/malaria uploads.
 > Phase 4 (ODK live pilot + the "Mimic" dashboard) is the next build, pending a direction call.
 
@@ -26,7 +26,7 @@ deferred, (2) harden V1 for real non-developer users, (3) fill the functional ga
 vision implies, and (4) keep design intent under version control so it survives across
 sessions and teammates.
 
-**All three pilots — `dr_irs`, CMR/surveillance, and ODK — are first-class V2 work.**
+**All three pilots (`dr_irs`, CMR/surveillance, and ODK) are first-class V2 work.**
 `dr_irs` leads simply because its data is already available; the real CMR and ODK uploads
 are ~a week out. Critically, the CMR/surveillance and ODK phases are **not blocked on those
 uploads**: they can be developed against the data already in Azure (`staged/`, `raw/`) as a
@@ -37,12 +37,12 @@ than assume dirty input.
 
 ```mermaid
 flowchart TD
-    P0["Phase 0 — Governance scaffolding<br/>roadmap.md, ADRs, CLAUDE.md, pkgdown"]
-    P1["Phase 1 — dr_irs vertical slice<br/>Epi research workflow end-to-end"]
-    P2["Phase 2 — Architecture hardening<br/>concurrency, identity, query layer"]
-    P3["Phase 3 — hsp-mal cutover + CMR<br/>eri_compare, authoritative data/ blob"]
-    P4["Phase 4 — ODK live pilot (Uganda)<br/>cleaning rules, edit tracking, dashboard"]
-    P5["Phase 5 — DA breadth helpers<br/>ad-hoc, log triage, new-dataset onboarding"]
+    P0["Phase 0: Governance scaffolding<br/>roadmap.md, ADRs, CLAUDE.md, pkgdown"]
+    P1["Phase 1: dr_irs vertical slice<br/>Epi research workflow end-to-end"]
+    P2["Phase 2: Architecture hardening<br/>concurrency, identity, query layer"]
+    P3["Phase 3: hsp-mal cutover + CMR<br/>eri_compare, authoritative data/ blob"]
+    P4["Phase 4: ODK live pilot (Uganda)<br/>cleaning rules, edit tracking, dashboard"]
+    P5["Phase 5: DA breadth helpers<br/>ad-hoc, log triage, new-dataset onboarding"]
     P0 --> P1 --> P2 --> P3 --> P4 --> P5
     P2 -. "needed before multi-user<br/>surveillance pilots" .-> P3
 ```
@@ -78,34 +78,34 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 
 ---
 
-## Phase 0 — Governance & shared memory scaffolding  *(landed)*
+## Phase 0: Governance & shared memory scaffolding  *(landed)*
 
 Moves design intent out of the gitignored `sandbox/` and into the repo so teammates and
 fresh sessions inherit it.
 
-- **`docs/roadmap.md`** — this document.
-- **`docs/adr/`** — the six ADRs above plus a README explaining the format.
-- **`CLAUDE.md`** (repo root) — concise project memory: purpose, the 3-layer model +
+- **`docs/roadmap.md`**: this document.
+- **`docs/adr/`**: the six ADRs above plus a README explaining the format.
+- **`CLAUDE.md`** (repo root), concise project memory: purpose, the 3-layer model +
   approval gate, naming conventions, where ADRs/roadmap live, the "global vs local solution"
   guardrail, and the pre-PR check routine.
-- **`_pkgdown.yml`** — grouped function reference (ADR-0001) + articles from existing vignettes.
-- **`.github/workflows/pkgdown.yaml`** — build/deploy the documentation site.
+- **`_pkgdown.yml`**: grouped function reference (ADR-0001) + articles from existing vignettes.
+- **`.github/workflows/pkgdown.yaml`**: build/deploy the documentation site.
 - README version banner fix + roadmap link.
 
 **Verification:** `R CMD check` clean; `pkgdown::build_site()` renders with the grouped
-reference; ADRs and roadmap render; links resolve. (Built in CI — this repo's dev container
+reference; ADRs and roadmap render; links resolve. (Built in CI; this repo's dev container
 has no local R.)
 
 ---
 
-## Phase 1 — `dr_irs` vertical slice (Epi research, end-to-end)  *(first pilot)*
+## Phase 1: `dr_irs` vertical slice (Epi research, end-to-end)  *(first pilot)*
 
 Drive the real DR IRS interrupted-time-series study end-to-end with the package. **The
-package's role here is to *source data reproducibly* and *maintain study-data discipline* —
+package's role here is to *source data reproducibly* and *maintain study-data discipline*,
 not to do the analysis.** Epidemiologists run the ITS themselves (matching, windowing,
 modelling, counterfactuals) in the research repo (ADR-0006); the package removes the friction
 around getting data in, keeping it reproducible, and producing standard figures. The
-scaffolding already fits — `eri_research_init("dr_irs_2024", "dr", "malaria", …)` is the
+scaffolding already fits, `eri_research_init("dr_irs_2024", "dr", "malaria", …)` is the
 documented example.
 
 **Required input:** `dr_irs.R` and the structure of its IRS / incidence / spatial inputs
@@ -115,7 +115,7 @@ documented example.
    enters via `eri_artifact_upload()` → `eri_artifact_pull()`; malaria incidence comes from
    the surveillance `processed/` layer via `eri_research_pull()`; spatial (admin boundaries,
    LandScan) is sourced from the Azure `spatial/` blob via `eri_spatial_load()` /
-   `eri_spatial_pop()`. **Gap:** spatial reads from Azure without caching — cache every input
+   `eri_spatial_pop()`. **Gap:** spatial reads from Azure without caching. Cache every input
    into the project and record it in `research.yaml` for reproducibility. Exercise the
    surveillance pipeline (`eri_ingest` → `eri_stage` → `eri_approve`) by updating incidence
    with a newer country dataset, then re-pulling.
@@ -125,7 +125,7 @@ documented example.
 3. **Version-tag-linked-to-publication** (genuine gap): `eri_research_snapshot()` freezes
    `data/` but gives no named tag binding *data + code commit + outputs* to a publication.
    Add `eri_research_tag(label, …)` recording snapshot ref + analysis git SHA + output
-   manifest, so an analysis is reproducible from a citation — including across data updates.
+   manifest, so an analysis is reproducible from a citation, including across data updates.
 4. **Research-repo template** (ADR-0006): port `dr_irs` into a standalone repo from the new
    template as the reference example (this is where the ITS analysis lives).
 5. **(Stretch) figures:** thin helpers on top of `eri_map_*` / `eri_brand_ggplot_theme()` for
@@ -133,7 +133,7 @@ documented example.
 6. **Epidemiologist documentation** *(done)*: a role-oriented, copy-paste **worked example** of the
    full research lifecycle on safe public data (`vignettes/epi-research-guide.Rmd`, using
    `mtcars`), superseding the older `research-workflow` vignette. This also seeds the **task-guide
-   framework** (one guide per user role × task), tracked in [`guides.md`](guides.md) — the live
+   framework** (one guide per user role × task), tracked in [`guides.md`](guides.md), the live
    index of which guides exist and which are still missing.
 
 **Verification:** a `test-smoke.R`-style live test (`ERI_SMOKE_TESTS=true`): init → pull IRS
@@ -143,24 +143,24 @@ and re-tag; re-pull the original tag on a clean checkout and reproduce its figur
 
 ---
 
-## Phase 2 — Architecture hardening
+## Phase 2: Architecture hardening
 
 Implements ADR-0002/0003/0004 before multi-user surveillance pilots make concurrency and
 identity load-bearing.
 
-> **Update (2026-06-16):** the *interactive-auth enablement* half of ADR-0003 landed early —
-> zero-config browser auth via baked non-secret defaults ([ADR-0008](adr/0008-baked-azure-auth-defaults.md)) —
+> **Update (2026-06-16):** the *interactive-auth enablement* half of ADR-0003 landed early,
+> zero-config browser auth via baked non-secret defaults ([ADR-0008](adr/0008-baked-azure-auth-defaults.md)),
 > because epidemiologists couldn't use the package without it. Token-derived approver identity
 > (`.eri_token_identity()`, below) remains the Phase 2 work.
 - ~~Concurrency-safe + rebuildable catalog/registries (`R/catalog.R`, `R/odk_registry.R`,
-  `R/artifacts.R`); add `eri_catalog_rebuild()`.~~ **Shipped** — catalog/registry/artifact writes go
+  `R/artifacts.R`); add `eri_catalog_rebuild()`.~~ **Shipped**: catalog/registry/artifact writes go
   through `.eri_yaml_update()` (read-with-ETag, conditional `If-Match`/`If-None-Match` write, re-read +
   retry on 412); `eri_catalog_rebuild()` reconstructs the catalog from the processed-layer parquet
   listing (ADR-0002). **Closes Phase 2.**
-- ~~`.eri_token_identity()`; `eri_approve()` uses verified identity.~~ **Shipped** — governed actions
+- ~~`.eri_token_identity()`; `eri_approve()` uses verified identity.~~ **Shipped**: governed actions
   (approve `approved_by`, catalog `registered_by`, op-logs) record the verified Azure AD token identity;
   `ERI_ANALYST_ID` is the service-principal fallback (ADR-0003).
-- ~~`eri_query()` DuckDB-over-parquet read layer.~~ **Shipped** — catalog-driven roll-ups + explicit-table
+- ~~`eri_query()` DuckDB-over-parquet read layer.~~ **Shipped**: catalog-driven roll-ups + explicit-table
   joins over processed parquet via an in-process DuckDB session (`duckdb`/`DBI` as Suggests). Brought
   forward to close the DA ad-hoc-request task ahead of the rest of Phase 2 (concurrency-safe metadata
   and token identity), which has since shipped.
@@ -171,12 +171,12 @@ datasets returns a correct join.
 
 ---
 
-## Phase 3 — hsp-mal cutover tooling + CMR/surveillance pilot
+## Phase 3: hsp-mal cutover tooling + CMR/surveillance pilot
 
 Make the `data/` blob authoritative and retire the contractor pipeline on evidence. Built
 against existing Azure data as a simulation; validated against real uploads when they land.
 
-> **Status (2026-06-30): the cutover *tooling* is COMPLETE — the next step is a real-data
+> **Status (2026-06-30): the cutover *tooling* is COMPLETE. The next step is a real-data
 > pilot, not more building.** Everything below the line is shipped and offline-tested; what
 > remains (the parallel run, the equivalence streak, the adapter retirement) is operational
 > work that needs real CMR/malaria uploads and a maintainer at the trigger.
@@ -199,7 +199,7 @@ against existing Azure data as a simulation; validated against real uploads when
   CMR period/sheet hardening (#252); the DQ→triage fold was already in place (`eri_ingest()` persists
   flags via `eri_dq_log()` into the `eri_logs()` backlog), and stage/ingest already have full op-log +
   tryCatch capture.
-- **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates — the
+- **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates: the
   `projects`-blob dual-write (`mirror_pipeline`), `.eri_pipeline_registry`, `.eri_schema_country_map`,
   and the `rblf` combined code. **Deferred to the cutover itself** (irreversible; only once a stream's
   streak is met and a maintainer triggers it).
@@ -207,11 +207,11 @@ against existing Azure data as a simulation; validated against real uploads when
 **Pilot (the next operational step):** run `eri_ingest(..., mirror_pipeline = "hsp-mal")` on the real
 periods as they arrive; `eri_cutover_check()` each one; watch `eri_cutover_status()` reach the N-period
 streak; only then retire the adapters for that stream. The toolchain is ready and end-to-end tested
-offline — it needs real uploads, not more code.
+offline. It needs real uploads, not more code.
 
 ---
 
-## Phase 4 — ODK live pilot (Uganda survey)
+## Phase 4: ODK live pilot (Uganda survey)
 
 Developed against existing synced ODK submissions (simulation); validated against the live
 Uganda form once it launches. Exercises register/sync/status and fills two named gaps.
@@ -219,21 +219,21 @@ Forms with **repeat groups** now sync as a relational set of tables in `raw/`
 ([ADR-0010](adr/0010-odk-repeat-group-tables.md)), which the cleaning-rules layer, edit
 tracking, and dashboard below all build on:
 - **Live cleaning-rules layer**: versioned, declarative cleaning applied *on read* for
-  dashboards while `raw/` stays pristine — distinct from the slow `approve` gate. New
+  dashboards while `raw/` stays pristine, distinct from the slow `approve` gate. New
   `cleaning_rules` concept layered on the DQ schema engine (`R/dq.R`).
 - **Manual-edit tracking**: capture ODK Central submission edit history during
   `eri_odk_sync()` so direct edits are auditable.
-- **Submission backfill** (`eri_odk_upload()`) — the inverse of `download_odk_form()` /
+- **Submission backfill** (`eri_odk_upload()`), the inverse of `download_odk_form()` /
   `eri_odk_sync()`: bulk-create submissions on an existing **published** form from a CSV/Excel table,
   for migrating paper or legacy records into ODK Central. Maps columns → form fields via the form's
   `/fields` schema,
   builds one instance XML per row, and POSTs each to `.../forms/{id}/submissions` with a
   **deterministic `instanceID`** so re-runs are idempotent (HTTP 409 = already loaded → skip).
-  A `dry_run`/validation pass (required-field, choice-list, and type/format checks — dates and
+  A `dry_run`/validation pass (required-field, choice-list, and type/format checks, dates and
   geopoints especially) runs before anything is sent, and the call returns a per-row outcome
   tibble (`created` / `skipped` / `failed`) rather than aborting the batch on one bad row. Flat
   forms first; **repeat groups** reuse the ADR-0010 relational-table convention (parent + child
-  CSVs joined on `PARENT_KEY`) as a fast-follow. Attachments are out of scope — the REST
+  CSVs joined on `PARENT_KEY`) as a fast-follow. Attachments are out of scope, the REST
   submission endpoint excludes them. Independent of the live-pilot timing.
 - Quarto **survey dashboard** template (replacing PowerBI) built on `R/reports_html.R`.
 
@@ -243,14 +243,14 @@ range, map, positives, open-text, DQ flags).
 
 ---
 
-## Phase 5 — DA breadth helpers
+## Phase 5: DA breadth helpers
 
 The remaining DA tasks, once the spine is solid.
 - **Ad-hoc request** helpers on top of `eri_query()` (lookups/figures for presentations).
 - **Error/log triage** surface: the structured op-logs already written to Azure `…/logs/`
-  need a reader — `eri_logs()` to list/filter/triage a backlog and mark items handled.
+  need a reader, `eri_logs()` to list/filter/triage a backlog and mark items handled.
 - **New-dataset onboarding** generalised (IRS as the worked example) so adding a
-  country/disease/data-type doesn't require core edits — extends `R/onboarding.R`.
+  country/disease/data-type doesn't require core edits; extends `R/onboarding.R`.
 
 **Verification:** `eri_logs()` surfaces a seeded error backlog; an ad-hoc cross-country query
 returns expected numbers; onboarding a new data type round-trips ingest→approve→catalog.
@@ -261,6 +261,6 @@ returns expected numbers; onboarding a new data type round-trips ingest→approv
 - **Phase 1:** `dr_irs.R` and example IRS + incidence data shapes.
 - **Phase 2:** confirmation of the Azure AD app registration / RBAC so all DAs/Epis can use
   interactive browser auth (ADR-0003 assumes token identity is available to every user).
-- **Phases 3–4:** not blocked on the real uploads — built against existing Azure
+- **Phases 3–4:** not blocked on the real uploads, built against existing Azure
   `staged/raw` + synced ODK data as a simulation, then re-validated when the real CMR/ODK
   uploads arrive. Phase 4 also needs ODK Central audit-log/permissions for edit tracking.
