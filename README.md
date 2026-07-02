@@ -102,30 +102,33 @@ renv::snapshot()
 
 ## Setup
 
-Add the following to your project `.Renviron` (`usethis::edit_r_environ(scope = "project")`):
+Azure needs no configuration. The first command that touches Azure opens your browser to sign in with your Carter Center account, and access is validated against your own identity. The tenant, app registration, and storage endpoint are built into the package.
+
+Only a couple of entries go in your project `.Renviron` (`usethis::edit_r_environ(scope = "project")`), and only if you need them:
 
 ```
-# Azure storage
-ERIFUNCTIONS_TENANT_ID=<Azure tenant ID>
-ERIFUNCTIONS_APP_ID=<Azure app registration ID>
-ERIFUNCTIONS_RESOURCE_ENDPOINT=<storage account endpoint URL>
-ERIFUNCTIONS_STORAGE_NAME=projects
-ERIFUNCTIONS_DATA_STORAGE_NAME=data
-
-# Service principal — for scripted/automated use only
-ERIFUNCTIONS_SP_CLIENT_ID=<SP client ID>
-ERIFUNCTIONS_SP_CLIENT_SECRET=<SP client secret>
-
-# Your analyst identity (appears in approval and access logs)
+# Your analyst identity, recorded in approval and access logs (recommended)
 ERI_ANALYST_ID=firstname.lastname
 
-# ODK Central
-ODK_URL=https://rblf.tccodk.org/
+# ODK Central credentials (only if you sync ODK data)
 ODK_USER=your.email@cartercenter.org
 ODK_PASS=<ODK password>
 ```
 
 Restart R after editing `.Renviron`.
+
+Advanced settings, rarely needed:
+
+```
+ERIFUNCTIONS_STORAGE_NAME=projects           # only for data-analyst pipeline work against the projects blob
+ODK_URL=https://rblf.tccodk.org/             # only if your ODK server is not the default
+ERIFUNCTIONS_SP_CLIENT_ID=<SP client ID>     # unattended service-principal auth (automation only)
+ERIFUNCTIONS_SP_CLIENT_SECRET=<SP client secret>
+# ERIFUNCTIONS_TENANT_ID / ERIFUNCTIONS_APP_ID / ERIFUNCTIONS_RESOURCE_ENDPOINT override the built-in defaults
+```
+
+The full connection walkthrough, including the service-principal and Teams paths, is in the
+[Connections guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html).
 
 ---
 
