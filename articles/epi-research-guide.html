@@ -110,12 +110,12 @@
     
 <p>This is a hands-on, <strong>start-to-finish walkthrough</strong> of
 running a research study with <code>erifunctions</code>. It is written
-for <strong>epidemiologists</strong> — domain experts who are
+for <strong>epidemiologists</strong>, domain experts who are
 <em>not</em> software developers. You do not need to memorise anything:
 work through it once, in order, and you will have done every step a real
 study needs.</p>
 <p>To keep the focus on the <em>process</em> rather than the science, we
-use <strong><code>mtcars</code></strong> — the little car dataset that
+use <strong><code>mtcars</code></strong>, the little car dataset that
 ships with R. It is public, tiny, and safe to copy anywhere, so you can
 run every command on your own laptop without touching any real Carter
 Center data. The analysis itself is deliberately trivial (a linear
@@ -124,7 +124,7 @@ management and the research lifecycle</strong>, not the model.</p>
 <blockquote>
 <p><strong>You can run this for real.</strong> Every command below works
 against the live Azure system. If you follow along, the very last
-section — <a href="#clean-up"><strong>Clean up</strong></a> — deletes
+section, <a href="#clean-up"><strong>Clean up</strong></a>, deletes
 everything you created, so you can practise the whole loop end-to-end
 and leave no trace.</p>
 </blockquote>
@@ -134,7 +134,7 @@ and leave no trace.</p>
 <p>We will run a small study twice. First on an <strong>initial
 dataset</strong> (automatic-transmission cars only), then we will
 simulate <strong>“new data arriving”</strong> by expanding to the full
-dataset and re-running — exactly the situation you hit when a fresh
+dataset and re-running, exactly the situation you hit when a fresh
 extract lands months into a project.</p>
 <div class="mermaid">
 flowchart TD
@@ -153,7 +153,7 @@ flowchart TD
 <p><strong><code>erifunctions</code> sources your data reproducibly and
 keeps it disciplined. <em>You</em> do the analysis.</strong> The package
 gets data in and out, tracks where every input came from, and freezes
-citable versions. The modelling, the epidemiology, the judgement calls —
+citable versions. The modelling, the epidemiology, the judgement calls,
 those live in <em>your</em> project’s analysis code, not in the
 package.</p>
 </blockquote>
@@ -174,7 +174,7 @@ repository:</p>
 <li><p><strong>Azure access.</strong> There is nothing to configure. The
 first time a command needs Azure, your browser opens and you sign in
 with your Carter Center account; the sign-in is remembered for the rest
-of the session. (No keys, no environment variables — see
+of the session. (No keys, no environment variables, see
 <code><a href="../reference/get_azure_storage_connection.html">?get_azure_storage_connection</a></code>.)</p></li>
 <li><p><strong>A GitHub account</strong>, and <a href="https://desktop.github.com/" class="external-link">GitHub Desktop</a> if you prefer
 clicking to typing. We will use it below.</p></li>
@@ -192,8 +192,8 @@ permanently in your <code>.Rprofile</code>):</p>
 <h2 id="start-a-project">1. Start a project<a class="anchor" aria-label="anchor" href="#start-a-project"></a>
 </h2>
 <p>A study is its own self-contained project folder <em>and</em> its own
-GitHub repository (this keeps each study independently reproducible —
-see ADR-0006). One command builds the whole skeleton:</p>
+GitHub repository (this keeps each study independently reproducible, see
+ADR-0006). One command builds the whole skeleton:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_research_scaffold.html">eri_research_scaffold</a></span><span class="op">(</span></span>
 <span>  name        <span class="op">=</span> <span class="st">"mtcars_study"</span>,</span>
@@ -223,8 +223,8 @@ matters for the next step.</p>
 <div class="section level2">
 <h2 id="github-repo">2. Make it a GitHub repository with the reproducibility check<a class="anchor" aria-label="anchor" href="#github-repo"></a>
 </h2>
-<p>Your study should live on GitHub so it is backed up, shareable, and —
-crucially — so the <strong>reproducibility check</strong> runs. That
+<p>Your study should live on GitHub so it is backed up, shareable, and,
+crucially, so the <strong>reproducibility check</strong> runs. That
 check (<code>.github/workflows/ci.yaml</code>, created for you above)
 confirms that anyone can rebuild your exact software environment and
 load <code>erifunctions</code>. It stays dormant until you give it a
@@ -232,7 +232,7 @@ load <code>erifunctions</code>. It stays dormant until you give it a
 <div class="section level3">
 <h3 id="put-the-project-under-version-control">Put the project under version control<a class="anchor" aria-label="anchor" href="#put-the-project-under-version-control"></a>
 </h3>
-<p>You can do all of this <strong>from inside R</strong> — no command
+<p>You can do all of this <strong>from inside R</strong>, no command
 line needed:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"usethis"</span><span class="op">)</span></span>
@@ -263,14 +263,14 @@ today:</p>
 <span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">snapshot</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"all"</span><span class="op">)</span>                    <span class="co"># write renv.lock</span></span></code></pre></div>
 <p>Then <strong>commit <code>renv.lock</code></strong> (and the
 <code>renv/</code> activation files). The moment that lockfile lands on
-GitHub, the reproducibility check goes green on every push — it restores
+GitHub, the reproducibility check goes green on every push, it restores
 your pinned environment on a clean machine and confirms
 <code>erifunctions</code> loads.</p>
 <blockquote>
 <p><strong>Two <code>renv</code> gotchas worth avoiding.</strong></p>
 <ul>
 <li>Install <strong><code>thecartercenter/erifunctions</code></strong>,
-not a personal fork, <em>before</em> you snapshot — otherwise the
+not a personal fork, <em>before</em> you snapshot, otherwise the
 lockfile pins the wrong source and a collaborator restoring it gets the
 wrong package.</li>
 <li>Use <code>renv::snapshot(type = "all")</code> so packages you only
@@ -283,13 +283,13 @@ the ones the package itself imports.</li>
 <div class="section level2">
 <h2 id="add-data">3. Add your data and give it metadata<a class="anchor" aria-label="anchor" href="#add-data"></a>
 </h2>
-<p>Data does not live in your git repository — it lives in Azure, with a
+<p>Data does not live in your git repository, it lives in Azure, with a
 record of what it is. We register a file as an
 <strong>artifact</strong>: the file plus its <em>metadata</em> (a name,
 a type, a description, a version). This is how teammates later discover
 and trust it.</p>
-<p>First, create our <strong>initial dataset</strong> —
-automatic-transmission cars only (<code>am == 0</code>) — and save it
+<p>First, create our <strong>initial dataset</strong>,
+automatic-transmission cars only (<code>am == 0</code>), and save it
 locally:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cars_v1</span> <span class="op">&lt;-</span> <span class="va">mtcars</span><span class="op">[</span><span class="va">mtcars</span><span class="op">$</span><span class="va">am</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span></span>
@@ -303,16 +303,16 @@ locally:</p>
 <span>  local_path  <span class="op">=</span> <span class="st">"data/cars.csv"</span>,</span>
 <span>  name        <span class="op">=</span> <span class="st">"mtcars_study_data"</span>,</span>
 <span>  type        <span class="op">=</span> <span class="st">"study_data"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"mtcars fuel-economy study data — automatic transmissions only."</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">"mtcars fuel-economy study data, automatic transmissions only."</span>,</span>
 <span>  version     <span class="op">=</span> <span class="st">"1.0"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Artifact "mtcars_study_data" (study_data) uploaded to artifacts/study_data/mtcars_study_data/cars.csv.</span></span></code></pre></div>
 <p>That <code>name</code>, <code>type</code>, <code>description</code>,
-and <code>version</code> <strong>are the metadata</strong> — they travel
+and <code>version</code> <strong>are the metadata</strong>, they travel
 with the file and show up in <code><a href="../reference/eri_artifact_list.html">eri_artifact_list()</a></code> so anyone
 can see what it is without opening it.</p>
 <blockquote>
-<p><strong>“Metadata” and “tags” are two different things — don’t mix
+<p><strong>“Metadata” and “tags” are two different things, don’t mix
 them up.</strong></p>
 <table class="table">
 <colgroup>
@@ -331,14 +331,14 @@ them up.</strong></p>
 <tr class="odd">
 <td><strong>Artifact metadata</strong></td>
 <td>
-<em>a single file</em> — what it is, its version</td>
+<em>a single file</em>, what it is, its version</td>
 <td>every time you upload data</td>
 <td><code><a href="../reference/eri_artifact_upload.html">eri_artifact_upload()</a></code></td>
 </tr>
 <tr class="even">
 <td><strong>A version tag</strong></td>
 <td>
-<em>the whole study</em> — data <strong>+</strong> analysis code
+<em>the whole study</em>, data <strong>+</strong> analysis code
 <strong>+</strong> outputs, frozen together and citable</td>
 <td>at milestones only (see §10)</td>
 <td><code><a href="../reference/eri_research_tag.html">eri_research_tag()</a></code></td>
@@ -368,13 +368,13 @@ updates</strong> you’ll rely on in §11 when fresh data arrives:</p>
 registry shortcut. Here we pull by <em>path</em> with
 <code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code> because it also records the pull in
 <code>research.yaml</code>, archives any superseded version, and counts
-updates — exactly the lifecycle this guide demonstrates in §11.</p>
+updates, exactly the lifecycle this guide demonstrates in §11.</p>
 </blockquote>
 <blockquote>
 <p><strong>Sourcing canonical, team-approved data.</strong> When your
 study draws on data the analysts already approved (not a study artifact
 you uploaded), <strong>discover it in the catalog and pull it with the
-same coordinates</strong> — <code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code> takes the
+same coordinates</strong>, <code><a href="../reference/eri_research_pull.html">eri_research_pull()</a></code> takes the
 four tokens <code><a href="../reference/eri_catalog_query.html">eri_catalog_query()</a></code> reports
 (<code>country</code>, <code>disease</code>, <code>data_source</code>,
 <code>data_type</code>):</p>
@@ -384,7 +384,7 @@ four tokens <code><a href="../reference/eri_catalog_query.html">eri_catalog_quer
 <span><span class="fu"><a href="../reference/eri_research_pull.html">eri_research_pull</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria"</span>,</span>
 <span>                  data_source <span class="op">=</span> <span class="st">"surveillance"</span>, data_type <span class="op">=</span> <span class="st">"case"</span>, dest <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
 <p>Discover what exists, then pull it with the coordinates the catalog
-handed you — one vocabulary, end to end.</p>
+handed you, one vocabulary, end to end.</p>
 </blockquote>
 <blockquote>
 <p><strong>Never commit <code>data/</code> to git.</strong> The
@@ -392,7 +392,7 @@ scaffold’s <code>.gitignore</code> already excludes it. Data lives in
 Azure; your repository holds only <em>code</em> and the
 <code>research.yaml</code> record of what was pulled. For
 <code>mtcars</code> it would not matter, but this is the habit that
-keeps real, protected country data safe — see <a href="#clean-up">Clean
+keeps real, protected country data safe , see <a href="#clean-up">Clean
 up</a>.</p>
 </blockquote>
 </div>
@@ -400,10 +400,10 @@ up</a>.</p>
 <h2 id="run-analysis">5. Where to run your analysis<a class="anchor" aria-label="anchor" href="#run-analysis"></a>
 </h2>
 <p>Your analysis goes in
-<strong><code>analysis/workflow.qmd</code></strong> in the project —
-that is what the scaffold seeded it for, and what gets
-version-controlled and reproducibility-checked. Open it and write
-ordinary R. Read the data you just pulled, and fit the model:</p>
+<strong><code>analysis/workflow.qmd</code></strong> in the project, that
+is what the scaffold seeded it for, and what gets version-controlled and
+reproducibility-checked. Open it and write ordinary R. Read the data you
+just pulled, and fit the model:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"data/cars.csv"</span>, row.names <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span></span>
@@ -430,7 +430,7 @@ ordinary R. Read the data you just pulled, and fit the model:</p>
 <span><span class="co">#&gt; Multiple R-squared:  0.7677, Adjusted R-squared:  0.7212 </span></span>
 <span><span class="co">#&gt; F-statistic: 16.52 on 3 and 15 DF,  p-value: 5.09e-05</span></span></code></pre>
 <p>That is the whole analysis. Notice that <strong>none of it used
-<code>erifunctions</code></strong> — the modelling is yours. The
+<code>erifunctions</code></strong>, the modelling is yours. The
 package’s job starts again when you want to <em>save</em> and
 <em>freeze</em> what you found.</p>
 </div>
@@ -458,8 +458,8 @@ project. Save the fitted model object, and a figure:</p>
 <span><span class="co">#&gt; ✔ Figure "mpg_vs_weight.png" uploaded to research/mtcars_study/outputs/figs/mpg_vs_weight.png.</span></span></code></pre></div>
 <p>As you make decisions, jot them in the project’s
 <strong>logbook</strong>. These notes are timestamped and stay with the
-project — they are how “why did we drop those rows?” gets answered a
-year later:</p>
+project, they are how “why did we drop those rows?” gets answered a year
+later:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_research_log.html">eri_research_log</a></span><span class="op">(</span><span class="st">"Started with automatic transmissions only (am == 0); 19 cars."</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_research_log.html">eri_research_log</a></span><span class="op">(</span><span class="st">"Fit lm(mpg ~ wt + hp + disp). Weight is the dominant predictor."</span><span class="op">)</span></span></code></pre></div>
@@ -480,31 +480,31 @@ and tags exist:</p>
 <span><span class="co">#&gt;   kind  source                                          pulled_at            updates archived</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                                           &lt;chr&gt;                  &lt;int&gt; &lt;lgl&gt;</span></span>
 <span><span class="co">#&gt; 1 pull  artifacts/study_data/mtcars_study_data/cars.csv 2026-06-17T15:01:00Z       0 FALSE</span></span></code></pre></div>
-<p><code><a href="../reference/eri_research_resume.html">eri_research_resume()</a></code> is the shorter “where was I?” view
-— last pull, last logbook entry, snapshot count. Use it at the
+<p><code><a href="../reference/eri_research_resume.html">eri_research_resume()</a></code> is the shorter “where was I?”
+view, last pull, last logbook entry, snapshot count. Use it at the
 <strong>top of every work session</strong> (more on that in §9).</p>
 </div>
 <div class="section level2">
 <h2 id="update-figure">8. Save a figure again later (updating it)<a class="anchor" aria-label="anchor" href="#update-figure"></a>
 </h2>
 <p>Figures evolve. When you improve one, just <strong>re-upload it under
-the same filename</strong> — it replaces the previous version in Azure
+the same filename</strong>, it replaces the previous version in Azure
 and the project keeps pointing at the current figure. There is no
 special “update” command; uploading the same name <em>is</em> the
 update. (We will do exactly this in §11 when the data changes.)</p>
 </div>
 <div class="section level2">
-<h2 id="pause-and-resume">9. Pause work — and pick it up weeks later<a class="anchor" aria-label="anchor" href="#pause-and-resume"></a>
+<h2 id="pause-and-resume">9. Pause work, and pick it up weeks later<a class="anchor" aria-label="anchor" href="#pause-and-resume"></a>
 </h2>
 <p>Real studies stop and start. Here is how to put one down safely and
 find your way back.</p>
 <div class="section level3">
 <h3 id="pausing">Pausing<a class="anchor" aria-label="anchor" href="#pausing"></a>
 </h3>
-<p>Before you walk away, take a <strong>snapshot</strong> — a
-timestamped freeze of your whole <code>data/</code> directory in Azure,
-so the exact inputs are recoverable even if a file changes later. Leave
-yourself a note, commit your code, and you are done:</p>
+<p>Before you walk away, take a <strong>snapshot</strong>, a timestamped
+freeze of your whole <code>data/</code> directory in Azure, so the exact
+inputs are recoverable even if a file changes later. Leave yourself a
+note, commit your code, and you are done:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_research_snapshot.html">eri_research_snapshot</a></span><span class="op">(</span>label <span class="op">=</span> <span class="st">"before-break"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Snapshot of 1 file saved to research/mtcars_study/snapshots/20260617T150500Z/.</span></span>
@@ -537,17 +537,17 @@ minute, however long it has been.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="tagging">10. When — and how — to tag a version<a class="anchor" aria-label="anchor" href="#tagging"></a>
+<h2 id="tagging">10. When, and how, to tag a version<a class="anchor" aria-label="anchor" href="#tagging"></a>
 </h2>
-<p>A <strong>tag</strong> freezes the whole study at a moment — the data
-snapshot, the exact analysis code commit, and the outputs — under a name
+<p>A <strong>tag</strong> freezes the whole study at a moment, the data
+snapshot, the exact analysis code commit, and the outputs, under a name
 you can cite. It is the answer to <em>“reproduce the numbers in the
 report dated March.”</em></p>
 <blockquote>
 <p><strong>When should you tag?</strong> At <strong>milestones</strong>,
 not on a schedule. Good moments: you have finished an analysis you will
 share or present; you are about to make a big change; you are submitting
-or publishing. <strong>Do not tag every day</strong> — a tag marks
+or publishing. <strong>Do not tag every day</strong>, a tag marks
 <em>significant progress</em>, and tags are immutable, so a flurry of
 throwaway tags just adds noise. (Snapshots, from §9, are the cheap,
 frequent safety net; tags are the rare, citable landmarks.)</p>
@@ -567,19 +567,19 @@ together forever. Anyone with the label can reconstruct exactly what you
 did.</p>
 </div>
 <div class="section level2">
-<h2 id="new-data">11. New data arrives — update and re-run<a class="anchor" aria-label="anchor" href="#new-data"></a>
+<h2 id="new-data">11. New data arrives, update and re-run<a class="anchor" aria-label="anchor" href="#new-data"></a>
 </h2>
 <p>Months in, a fuller dataset lands: we are no longer restricted to
-automatic cars. This is the moment most workflows handle badly —
+automatic cars. This is the moment most workflows handle badly,
 overwriting the old data and losing the trail. <code>erifunctions</code>
 handles it cleanly: the old version is archived, the change is counted,
 and your earlier tag still reproduces the original.</p>
 <p>Build the <strong>expanded dataset</strong> (drop the
-<code>am == 0</code> filter — all cars now) and re-upload it under the
+<code>am == 0</code> filter, all cars now) and re-upload it under the
 <strong>same artifact name</strong>, bumping the version. Re-using the
 name is an <em>update</em>, not a duplicate:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cars_v2</span> <span class="op">&lt;-</span> <span class="va">mtcars</span>          <span class="co"># the full dataset now — both transmission types</span></span>
+<code class="sourceCode R"><span><span class="va">cars_v2</span> <span class="op">&lt;-</span> <span class="va">mtcars</span>          <span class="co"># the full dataset now, both transmission types</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">cars_v2</span><span class="op">)</span>              <span class="co"># 32 cars, up from 19</span></span>
 <span><span class="co">#&gt; [1] 32</span></span></code></pre></div>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
@@ -589,7 +589,7 @@ name is an <em>update</em>, not a duplicate:</p>
 <span>  local_path  <span class="op">=</span> <span class="st">"data/cars.csv"</span>,</span>
 <span>  name        <span class="op">=</span> <span class="st">"mtcars_study_data"</span>,      <span class="co"># same name → updates the existing artifact</span></span>
 <span>  type        <span class="op">=</span> <span class="st">"study_data"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"mtcars fuel-economy study data — all transmissions (expanded)."</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">"mtcars fuel-economy study data, all transmissions (expanded)."</span>,</span>
 <span>  version     <span class="op">=</span> <span class="st">"2.0"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Now pull the new version into the project. Because you have pulled
@@ -608,9 +608,9 @@ input has now been updated:</p>
 <span><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                                           &lt;chr&gt;                  &lt;int&gt; &lt;lgl&gt;</span></span>
 <span><span class="co">#&gt; 1 pull  artifacts/study_data/mtcars_study_data/cars.csv 2026-07-01T09:00:00Z       1 TRUE</span></span></code></pre></div>
 <p>See how <code>updates</code> ticked to <code>1</code> and
-<code>archived</code> is now <code>TRUE</code> — the original 19-car
+<code>archived</code> is now <code>TRUE</code>, the original 19-car
 extract is safely archived, not gone. Re-run the analysis on the fuller
-data, update the figure (same filename — §8), log the change, and
+data, update the figure (same filename, §8), log the change, and
 <strong>tag the new version</strong>:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cars</span> <span class="op">&lt;-</span> <span class="va">mtcars</span></span>
@@ -640,7 +640,7 @@ data, update the figure (same filename — §8), log the change, and
 <p>You now have <strong>two citable versions</strong>:
 <code>mtcars-am0-v1</code> (the original) and
 <code>mtcars-full-v1</code> (the update). The first still reproduces the
-original analysis exactly, even though the data has moved on — which is
+original analysis exactly, even though the data has moved on, which is
 the whole point.</p>
 </div>
 <div class="section level2">
@@ -652,7 +652,7 @@ all snapshots and tags, and the artifact:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># eri_dir_delete() removes a non-empty directory recursively in one call — the</span></span>
+<span><span class="co"># eri_dir_delete() removes a non-empty directory recursively in one call, the</span></span>
 <span><span class="co"># in-package path, so cleanup stays in erifunctions instead of raw AzureStor.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"research/mtcars_study"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"artifacts/study_data/mtcars_study_data"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span></code></pre></div>
@@ -665,7 +665,7 @@ all snapshots and tags, and the artifact:</p>
 <blockquote>
 <p><strong>Why we could delete freely here:</strong> <code>mtcars</code>
 is public sample data. <strong>Real Carter Center data is
-different</strong> — country surveillance and study data must never be
+different</strong>, country surveillance and study data must never be
 deleted casually, copied off Azure, or committed to git. The discipline
 this guide builds (data stays in Azure, pulled with provenance, frozen
 with tags) is exactly what keeps protected data safe. When in doubt, ask
@@ -678,7 +678,7 @@ before you delete.</p>
 <p>You have now done the full research lifecycle: start,
 version-control, add and source data, analyse, save, tag, pause, resume,
 handle new data, and tidy up.</p>
-<p>This is the first of a planned set of short, task-oriented guides —
+<p>This is the first of a planned set of short, task-oriented guides,
 <strong>one for each common job</strong> an analyst or epidemiologist
 does (running a monthly country report, ingesting a surveillance
 dataset, onboarding a new country, and more). See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">the

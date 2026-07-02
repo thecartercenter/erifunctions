@@ -10,13 +10,13 @@ the full walkthrough.*
 
 Everything lives in the Azure **`data/`** blob under a canonical 5-axis
 path. Build it with
-[`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
-— never hand-type it.
+[`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md):
+never hand-type it.
 
     data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
             dr         malaria     surveillance    case          raw        as-received
             uga        oncho       programmatic    treatment     staged     DQ-checked, awaiting sign-off
-            ht         lf          research        prevalence    processed  approved — the team trusts this
+            ht         lf          research        prevalence    processed  approved, the team trusts this
 
 - **`data_source` = the channel** (how the data arrives): `surveillance`
   · `programmatic` · `research`.
@@ -26,12 +26,12 @@ path. Build it with
 - Run
   **[`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)**
   once to print the full, current vocabulary. Unknown values *warn, not
-  error* — a new country/disease/source/measure is a normal gap, not a
+  error*, a new country/disease/source/measure is a normal gap, not a
   bug.
 
 > **The golden rule:** nothing reaches **`processed/`** without
-> **[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)**
-> — the human gate. It moves staged → processed, writes an approval log,
+> **[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)**,
+> the human gate. It moves staged → processed, writes an approval log,
 > and registers the file in the catalog. Never hand-edit or delete
 > `processed/` data.
 
@@ -89,7 +89,7 @@ eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the 
 *Signatures to mind:* `eri_onboard_disease(disease, country, …)` takes
 **disease first** (unlike the others);
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)’s
-**5th arg is `data_type`** (the measure) — omit it and the catalog
+**5th arg is `data_type`** (the measure), omit it and the catalog
 records the measure as `NA`.
 
 ## Quick analytics (for initial epi QC products)
@@ -102,7 +102,7 @@ eri_epidemic_curve(data, date_col, count_col =, period = "week")
 # disease helpers: eri_lf_tas_summary(), eri_oncho_program_levels(), eri_lf_pooled_prev() …
 ```
 
-## Don’t reinvent — search first
+## Don’t reinvent, search first
 
 Before writing new code, reuse
 [`azure_io()`](https://thecartercenter.github.io/erifunctions/reference/azure_io.md)

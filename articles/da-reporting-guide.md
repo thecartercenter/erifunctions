@@ -1,6 +1,6 @@
 # Branded tables, figures, and decks for outputs
 
-Once data is approved, a lot of the job is turning it into **outputs** —
+Once data is approved, a lot of the job is turning it into **outputs**,
 a table for a memo, a figure for proceedings, a workbook for a partner,
 a slide deck for a meeting. `erifunctions` ships a small, consistent
 **reporting toolkit** so those come out on-brand without fiddling with
@@ -8,7 +8,7 @@ styling each time.
 
 This guide is the general toolkit (it runs on any data frame). Specific
 recurring reports get their own templates as they’re defined; the domain
-figures — **maps** and **epidemic curves** — live in the [spatial
+figures, **maps** and **epidemic curves**, live in the [spatial
 workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md)
 and [epi
 analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
@@ -21,7 +21,7 @@ guides.
 library(erifunctions)
 ```
 
-In practice you’d pull approved data first —
+In practice you’d pull approved data first,
 [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
 for a roll-up (see the [ad-hoc
 guide](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.md))
@@ -43,9 +43,9 @@ dat$positivity <- round(dat$cases / dat$tested * 100, 1)
 
 [`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
 turns a data frame into a styled
-[`flextable`](https://davidgohel.github.io/flextable/) — ERI navy
-header, banded rows, an optional title and footnote — ready to drop into
-an HTML/Word/PowerPoint output:
+[`flextable`](https://davidgohel.github.io/flextable/): ERI navy header,
+banded rows, an optional title and footnote, ready to drop into an
+HTML/Word/PowerPoint output:
 
 ``` r
 
@@ -59,7 +59,7 @@ eri_table(
 
 It returns a `flextable` object; print it in a report, or hand it to the
 Word/PowerPoint/HTML helpers. `highlight_cols` is a **named list**
-mapping a column to a fill colour (`list(col = "#hex")`) — use it to
+mapping a column to a fill colour (`list(col = "#hex")`), use it to
 shade the column you want the eye to land on.
 
 ## An on-brand figure
@@ -77,7 +77,7 @@ p <- ggplot(dat, aes(x = province, y = cases)) +
 p
 ```
 
-For domain figures there are purpose-built helpers —
+For domain figures there are purpose-built helpers,
 `eri_plot_theme("map" | "epicurve")` and
 [`eri_color_scheme()`](https://thecartercenter.github.io/erifunctions/reference/eri_color_scheme.md)
 (e.g. the standard `"malaria.incidence"` bins), and the `eri_map_*`
@@ -93,7 +93,7 @@ covers
 
 For a partner who wants the numbers,
 [`eri_report_excel()`](https://thecartercenter.github.io/erifunctions/reference/eri_report_excel.md)
-writes a styled multi-sheet workbook in one call — each named element of
+writes a styled multi-sheet workbook in one call, each named element of
 `sheets` becomes a tab:
 
 ``` r
@@ -115,9 +115,9 @@ Need finer control (multiple sheets, added titles)? Build it up with
 
 ## A slide deck for proceedings
 
-The `eri_pptx_*` family builds a PowerPoint slide by slide — title,
-sections, tables, and plots — so a meeting deck is reproducible code,
-not manual copy-paste:
+The `eri_pptx_*` family builds a PowerPoint slide by slide, title,
+sections, tables, and plots, so a meeting deck is reproducible code, not
+manual copy-paste:
 
 ``` r
 
@@ -145,11 +145,10 @@ scaffolds a Quarto document you fill in.
 ## What’s next
 
 - **Maps:** the [spatial
-  workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md)
-  — choropleths, incidence maps, insets.
+  workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md),
+  choropleths, incidence maps, insets.
 - **Curves & indicators:** [epi
-  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
-  —
+  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md),
   [`eri_epidemic_curve()`](https://thecartercenter.github.io/erifunctions/reference/eri_epidemic_curve.md),
   incidence, disease helpers.
 - **Where the data comes from:** the [ad-hoc

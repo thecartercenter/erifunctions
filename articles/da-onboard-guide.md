@@ -8,12 +8,11 @@ disease, or data type. It is the **prequel** to the
 [ingest](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
 and
 [ODK](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
-guides — do this once, and those workflows have somewhere to land.
+guides, do this once, and those workflows have somewhere to land.
 
-We will practise on a make-believe country — **Atlantis** — so you can
-run every step and then delete it. Each `eri_onboard_*` function also
-has a **dry-run** mode, so you can always look before you touch
-anything.
+We will practise on a make-believe country, **Atlantis**, so you can run
+every step and then delete it. Each `eri_onboard_*` function also has a
+**dry-run** mode, so you can always look before you touch anything.
 
 > **You can run this for real.** The commands work against the live
 > Azure system; the final [**Clean up**](#clean-up) removes everything
@@ -26,7 +25,7 @@ anything.
 > writes you a **schema template** with the standard structure and
 > `TODO` markers, and creates the Azure folders. *You* fill in the
 > disease-specific details, **validate** the schema, and submit it to
-> the package. Nothing is guessed — the template is a correct starting
+> the package. Nothing is guessed, the template is a correct starting
 > point you complete.
 
 flowchart TD A\["Onboard: scaffold schema + folders"\] --\> B\["Fill in
@@ -37,9 +36,9 @@ is ready"\] D --\> E\["Ingest data / sync ODK"\] E --\> F\["DQ -\> stage
 ## Before you start
 
 1.  **R and RStudio** installed.
-2.  **The package** —
+2.  **The package**:
     `remotes::install_github("thecartercenter/erifunctions")`.
-3.  **Azure access** — zero-config browser sign-in; see the [connections
+3.  **Azure access**: zero-config browser sign-in; see the [connections
     guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
     if this is your first time.
 
@@ -95,7 +94,7 @@ blob.
 ### Fill in the template
 
 Open `atlantis_malaria_surveillance_aggregate.yaml`. It is a **correct,
-structured starting point** — the standard sections are there, with
+structured starting point**, the standard sections are there, with
 `TODO` markers where your data is unique. Here it is **trimmed for
 readability** (your actual file also lists `aliases:` for each column
 and a few commented options like `time_grain` and `admin1_name_field`):
@@ -149,9 +148,9 @@ consistency:
   # TODO: add cross-field rules here
 ```
 
-The schema structure — `columns` with
+The schema structure, `columns` with
 `type`/`required`/`range`/`allowed_values`, the `temporal` block,
-`consistency` rules — is exactly what the data-quality engine reads. The
+`consistency` rules, is exactly what the data-quality engine reads. The
 [ingest
 guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
 shows what each rule *does* when data runs through it.
@@ -159,7 +158,7 @@ shows what each rule *does* when data runs through it.
 ### Validate your edits
 
 [`eri_schema_validate()`](https://thecartercenter.github.io/erifunctions/reference/eri_schema_validate.md)
-checks the **structure** — required sections, valid column types, and
+checks the **structure**, required sections, valid column types, and
 that temporal/consistency rules reference columns that actually exist.
 Run it on the file you just edited:
 
@@ -197,7 +196,7 @@ light to use it.
 **Case Management Reports (CMR)** are the monthly Excel returns from
 country programs. Onboarding one writes a CMR schema template and (when
 you pass `create_dirs = TRUE`) the staging folders under the combined
-**`rblf`** disease code (RB + LF — the programmes these reports cover),
+**`rblf`** disease code (RB + LF, the programmes these reports cover),
 where
 [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
 lands the raw Excel. Dry-run it first:
@@ -208,7 +207,7 @@ lands the raw Excel. Dry-run it first:
 > CMR is a *format* of the `programmatic` channel.
 > [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
 > reads the staged Excel and routes **each sheet to its own disease and
-> measure** — e.g. RB Treatment →
+> measure**, e.g. RB Treatment →
 > `{country}/oncho/programmatic/treatment/`, then you approve **each
 > disease/measure**. So `rblf/cmr/` is the transitional landing/archive;
 > the canonical, approved data is per-disease (shared sheets like
@@ -241,7 +240,7 @@ eri_onboard_cmr("atlantis", "Atlantis", create_dirs = TRUE)
 #>   4. Test ingestion with eri_ingest_cmr('your_file.xlsx', country = 'atlantis').
 ```
 
-A CMR template ships with the common report sheets commented out —
+A CMR template ships with the common report sheets commented out,
 uncomment the ones your country files, and make each sheet’s
 `field_code_prefix` match the `#tag_` row in the Excel file. Then test
 with
@@ -251,7 +250,7 @@ with
 
 For an **NTD treatment/survey program**,
 [`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)
-scaffolds the two schemas that pattern needs — **MDA** (mass drug
+scaffolds the two schemas that pattern needs, **MDA** (mass drug
 administration) and **prevalence**. Note the argument order here is
 **disease first, then country**:
 
@@ -266,12 +265,12 @@ eri_onboard_disease("schisto", "atlantis")
 #>   3. Submit via pull request to inst/schemas/.
 ```
 
-These are **local-only** templates (no Azure folders) — an MDA schema
+These are **local-only** templates (no Azure folders), an MDA schema
 with `year`, `round`, `target_pop`, `treated`, and a `TODO` for the
 geographic unit, and a matching prevalence schema. Fill, validate, and
 submit them exactly as in §2.
 
-> **Contributing the schema to the package — and disease analytics.**
+> **Contributing the schema to the package, and disease analytics.**
 > Submitting your finished schema via pull request, the
 > schema-validation test, and adding disease-specific analytics
 > functions are covered in depth in the [**Adding a new
@@ -296,7 +295,7 @@ country/disease/data-type is **live in the system**. You can now:
 
 ## 6. Clean up
 
-Practice run — remove everything you created. Delete the Azure namespace
+Practice run, remove everything you created. Delete the Azure namespace
 and the local schema files:
 
 ``` r
@@ -304,7 +303,7 @@ and the local schema files:
 con <- get_azure_storage_connection(storage_name = "data")
 
 # Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go,
-# recursively — the in-package path, so you stay in erifunctions instead of
+# recursively, the in-package path, so you stay in erifunctions instead of
 # dropping to raw AzureStor / Storage Explorer.
 eri_dir_delete("atlantis", azcontainer = con)
 
@@ -314,23 +313,23 @@ unlink(c("atlantis_malaria_surveillance_aggregate.yaml", "atlantis_cmr_schema.ya
 ```
 
 > **Why deleting was fine here:** *Atlantis* is invented. **A real
-> onboarded country is not torn down casually** — once data lands in it,
+> onboarded country is not torn down casually**, once data lands in it,
 > those folders are the home of real surveillance records. There is
 > deliberately no one-click “un-onboard” command; removing a real space
 > is a considered, manual act.
 
 ## What’s next
 
-You have stood up a new space three ways — surveillance, CMR, and an NTD
-program — and validated the schemas. The data guides take it from here:
+You have stood up a new space three ways, surveillance, CMR, and an NTD
+program, and validated the schemas. The data guides take it from here:
 
 - [Ingesting a surveillance
   dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
 - [Working with ODK
   Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
 - [Adding a new
-  program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md)
-  — contribute your schema to the package.
+  program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md):
+  contribute your schema to the package.
 
 See the [guide
 index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)

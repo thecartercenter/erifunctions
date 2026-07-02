@@ -1,37 +1,37 @@
 # Connecting to Azure, ODK Central, SharePoint, and Teams
 
-`erifunctions` talks to four outside services on your behalf — **Azure**
+`erifunctions` talks to four outside services on your behalf, **Azure**
 (where the data lives), **ODK Central** (where field submissions come
 from), **SharePoint** (shared files), and **Teams** (notifications).
 This is the one place that shows how to connect to each and **confirm it
 works**.
 
 The good news: most need little or no setup. Azure and SharePoint are
-**zero-config** — you just sign in through your browser. ODK needs three
+**zero-config**, you just sign in through your browser. ODK needs three
 lines in a settings file. Teams is optional. Work through the service(s)
 you need; skip the rest.
 
 > **A note on secrets.** Where a service needs a credential, it lives in
-> your **`.Renviron`** file — never typed into a script and never
+> your **`.Renviron`** file, never typed into a script and never
 > committed to git. We point that out at each step.
 
 > **Do this first: set your analyst identity.** Before your **first
 > governed action** (approving data, registering a catalog entry,
-> syncing a form), set `ERI_ANALYST_ID` in your `.Renviron` —
+> syncing a form), set `ERI_ANALYST_ID` in your `.Renviron`,
 > `usethis::edit_r_environ()`, add `ERI_ANALYST_ID=firstname.lastname`,
 > save, and **restart R**. Every approval log, catalog entry, and
 > operation log is stamped with it. If it is unset, `erifunctions` warns
 > once and records the approver as **`jsmith (unverified)`** (your OS
 > username, marked so the audit trail shows the attribution is
 > provisional). Set it once and the attribution is correct everywhere. A
-> team or automated run can **require** it — set
+> team or automated run can **require** it, set
 > `ERI_REQUIRE_ANALYST_ID=true` and governed actions refuse to run until
 > `ERI_ANALYST_ID` is configured.
 
 flowchart TD You\["Your R session"\] --\> P\["erifunctions"\] P --\>
-AZ\["Azure Storage — where the data lives"\] P --\> ODK\["ODK Central —
-field submissions"\] P --\> SP\["SharePoint — shared files"\] P --\>
-TM\["Teams — notifications"\]
+AZ\["Azure Storage, where the data lives"\] P --\> ODK\["ODK Central,
+field submissions"\] P --\> SP\["SharePoint, shared files"\] P --\>
+TM\["Teams, notifications"\]
 
 ## At a glance
 
@@ -47,7 +47,7 @@ TM\["Teams — notifications"\]
 library(erifunctions)
 ```
 
-## Azure — nothing to configure
+## Azure, nothing to configure
 
 This is the big one: **the data system itself**. And there is nothing to
 set up. Thanks to baked-in defaults (see
@@ -59,7 +59,7 @@ remembered for the rest of the session.
 ``` r
 
 # The first call this session opens your browser to sign in.
-# Nothing prints on success — you get a connection object back.
+# Nothing prints on success, you get a connection object back.
 data_con <- get_azure_storage_connection(storage_name = "data")
 ```
 
@@ -67,7 +67,7 @@ The `storage_name` picks **which blob you connect to**: `"data"` (the
 governed three-layer data system) or `"projects"` (the legacy contractor
 space). Most analyst work is in `"data"`.
 
-**Confirm it works** by listing the top of the container — if you get a
+**Confirm it works** by listing the top of the container, if you get a
 tibble back, you are in:
 
 ``` r
@@ -88,19 +88,19 @@ deeper listing like `eri_list("uga/demo/research/raw", …)` returns
 just the leaf filenames.
 
 > **For automation / CI (headless).** A scheduled job has no browser.
-> Set a **service principal** — `ERIFUNCTIONS_SP_CLIENT_ID` and
+> Set a **service principal**, `ERIFUNCTIONS_SP_CLIENT_ID` and
 > `ERIFUNCTIONS_SP_CLIENT_SECRET` in the environment (or pass
-> `creds_yaml_path=`) — and
+> `creds_yaml_path=`), and
 > [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
 > signs in non-interactively instead. The secret is the *only* true
 > secret here; the tenant, app, and endpoint are non-sensitive defaults.
 
-> **`403 Forbidden`?** That is not a bug — it is Azure telling you your
+> **`403 Forbidden`?** That is not a bug, it is Azure telling you your
 > account does not have access to that storage. Access is granted by an
 > administrator (Azure RBAC), not by the package. Ask your ERI admin to
 > add you.
 
-## ODK Central — three lines in your settings file
+## ODK Central, three lines in your settings file
 
 ODK Central signs in with your **email and password**, so those go in
 your `.Renviron` once. Open it with:
@@ -116,7 +116,7 @@ Add three lines, then **save and restart R**:
     ODK_USER=you@example.org
     ODK_PASS=your-password
 
-Now connect —
+Now connect,
 [`init_odk_connection()`](https://thecartercenter.github.io/erifunctions/reference/init_odk_connection.md)
 reads those automatically, so your password never appears in a script:
 
@@ -140,16 +140,16 @@ list_odk_projects(con = con)
 ```
 
 Pass that `con` to the other ODK functions as `con = con`. For the full
-ODK workflow — registering a form, monitoring it, and pulling
-submissions — see the [ODK Central
+ODK workflow, registering a form, monitoring it, and pulling
+submissions, see the [ODK Central
 guide](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md).
 
 > **For automation / CI.** Instead of email+password, you can reuse a
 > **bearer token**: set `ODK_TOKEN` in the environment and call the ODK
-> functions with `con = NULL` — they fall back to `ODK_URL` +
+> functions with `con = NULL`, they fall back to `ODK_URL` +
 > `ODK_TOKEN`.
 
-## SharePoint — just the site URL
+## SharePoint, just the site URL
 
 SharePoint uses the same browser sign-in as Azure (via `Microsoft365R`),
 so all you supply is the **site URL**:
@@ -182,12 +182,12 @@ workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-wor
 vignette.
 
 > **No service-principal path.** SharePoint is browser-sign-in only in
-> `erifunctions` — there is no headless/CI path for it. Use it
+> `erifunctions`, there is no headless/CI path for it. Use it
 > interactively.
 
-## Teams — for posting notifications
+## Teams, for posting notifications
 
-Teams is **optional** — you only need it if you want `erifunctions` to
+Teams is **optional**, you only need it if you want `erifunctions` to
 post messages (for example,
 [`eri_notify_dq()`](https://thecartercenter.github.io/erifunctions/reference/eri_notify_dq.md)
 posts a data-quality summary to a channel). There are three ways in,
@@ -207,7 +207,7 @@ eri_teams_send(message = "Hello from erifunctions.")
 
 **For direct messages, use the Graph API.**
 [`get_teams_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_teams_connection.md)
-returns a token — from `ERIFUNCTIONS_TEAMS_TOKEN` if you have one,
+returns a token, from `ERIFUNCTIONS_TEAMS_TOKEN` if you have one,
 otherwise via an interactive device-code sign-in. Unlike Azure, this
 path is **not** zero-config: the device-code flow needs
 `ERIFUNCTIONS_APP_ID` set in your `.Renviron` (without it you’ll get a
@@ -228,7 +228,7 @@ eri_teams_send(message = "Test message to myself.", to = "self", token = token)
 ```
 
 > **For automation / CI.** A webhook (`ERIFUNCTIONS_TEAMS_WEBHOOK`) is
-> the most robust for scheduled jobs — it needs no interactive sign-in.
+> the most robust for scheduled jobs, it needs no interactive sign-in.
 > Where conditional-access policies block the device-code flow, the
 > webhook is the way through. For DMs in automation, set a pre-obtained
 > `ERIFUNCTIONS_TEAMS_TOKEN`.
@@ -264,16 +264,16 @@ All your settings live in one file. Open it with
     # ERIFUNCTIONS_SP_CLIENT_SECRET=<service principal client secret>
 
 **Always restart R after editing `.Renviron`.** Everything in this file
-is read once at startup — and none of it is ever written into your
+is read once at startup, and none of it is ever written into your
 scripts or committed to git.
 
 ## Troubleshooting
 
 | Symptom | What it means | Fix |
 |----|----|----|
-| Azure `403 Forbidden` | Your account lacks access to that storage (RBAC) | Ask an ERI admin to grant access — it is not a code problem |
+| Azure `403 Forbidden` | Your account lacks access to that storage (RBAC) | Ask an ERI admin to grant access, it is not a code problem |
 | ODK: *“ODK username is required”* | `ODK_USER` / `ODK_PASS` aren’t set | Add them to `.Renviron`; restart R |
-| A call re-opens the browser unexpectedly | Your cached session expired | Just sign in again — connections are session-scoped |
+| A call re-opens the browser unexpectedly | Your cached session expired | Just sign in again, connections are session-scoped |
 | Teams device-code sign-in is blocked | Conditional-access policy | Use an incoming webhook (`ERIFUNCTIONS_TEAMS_WEBHOOK`) instead |
 | SharePoint “package Microsoft365R is required” | Optional dependency missing | `install.packages("Microsoft365R")` |
 
@@ -282,14 +282,14 @@ scripts or committed to git.
 Now that you can connect, the role guides put these connections to work:
 
 - [Ingesting a surveillance
-  dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
-  — the `raw → staged → approved` pipeline.
+  dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
+  the `raw → staged → approved` pipeline.
 - [Working with ODK
-  Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
-  — register, monitor, and pull form data.
+  Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
+  register, monitor, and pull form data.
 - [A complete research workflow for
-  epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md)
-  — running a study.
+  epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+  running a study.
 
 For every connection function grouped together, see the **Connections &
 authentication** section of the

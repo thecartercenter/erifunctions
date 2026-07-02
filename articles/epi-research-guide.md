@@ -2,12 +2,12 @@
 
 This is a hands-on, **start-to-finish walkthrough** of running a
 research study with `erifunctions`. It is written for
-**epidemiologists** — domain experts who are *not* software developers.
+**epidemiologists**, domain experts who are *not* software developers.
 You do not need to memorise anything: work through it once, in order,
 and you will have done every step a real study needs.
 
 To keep the focus on the *process* rather than the science, we use
-**`mtcars`** — the little car dataset that ships with R. It is public,
+**`mtcars`**, the little car dataset that ships with R. It is public,
 tiny, and safe to copy anywhere, so you can run every command on your
 own laptop without touching any real Carter Center data. The analysis
 itself is deliberately trivial (a linear regression of fuel economy).
@@ -15,16 +15,16 @@ itself is deliberately trivial (a linear regression of fuel economy).
 not the model.
 
 > **You can run this for real.** Every command below works against the
-> live Azure system. If you follow along, the very last section —
-> [**Clean up**](#clean-up) — deletes everything you created, so you can
+> live Azure system. If you follow along, the very last section,
+> [**Clean up**](#clean-up), deletes everything you created, so you can
 > practise the whole loop end-to-end and leave no trace.
 
 ## What you are about to build
 
 We will run a small study twice. First on an **initial dataset**
 (automatic-transmission cars only), then we will simulate **“new data
-arriving”** by expanding to the full dataset and re-running — exactly
-the situation you hit when a fresh extract lands months into a project.
+arriving”** by expanding to the full dataset and re-running, exactly the
+situation you hit when a fresh extract lands months into a project.
 
 flowchart TD A\["Start a project"\] --\> B\["Add data + metadata"\] B
 --\> C\["Source the data"\] C --\> D\["Analyse (your code)"\] D --\>
@@ -37,7 +37,7 @@ The golden rule that shapes everything:
 > **`erifunctions` sources your data reproducibly and keeps it
 > disciplined. *You* do the analysis.** The package gets data in and
 > out, tracks where every input came from, and freezes citable versions.
-> The modelling, the epidemiology, the judgement calls — those live in
+> The modelling, the epidemiology, the judgement calls, those live in
 > *your* project’s analysis code, not in the package.
 
 ## Before you start
@@ -57,7 +57,7 @@ You need four things, once:
 3.  **Azure access.** There is nothing to configure. The first time a
     command needs Azure, your browser opens and you sign in with your
     Carter Center account; the sign-in is remembered for the rest of the
-    session. (No keys, no environment variables — see
+    session. (No keys, no environment variables, see
     [`?get_azure_storage_connection`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).)
 
 4.  **A GitHub account**, and [GitHub
@@ -79,7 +79,7 @@ eri_verbosity("quiet")   # headline results, warnings and errors only
 ## 1. Start a project
 
 A study is its own self-contained project folder *and* its own GitHub
-repository (this keeps each study independently reproducible — see
+repository (this keeps each study independently reproducible, see
 ADR-0006). One command builds the whole skeleton:
 
 ``` r
@@ -114,8 +114,8 @@ Now open the project in RStudio: **File ▸ Open Project**, navigate into
 
 ## 2. Make it a GitHub repository with the reproducibility check
 
-Your study should live on GitHub so it is backed up, shareable, and —
-crucially — so the **reproducibility check** runs. That check
+Your study should live on GitHub so it is backed up, shareable, and,
+crucially, so the **reproducibility check** runs. That check
 (`.github/workflows/ci.yaml`, created for you above) confirms that
 anyone can rebuild your exact software environment and load
 `erifunctions`. It stays dormant until you give it a `renv.lock` to
@@ -123,7 +123,7 @@ check against.
 
 ### Put the project under version control
 
-You can do all of this **from inside R** — no command line needed:
+You can do all of this **from inside R**, no command line needed:
 
 ``` r
 
@@ -155,13 +155,13 @@ renv::snapshot(type = "all")                    # write renv.lock
 
 Then **commit `renv.lock`** (and the `renv/` activation files). The
 moment that lockfile lands on GitHub, the reproducibility check goes
-green on every push — it restores your pinned environment on a clean
+green on every push, it restores your pinned environment on a clean
 machine and confirms `erifunctions` loads.
 
 > **Two `renv` gotchas worth avoiding.**
 >
 > - Install **`thecartercenter/erifunctions`**, not a personal fork,
->   *before* you snapshot — otherwise the lockfile pins the wrong source
+>   *before* you snapshot, otherwise the lockfile pins the wrong source
 >   and a collaborator restoring it gets the wrong package.
 > - Use `renv::snapshot(type = "all")` so packages you only use for
 >   analysis (e.g. `ggplot2`) are captured too, not just the ones the
@@ -169,13 +169,13 @@ machine and confirms `erifunctions` loads.
 
 ## 3. Add your data and give it metadata
 
-Data does not live in your git repository — it lives in Azure, with a
+Data does not live in your git repository, it lives in Azure, with a
 record of what it is. We register a file as an **artifact**: the file
 plus its *metadata* (a name, a type, a description, a version). This is
 how teammates later discover and trust it.
 
-First, create our **initial dataset** — automatic-transmission cars only
-(`am == 0`) — and save it locally:
+First, create our **initial dataset**, automatic-transmission cars only
+(`am == 0`), and save it locally:
 
 ``` r
 
@@ -197,24 +197,23 @@ eri_artifact_upload(
   local_path  = "data/cars.csv",
   name        = "mtcars_study_data",
   type        = "study_data",
-  description = "mtcars fuel-economy study data — automatic transmissions only.",
+  description = "mtcars fuel-economy study data, automatic transmissions only.",
   version     = "1.0"
 )
 #> ✔ Artifact "mtcars_study_data" (study_data) uploaded to artifacts/study_data/mtcars_study_data/cars.csv.
 ```
 
-That `name`, `type`, `description`, and `version` **are the metadata** —
+That `name`, `type`, `description`, and `version` **are the metadata**,
 they travel with the file and show up in
 [`eri_artifact_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_list.md)
 so anyone can see what it is without opening it.
 
-> **“Metadata” and “tags” are two different things — don’t mix them
-> up.**
+> **“Metadata” and “tags” are two different things, don’t mix them up.**
 >
 > |  | What it describes | When you set it | Function |
 > |----|----|----|----|
-> | **Artifact metadata** | *a single file* — what it is, its version | every time you upload data | [`eri_artifact_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_upload.md) |
-> | **A version tag** | *the whole study* — data **+** analysis code **+** outputs, frozen together and citable | at milestones only (see §10) | [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md) |
+> | **Artifact metadata** | *a single file*, what it is, its version | every time you upload data | [`eri_artifact_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_artifact_upload.md) |
+> | **A version tag** | *the whole study*, data **+** analysis code **+** outputs, frozen together and citable | at milestones only (see §10) | [`eri_research_tag()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_tag.md) |
 >
 > Think of metadata as the **label on a jar**, and a version tag as a
 > **photograph of the entire kitchen** at one moment. We create our
@@ -241,13 +240,13 @@ eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest
 > shortcut. Here we pull by *path* with
 > [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)
 > because it also records the pull in `research.yaml`, archives any
-> superseded version, and counts updates — exactly the lifecycle this
+> superseded version, and counts updates, exactly the lifecycle this
 > guide demonstrates in §11.
 
 > **Sourcing canonical, team-approved data.** When your study draws on
 > data the analysts already approved (not a study artifact you
 > uploaded), **discover it in the catalog and pull it with the same
-> coordinates** —
+> coordinates**,
 > [`eri_research_pull()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_pull.md)
 > takes the four tokens
 > [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
@@ -262,17 +261,17 @@ eri_research_pull(path = "artifacts/study_data/mtcars_study_data/cars.csv", dest
 > ```
 >
 > Discover what exists, then pull it with the coordinates the catalog
-> handed you — one vocabulary, end to end.
+> handed you, one vocabulary, end to end.
 
 > **Never commit `data/` to git.** The scaffold’s `.gitignore` already
 > excludes it. Data lives in Azure; your repository holds only *code*
 > and the `research.yaml` record of what was pulled. For `mtcars` it
 > would not matter, but this is the habit that keeps real, protected
-> country data safe — see [Clean up](#clean-up).
+> country data safe , see [Clean up](#clean-up).
 
 ## 5. Where to run your analysis
 
-Your analysis goes in **`analysis/workflow.qmd`** in the project — that
+Your analysis goes in **`analysis/workflow.qmd`** in the project, that
 is what the scaffold seeded it for, and what gets version-controlled and
 reproducibility-checked. Open it and write ordinary R. Read the data you
 just pulled, and fit the model:
@@ -307,8 +306,8 @@ summary(model)
     #> F-statistic: 16.52 on 3 and 15 DF,  p-value: 5.09e-05
 
 That is the whole analysis. Notice that **none of it used
-`erifunctions`** — the modelling is yours. The package’s job starts
-again when you want to *save* and *freeze* what you found.
+`erifunctions`**, the modelling is yours. The package’s job starts again
+when you want to *save* and *freeze* what you found.
 
 ## 6. Save your analysis and figures
 
@@ -339,7 +338,7 @@ eri_research_upload_figure(
 ```
 
 As you make decisions, jot them in the project’s **logbook**. These
-notes are timestamped and stay with the project — they are how “why did
+notes are timestamped and stay with the project, they are how “why did
 we drop those rows?” gets answered a year later:
 
 ``` r
@@ -368,26 +367,26 @@ eri_research_status()
 ```
 
 [`eri_research_resume()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_resume.md)
-is the shorter “where was I?” view — last pull, last logbook entry,
+is the shorter “where was I?” view, last pull, last logbook entry,
 snapshot count. Use it at the **top of every work session** (more on
 that in §9).
 
 ## 8. Save a figure again later (updating it)
 
 Figures evolve. When you improve one, just **re-upload it under the same
-filename** — it replaces the previous version in Azure and the project
+filename**, it replaces the previous version in Azure and the project
 keeps pointing at the current figure. There is no special “update”
 command; uploading the same name *is* the update. (We will do exactly
 this in §11 when the data changes.)
 
-## 9. Pause work — and pick it up weeks later
+## 9. Pause work, and pick it up weeks later
 
 Real studies stop and start. Here is how to put one down safely and find
 your way back.
 
 ### Pausing
 
-Before you walk away, take a **snapshot** — a timestamped freeze of your
+Before you walk away, take a **snapshot**, a timestamped freeze of your
 whole `data/` directory in Azure, so the exact inputs are recoverable
 even if a file changes later. Leave yourself a note, commit your code,
 and you are done:
@@ -426,16 +425,16 @@ eri_research_status()   # the fuller picture: inputs, outputs, tags
 Between `resume()` (what was I doing?) and `status()` (what do I have?),
 you are oriented in under a minute, however long it has been.
 
-## 10. When — and how — to tag a version
+## 10. When, and how, to tag a version
 
-A **tag** freezes the whole study at a moment — the data snapshot, the
-exact analysis code commit, and the outputs — under a name you can cite.
+A **tag** freezes the whole study at a moment, the data snapshot, the
+exact analysis code commit, and the outputs, under a name you can cite.
 It is the answer to *“reproduce the numbers in the report dated March.”*
 
 > **When should you tag?** At **milestones**, not on a schedule. Good
 > moments: you have finished an analysis you will share or present; you
 > are about to make a big change; you are submitting or publishing. **Do
-> not tag every day** — a tag marks *significant progress*, and tags are
+> not tag every day**, a tag marks *significant progress*, and tags are
 > immutable, so a flurry of throwaway tags just adds noise. (Snapshots,
 > from §9, are the cheap, frequent safety net; tags are the rare,
 > citable landmarks.)
@@ -456,21 +455,21 @@ eri_research_tag(
 That tag now binds *this data + this code + these outputs* together
 forever. Anyone with the label can reconstruct exactly what you did.
 
-## 11. New data arrives — update and re-run
+## 11. New data arrives, update and re-run
 
 Months in, a fuller dataset lands: we are no longer restricted to
-automatic cars. This is the moment most workflows handle badly —
+automatic cars. This is the moment most workflows handle badly,
 overwriting the old data and losing the trail. `erifunctions` handles it
 cleanly: the old version is archived, the change is counted, and your
 earlier tag still reproduces the original.
 
-Build the **expanded dataset** (drop the `am == 0` filter — all cars
-now) and re-upload it under the **same artifact name**, bumping the
-version. Re-using the name is an *update*, not a duplicate:
+Build the **expanded dataset** (drop the `am == 0` filter, all cars now)
+and re-upload it under the **same artifact name**, bumping the version.
+Re-using the name is an *update*, not a duplicate:
 
 ``` r
 
-cars_v2 <- mtcars          # the full dataset now — both transmission types
+cars_v2 <- mtcars          # the full dataset now, both transmission types
 nrow(cars_v2)              # 32 cars, up from 19
 #> [1] 32
 ```
@@ -483,7 +482,7 @@ eri_artifact_upload(
   local_path  = "data/cars.csv",
   name        = "mtcars_study_data",      # same name → updates the existing artifact
   type        = "study_data",
-  description = "mtcars fuel-economy study data — all transmissions (expanded).",
+  description = "mtcars fuel-economy study data, all transmissions (expanded).",
   version     = "2.0"
 )
 ```
@@ -506,9 +505,9 @@ eri_research_status()
 #> 1 pull  artifacts/study_data/mtcars_study_data/cars.csv 2026-07-01T09:00:00Z       1 TRUE
 ```
 
-See how `updates` ticked to `1` and `archived` is now `TRUE` — the
+See how `updates` ticked to `1` and `archived` is now `TRUE`, the
 original 19-car extract is safely archived, not gone. Re-run the
-analysis on the fuller data, update the figure (same filename — §8), log
+analysis on the fuller data, update the figure (same filename, §8), log
 the change, and **tag the new version**:
 
 ``` r
@@ -544,7 +543,7 @@ eri_research_tag(
 
 You now have **two citable versions**: `mtcars-am0-v1` (the original)
 and `mtcars-full-v1` (the update). The first still reproduces the
-original analysis exactly, even though the data has moved on — which is
+original analysis exactly, even though the data has moved on, which is
 the whole point.
 
 ## 12. Clean up
@@ -557,7 +556,7 @@ snapshots and tags, and the artifact:
 
 con <- get_azure_storage_connection(storage_name = "data")
 
-# eri_dir_delete() removes a non-empty directory recursively in one call — the
+# eri_dir_delete() removes a non-empty directory recursively in one call, the
 # in-package path, so cleanup stays in erifunctions instead of raw AzureStor.
 eri_dir_delete("research/mtcars_study", azcontainer = con)
 eri_dir_delete("artifacts/study_data/mtcars_study_data", azcontainer = con)
@@ -574,7 +573,7 @@ unlink("../mtcars_study", recursive = TRUE)   # remove the local project folder
 ```
 
 > **Why we could delete freely here:** `mtcars` is public sample data.
-> **Real Carter Center data is different** — country surveillance and
+> **Real Carter Center data is different**, country surveillance and
 > study data must never be deleted casually, copied off Azure, or
 > committed to git. The discipline this guide builds (data stays in
 > Azure, pulled with provenance, frozen with tags) is exactly what keeps
@@ -586,8 +585,8 @@ You have now done the full research lifecycle: start, version-control,
 add and source data, analyse, save, tag, pause, resume, handle new data,
 and tidy up.
 
-This is the first of a planned set of short, task-oriented guides —
-**one for each common job** an analyst or epidemiologist does (running a
+This is the first of a planned set of short, task-oriented guides, **one
+for each common job** an analyst or epidemiologist does (running a
 monthly country report, ingesting a surveillance dataset, onboarding a
 new country, and more). See [the guide
 index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)

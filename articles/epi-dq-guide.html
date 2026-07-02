@@ -109,14 +109,14 @@
     
     
 <p>A fresh surveillance extract can be <strong>valid cell-by-cell and
-still wrong epidemiologically</strong> — a week that suddenly triples, a
+still wrong epidemiologically</strong>, a week that suddenly triples, a
 reporting week that never arrived, a count that exceeds what was tested.
 This guide, for <strong>epidemiologists</strong>, is about that second
 layer: after the basic <a href="da-ingest-guide.html">data-quality
 checks</a>, run the <strong>anomaly detectors</strong> to catch the
 patterns only a domain eye would question, <em>before</em> the numbers
 reach a curve or a map.</p>
-<p>It runs <strong>fully offline</strong> on a small synthetic extract —
+<p>It runs <strong>fully offline</strong> on a small synthetic extract,
 no Azure, no real data. For the schema mechanics and the full anomaly
 reference, see the <a href="dq-pipeline.html">data-quality pipeline</a>
 vignette; this guide is about <strong>what the flags mean and what you
@@ -146,15 +146,15 @@ Everything here is offline.</p>
 <div class="section level2">
 <h2 id="extract">1. The extract<a class="anchor" aria-label="anchor" href="#extract"></a>
 </h2>
-<p>We use a bundled case-level malaria schema (no Azure needed —
+<p>We use a bundled case-level malaria schema (no Azure needed,
 <code>azcontainer = NULL</code> loads the copy that ships with the
 package) and a small synthetic line-list: two provinces over six
-epiweeks, one row per case. It has three planted problems — a species
-typo, a <strong>case spike</strong>, and a <strong>missing week</strong>
-— the kinds of thing a real extract hides:</p>
+epiweeks, one row per case. It has three planted problems, a species
+typo, a <strong>case spike</strong>, and a <strong>missing
+week</strong>, the kinds of thing a real extract hides:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Load by the four-part identity (ADR-0012): country, disease, data_source (the</span></span>
-<span><span class="co"># channel — surveillance/programmatic/research), data_type (the measure — here</span></span>
+<span><span class="co"># channel, surveillance/programmatic/research), data_type (the measure, here</span></span>
 <span><span class="co"># "case", the case-level line-list). The legacy compound key still works too:</span></span>
 <span><span class="co"># load_dq_schema("dr", "malaria_case") resolves via an alias during the migration.</span></span>
 <span><span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"dr"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"case"</span>, azcontainer <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
@@ -179,7 +179,7 @@ typo, a <strong>case spike</strong>, and a <strong>missing week</strong>
 <div class="section level2">
 <h2 id="baseline">2. Baseline: the cell-level checks<a class="anchor" aria-label="anchor" href="#baseline"></a>
 </h2>
-<p>Start with <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> — the same engine the <a href="da-ingest-guide.html">ingest guide</a> covers. It catches
+<p>Start with <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>, the same engine the <a href="da-ingest-guide.html">ingest guide</a> covers. It catches
 <em>cell</em> problems (bad types, out-of-range values, values off the
 allowed list):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -196,12 +196,12 @@ allowed list):</p>
 <span><span class="co">#&gt; ! Value not in allowed_values list: 1 row [species] (e.g. P.vivax (row 4))</span></span>
 <span><span class="co">#&gt;</span></span>
 <span><span class="co">#&gt; ℹ See `result$flags` for the full row-level detail.</span></span></code></pre></div>
-<p>One flag — a mistyped species. Useful, but it tells you nothing about
+<p>One flag, a mistyped species. Useful, but it tells you nothing about
 whether the <em>epidemiology</em> makes sense. For that, chain on the
 anomaly detectors.</p>
 </div>
 <div class="section level2">
-<h2 id="spikes">3. Spikes — <code>add_anomaly_pct_change()</code><a class="anchor" aria-label="anchor" href="#spikes"></a>
+<h2 id="spikes">3. Spikes, <code>add_anomaly_pct_change()</code><a class="anchor" aria-label="anchor" href="#spikes"></a>
 </h2>
 <p>Epidemic data moves week to week; a sudden jump is either a real
 outbreak or a data error, and you need to know which. Aggregate to
@@ -226,24 +226,24 @@ threshold:</p>
 <span><span class="co">#&gt;     &lt;dbl&gt; &lt;chr&gt;      &lt;int&gt;              &lt;dbl&gt;</span></span>
 <span><span class="co">#&gt; 1       5 Azua          15              4</span></span>
 <span><span class="co">#&gt; 2       6 Azua           4             -0.733</span></span></code></pre></div>
-<p>Azua jumped from 3 cases to <strong>15 in week 5</strong> — a
+<p>Azua jumped from 3 cases to <strong>15 in week 5</strong>, a
 five-fold rise (the detector reports <code>pct_change = 4</code>,
-i.e. +400%) — then fell back in week 6 (<code>-73%</code>). Both are
+i.e. +400%), then fell back in week 6 (<code>-73%</code>). Both are
 flagged, because a spike produces <em>two</em> large changes (up, then
 down). The week-5 row is the one to investigate: <strong>is this a
 genuine cluster the field should respond to, or did a batch of cases get
-entered twice?</strong> The detector doesn’t decide — it points you at
+entered twice?</strong> The detector doesn’t decide, it points you at
 the week worth a phone call.</p>
 <p>(We aggregated <code>result$data</code> as-is, so the one
-still-flagged species row is rolled in — harmless for these per-week
+still-flagged species row is rolled in, harmless for these per-week
 counts, but on a real extract you’d resolve the cell flags from §2
 before rolling anything up.)</p>
 </div>
 <div class="section level2">
-<h2 id="gaps">4. Missing weeks — <code>add_anomaly_gaps()</code><a class="anchor" aria-label="anchor" href="#gaps"></a>
+<h2 id="gaps">4. Missing weeks, <code>add_anomaly_gaps()</code><a class="anchor" aria-label="anchor" href="#gaps"></a>
 </h2>
 <p>A week with <strong>no rows at all</strong> never shows up as a bad
-value — it’s simply absent, and easy to miss.
+value, it’s simply absent, and easy to miss.
 <code><a href="../reference/add_anomaly_gaps.html">add_anomaly_gaps()</a></code> infers the expected run of weeks and
 returns the ones that aren’t there:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -261,14 +261,14 @@ returns the ones that aren’t there:</p>
 <span><span class="co">#&gt;   province year  epiweek issue</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;</span></span>
 <span><span class="co">#&gt; 1 San Juan 2024      4   structural_gap</span></span></code></pre></div>
-<p>San Juan reported weeks 1, 2, 3, 5, and 6 — but <strong>not week
+<p>San Juan reported weeks 1, 2, 3, 5, and 6, but <strong>not week
 4</strong>. That is not zero cases; it is <em>no report</em>. Before you
 draw an epidemic curve, you need to know whether the clinic didn’t
 report that week (chase it) or the data were dropped in transfer (fix
 it). A silent gap becomes a fake “dip” in the curve if you don’t.</p>
 </div>
 <div class="section level2">
-<h2 id="consistency">5. Cross-field rules — <code>add_anomaly_consistency()</code><a class="anchor" aria-label="anchor" href="#consistency"></a>
+<h2 id="consistency">5. Cross-field rules, <code>add_anomaly_consistency()</code><a class="anchor" aria-label="anchor" href="#consistency"></a>
 </h2>
 <p>Some errors only show up when two columns are read together. The
 schema’s <code>consistency</code> block defines named rules; the
@@ -278,14 +278,14 @@ onto the result:</p>
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">result</span> <span class="op">|&gt;</span> <span class="fu"><a href="../reference/add_anomaly_consistency.html">add_anomaly_consistency</a></span><span class="op">(</span><span class="va">schema</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ All consistency checks passed.</span></span></code></pre></div>
 <p>Here the schema’s epiweek rules all hold, so it passes. The real
-power is <strong>cross-field</strong> rules — e.g.
+power is <strong>cross-field</strong> rules, e.g.
 <code>positives &lt;= tested</code>, or
-<code>treated &lt;= target_population</code> — which catch the
-impossible combinations that range checks can’t see. The <a href="dq-pipeline.html">data-quality pipeline</a> vignette shows how to
+<code>treated &lt;= target_population</code>, which catch the impossible
+combinations that range checks can’t see. The <a href="dq-pipeline.html">data-quality pipeline</a> vignette shows how to
 write them.</p>
 </div>
 <div class="section level2">
-<h2 id="spatial">6. Geographic names — <code>add_anomaly_spatial()</code><a class="anchor" aria-label="anchor" href="#spatial"></a>
+<h2 id="spatial">6. Geographic names, <code>add_anomaly_spatial()</code><a class="anchor" aria-label="anchor" href="#spatial"></a>
 </h2>
 <p>The last detector flags admin-unit names in the data that don’t
 appear in the official boundary (a common symptom of a typo or an
@@ -297,14 +297,14 @@ has neither, so it skips cleanly rather than erroring:</p>
 <span><span class="co">#&gt; ℹ No admin block in schema; skipping spatial name check.</span></span></code></pre></div>
 <p>With a schema that defines admin boundaries (and Azure access), this
 flags province or district names that aren’t on the official list. The
-upstream fix — mapping messy place names to canonical units in the first
-place — is the <a href="epi-reconcile-guide.html">locality
-reconciliation guide</a>.</p>
+upstream fix, mapping messy place names to canonical units in the first
+place, is the <a href="epi-reconcile-guide.html">locality reconciliation
+guide</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="act">7. What to do with the flags<a class="anchor" aria-label="anchor" href="#act"></a>
 </h2>
-<p>The detectors don’t clean anything — they hand you a short list of
+<p>The detectors don’t clean anything, they hand you a short list of
 <strong>questions to answer before you analyse</strong>:</p>
 <table class="table">
 <colgroup>
@@ -349,14 +349,14 @@ on numbers you’ve actually interrogated.</p>
 </h2>
 <ul>
 <li>
-<a href="dq-pipeline.html">Data-quality pipeline</a> — the schema
+<a href="dq-pipeline.html">Data-quality pipeline</a>: the schema
 reference and how to author consistency rules.</li>
 <li>
-<a href="epi-reconcile-guide.html">Reconciling localities</a> —
+<a href="epi-reconcile-guide.html">Reconciling localities</a>:
 fixing the geographic names the spatial check flags.</li>
 <li>
-<a href="epi-analytics.html">Epi analytics</a> — incidence,
-epiweeks, and epidemic curves, <em>after</em> the extract is clean.</li>
+<a href="epi-analytics.html">Epi analytics</a>: incidence, epiweeks,
+and epidemic curves, <em>after</em> the extract is clean.</li>
 </ul>
 <p>See the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide
 index</a> for the full set, and the <a href="../reference/index.html">reference</a> for the anomaly-detector

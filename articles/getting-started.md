@@ -1,8 +1,8 @@
 # Getting started with erifunctions
 
-`erifunctions` is the Carter Center ERI team’s R package — the way
-**Data Analysts** and **Epidemiologists** work with TCC’s Azure-centred
-data system across countries (Haiti, DR, Uganda, OEPA, …) and diseases
+`erifunctions` is the Carter Center ERI team’s R package, the way **Data
+Analysts** and **Epidemiologists** work with TCC’s Azure-centred data
+system across countries (Haiti, DR, Uganda, OEPA, …) and diseases
 (malaria, oncho, LF, SCH, STH). You install it, authenticate through
 your browser, and call functions; you don’t edit the package. This page
 is the **front door**: learn the one idea every guide assumes, then
@@ -17,11 +17,11 @@ remotes::install_github("thecartercenter/erifunctions")
 library(erifunctions)
 ```
 
-Azure access is **zero-config** — the first command that needs it opens
+Azure access is **zero-config**, the first command that needs it opens
 your browser to sign in. ODK, SharePoint, and Teams need a little setup.
 The **[Connecting to Azure, ODK, SharePoint &
 Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)**
-guide walks through each and how to confirm it works — including the one
+guide walks through each and how to confirm it works, including the one
 thing to do **before your first governed action**: set `ERI_ANALYST_ID`
 so approvals and logs carry your name, not your OS username.
 
@@ -40,7 +40,7 @@ same `surveillance` channel is a `case` line-list in one country and an
 
 Run
 [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
-once — it prints the whole vocabulary, so you never have to guess a
+once, it prints the whole vocabulary, so you never have to guess a
 value:
 
 ``` r
@@ -56,7 +56,7 @@ eri_data_model()
 #>   (… plus the measures, formats, and layers, and the transitional cmr/odk tokens.)
 ```
 
-Everything moves through three **layers** — `raw/` (as received) →
+Everything moves through three **layers**, `raw/` (as received) →
 `staged/` (DQ-checked) → `processed/` (the canonical data the whole team
 trusts). Nothing reaches `processed/` without a human calling
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
@@ -80,14 +80,14 @@ open as you work.
 1.  [Connecting to the
     services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
 2.  [Onboarding a new country / disease / data
-    type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
-    — stand up the space
+    type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md):
+    stand up the space
 3.  [Ingesting a surveillance
-    dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
-    — raw → DQ → staged → **approved**
+    dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
+    raw → DQ → staged → **approved**
 4.  [Triaging the error & DQ log
-    backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md)
-    — find what failed and close it out
+    backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md):
+    find what failed and close it out
 
 Then, as those feeds arrive: [monthly **CMR**
 reports](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
@@ -99,14 +99,14 @@ forms](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md).
 1.  [Connecting to the
     services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
 2.  [A complete research
-    workflow](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md)
-    — source approved data, analyse, tag a version
+    workflow](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+    source approved data, analyse, tag a version
 3.  [Reconciling localities to admin
-    units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md)
-    — messy place names → canonical units
+    units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md):
+    messy place names → canonical units
 4.  [Catching anomalies in a new
-    extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md)
-    — QC for epidemiological sense
+    extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md):
+    QC for epidemiological sense
 
 Then the [epi analytics
 helpers](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
@@ -121,7 +121,7 @@ for incidence, epiweeks, and curves.
   workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md),
   and [SharePoint &
   Teams](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.md).
-- **Extending the package** — [adding a new
+- **Extending the package**: [adding a new
   program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md):
   contribute a schema and disease analytics for a new country/disease.
 - The [function

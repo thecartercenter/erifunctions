@@ -108,7 +108,7 @@
 
     
     
-<p><strong>ODK Central</strong> is where field data is born — survey
+<p><strong>ODK Central</strong> is where field data is born, survey
 teams collect submissions on phones, and they land on an ODK Central
 server. This is a hands-on walkthrough for a <strong>Data Analyst
 (DA)</strong> of the whole loop: connect to ODK Central, stand up a
@@ -118,14 +118,14 @@ Carter Center data system.</p>
 <p>So you can practise safely, you will create a <strong>make-believe
 form</strong> in a sandbox <strong><code>test</code> project</strong> on
 your ODK Central server, submit a few fake records, and work the loop
-end-to-end — then the final <a href="#clean-up"><strong>Clean
+end-to-end, then the final <a href="#clean-up"><strong>Clean
 up</strong></a> section removes everything you created.</p>
 <blockquote>
 <p><strong>What you need to follow along.</strong> Unlike the other
 guides, this one talks to a live <strong>ODK Central</strong> server, so
 you need an ODK Central account and access to a project you can
-experiment in. If you do not, read along — the steps are the same
-against any server.</p>
+experiment in. If you do not, read along; the steps are the same against
+any server.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="the-golden-rule">The golden rule<a class="anchor" aria-label="anchor" href="#the-golden-rule"></a>
@@ -136,9 +136,9 @@ brings the data through it into one governed pipeline.</strong> You
 <strong>register</strong> a form (the registry is the team’s record of
 which forms are tracked), <strong>sync</strong> its submissions into
 <code>{country}/{disease}/research/raw/</code>, and from there it flows
-through the same <code>raw → staged → processed</code> lifecycle — with
+through the same <code>raw → staged → processed</code> lifecycle, with
 <a href="../reference/eri_approve.html"><code>eri_approve()</code></a>
-as the human gate — as every other dataset.</p>
+as the human gate, as every other dataset.</p>
 <p><strong>Where ODK lands.</strong> Under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
 ≠ measure model (ADR-0012)</a>, ODK is the
 <strong><code>research</code></strong> channel’s collection
@@ -146,7 +146,7 @@ as the human gate — as every other dataset.</p>
 <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> writes to the <code>research</code> source.
 Its measure (<code>tas</code>, <code>prevalence</code>, …) is
 <strong>optional</strong> and assigned later, when you clean the form
-into a final dataset — which is why these paths carry no measure level
+into a final dataset, which is why these paths carry no measure level
 yet.</p>
 </blockquote>
 <div class="mermaid">
@@ -180,14 +180,14 @@ with <code>usethis::edit_r_environ()</code>, add three lines, then
 <pre><code>ODK_URL=https://your-odk-server.org/
 ODK_USER=you@example.org
 ODK_PASS=your-password</code></pre>
-<p>Everything below reads these automatically — you never type your
+<p>Everything below reads these automatically, you never type your
 password into a script.</p>
 </li>
 <li><p><strong>Azure access</strong> is zero-config: the first command
 that needs it opens your browser to sign in (see
 <code><a href="../reference/get_azure_storage_connection.html">?get_azure_storage_connection</a></code>).</p></li>
 </ol>
-<p>One comfort setting — leave verbosity at its default
+<p>One comfort setting, leave verbosity at its default
 <code>"full"</code> for this walkthrough (that is the step-by-step
 output shown below):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -195,10 +195,10 @@ output shown below):</p>
 <span><span class="co"># eri_verbosity("quiet")   # later, to trim to headlines + warnings only</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="begin">1. Begin — create your practice form<a class="anchor" aria-label="anchor" href="#begin"></a>
+<h2 id="begin">1. Begin, create your practice form<a class="anchor" aria-label="anchor" href="#begin"></a>
 </h2>
 <blockquote>
-<p><strong>Heads up — this first step happens in your browser, not in
+<p><strong>Heads up, this first step happens in your browser, not in
 R.</strong> Creating the <code>test</code> project, uploading the form,
 and submitting practice entries are all done in the ODK Central
 <strong>web interface</strong>. <code>erifunctions</code> takes over
@@ -207,7 +207,7 @@ from <em>Connect</em> (below) once there is data on the server.</p>
 <div class="section level3">
 <h3 id="put-a-form-on-the-server">Put a form on the server<a class="anchor" aria-label="anchor" href="#put-a-form-on-the-server"></a>
 </h3>
-<p>The package ships a tiny practice form — a mock vector-surveillance
+<p>The package ships a tiny practice form, a mock vector-surveillance
 “river prospection” survey. Find it on your machine and upload it to a
 <strong><code>test</code></strong> project in ODK Central:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -249,7 +249,7 @@ other functions as <code>con =</code>.</p>
 <span><span class="co">#&gt; # A tibble: 1 × 2</span></span>
 <span><span class="co">#&gt;   xmlFormId                  name</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;                      &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 eri_test_river_prospection ERI Test — River Prospection</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 eri_test_river_prospection ERI Test, River Prospection</span></span></code></pre></div>
 <p>So our sandbox is <strong>project <code>11</code></strong>, form
 <strong><code>eri_test_river_prospection</code></strong>. Keep those
 handy:</p>
@@ -264,28 +264,28 @@ handy:</p>
 <div class="section level3">
 <h3 id="monitor-submissions">Monitor submissions<a class="anchor" aria-label="anchor" href="#monitor-submissions"></a>
 </h3>
-<p><code><a href="../reference/eri_survey_status.html">eri_survey_status()</a></code> is your at-a-glance health check —
+<p><code><a href="../reference/eri_survey_status.html">eri_survey_status()</a></code> is your at-a-glance health check:
 how many submissions, the most recent one, and recent activity:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_survey_status.html">eri_survey_status</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>, con <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ── Survey Status (1 form) ──────────────────────────────</span></span>
 <span><span class="co">#&gt; • eri_test_river_prospection [open] - 3 total, last: 2026-06-25T19:57:33.690Z</span></span></code></pre></div>
-<p>It prints a one-line summary, but it is really a tibble — store it to
+<p>It prints a one-line summary, but it is really a tibble, store it to
 see the full metrics (7- and 30-day counts, open/closed state):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">st</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_survey_status.html">eri_survey_status</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>, con <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">st</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   project_id project_name                    form_id                    form_name           server_url status total_submissions   last_submission_at submissions_7d submissions_30d</span></span>
-<span><span class="co">#&gt; 1         11      testing eri_test_river_prospection ERI Test — River Prospection https://your-odk… open                 3 2026-06-25T19:57:33.690Z              3               3</span></span></code></pre></div>
+<span><span class="co">#&gt; 1         11      testing eri_test_river_prospection ERI Test, River Prospection https://your-odk… open                 3 2026-06-25T19:57:33.690Z              3               3</span></span></code></pre></div>
 <p>Called with just <code>project_id</code> it reports
 <strong>every</strong> form in the project; with neither argument, every
-form on every project you can see — handy for a Monday-morning sweep
+form on every project you can see, handy for a Monday-morning sweep
 across all your surveys.</p>
 </div>
 <div class="section level3">
 <h3 id="manage-who-collects-app-users">Manage who collects: app users<a class="anchor" aria-label="anchor" href="#manage-who-collects-app-users"></a>
 </h3>
-<p>Field staff collect through <strong>app users</strong> — per-project
+<p>Field staff collect through <strong>app users</strong>, per-project
 data-collection accounts. You can create one and assign it to a form
 straight from R. (These calls change your live project; we remove the
 demo user in <a href="#clean-up">Clean up</a>.)</p>
@@ -315,7 +315,7 @@ demo user in <a href="#clean-up">Clean up</a>.)</p>
 <span>  actor_id   <span class="op">=</span> <span class="va">new_user</span><span class="op">$</span><span class="va">actor_id</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<p>Check the form’s assignments — your new collector should be
+<p>Check the form’s assignments, your new collector should be
 listed:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_odk_form_users.html">list_odk_form_users</a></span><span class="op">(</span>con <span class="op">=</span> <span class="va">con</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span><span class="op">)</span></span>
@@ -325,7 +325,7 @@ listed:</p>
 <span><span class="co">#&gt; 1     198      7</span></span>
 <span><span class="co">#&gt; 2     250      2</span></span></code></pre></div>
 <p>Each row pairs an <code>actorId</code> (an app user) with the
-<code>roleId</code> it holds on this form — your new collector
+<code>roleId</code> it holds on this form, your new collector
 (<code>actorId 250</code>, <code>roleId 2</code> = ODK’s App User role)
 is now listed alongside anyone already assigned.</p>
 </div>
@@ -336,7 +336,7 @@ is now listed alongside anyone already assigned.</p>
 CSV with columns <code>project_id, form_id, action, actor_name</code>
 (action is <code>create</code>, <code>assign</code>, or
 <code>remove</code>) and hand it to <a href="../reference/eri_odk_bulk_users.html"><code>eri_odk_bulk_users()</code></a>.
-Always run it once with <code>dry_run = TRUE</code> first — it validates
+Always run it once with <code>dry_run = TRUE</code> first, it validates
 <strong>every</strong> row against the live server and reports
 <em>all</em> problems together before changing anything:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
@@ -354,14 +354,14 @@ Always run it once with <code>dry_run = TRUE</code> first — it validates
 <p>This is where ODK meets the rest of the system. We use a sandbox
 <strong>country/disease</strong> so it is easy to clean up:
 <code>country = "uga"</code>, <code>disease = "demo"</code>. (ODK
-registration requires a real ERI country code — <code>uga</code>,
-<code>ht</code>, <code>eth</code>, … — but the disease is free text, so
+registration requires a real ERI country code, <code>uga</code>,
+<code>ht</code>, <code>eth</code>, …, but the disease is free text, so
 <code>demo</code> keeps this clearly a practice run.)</p>
 <div class="section level3">
 <h3 id="register-the-form">Register the form<a class="anchor" aria-label="anchor" href="#register-the-form"></a>
 </h3>
 <p>Registering records the form in the shared <strong>ODK
-registry</strong> (<code>odk/registry.yaml</code>) — the team’s single
+registry</strong> (<code>odk/registry.yaml</code>), the team’s single
 source of truth for which forms are tracked, and which country/disease
 each one feeds.</p>
 <blockquote>
@@ -370,7 +370,7 @@ registration lands in the <strong>same</strong>
 <code>odk/registry.yaml</code> as everyone’s real forms. For a real
 form, <a href="#clean-up">Clean up</a>’s
 <code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> is a <strong>soft-delete</strong>
-(<code>active: false</code>) that preserves the audit trail — so a
+(<code>active: false</code>) that preserves the audit trail, so a
 practice entry would linger (inactive) rather than vanishing. For
 <strong>sandbox</strong> work, use an obviously-fake
 <code>project_id</code>/<code>country</code>, and tear the entry down
@@ -395,8 +395,8 @@ practice rows are left behind in the shared registry.</p>
 <span><span class="co">#&gt; # A tibble: 5 × 9</span></span>
 <span><span class="co">#&gt;   server_url               project_id form_id                    form_display_name … country disease added_by  added_at   last_synced</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;                         &lt;int&gt; &lt;chr&gt;                      &lt;chr&gt;                &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;      &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 https://your-odk-server…         11 eri_test_river_prospection ERI Test — River …   uga     demo    your.name 2026-06-29 NA</span></span>
-<span><span class="co">#&gt; # ℹ 4 more rows — the registry is shared, so you also see teammates' registered forms</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 https://your-odk-server…         11 eri_test_river_prospection ERI Test, River …   uga     demo    your.name 2026-06-29 NA</span></span>
+<span><span class="co">#&gt; # ℹ 4 more rows, the registry is shared, so you also see teammates' registered forms</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="sync-the-submissions">Sync the submissions<a class="anchor" aria-label="anchor" href="#sync-the-submissions"></a>
@@ -422,8 +422,8 @@ latitude/longitude/altitude/accuracy):</p>
 <span><span class="co">#&gt; [13] "collector"        "meta-instanceID"  "KEY"              "SubmitterID"</span></span>
 <span><span class="co">#&gt; [17] "SubmitterName"    "AttachmentsPresent" "AttachmentsExpected" "Status"</span></span>
 <span><span class="co">#&gt; [21] "ReviewState"      "DeviceID"         "Edits"            "FormVersion"</span></span></code></pre></div>
-<p>This practice form is <strong>flat</strong> — one row per submission
-— so it lands as a single table in one Parquet. Most real forms have
+<p>This practice form is <strong>flat</strong>, one row per submission,
+so it lands as a single table in one Parquet. Most real forms have
 <em>repeat groups</em> and come down as several tables; <a href="#repeat-groups">section 4</a> shows how to pull and sync
 those.</p>
 </div>
@@ -467,30 +467,30 @@ like any other approved dataset:</p>
 <span><span class="co">#&gt; #   registered_by &lt;chr&gt;, last_verified_at &lt;chr&gt;</span></span></code></pre></div>
 <p>(<code>data_type</code> is <code>&lt;NA&gt;</code> because we
 approved at the channel level; <code>row_count</code> is <code>NA</code>
-until the entry is verified. Assign a measure on approval —
-<code>eri_approve(…, data_type = "prevalence")</code> — to fill it
+until the entry is verified. Assign a measure on approval,
+<code>eri_approve(…, data_type = "prevalence")</code>, to fill it
 in.)</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="repeat-groups">4. Forms with repeat groups<a class="anchor" aria-label="anchor" href="#repeat-groups"></a>
 </h2>
-<p>The form above was deliberately simple — one row per submission, one
+<p>The form above was deliberately simple, one row per submission, one
 table. Most real ODK forms have <strong>repeat groups</strong>: a
-section the enumerator fills in <em>more than once per submission</em> —
+section the enumerator fills in <em>more than once per submission</em>,
 several larvae sampled at one site, several household members in one
 visit, several nets given to one household. ODK Central exports each
 repeat group as its <strong>own table</strong>, so a form with one
 repeat comes down as <strong>two</strong> tables:</p>
 <ul>
-<li>a <strong>parent</strong> table — one row per submission (named
+<li>a <strong>parent</strong> table, one row per submission (named
 <code>{form_id}</code>), and</li>
-<li>a <strong>child</strong> table — one row per repeat instance (named
+<li>a <strong>child</strong> table, one row per repeat instance (named
 <code>{form_id}-{repeat_name}</code>), linked back to its parent by a
 <code>PARENT_KEY</code> column whose value matches the parent row’s
 <code>KEY</code>.</li>
 </ul>
-<p><code>erifunctions</code> captures all of them — nothing is silently
+<p><code>erifunctions</code> captures all of them, nothing is silently
 dropped.</p>
 <div class="section level3">
 <h3 id="upload-the-repeat-practice-form">Upload the repeat practice form<a class="anchor" aria-label="anchor" href="#upload-the-repeat-practice-form"></a>
@@ -501,9 +501,9 @@ site:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">repeat_xlsx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"odk-test-form-repeat.xlsx"</span>, package <span class="op">=</span> <span class="st">"erifunctions"</span><span class="op">)</span></span></code></pre></div>
 <p>Upload it to your <code>test</code> project exactly as before
-(<strong>New ▸ Form</strong>, then publish). Submit two or three entries
-— and for each one, use the <strong>＋ Add</strong> button inside the
-<em>Larva sample</em> group to record <strong>two or three
+(<strong>New ▸ Form</strong>, then publish). Submit two or three
+entries, and for each one, use the <strong>＋ Add</strong> button inside
+the <em>Larva sample</em> group to record <strong>two or three
 samples</strong> before sending. Those extra samples are what populate
 the child table.</p>
 </div>
@@ -525,7 +525,7 @@ instead of just the parent:</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">tabs</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "eri_test_river_repeat"              "eri_test_river_repeat-larva_sample"</span></span></code></pre></div>
-<p>The <strong>parent</strong> table holds one row per submission — the
+<p>The <strong>parent</strong> table holds one row per submission, the
 site fields plus ODK’s system columns, including the <code>KEY</code>
 that uniquely identifies each submission:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
@@ -550,7 +550,7 @@ that uniquely identifies each submission:</p>
 <span><span class="co">#&gt; 5 s_damnosum           3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span>
 <span><span class="co">#&gt; 6 other                3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span>
 <span><span class="co">#&gt; 7 s_neavei             3 uuid:621e3b01-4825-43c5-9cf3-1ac734eb0426 uuid:621e3b01-4825-43c5-9cf3-1ac…</span></span></code></pre></div>
-<p>Here three submissions produced seven samples — submission
+<p>Here three submissions produced seven samples, submission
 <code>5e70e2a3…</code> was sampled three times, <code>621e3b01…</code>
 three times, and <code>b3ce44d7…</code> once.</p>
 </div>
@@ -559,7 +559,7 @@ three times, and <code>b3ce44d7…</code> once.</p>
 </h3>
 <p><code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> handles repeat forms automatically.
 Register the form first (just as in <a href="#pull">section 3</a>), then
-sync — it writes <strong>each</strong> table to its own Parquet in the
+sync, it writes <strong>each</strong> table to its own Parquet in the
 <code>raw/</code> layer:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_sync.html">eri_odk_sync</a></span><span class="op">(</span>project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">repeat_form_id</span>, con <span class="op">=</span> <span class="va">con</span>, data_con <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
@@ -568,7 +568,7 @@ sync — it writes <strong>each</strong> table to its own Parquet in the
 <span><span class="co">#&gt; • "eri_test_river_repeat": 3 records</span></span>
 <span><span class="co">#&gt; • "eri_test_river_repeat-larva_sample": 7 records</span></span>
 <span><span class="co">#&gt; ✔ Synced "eri_test_river_repeat": 3 submissions + 1 repeat table to 'uga/demo/research/raw/'.</span></span></code></pre></div>
-<p>You now have two files in <code>raw/</code> — a flat form would have
+<p>You now have two files in <code>raw/</code>, a flat form would have
 left exactly one:</p>
 <pre><code><span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">research</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat.parquet</span>                <span class="co"># parent: 3 submissions</span></span>
 <span><span class="va">uga</span><span class="op">/</span><span class="va">demo</span><span class="op">/</span><span class="va">research</span><span class="op">/</span><span class="va">raw</span><span class="op">/</span><span class="va">eri_test_river_repeat</span><span class="op">-</span><span class="va">larva_sample.parquet</span>   <span class="co"># child:  7 samples</span></span></code></pre>
@@ -576,7 +576,7 @@ left exactly one:</p>
 <div class="section level3">
 <h3 id="rejoin-them-for-analysis">Rejoin them for analysis<a class="anchor" aria-label="anchor" href="#rejoin-them-for-analysis"></a>
 </h3>
-<p>The tables are kept separate on purpose — that is the faithful,
+<p>The tables are kept separate on purpose, that is the faithful,
 lossless shape of the data. When you want one flat table (one row per
 sample, carrying its site context), join the child to the parent on
 <code>PARENT_KEY</code> = <code>KEY</code>:</p>
@@ -611,19 +611,19 @@ and its repeats together so they stay in step.</p>
 </h2>
 <p>Everything so far moved data <strong>out of</strong> ODK Central.
 Sometimes you need the other direction: a stack of records that already
-exist — collected on <strong>paper</strong>, or living in an <strong>old
-spreadsheet</strong> — that you want to land in ODK Central so they sit
+exist, collected on <strong>paper</strong>, or living in an <strong>old
+spreadsheet</strong>, that you want to land in ODK Central so they sit
 alongside the field submissions and flow through the same pipeline. <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>
 does exactly that: it reads a table and <strong>creates one submission
 per row</strong> on an existing <strong>published</strong> form.</p>
 <p>It is the mirror image of a download: columns are matched to form
-fields <strong>by name</strong>, using the same flattening you saw above
-— a field nested in a <code>visit</code> group is the column
+fields <strong>by name</strong>, using the same flattening you saw
+above, a field nested in a <code>visit</code> group is the column
 <code>visit-date</code>, and repeat groups are supplied as the same
 <code>{form_id}-{repeat}</code> child tables linked by
 <code>PARENT_KEY</code>. So a
 <code>download_odk_form(tables = TRUE)</code> result is itself a valid
-input — <strong>download and upload round-trip.</strong></p>
+input, <strong>download and upload round-trip.</strong></p>
 <p>Say you have a few historical river-prospection records to backfill.
 Build (or read) a table whose columns match the form’s fields:</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
@@ -636,9 +636,9 @@ Build (or read) a table whose columns match the form’s fields:</p>
 <span>  record_id       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"hist-001"</span>, <span class="st">"hist-002"</span><span class="op">)</span>    <span class="co"># a stable key we'll hash for the instanceID</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><strong>Always dry-run first.</strong> <code>dry_run = TRUE</code>
-validates the table against the live form — unknown columns, required
+validates the table against the live form, unknown columns, required
 fields, value types (dates, numbers, geopoints), and select-value choice
-lists — and sends <strong>nothing</strong>:</p>
+lists, and sends <strong>nothing</strong>:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">backfill</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
 <span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"record_id"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -664,13 +664,13 @@ lists — and sends <strong>nothing</strong>:</p>
 deterministically</strong> from <code>key_col</code> (here
 <code>record_id</code>). That makes the upload <strong>safe to
 re-run</strong>: the second time, ODK Central recognises the same ids
-and rejects them, so nothing is duplicated —</p>
+and rejects them, so nothing is duplicated,</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_odk_upload.html">eri_odk_upload</a></span><span class="op">(</span><span class="va">backfill</span>, project_id <span class="op">=</span> <span class="va">project_id</span>, form_id <span class="op">=</span> <span class="va">form_id</span>,</span>
 <span>               con <span class="op">=</span> <span class="va">con</span>, key_col <span class="op">=</span> <span class="st">"record_id"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Uploaded to "eri_test_river_prospection": 0 created, 2 already present.</span></span></code></pre></div>
-<p>— and if you fix a couple of rows and run again, only those change
-while the rest skip. A bad row never aborts the batch: it comes back as
+<p>If you fix a couple of rows and run again, only those change while
+the rest skip. A bad row never aborts the batch: it comes back as
 <code>failed</code> (with the server’s message) while its neighbours
 load.</p>
 <div class="section level3">
@@ -678,8 +678,8 @@ load.</p>
 </h3>
 <p>A paper or legacy spreadsheet rarely uses the form’s exact column
 names. Rather than editing the source file, pass a
-<strong><code>mapping</code></strong> —
-<code>c(your_header = "field-column", …)</code> — and
+<strong><code>mapping</code></strong>,
+<code>c(your_header = "field-column", …)</code>, and
 <code><a href="../reference/eri_odk_upload.html">eri_odk_upload()</a></code> renames the columns before it
 validates:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
@@ -701,8 +701,8 @@ validates:</p>
 <span><span class="co">#&gt; ℹ `dry_run` is on -- no submissions were sent.</span></span>
 <span><span class="co">#&gt; # A tibble: 0 × 4</span></span>
 <span><span class="co">#&gt; # ℹ 4 variables: table &lt;chr&gt;, column &lt;chr&gt;, row &lt;int&gt;, issue &lt;chr&gt;</span></span></code></pre></div>
-<p>Map only the columns that differ — anything already matching a field
-is left alone — then drop <code>dry_run</code> to send. The targets are
+<p>Map only the columns that differ, anything already matching a field
+is left alone, then drop <code>dry_run</code> to send. The targets are
 the same flattened field-column names (<code>group-field</code>).</p>
 </div>
 <div class="section level3">
@@ -741,15 +741,15 @@ submission and attaches each repeat instance to the right parent:</p>
 <span><span class="co">#&gt; 1 uuid:5b017f95628125dba44505b9e366dff9 created         200 NA</span></span>
 <span><span class="co">#&gt; 2 uuid:ec5ea8c7e5364fa80c6a68dceeb4916b created         200 NA</span></span></code></pre></div>
 <p>Downloaded back, the first submission carries <strong>two</strong>
-<code>larva_sample</code> rows and the second <strong>one</strong> —
-each child attached to its parent by <code>PARENT_KEY</code>.
+<code>larva_sample</code> rows and the second <strong>one</strong>, each
+child attached to its parent by <code>PARENT_KEY</code>.
 (<code>KEY</code> is just the link column here; it seeds the
 deterministic <code>instanceID</code> via <code>key_col</code> and is
 otherwise treated as a system column.)</p>
 <blockquote>
 <p><strong>Two limits to know.</strong> The form must be
 <strong>published</strong> (you can’t backfill into a draft), and
-<strong>attachments can’t be sent at creation</strong> — that is an ODK
+<strong>attachments can’t be sent at creation</strong>: that is an ODK
 Central API constraint, so photos/GPS traces are out of scope for the
 upload.</p>
 </blockquote>
@@ -758,7 +758,7 @@ upload.</p>
 <div class="section level2">
 <h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
-<p>Practice run done — remove everything you created so you leave no
+<p>Practice run done, remove everything you created so you leave no
 trace.</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Remove the demo collector from ODK Central (revoke its form access, then delete the account).</span></span>
@@ -780,14 +780,14 @@ trace.</p>
 <span><span class="co">#&gt; ✔ Purged 1 registry entry for "eri_test_river_repeat" (project 11).</span></span></code></pre></div>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Delete the whole uga/demo sandbox namespace (raw + staged + processed + logs).</span></span>
-<span><span class="co"># eri_dir_delete() removes it recursively — the in-package path, no Storage Explorer.</span></span>
+<span><span class="co"># eri_dir_delete() removes it recursively, the in-package path, no Storage Explorer.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"uga/demo"</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <p>Finally, in the ODK Central web interface, delete the test form (Form
 ▸ ⋯ ▸ Delete) from your <code>test</code> project if you want it gone
 there too.</p>
 <blockquote>
 <p><strong>Deregister vs purge.</strong> For a <strong>real</strong>
-form, <code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> <em>soft</em>-deletes — it flips
+form, <code><a href="../reference/eri_odk_deregister.html">eri_odk_deregister()</a></code> <em>soft</em>-deletes, it flips
 the registry entry to <code>active: false</code> rather than erasing it,
 so the record of what was once tracked (and its sync history) survives
 for audit; the inactive entry is harmless and won’t show up in
@@ -799,10 +799,10 @@ so the shared registry is left exactly as we found it.</p>
 <blockquote>
 <p><strong>Why we could delete freely here:</strong> the form and its
 submissions are invented. <strong>Real ODK forms and field submissions
-are never deleted casually</strong> — they are the primary record of
-work done in the field. The discipline this guide builds — register,
-sync to <code>raw/</code>, quality-check, and approve through the human
-gate — is what keeps that real data trustworthy.</p>
+are never deleted casually</strong>, they are the primary record of work
+done in the field. The discipline this guide builds, register, sync to
+<code>raw/</code>, quality-check, and approve through the human gate, is
+what keeps that real data trustworthy.</p>
 </blockquote>
 </div>
 <div class="section level2">
@@ -813,11 +813,11 @@ sync to the governed pipeline, and approve into the canonical layer.</p>
 <ul>
 <li>
 <strong>Incremental sync</strong> (only the new/edited submissions,
-rather than re-downloading everything) is on the roadmap (Phase 4) — the
+rather than re-downloading everything) is on the roadmap (Phase 4), the
 registry already reserves a <code>last_cursor</code> for it.</li>
 <li>
-<strong>Backfilling the other direction</strong> — pushing a
-CSV/Excel table of historical records <em>into</em> a form — is <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>,
+<strong>Backfilling the other direction</strong>: pushing a
+CSV/Excel table of historical records <em>into</em> a form, is <a href="../reference/eri_odk_upload.html"><code>eri_odk_upload()</code></a>,
 shown in section 5 above.</li>
 <li>
 <strong>Attachments</strong> (photos, GPS traces) come down with <a href="../reference/download_form_attachments.html"><code>download_form_attachments()</code></a>.</li>

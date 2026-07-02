@@ -116,8 +116,8 @@ allowed values.</em></p>
 <h2 id="a-path-has-five-axes">A path has five axes<a class="anchor" aria-label="anchor" href="#a-path-has-five-axes"></a>
 </h2>
 <pre><code><span><span class="va">data</span> <span class="op">/</span> <span class="op">{</span><span class="va">country</span><span class="op">}</span> <span class="op">/</span> <span class="op">{</span><span class="va">disease</span><span class="op">}</span> <span class="op">/</span> <span class="op">{</span><span class="va">data_source</span><span class="op">}</span> <span class="op">/</span> <span class="op">{</span><span class="va">data_type</span><span class="op">}</span> <span class="op">/</span> <span class="op">{</span><span class="va">layer</span><span class="op">}</span></span></code></pre>
-<p>Two of them — <code>data_source</code> and <code>data_type</code> —
-are the ones people mix up. They are <strong>independent</strong>:</p>
+<p>Two of them, <code>data_source</code> and <code>data_type</code>, are
+the ones people mix up. They are <strong>independent</strong>:</p>
 <table style="width:100%;" class="table">
 <colgroup>
 <col width="14%">
@@ -155,7 +155,7 @@ surveys…).</li>
 <li>DR malaria <strong>surveillance</strong> is
 <strong><code>case</code></strong> (one row per patient); Haiti malaria
 surveillance is <strong><code>aggregate</code></strong> (facility ×
-month counts). Same source, same disease — different measure.</li>
+month counts). Same source, same disease, different measure.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -163,32 +163,32 @@ month counts). Same source, same disease — different measure.</li>
 </h2>
 <ol style="list-style-type: decimal">
 <li>
-<strong>country</strong> — <code>dr</code>, <code>ht</code>,
+<strong>country</strong>: <code>dr</code>, <code>ht</code>,
 <code>eth</code>, <code>uga</code>, <code>nga</code>, <code>sdn</code>,
 <code>ssd</code>, <code>tcd</code>, <code>mad</code>, <code>oepa</code>,
 …</li>
 <li>
-<strong>disease</strong> — <code>malaria</code>, <code>oncho</code>,
+<strong>disease</strong>: <code>malaria</code>, <code>oncho</code>,
 <code>lf</code>, <code>sch</code>, <code>sth</code> (free text;
 lowercase).</li>
 <li>
-<strong>data_source (channel)</strong> — pick one:
+<strong>data_source (channel)</strong>: pick one:
 <ul>
 <li>
-<strong><code>surveillance</code></strong> — routine MoH feed
+<strong><code>surveillance</code></strong>: routine MoH feed
 (DR/Haiti malaria). Output: cases or aggregate counts.</li>
 <li>
-<strong><code>programmatic</code></strong> — country-team
+<strong><code>programmatic</code></strong>: country-team
 activity/coverage data: CMR, or a direct MDA feed. Spans diseases (split
 per disease on ingest).</li>
 <li>
-<strong><code>research</code></strong> — survey instruments launched
+<strong><code>research</code></strong>: survey instruments launched
 + monitored via ODK, then cleaned into a final analytic dataset (TAS,
 prevalence, entomology).</li>
 </ul>
 </li>
 <li>
-<strong>data_type (measure)</strong> — what the rows count:
+<strong>data_type (measure)</strong>: what the rows count:
 <code>case</code> · <code>aggregate</code> · <code>treatment</code> ·
 <code>mmdp</code> · <code>training</code> · <code>survey</code> ·
 <code>tas</code> · <code>prevalence</code> ·
@@ -270,14 +270,14 @@ prevalence, entomology).</li>
 <li>
 <strong><code>format</code> ≠ <code>data_source</code>.</strong>
 “CMR” and “ODK” are input <em>formats</em>, recorded in a
-<code>format</code> field — not channels. A CMR is
+<code>format</code> field, not channels. A CMR is
 <code>programmatic</code>; an ODK form is <code>research</code>. (The
 <code>cmr</code>/<code>odk</code> path tokens you may see in older data
-are transitional and being retired — ADR-0012.)</li>
+are transitional and being retired, ADR-0012.)</li>
 <li>
 <strong>A missing combination is normal.</strong> If
 <code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> / <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code> doesn’t
-recognise a value, you get a <strong>warning</strong>, not an error —
+recognise a value, you get a <strong>warning</strong>, not an error,
 adding a new country/disease/source/measure is a <em>data</em> change (a
 schema + a registry entry), not a code change. See the <a href="da-onboard-guide.html">onboarding a new program guide</a>.</li>
 </ul>

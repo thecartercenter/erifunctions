@@ -109,15 +109,15 @@
     
     
 <p>Once data is approved, a lot of the job is turning it into
-<strong>outputs</strong> — a table for a memo, a figure for proceedings,
+<strong>outputs</strong>, a table for a memo, a figure for proceedings,
 a workbook for a partner, a slide deck for a meeting.
 <code>erifunctions</code> ships a small, consistent <strong>reporting
 toolkit</strong> so those come out on-brand without fiddling with
 styling each time.</p>
 <p>This guide is the general toolkit (it runs on any data frame).
 Specific recurring reports get their own templates as they’re defined;
-the domain figures — <strong>maps</strong> and <strong>epidemic
-curves</strong> — live in the <a href="spatial-workflow.html">spatial
+the domain figures, <strong>maps</strong> and <strong>epidemic
+curves</strong>, live in the <a href="spatial-workflow.html">spatial
 workflow</a> and <a href="epi-analytics.html">epi analytics</a>
 guides.</p>
 <div class="section level2">
@@ -125,7 +125,7 @@ guides.</p>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span></code></pre></div>
-<p>In practice you’d pull approved data first — <code><a href="../reference/eri_query.html">eri_query()</a></code>
+<p>In practice you’d pull approved data first, <code><a href="../reference/eri_query.html">eri_query()</a></code>
 for a roll-up (see the <a href="da-adhoc-guide.html">ad-hoc guide</a>)
 or <code><a href="../reference/eri_read.html">eri_read()</a></code> for one dataset. Here we use a small frame so
 every chunk runs as-is:</p>
@@ -141,9 +141,9 @@ every chunk runs as-is:</p>
 <h2 id="table">A branded table<a class="anchor" aria-label="anchor" href="#table"></a>
 </h2>
 <p><a href="../reference/eri_table.html"><code>eri_table()</code></a>
-turns a data frame into a styled <a href="https://davidgohel.github.io/flextable/" class="external-link"><code>flextable</code></a>
-— ERI navy header, banded rows, an optional title and footnote — ready
-to drop into an HTML/Word/PowerPoint output:</p>
+turns a data frame into a styled <a href="https://davidgohel.github.io/flextable/" class="external-link"><code>flextable</code></a>:
+ERI navy header, banded rows, an optional title and footnote, ready to
+drop into an HTML/Word/PowerPoint output:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_table.html">eri_table</a></span><span class="op">(</span></span>
 <span>  <span class="va">dat</span>,</span>
@@ -154,7 +154,7 @@ to drop into an HTML/Word/PowerPoint output:</p>
 <p>It returns a <code>flextable</code> object; print it in a report, or
 hand it to the Word/PowerPoint/HTML helpers. <code>highlight_cols</code>
 is a <strong>named list</strong> mapping a column to a fill colour
-(<code>list(col = "#hex")</code>) — use it to shade the column you want
+(<code>list(col = "#hex")</code>), use it to shade the column you want
 the eye to land on.</p>
 </div>
 <div class="section level2">
@@ -168,7 +168,7 @@ the eye to land on.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Cases by province"</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="st">"Cases"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="../reference/eri_brand_ggplot_theme.html">eri_brand_ggplot_theme</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">p</span></span></code></pre></div>
-<p>For domain figures there are purpose-built helpers —
+<p>For domain figures there are purpose-built helpers,
 <code>eri_plot_theme("map" | "epicurve")</code> and
 <code><a href="../reference/eri_color_scheme.html">eri_color_scheme()</a></code> (e.g. the standard
 <code>"malaria.incidence"</code> bins), and the <code>eri_map_*</code>
@@ -180,7 +180,7 @@ end-to-end, and <a href="epi-analytics.html">epi analytics</a> covers
 <h2 id="excel">An Excel workbook<a class="anchor" aria-label="anchor" href="#excel"></a>
 </h2>
 <p>For a partner who wants the numbers, <a href="../reference/eri_report_excel.html"><code>eri_report_excel()</code></a>
-writes a styled multi-sheet workbook in one call — each named element of
+writes a styled multi-sheet workbook in one call, each named element of
 <code>sheets</code> becomes a tab:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_report_excel.html">eri_report_excel</a></span><span class="op">(</span></span>
@@ -196,9 +196,9 @@ writes a styled multi-sheet workbook in one call — each named element of
 <div class="section level2">
 <h2 id="pptx">A slide deck for proceedings<a class="anchor" aria-label="anchor" href="#pptx"></a>
 </h2>
-<p>The <code>eri_pptx_*</code> family builds a PowerPoint slide by slide
-— title, sections, tables, and plots — so a meeting deck is reproducible
-code, not manual copy-paste:</p>
+<p>The <code>eri_pptx_*</code> family builds a PowerPoint slide by
+slide, title, sections, tables, and plots, so a meeting deck is
+reproducible code, not manual copy-paste:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">deck</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_pptx_create.html">eri_pptx_create</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">deck</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_pptx_add_title.html">eri_pptx_add_title</a></span><span class="op">(</span><span class="va">deck</span>, <span class="st">"Malaria Summary 2026"</span>, subtitle <span class="op">=</span> <span class="st">"ERI"</span><span class="op">)</span></span>
@@ -225,9 +225,9 @@ Quarto document you fill in.</p>
 <ul>
 <li>
 <strong>Maps:</strong> the <a href="spatial-workflow.html">spatial
-workflow</a> — choropleths, incidence maps, insets.</li>
+workflow</a>, choropleths, incidence maps, insets.</li>
 <li>
-<strong>Curves &amp; indicators:</strong> <a href="epi-analytics.html">epi analytics</a> —
+<strong>Curves &amp; indicators:</strong> <a href="epi-analytics.html">epi analytics</a>,
 <code><a href="../reference/eri_epidemic_curve.html">eri_epidemic_curve()</a></code>, incidence, disease helpers.</li>
 <li>
 <strong>Where the data comes from:</strong> the <a href="da-adhoc-guide.html">ad-hoc guide</a> (<code>eri_query</code>) and

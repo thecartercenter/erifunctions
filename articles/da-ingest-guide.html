@@ -109,23 +109,23 @@
     
     
 <p>This is a hands-on, <strong>start-to-finish walkthrough</strong> of
-getting a surveillance dataset into the Carter Center data system — the
+getting a surveillance dataset into the Carter Center data system, the
 daily work of a <strong>Data Analyst (DA)</strong>. It is written for
 domain experts who are <em>not</em> software developers. Work through it
 once, in order, and you will have done every step a real dataset needs:
 store the raw file, quality-check it, stage it, and
 <strong>approve</strong> it so the rest of the team can trust it.</p>
 <p>So you can practise the whole thing safely, we will invent a
-<strong>make-believe country</strong> — <em>Atlantis</em> — and make up
+<strong>make-believe country</strong>, <em>Atlantis</em>, and make up
 some malaria surveillance data for it. Nothing here touches real country
-data, and the very last section — <a href="#clean-up"><strong>Clean
-up</strong></a> — deletes everything you created, so you can run the
-full loop end-to-end and leave no trace.</p>
+data, and the very last section, <a href="#clean-up"><strong>Clean
+up</strong></a>, deletes everything you created, so you can run the full
+loop end-to-end and leave no trace.</p>
 <blockquote>
 <p><strong>You can run this for real.</strong> Every command below works
 against the live Azure system. Because <em>Atlantis</em> is a sandbox of
 your own, you can ingest, break, fix, and approve data without affecting
-anyone — then wipe it.</p>
+anyone, then wipe it.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="the-golden-rule">The golden rule<a class="anchor" aria-label="anchor" href="#the-golden-rule"></a>
@@ -136,7 +136,7 @@ without your sign-off.</strong> Every dataset travels <code>raw/</code>
 → <code>staged/</code> → <code>processed/</code>. <code>raw/</code> is
 the file exactly as it arrived. <code>staged/</code> is the cleaned,
 quality-checked version awaiting review. <code>processed/</code> is the
-<strong>canonical data the whole team builds on</strong> — and a file
+<strong>canonical data the whole team builds on</strong>, and a file
 only gets there when <em>you</em> call <a href="../reference/eri_approve.html"><code>eri_approve()</code></a>.
 That approval is the human gate.</p>
 </blockquote>
@@ -168,11 +168,11 @@ repository:</p>
 <p><strong>Azure access</strong> needs no configuration. The first time
 a command needs Azure, your browser opens and you sign in with your
 Carter Center account; the sign-in is remembered for the rest of the
-session. (No keys, no environment variables — see
+session. (No keys, no environment variables, see
 <code><a href="../reference/get_azure_storage_connection.html">?get_azure_storage_connection</a></code>.)</p>
 <p><code>erifunctions</code> narrates what it is doing. Load it and
 leave the verbosity at its default <code>"full"</code> for this
-walkthrough — that is the step-by-step output shown in the blocks
+walkthrough, that is the step-by-step output shown in the blocks
 below:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span>
@@ -189,19 +189,19 @@ blob</strong>. The reading and writing functions
 (<code><a href="../reference/eri_read.html">eri_read()</a></code>, <code><a href="../reference/eri_write.html">eri_write()</a></code>,
 <code><a href="../reference/eri_upload.html">eri_upload()</a></code>) talk to your <em>default</em> connection, so
 we make one pointed at <code>data</code> and pass it explicitly
-everywhere below — that way every step targets the right place:</p>
+everywhere below, that way every step targets the right place:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
 <p>Every dataset is identified by five coordinates (<a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">ADR-0012</a>):
 <strong>country</strong>, <strong>disease</strong>,
-<strong>data_source</strong> (the <em>channel</em> — how the data
-arrives), <strong>data_type</strong> (the <em>measure</em> — what it
+<strong>data_source</strong> (the <em>channel</em>, how the data
+arrives), <strong>data_type</strong> (the <em>measure</em>, what it
 captures), and <strong>layer</strong>. The key idea is that the channel
 is <strong>separate</strong> from the measure: <code>surveillance</code>
 data can be a <code>case</code> line-list in one country and an
 <code>aggregate</code> weekly count in another. Our extract is a
-line-list — one row per case — so its measure is <code>case</code>.
-Never hand-type the folder paths — let <a href="../reference/eri_data_path.html"><code>eri_data_path()</code></a>
+line-list, one row per case, so its measure is <code>case</code>. Never
+hand-type the folder paths, let <a href="../reference/eri_data_path.html"><code>eri_data_path()</code></a>
 build the canonical path for you, so every step agrees on where things
 go:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -217,9 +217,9 @@ go:</p>
 <span><span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "atlantis/malaria/surveillance/case/staged"</span></span></code></pre></div>
 <p><code>data_source</code> and <code>data_type</code> are
-<strong>extensible</strong> — <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> lists the
-known values, and an unregistered one <em>warns</em> rather than blocks
-— while <code>layer</code> is one of <code>"raw"</code>,
+<strong>extensible</strong>, <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> lists the
+known values, and an unregistered one <em>warns</em> rather than blocks,
+while <code>layer</code> is one of <code>"raw"</code>,
 <code>"staged"</code>, <code>"processed"</code>. <strong>Country and
 disease are free text</strong>, which is exactly why we can stand up an
 <em>atlantis</em> sandbox next to the real countries without disturbing
@@ -236,7 +236,7 @@ them.</p>
 <code>raw/</code><a class="anchor" aria-label="anchor" href="#raw"></a>
 </h2>
 <p>In real life a surveillance officer emails you a spreadsheet. Here we
-<em>make one up</em> — a tiny line-list of malaria cases, one row per
+<em>make one up</em>, a tiny line-list of malaria cases, one row per
 case. Notice it is deliberately a little messy, the way real data always
 is: some sex values are in Spanish
 (<code>Masculino</code>/<code>Femenino</code>/<code>M</code>), and a
@@ -269,7 +269,7 @@ it to <code>raw/</code>:</p>
 <span>                           <span class="st">"atlantis_malaria_2024-01.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_write.html">eri_write</a></span><span class="op">(</span><span class="va">extract1</span>, <span class="va">raw_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span></code></pre></div>
 <p><code>raw/</code> is your archive of the source. From here on we work
-toward <code>staged/</code> — but the original is safe if you ever need
+toward <code>staged/</code>, but the original is safe if you ever need
 to start over.</p>
 </div>
 <div class="section level2">
@@ -277,22 +277,22 @@ to start over.</p>
 </h2>
 <p>How does <code>erifunctions</code> know that <code>Masculino</code>
 should become <code>Male</code>, or that <code>Age</code> cannot be 250?
-You tell it, once, in a <strong>DQ schema</strong> — a small YAML file
+You tell it, once, in a <strong>DQ schema</strong>, a small YAML file
 describing each column: its type, its allowed range or allowed values,
 known fixes, and translations. The schema is the contract every future
 extract for this dataset is checked against.</p>
 <p>Open a text editor and save the following as
 <strong><code>atlantis_malaria_surveillance_case.yaml</code></strong> in
-your working directory — the filename is the four-part identity
+your working directory, the filename is the four-part identity
 <code>{country}_{disease}_{data_source}_{data_type}</code>, which is how
-<code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> finds it. (It is intentionally short — a
+<code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> finds it. (It is intentionally short, a
 real schema like <code>dr_malaria_surveillance_case.yaml</code> has more
 columns, but the <em>shape</em> is exactly this.)</p>
 <blockquote>
 <p><strong>One source, many measures.</strong> If you stood up this
 space with the <a href="da-onboard-guide.html">onboarding guide</a>, its
 scaffold defaults to the <strong><code>aggregate</code></strong> measure
-(weekly counts) —
+(weekly counts),
 <code>atlantis_malaria_surveillance_aggregate.yaml</code>. Our extract
 here is a line-list, so we author the <strong><code>case</code></strong>
 measure alongside it. That is the whole point of separating the channel
@@ -354,7 +354,7 @@ both <code>case</code> and <code>aggregate</code> data. Run
 <span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> numeric</span></span>
 <span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="at">    </span><span class="fu">aliases</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">age</span><span class="kw">,</span><span class="at"> AGE</span><span class="kw">,</span><span class="at"> Edad</span><span class="kw">]</span></span>
 <span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="dv">120</span><span class="kw">]</span></span></code></pre></div>
-<p>Read it slowly — each block is a rule:</p>
+<p>Read it slowly, each block is a rule:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -420,7 +420,7 @@ so the filename matters:</p>
 </h2>
 <p>Load your raw file back from <code>raw/</code>, load the schema, and
 run the checks. <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> applies every rule in the
-schema and hands back the cleaned data plus two ledgers — what it
+schema and hands back the cleaned data plus two ledgers, what it
 <em>fixed</em>, and what it wants <em>you</em> to look at:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">raw1</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">raw_path1</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
@@ -441,7 +441,7 @@ schema and hands back the cleaned data plus two ledgers — what it
 <span><span class="co">#&gt; ── Flags Requiring Review (0 total) ──</span></span>
 <span><span class="co">#&gt; ✔ No flags.</span></span></code></pre></div>
 <p>Six things were fixed automatically and <strong>nothing needs your
-review</strong> — a clean extract. You can always see exactly
+review</strong>, a clean extract. You can always see exactly
 <em>what</em> was changed in the <code>$log</code> ledger:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result1</span><span class="op">$</span><span class="va">log</span></span>
@@ -454,7 +454,7 @@ review</strong> — a clean extract. You can always see exactly
 <span><span class="co">#&gt; 4     5 Sex      M              Male            translation corrected</span></span>
 <span><span class="co">#&gt; 5     3 District coralia        Coralia         correction  corrected</span></span>
 <span><span class="co">#&gt; 6     6 District Nerei City     Nerei           correction  corrected</span></span></code></pre></div>
-<p>The cleaned data lives in <code>result1$data</code> — Spanish sexes
+<p>The cleaned data lives in <code>result1$data</code>, Spanish sexes
 mapped to <code>Male</code>/<code>Female</code>, district names
 canonicalised. <strong>That</strong> is what we stage.</p>
 </div>
@@ -463,8 +463,8 @@ canonicalised. <strong>That</strong> is what we stage.</p>
 </h2>
 <p><code>staged/</code> holds DQ-checked data that is awaiting your
 approval. We store it as <strong>parquet</strong> (compact, typed,
-fast). Give the file a name that contains the reporting period — you
-will use that period to approve it in the next step:</p>
+fast). Give the file a name that contains the reporting period, you will
+use that period to approve it in the next step:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">staged_path1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="va">country</span>, <span class="va">disease</span>, <span class="va">data_source</span>, <span class="va">data_type</span>, <span class="st">"staged"</span>,</span>
 <span>                              <span class="st">"atlantis_malaria_2024-01.parquet"</span><span class="op">)</span></span>
@@ -495,7 +495,7 @@ discover it:</p>
 <p>Passing <code>data_type</code> records the <strong>measure</strong>
 on the catalog entry. (Omit it and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> files the
 data at the channel level with <code>data_type = NA</code>, and says so
-once — fine for channel-only data, but here our line-list is
+once, fine for channel-only data, but here our line-list is
 <code>case</code>.)</p>
 <p>The catalog is the team’s index of canonical data. Confirm your
 dataset is now in it:</p>
@@ -516,7 +516,7 @@ would:</p>
 approved.</strong></p>
 </div>
 <div class="section level2">
-<h2 id="second-extract">7. A second extract arrives — this time with errors<a class="anchor" aria-label="anchor" href="#second-extract"></a>
+<h2 id="second-extract">7. A second extract arrives, this time with errors<a class="anchor" aria-label="anchor" href="#second-extract"></a>
 </h2>
 <p>The next reporting file lands, and real data is rarely clean. This
 one has two genuine problems an analyst must judge: an <code>Age</code>
@@ -559,7 +559,7 @@ typo, or a new district the schema does not know yet):</p>
 <span><span class="co">#&gt; ℹ See `result$flags` for the full row-level detail.</span></span></code></pre></div>
 <p>This time there are <strong>two flags</strong>. The schema fixed what
 it safely could, but it will not guess about an age of 250 or an unknown
-district — those are <em>your</em> call. Look at exactly which rows:</p>
+district, those are <em>your</em> call. Look at exactly which rows:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result2</span><span class="op">$</span><span class="va">flags</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 4</span></span>
@@ -582,7 +582,7 @@ health:</p>
 <blockquote>
 <p><strong>Why not just edit the schema?</strong> If
 <code>Atlantica</code> were a <em>real</em> new district, the right fix
-is to add it to <code>allowed_values</code> and re-upload the schema —
+is to add it to <code>allowed_values</code> and re-upload the schema,
 then every future extract accepts it. Use a correction/translation for
 genuine fixes; use a flag-then-edit only for one-off data errors like
 the impossible age.</p>
@@ -608,7 +608,7 @@ signed off and when.</p>
 <blockquote>
 <p><strong>Going further: cross-period anomalies.</strong> Range and
 allowed-value checks catch bad <em>cells</em>. To catch a suspicious
-<em>trend</em> — a district whose case count suddenly triples — see <a href="../reference/add_anomaly_pct_change.html"><code>add_anomaly_pct_change()</code></a>,
+<em>trend</em>, a district whose case count suddenly triples, see <a href="../reference/add_anomaly_pct_change.html"><code>add_anomaly_pct_change()</code></a>,
 which you can chain onto a <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> result once you
 have several periods stacked together.</p>
 </blockquote>
@@ -644,11 +644,11 @@ layers and the logs), the schema, and the catalog entries:</p>
 <blockquote>
 <p><strong>Why we could delete freely here:</strong> <em>Atlantis</em>
 is invented and its data is fake. <strong>Real Carter Center
-surveillance data is different</strong> — approved country data must
+surveillance data is different</strong>, approved country data must
 never be deleted casually, copied off Azure, or committed to git. The
-discipline this guide builds — raw kept untouched, DQ before staging,
-and a human approval gate before anything becomes canonical — is exactly
-what keeps protected data trustworthy. When in doubt, ask before you
+discipline this guide builds, raw kept untouched, DQ before staging, and
+a human approval gate before anything becomes canonical, is exactly what
+keeps protected data trustworthy. When in doubt, ask before you
 delete.</p>
 </blockquote>
 </div>
@@ -657,20 +657,20 @@ delete.</p>
 </h2>
 <p>You have now done the full DA ingest loop: store raw, quality-check
 against a schema, fix what only a human can, stage, and
-<strong>approve</strong> into the canonical layer — twice, including a
+<strong>approve</strong> into the canonical layer, twice, including a
 messy extract.</p>
-<p>One call — <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a> — does
+<p>One call, <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a>, does
 the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 <strong>any</strong> data including the sandbox you just built (it takes
 the same <code>country</code> / <code>disease</code> /
 <code>data_source</code> / <code>data_type</code> you have been using).
 We did each step by hand here so you could <em>see</em> every layer;
 once you are comfortable, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast path,
-and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> — your sign-off — is always the same
-human gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
+and <code><a href="../reference/eri_approve.html">eri_approve()</a></code>: your sign-off, is always the same human
+gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
 passing <code>mirror_pipeline = "hsp-mal"</code> also mirrors the output
-to the old <code>projects</code> blob — off by default.)</em></p>
-<p>This is one of a planned set of short, task-oriented guides —
+to the old <code>projects</code> blob, off by default.)</em></p>
+<p>This is one of a planned set of short, task-oriented guides,
 <strong>one for each common job</strong> an analyst or epidemiologist
 does. See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">the
 guide index</a> for what exists today and what is coming, and the <a href="../reference/index.html">reference</a> for the full menu of

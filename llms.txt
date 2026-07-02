@@ -30,28 +30,28 @@ started**](https://thecartercenter.github.io/erifunctions/articles/getting-start
 article is the front door.
 
 **New Data Analyst?** Start with the **[onboarding
-path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**
-— a paced Week-0 → Week-2 track through the guides below — and keep the
+path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**,
+a paced Week-0 → Week-2 track through the guides below, and keep the
 quick-reference articles open as you work:
 
-- [Orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html)
-  — the big picture: the data system, the pipeline, and where your tasks
+- [Orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html):
+  the big picture: the data system, the pipeline, and where your tasks
   live
 - [DA cheat
-  sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html)
-  — the ~15 functions you use, the path model, and the “which pipeline?”
+  sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html):
+  the ~15 functions you use, the path model, and the “which pipeline?”
   decision tree
 - [Data-model
-  card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html)
-  — channel (`data_source`) vs. measure (`data_type`)
+  card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html):
+  channel (`data_source`) vs. measure (`data_type`)
 - [Troubleshooting
-  card](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html)
-  — common errors → fixes + the log-triage loop
+  card](https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html):
+  common errors → fixes + the log-triage loop
 
 **New here? Do these in order** (then dip into the rest as your work
 needs them). First, run
 [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
-once — it prints the data-addressing vocabulary (channel vs. measure)
+once, it prints the data-addressing vocabulary (channel vs. measure)
 every guide assumes.
 
 - **New Data Analyst:**
@@ -80,8 +80,8 @@ The full set:
 
 | Guide | For |
 |----|----|
-| [Connecting to Azure, ODK, SharePoint & Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | Everyone — how to authenticate to each service and confirm it works (start here) |
-| [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result |
+| [Connecting to Azure, ODK, SharePoint & Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | Everyone, how to authenticate to each service and confirm it works (start here) |
+| [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result |
 | [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
 | [Uploading a monthly country report (CMR)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file |
 | [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |
@@ -120,29 +120,35 @@ renv::snapshot()
 
 ## Setup
 
-Add the following to your project `.Renviron`
-(`usethis::edit_r_environ(scope = "project")`):
+Azure needs no configuration. The first command that touches Azure opens
+your browser to sign in with your Carter Center account, and access is
+validated against your own identity. The tenant, app registration, and
+storage endpoint are built into the package.
 
-    # Azure storage
-    ERIFUNCTIONS_TENANT_ID=<Azure tenant ID>
-    ERIFUNCTIONS_APP_ID=<Azure app registration ID>
-    ERIFUNCTIONS_RESOURCE_ENDPOINT=<storage account endpoint URL>
-    ERIFUNCTIONS_STORAGE_NAME=projects
-    ERIFUNCTIONS_DATA_STORAGE_NAME=data
+Only a couple of entries go in your project `.Renviron`
+(`usethis::edit_r_environ(scope = "project")`), and only if you need
+them:
 
-    # Service principal — for scripted/automated use only
-    ERIFUNCTIONS_SP_CLIENT_ID=<SP client ID>
-    ERIFUNCTIONS_SP_CLIENT_SECRET=<SP client secret>
-
-    # Your analyst identity (appears in approval and access logs)
+    # Your analyst identity, recorded in approval and access logs (recommended)
     ERI_ANALYST_ID=firstname.lastname
 
-    # ODK Central
-    ODK_URL=https://rblf.tccodk.org/
+    # ODK Central credentials (only if you sync ODK data)
     ODK_USER=your.email@cartercenter.org
     ODK_PASS=<ODK password>
 
 Restart R after editing `.Renviron`.
+
+Advanced settings, rarely needed:
+
+    ERIFUNCTIONS_STORAGE_NAME=projects           # only for data-analyst pipeline work against the projects blob
+    ODK_URL=https://rblf.tccodk.org/             # only if your ODK server is not the default
+    ERIFUNCTIONS_SP_CLIENT_ID=<SP client ID>     # unattended service-principal auth (automation only)
+    ERIFUNCTIONS_SP_CLIENT_SECRET=<SP client secret>
+    # ERIFUNCTIONS_TENANT_ID / ERIFUNCTIONS_APP_ID / ERIFUNCTIONS_RESOURCE_ENDPOINT override the built-in defaults
+
+The full connection walkthrough, including the service-principal and
+Teams paths, is in the [Connections
+guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html).
 
 ------------------------------------------------------------------------
 
@@ -176,24 +182,24 @@ All data lives in the `data/` Azure blob under a standard path
                                                        staged/     <- DQ-checked, awaiting approval
                                                        processed/  <- analyst-approved, canonical
 
-The `data_type` (measure) level is optional — channel-only data lands
-one level shallower. The two addressing axes are explained just below.
+The `data_type` (measure) level is optional, channel-only data lands one
+level shallower. The two addressing axes are explained just below.
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 is the explicit human gate. Nothing reaches `processed/` without it.
 
 ### How data is addressed (vocabulary)
 
 A path has **five independent axes**
-([ADR-0012](https://thecartercenter.github.io/erifunctions/docs/adr/0012-source-measure-data-model.md))
-— the key is that **how the data arrives (`data_source`) is separate
-from what it measures (`data_type`)**:
+([ADR-0012](https://thecartercenter.github.io/erifunctions/docs/adr/0012-source-measure-data-model.md)),
+the key is that **how the data arrives (`data_source`) is separate from
+what it measures (`data_type`)**:
 
 | Axis | What it is | Examples |
 |----|----|----|
 | `country` | the country | `dr`, `ht`, `uga` |
 | `disease` | the disease | `malaria`, `lf`, `oncho` |
-| `data_source` | **the channel — how it arrives** | `surveillance`, `programmatic`, `research` |
-| `data_type` | **the measure — what it captures** | `case`, `aggregate`, `treatment`, `tas` |
+| `data_source` | **the channel, how it arrives** | `surveillance`, `programmatic`, `research` |
+| `data_type` | **the measure, what it captures** | `case`, `aggregate`, `treatment`, `tas` |
 | `layer` | pipeline stage | `raw`, `staged`, `processed` |
 
 ``` r
@@ -205,7 +211,7 @@ path <- eri_data_path("dr", "malaria", "surveillance", "case", "processed")
 One source can carry many measures (a CMR yields `treatment` + `mmdp` +
 `survey`; the same source + disease is `case` in one country,
 `aggregate` in another). `data_source` and `data_type` are
-**extensible** —
+**extensible**:
 [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
 lists the known values, and an unregistered one *warns* rather than
 errors so new data is never blocked. (The schema set is keyed by
@@ -325,7 +331,7 @@ eri_catalog_verify()
 
 | Function | What it does |
 |----|----|
-| `eri_research_scaffold(name, country, disease, description)` | Create a **standalone research-project repository** (ADR-0006) at `dest/name/` — a full repo skeleton that depends on erifunctions |
+| `eri_research_scaffold(name, country, disease, description)` | Create a **standalone research-project repository** (ADR-0006) at `dest/name/`, a full repo skeleton that depends on erifunctions |
 | `eri_research_init(project_name, country, disease, description)` | Initialise a research project **in the current directory** (local `data/`/`figs/`/`outputs/` + `research.yaml`, registered in Azure) |
 | [`eri_research_resume()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_resume.md) | Re-read `research.yaml` and print session summary |
 | `eri_research_status(check_remote)` | Report what data the project depends on and whether any of it is stale |
@@ -341,7 +347,7 @@ eri_catalog_verify()
 vs
 [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md):
 **scaffold** stands up a new, separate project *repository* (the
-ADR-0006 way — its own git repo); **init** initialises a project in a
+ADR-0006 way, its own git repo); **init** initialises a project in a
 directory you are already in. Most new studies start with
 [`eri_research_scaffold()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_scaffold.md).
 

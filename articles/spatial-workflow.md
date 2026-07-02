@@ -71,7 +71,7 @@ case_data <- eri_spatial_join(
 )
 ```
 
-The result is a plain tibble — geometry is dropped automatically, so
+The result is a plain tibble, geometry is dropped automatically, so
 downstream analysis does not need to handle `sf` objects.
 
 ## Bounding box expansion
@@ -148,7 +148,7 @@ communes$population <- exact_extract(pop_raster, communes, "sum")
 
 For OEPA onchocerciasis data,
 [`eri_oncho_status_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_status_map.md)
-wraps the full mapping pipeline — it joins status data to a shapefile,
+wraps the full mapping pipeline, it joins status data to a shapefile,
 applies the standard ERI programme-status colour palette, and adds a
 scale bar and north arrow:
 

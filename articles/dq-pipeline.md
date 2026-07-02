@@ -84,27 +84,27 @@ consistency:
 
 The pipeline runs these steps in order:
 
-1.  **Preprocessing** — removes smart quotes, optionally strips column
+1.  **Preprocessing**: removes smart quotes, optionally strips column
     name whitespace, drops rows with a missing year value.
-2.  **Alias resolution** — renames recognised alternative column headers
+2.  **Alias resolution**: renames recognised alternative column headers
     to the canonical name defined in the schema.
-3.  **Required-column check** — adds a `NA`-row flag for any column
+3.  **Required-column check**: adds a `NA`-row flag for any column
     marked `required: true` that is completely absent from the data.
-4.  **Type coercion** — converts columns to `numeric`, `date`, or
+4.  **Type coercion**: converts columns to `numeric`, `date`, or
     `character` as declared; flags values that cannot be coerced.
-5.  **Range checks** — flags numeric values outside the `[min, max]`
+5.  **Range checks**: flags numeric values outside the `[min, max]`
     range.
-6.  **Translations and corrections** — applies the lookup maps silently,
+6.  **Translations and corrections**: applies the lookup maps silently,
     logging each change to `$log`.
-7.  **Allowed-values check** — flags values not in the `allowed_values`
+7.  **Allowed-values check**: flags values not in the `allowed_values`
     list.
-8.  **NA fill** — fills `NA` in `na_fill`-annotated columns with the
+8.  **NA fill**: fills `NA` in `na_fill`-annotated columns with the
     specified default and logs the change.
-9.  **Temporal cross-check** — flags rows where
+9.  **Temporal cross-check**: flags rows where
     `year(date_col) != year_col`.
-10. **Derived columns** — evaluates each `formula` with
-    `with(data, ...)` and adds the result as a new column.
-11. **Aggregate consistency** — for any derived column, checks the
+10. **Derived columns**: evaluates each `formula` with `with(data, ...)`
+    and adds the result as a new column.
+11. **Aggregate consistency**: for any derived column, checks the
     formula against the existing value and flags discrepancies (useful
     for pre-computed totals).
 
@@ -138,7 +138,7 @@ The `$flags` tibble records everything requiring review:
 
 After the baseline checks you can chain additional anomaly detectors.
 All three accept either a plain tibble or a `dq_result`, and return the
-same type — so they compose with `|>`.
+same type, so they compose with `|>`.
 
 ### Period-over-period percent change
 

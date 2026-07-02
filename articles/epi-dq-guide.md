@@ -1,15 +1,15 @@
 # Catching anomalies in a new surveillance extract (for epidemiologists)
 
 A fresh surveillance extract can be **valid cell-by-cell and still wrong
-epidemiologically** — a week that suddenly triples, a reporting week
-that never arrived, a count that exceeds what was tested. This guide,
-for **epidemiologists**, is about that second layer: after the basic
+epidemiologically**, a week that suddenly triples, a reporting week that
+never arrived, a count that exceeds what was tested. This guide, for
+**epidemiologists**, is about that second layer: after the basic
 [data-quality
 checks](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md),
 run the **anomaly detectors** to catch the patterns only a domain eye
 would question, *before* the numbers reach a curve or a map.
 
-It runs **fully offline** on a small synthetic extract — no Azure, no
+It runs **fully offline** on a small synthetic extract, no Azure, no
 real data. For the schema mechanics and the full anomaly reference, see
 the [data-quality
 pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md)
@@ -36,16 +36,16 @@ library(dplyr)
 
 ## 1. The extract
 
-We use a bundled case-level malaria schema (no Azure needed —
+We use a bundled case-level malaria schema (no Azure needed,
 `azcontainer = NULL` loads the copy that ships with the package) and a
 small synthetic line-list: two provinces over six epiweeks, one row per
-case. It has three planted problems — a species typo, a **case spike**,
-and a **missing week** — the kinds of thing a real extract hides:
+case. It has three planted problems, a species typo, a **case spike**,
+and a **missing week**, the kinds of thing a real extract hides:
 
 ``` r
 
 # Load by the four-part identity (ADR-0012): country, disease, data_source (the
-# channel — surveillance/programmatic/research), data_type (the measure — here
+# channel, surveillance/programmatic/research), data_type (the measure, here
 # "case", the case-level line-list). The legacy compound key still works too:
 # load_dq_schema("dr", "malaria_case") resolves via an alias during the migration.
 schema <- load_dq_schema("dr", "malaria", "surveillance", "case", azcontainer = NULL)
@@ -71,8 +71,8 @@ nrow(cases)   # 48 cases across 2 provinces, epiweeks 1-6
 ## 2. Baseline: the cell-level checks
 
 Start with
-[`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
-— the same engine the [ingest
+[`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md),
+the same engine the [ingest
 guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
 covers. It catches *cell* problems (bad types, out-of-range values,
 values off the allowed list):
@@ -94,11 +94,11 @@ result
 #> ℹ See `result$flags` for the full row-level detail.
 ```
 
-One flag — a mistyped species. Useful, but it tells you nothing about
+One flag, a mistyped species. Useful, but it tells you nothing about
 whether the *epidemiology* makes sense. For that, chain on the anomaly
 detectors.
 
-## 3. Spikes — `add_anomaly_pct_change()`
+## 3. Spikes, `add_anomaly_pct_change()`
 
 Epidemic data moves week to week; a sudden jump is either a real
 outbreak or a data error, and you need to know which. Aggregate to
@@ -127,21 +127,21 @@ flagged[flagged$anomaly_pct_change_n_cases, c("epiweek", "province", "n_cases", 
 #> 2       6 Azua           4             -0.733
 ```
 
-Azua jumped from 3 cases to **15 in week 5** — a five-fold rise (the
-detector reports `pct_change = 4`, i.e. +400%) — then fell back in week
-6 (`-73%`). Both are flagged, because a spike produces *two* large
-changes (up, then down). The week-5 row is the one to investigate: **is
-this a genuine cluster the field should respond to, or did a batch of
-cases get entered twice?** The detector doesn’t decide — it points you
-at the week worth a phone call.
+Azua jumped from 3 cases to **15 in week 5**, a five-fold rise (the
+detector reports `pct_change = 4`, i.e. +400%), then fell back in week 6
+(`-73%`). Both are flagged, because a spike produces *two* large changes
+(up, then down). The week-5 row is the one to investigate: **is this a
+genuine cluster the field should respond to, or did a batch of cases get
+entered twice?** The detector doesn’t decide, it points you at the week
+worth a phone call.
 
 (We aggregated `result$data` as-is, so the one still-flagged species row
-is rolled in — harmless for these per-week counts, but on a real extract
+is rolled in, harmless for these per-week counts, but on a real extract
 you’d resolve the cell flags from §2 before rolling anything up.)
 
-## 4. Missing weeks — `add_anomaly_gaps()`
+## 4. Missing weeks, `add_anomaly_gaps()`
 
-A week with **no rows at all** never shows up as a bad value — it’s
+A week with **no rows at all** never shows up as a bad value, it’s
 simply absent, and easy to miss.
 [`add_anomaly_gaps()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_gaps.md)
 infers the expected run of weeks and returns the ones that aren’t there:
@@ -164,13 +164,13 @@ gaps
 #> 1 San Juan 2024      4   structural_gap
 ```
 
-San Juan reported weeks 1, 2, 3, 5, and 6 — but **not week 4**. That is
+San Juan reported weeks 1, 2, 3, 5, and 6, but **not week 4**. That is
 not zero cases; it is *no report*. Before you draw an epidemic curve,
 you need to know whether the clinic didn’t report that week (chase it)
 or the data were dropped in transfer (fix it). A silent gap becomes a
 fake “dip” in the curve if you don’t.
 
-## 5. Cross-field rules — `add_anomaly_consistency()`
+## 5. Cross-field rules, `add_anomaly_consistency()`
 
 Some errors only show up when two columns are read together. The
 schema’s `consistency` block defines named rules; the detector checks
@@ -183,13 +183,13 @@ result <- result |> add_anomaly_consistency(schema)
 ```
 
 Here the schema’s epiweek rules all hold, so it passes. The real power
-is **cross-field** rules — e.g. `positives <= tested`, or
-`treated <= target_population` — which catch the impossible combinations
+is **cross-field** rules, e.g. `positives <= tested`, or
+`treated <= target_population`, which catch the impossible combinations
 that range checks can’t see. The [data-quality
 pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md)
 vignette shows how to write them.
 
-## 6. Geographic names — `add_anomaly_spatial()`
+## 6. Geographic names, `add_anomaly_spatial()`
 
 The last detector flags admin-unit names in the data that don’t appear
 in the official boundary (a common symptom of a typo or an un-reconciled
@@ -205,13 +205,13 @@ result <- result |> add_anomaly_spatial(schema, azcontainer = NULL)
 
 With a schema that defines admin boundaries (and Azure access), this
 flags province or district names that aren’t on the official list. The
-upstream fix — mapping messy place names to canonical units in the first
-place — is the [locality reconciliation
+upstream fix, mapping messy place names to canonical units in the first
+place, is the [locality reconciliation
 guide](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md).
 
 ## 7. What to do with the flags
 
-The detectors don’t clean anything — they hand you a short list of
+The detectors don’t clean anything, they hand you a short list of
 **questions to answer before you analyse**:
 
 | Detector | Flag | The epi question |
@@ -227,14 +227,14 @@ numbers you’ve actually interrogated.
 ## What’s next
 
 - [Data-quality
-  pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md)
-  — the schema reference and how to author consistency rules.
+  pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md):
+  the schema reference and how to author consistency rules.
 - [Reconciling
-  localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md)
-  — fixing the geographic names the spatial check flags.
+  localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md):
+  fixing the geographic names the spatial check flags.
 - [Epi
-  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
-  — incidence, epiweeks, and epidemic curves, *after* the extract is
+  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md):
+  incidence, epiweeks, and epidemic curves, *after* the extract is
   clean.
 
 See the [guide

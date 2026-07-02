@@ -117,11 +117,11 @@ walkthrough.</em></p>
 </h2>
 <p>Everything lives in the Azure <strong><code>data/</code></strong>
 blob under a canonical 5-axis path. Build it with
-<code><a href="../reference/eri_data_path.html">eri_data_path()</a></code> — never hand-type it.</p>
+<code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>: never hand-type it.</p>
 <pre><code>data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
         dr         malaria     surveillance    case          raw        as-received
         uga        oncho       programmatic    treatment     staged     DQ-checked, awaiting sign-off
-        ht         lf          research        prevalence    processed  approved — the team trusts this</code></pre>
+        ht         lf          research        prevalence    processed  approved, the team trusts this</code></pre>
 <ul>
 <li>
 <strong><code>data_source</code> = the channel</strong> (how the
@@ -134,13 +134,13 @@ counts): <code>case</code> · <code>aggregate</code> ·
 <code>survey</code> · <code>tas</code> · <code>prevalence</code> ·
 <code>entomology</code>.</li>
 <li>Run <strong><code><a href="../reference/eri_data_model.html">eri_data_model()</a></code></strong> once to print the
-full, current vocabulary. Unknown values <em>warn, not error</em> — a
-new country/disease/source/measure is a normal gap, not a bug.</li>
+full, current vocabulary. Unknown values <em>warn, not error</em>, a new
+country/disease/source/measure is a normal gap, not a bug.</li>
 </ul>
 <blockquote>
 <p><strong>The golden rule:</strong> nothing reaches
 <strong><code>processed/</code></strong> without
-<strong><code><a href="../reference/eri_approve.html">eri_approve()</a></code></strong> — the human gate. It moves
+<strong><code><a href="../reference/eri_approve.html">eri_approve()</a></code></strong>, the human gate. It moves
 staged → processed, writes an approval log, and registers the file in
 the catalog. Never hand-edit or delete <code>processed/</code> data.</p>
 </blockquote>
@@ -290,7 +290,7 @@ incl. the practice sandbox):</p>
 <code>eri_onboard_disease(disease, country, …)</code> takes
 <strong>disease first</strong> (unlike the others);
 <code><a href="../reference/eri_approve.html">eri_approve()</a></code>’s <strong>5th arg is
-<code>data_type</code></strong> (the measure) — omit it and the catalog
+<code>data_type</code></strong> (the measure), omit it and the catalog
 records the measure as <code>NA</code>.</p>
 </div>
 <div class="section level2">
@@ -303,7 +303,7 @@ records the measure as <code>NA</code>.</p>
 <span><span class="co"># disease helpers: eri_lf_tas_summary(), eri_oncho_program_levels(), eri_lf_pooled_prev() …</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="dont-reinvent-search-first">Don’t reinvent — search first<a class="anchor" aria-label="anchor" href="#dont-reinvent-search-first"></a>
+<h2 id="dont-reinvent-search-first">Don’t reinvent, search first<a class="anchor" aria-label="anchor" href="#dont-reinvent-search-first"></a>
 </h2>
 <p>Before writing new code, reuse <code><a href="../reference/azure_io.html">azure_io()</a></code> /
 <code><a href="../reference/eri_read.html">eri_read()</a></code> / <code><a href="../reference/eri_write.html">eri_write()</a></code> /

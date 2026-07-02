@@ -109,11 +109,11 @@
     
     
 <p>Surveillance data arrives with <strong>messy, free-text place
-names</strong> — <code>"Jínova"</code>, <code>"JUAN DE HERRERA"</code>,
-<code>"S. Juan"</code> — that have to be matched to the
-<strong>canonical admin units</strong> in an authoritative boundary
-before you can aggregate cases, compute incidence, or map anything.
-Doing that by hand is slow and error-prone. This guide, for
+names</strong>, <code>"Jínova"</code>, <code>"JUAN DE HERRERA"</code>,
+<code>"S. Juan"</code>: that have to be matched to the <strong>canonical
+admin units</strong> in an authoritative boundary before you can
+aggregate cases, compute incidence, or map anything. Doing that by hand
+is slow and error-prone. This guide, for
 <strong>epidemiologists</strong>, shows how <a href="../reference/eri_spatial_reconcile.html"><code>eri_spatial_reconcile()</code></a>
 does it: match what it safely can, geocode the rest, and <strong>flag
 anything it isn’t sure about</strong> so you check it before trusting
@@ -145,7 +145,7 @@ plus the <strong><code>sf</code></strong> package
 (<code>install.packages("sf")</code>).</li>
 <li>The <strong>string-match</strong> step runs fully offline. The
 optional <strong>geocoding</strong> step uses <strong>OpenStreetMap
-(Nominatim)</strong> by default — keyless, so no setup — though it makes
+(Nominatim)</strong> by default, keyless, so no setup, though it makes
 network calls. (Higher-quality geocoding via Google is available with a
 key; see <a href="#real-data">the end</a>.)</li>
 </ul>
@@ -156,7 +156,7 @@ key; see <a href="#real-data">the end</a>.)</li>
 <div class="section level2">
 <h2 id="inputs">1. The reference boundary and your messy data<a class="anchor" aria-label="anchor" href="#inputs"></a>
 </h2>
-<p>Reconciliation needs an <strong>authoritative boundary</strong> — an
+<p>Reconciliation needs an <strong>authoritative boundary</strong>, an
 <code>sf</code> object whose columns hold the canonical admin names. In
 real work you load it with <a href="../reference/eri_spatial_load.html"><code>eri_spatial_load()</code></a>;
 for this guide we build a tiny one by hand (two real places so the live
@@ -173,9 +173,8 @@ geocoder has somewhere to land):</p>
 <span>  geometry  <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/sfc.html" class="external-link">st_sfc</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="op">-</span><span class="fl">71.10</span>, <span class="op">-</span><span class="fl">70.99</span>, <span class="fl">42.230</span>, <span class="fl">42.350</span><span class="op">)</span>,</span>
 <span>                     <span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="op">-</span><span class="fl">71.16</span>, <span class="op">-</span><span class="fl">71.06</span>, <span class="fl">42.350</span>, <span class="fl">42.400</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>And the incoming data — five localities with the usual problems
-(case, a typo, names not in the boundary, and one that is pure
-noise):</p>
+<p>And the incoming data, five localities with the usual problems (case,
+a typo, names not in the boundary, and one that is pure noise):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">messy</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  locality <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"boston"</span>, <span class="st">"Cambrige"</span>, <span class="st">"Fenway Park"</span>, <span class="st">"MIT"</span>, <span class="st">"Zzqxborough Nowhere"</span><span class="op">)</span>,</span>
@@ -198,7 +197,7 @@ vectors, <strong>finest → coarsest</strong>: your data’s columns
 (<code>admin_cols</code>).</p>
 </div>
 <div class="section level2">
-<h2 id="match">2. Pass 1 — string match (offline)<a class="anchor" aria-label="anchor" href="#match"></a>
+<h2 id="match">2. Pass 1, string match (offline)<a class="anchor" aria-label="anchor" href="#match"></a>
 </h2>
 <p>First, match what you can with no network at all. Setting
 <code>method = NULL</code> disables geocoding entirely, and
@@ -210,7 +209,7 @@ level:</p>
 <span>  loc_cols   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"locality"</span>, <span class="st">"county"</span>, <span class="st">"state"</span><span class="op">)</span>,</span>
 <span>  admin_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adm3_name"</span>, <span class="st">"adm2_name"</span>, <span class="st">"adm1_name"</span><span class="op">)</span>,</span>
 <span>  shapefile  <span class="op">=</span> <span class="va">boundary</span>,</span>
-<span>  method     <span class="op">=</span> <span class="cn">NULL</span>,    <span class="co"># string match only — fully offline</span></span>
+<span>  method     <span class="op">=</span> <span class="cn">NULL</span>,    <span class="co"># string match only, fully offline</span></span>
 <span>  max_dist   <span class="op">=</span> <span class="fl">1L</span>       <span class="co"># tolerate a 1-character typo in the finest name</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Reconciled 5 distinct localities: 2 matched, 0 geocoded, 0 need review, 3 unresolved.</span></span>
@@ -228,14 +227,13 @@ level:</p>
 <code>Boston</code> (case-insensitive, accent-insensitive), and the typo
 <code>"Cambrige"</code> matched <code>Cambridge</code> (within
 <code>max_dist</code>). For a <code>matched</code> row the <strong>whole
-hierarchy</strong> is rewritten to the boundary’s canonical spelling —
-not just the locality, but the county and state too — so a misspelled
+hierarchy</strong> is rewritten to the boundary’s canonical spelling,
+not just the locality, but the county and state too, so a misspelled
 parent gets fixed as well. The other three don’t appear in the boundary,
-so they’re <code>unresolved</code> — they’re the residual to
-geocode.</p>
+so they’re <code>unresolved</code>: they’re the residual to geocode.</p>
 </div>
 <div class="section level2">
-<h2 id="geocode">3. Pass 2 — geocode the residual<a class="anchor" aria-label="anchor" href="#geocode"></a>
+<h2 id="geocode">3. Pass 2, geocode the residual<a class="anchor" aria-label="anchor" href="#geocode"></a>
 </h2>
 <p>Now let geocoding handle the rows that didn’t match.
 <code>method = "osm"</code> uses keyless OpenStreetMap;
@@ -268,18 +266,18 @@ geocode.</p>
 <li>
 <strong><code>Fenway Park</code> → <code>geocoded</code>.</strong>
 It geocoded to a point inside the <strong>Boston/Suffolk</strong>
-polygon, which <em>agrees</em> with the county you supplied — so it’s
+polygon, which <em>agrees</em> with the county you supplied, so it’s
 trusted: the name is rewritten to the canonical <code>Boston</code> and
 you get coordinates.</li>
 <li>
 <strong><code>MIT</code> → <code>geocoded_review</code>.</strong> It
 geocoded fine, but the point falls in the
-<strong>Cambridge/Middlesex</strong> polygon — while you claimed
+<strong>Cambridge/Middlesex</strong> polygon, while you claimed
 <strong>Suffolk</strong>. That disagreement is the <strong>trust
 guard</strong> firing: the coordinates are kept for you to inspect, but
 the names are <strong>left exactly as you supplied them</strong> (not
 silently “corrected”). Maybe MIT really is across the county line from
-where you expected — or maybe the county was mis-entered. <em>You</em>
+where you expected, or maybe the county was mis-entered. <em>You</em>
 decide.</li>
 <li>
 <strong><code>Zzqxborough Nowhere</code> →
@@ -289,7 +287,7 @@ coordinates, nothing changed.</li>
 <p>You don’t have to take “Cambridge/Middlesex” on faith.
 <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> returns the admin units the
 geocoded point actually fell into as
-<code>geocoded_&lt;admin_col&gt;</code> columns — so a flagged row tells
+<code>geocoded_&lt;admin_col&gt;</code> columns, so a flagged row tells
 you <em>exactly</em> what it disagreed with, with no manual
 <code><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">sf::st_join()</a></code> to re-derive it:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -299,8 +297,8 @@ you <em>exactly</em> what it disagreed with, with no manual
 <span><span class="co">#&gt;   locality county  geocoded_adm3_name geocoded_adm2_name</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;   &lt;chr&gt;              &lt;chr&gt;</span></span>
 <span><span class="co">#&gt; 1 MIT      Suffolk Cambridge          Middlesex</span></span></code></pre></div>
-<p>Your <code>county</code> is still <strong>Suffolk</strong> (untouched
-— the trust guard never overwrote it), but
+<p>Your <code>county</code> is still <strong>Suffolk</strong>
+(untouched, the trust guard never overwrote it), but
 <code>geocoded_adm2_name</code> shows the point landed in
 <strong>Middlesex</strong>. That side-by-side is the whole conflict,
 ready for you to confirm or fix. (These columns are <code>NA</code> for
@@ -308,7 +306,7 @@ ready for you to confirm or fix. (These columns are <code>NA</code> for
 rows.)</p>
 </div>
 <div class="section level2">
-<h2 id="statuses">4. What the statuses mean — and what to do<a class="anchor" aria-label="anchor" href="#statuses"></a>
+<h2 id="statuses">4. What the statuses mean, and what to do<a class="anchor" aria-label="anchor" href="#statuses"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -325,13 +323,13 @@ rows.)</p>
 <tr class="odd">
 <td><code>matched</code></td>
 <td>Name matched the boundary (offline)</td>
-<td>Trust it — canonical name assigned</td>
+<td>Trust it, canonical name assigned</td>
 </tr>
 <tr class="even">
 <td><code>geocoded</code></td>
 <td>Geocoded <strong>and</strong> the admin parents agree with your
 data</td>
-<td>Trust it — canonical name + coordinates assigned</td>
+<td>Trust it, canonical name + coordinates assigned</td>
 </tr>
 <tr class="odd">
 <td><code>geocoded_review</code></td>
@@ -359,7 +357,7 @@ analysis.</p>
 <div class="section level2">
 <h2 id="downstream">5. Feed it downstream<a class="anchor" aria-label="anchor" href="#downstream"></a>
 </h2>
-<p>The result is a plain tibble — your original rows, with canonical
+<p>The result is a plain tibble, your original rows, with canonical
 names filled in where confident and
 <code>longitude</code>/<code>latitude</code> for anything geocoded. From
 here it is ordinary analysis (in <em>your</em> research project, not the
@@ -381,7 +379,7 @@ For mapping and spatial joins on the canonical units, see the <a href="spatial-w
 to reconcile against the real admin units.</li>
 <li>
 <strong>Better geocoding:</strong> OpenStreetMap is free and keyless
-but coarse. For higher accuracy use <code>method = "google"</code> — it
+but coarse. For higher accuracy use <code>method = "google"</code>, it
 needs your own API key in <code>.Renviron</code>
 (<code>GOOGLEGEOCODE_API_KEY=...</code>);
 <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> checks for it up front and tells
@@ -391,7 +389,7 @@ script or commit it.</strong> Google also returns a
 <code>geocoded_review</code> trust guard.</li>
 <li>
 <strong>No clean-up needed:</strong> reconciliation is entirely
-in-memory — it reads your boundary and writes nothing to Azure.</li>
+in-memory, it reads your boundary and writes nothing to Azure.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -402,10 +400,10 @@ units with coordinates, with the uncertain ones flagged rather than
 hidden. From here:</p>
 <ul>
 <li>
-<a href="epi-research-guide.html">Running a research study</a> —
+<a href="epi-research-guide.html">Running a research study</a>:
 where reconciled data feeds the analysis.</li>
 <li>
-<a href="spatial-workflow.html">Spatial workflow</a> — mapping and
+<a href="spatial-workflow.html">Spatial workflow</a>: mapping and
 joining on the canonical units.</li>
 </ul>
 <p>See the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide

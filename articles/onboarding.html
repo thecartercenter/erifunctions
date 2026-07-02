@@ -116,7 +116,7 @@ or function changes, this path changes with it.</p>
 <blockquote>
 <p><strong>Who this is for:</strong> a new DA who can run R scripts and
 edit code but isn’t yet fluent. Every step is copy-paste on <strong>safe
-sandbox data</strong> — you cannot harm real country data by following
+sandbox data</strong>, you cannot harm real country data by following
 it.</p>
 </blockquote>
 <div class="section level2">
@@ -126,22 +126,22 @@ it.</p>
 and deleted:</p>
 <ul>
 <li>
-<strong><code>atlantis</code></strong> — a make-believe country for
+<strong><code>atlantis</code></strong>: a make-believe country for
 the ingest/onboard guides.</li>
 <li>
-<strong><code>uga/demo</code></strong> — a sandbox country/disease
+<strong><code>uga/demo</code></strong>: a sandbox country/disease
 for the ODK pipeline (not the real <code>uga/oncho</code>).</li>
 <li>
 <strong><code>eri_test_river_prospection</code> /
-<code>eri_test_river_repeat</code></strong> — practice ODK forms in the
+<code>eri_test_river_repeat</code></strong>: practice ODK forms in the
 ODK <code>testing</code> project.</li>
 </ul>
 <p>Every guide ends with a <strong>Clean up</strong> section that
 removes what it created. Real <code>processed/</code> data is never
-deleted casually — the sandbox is where you make mistakes.</p>
+deleted casually, the sandbox is where you make mistakes.</p>
 </div>
 <div class="section level2">
-<h2 id="week-0-setup-before-day-one">Week 0 — Setup (before day one)<a class="anchor" aria-label="anchor" href="#week-0-setup-before-day-one"></a>
+<h2 id="week-0-setup-before-day-one">Week 0, Setup (before day one)<a class="anchor" aria-label="anchor" href="#week-0-setup-before-day-one"></a>
 </h2>
 <p>Get the environment standing so day one is learning, not yak-shaving.
 Use the <a href="connections-guide.html">connections guide</a>.</p>
@@ -152,8 +152,8 @@ RStudio</strong>.</label></li>
 <code>renv</code> +
 <code>remotes::install_github("thecartercenter/erifunctions")</code>.</label></li>
 <li><label><input type="checkbox"><strong>Azure access
-granted</strong> — your account needs RBAC on the <code>data</code> blob
-(a ticket to an ERI admin; this is the long-lead item — start it
+granted</strong>, your account needs RBAC on the <code>data</code> blob
+(a ticket to an ERI admin; this is the long-lead item, start it
 first).</label></li>
 <li><label><input type="checkbox"><strong>ODK Central account</strong>
 with access to the <code>testing</code> project.</label></li>
@@ -169,7 +169,7 @@ projects.</label></li>
 <p>✅ <strong>Gate:</strong> you can connect to Azure and ODK.</p>
 </div>
 <div class="section level2">
-<h2 id="day-1-orientation">Day 1 — Orientation<a class="anchor" aria-label="anchor" href="#day-1-orientation"></a>
+<h2 id="day-1-orientation">Day 1, Orientation<a class="anchor" aria-label="anchor" href="#day-1-orientation"></a>
 </h2>
 <ul class="task-list">
 <li><label><input type="checkbox">Read <a href="getting-started.html">Getting started</a> and the <a href="orientation.html">Orientation</a> overview.</label></li>
@@ -184,46 +184,46 @@ on.</label></li>
 mean and why <code><a href="../reference/eri_approve.html">eri_approve()</a></code> is the gate.</p>
 </div>
 <div class="section level2">
-<h2 id="days-24-the-ingestion-spine-do-it-live">Days 2–4 — The ingestion spine (do it live)<a class="anchor" aria-label="anchor" href="#days-24-the-ingestion-spine-do-it-live"></a>
+<h2 id="days-24-the-ingestion-spine-do-it-live">Days 2–4, The ingestion spine (do it live)<a class="anchor" aria-label="anchor" href="#days-24-the-ingestion-spine-do-it-live"></a>
 </h2>
 <p>Work these guides in order, on the sandbox, running every chunk. Stop
 at each checkpoint.</p>
 <ul class="task-list">
-<li><label><input type="checkbox"><a href="connections-guide.html">Connections guide</a> — connect to all
-four services.</label></li>
-<li><label><input type="checkbox"><a href="da-onboard-guide.html">Onboard a space</a> — stand up a new
+<li><label><input type="checkbox"><a href="connections-guide.html">Connections guide</a>, connect to all four
+services.</label></li>
+<li><label><input type="checkbox"><a href="da-onboard-guide.html">Onboard a space</a>, stand up a new
 <code>atlantis</code> space (schema + dirs). <em>Checkpoint: you
 scaffolded a space and validated its schema.</em></label></li>
-<li><label><input type="checkbox"><a href="da-ingest-guide.html">Ingest a surveillance dataset</a> — raw → DQ
+<li><label><input type="checkbox"><a href="da-ingest-guide.html">Ingest a surveillance dataset</a>, raw → DQ
 → staged → <strong>approve</strong>. <em>Checkpoint: you approved a
 dataset and saw it in the catalog.</em></label></li>
 <li><label><input type="checkbox"><a href="da-cmr-guide.html">Upload
-&amp; split a CMR</a> — upload → split → approve a monthly CMR.
+&amp; split a CMR</a>, upload → split → approve a monthly CMR.
 <em>Checkpoint: you split a CMR per disease.</em></label></li>
 <li><label><input type="checkbox"><a href="da-odk-guide.html">Work
-with ODK Central</a> — connect → monitor → register → sync → approve.
+with ODK Central</a>, connect → monitor → register → sync → approve.
 <em>Checkpoint: you synced submissions into the
 pipeline.</em></label></li>
 <li><label><input type="checkbox"><a href="da-logs-guide.html">Triage
-the log backlog</a> — triage and resolve a log. <em>Checkpoint: you
+the log backlog</a>, triage and resolve a log. <em>Checkpoint: you
 closed an item in the backlog.</em></label></li>
 </ul>
 <p>✅ <strong>Gate:</strong> you can take a file from each of the three
 channels through to <code>processed/</code> on the sandbox.</p>
 </div>
 <div class="section level2">
-<h2 id="week-2-downstream-work-shadowing">Week 2 — Downstream work + shadowing<a class="anchor" aria-label="anchor" href="#week-2-downstream-work-shadowing"></a>
+<h2 id="week-2-downstream-work-shadowing">Week 2, Downstream work + shadowing<a class="anchor" aria-label="anchor" href="#week-2-downstream-work-shadowing"></a>
 </h2>
 <ul class="task-list">
 <li><label><input type="checkbox"><a href="da-adhoc-guide.html">Answer
 an ad-hoc request</a> with <code><a href="../reference/eri_query.html">eri_query()</a></code>. Other downstream
 guides (QC + country feedback, routine reporting, final survey reports)
-ship as they land — check the <a href="https://thecartercenter.github.io/erifunctions/articles/">Articles
+ship as they land, check the <a href="https://thecartercenter.github.io/erifunctions/articles/">Articles
 menu</a> for what’s available.</label></li>
 <li><label><input type="checkbox"><strong>Pair</strong> with a senior
 DA on a real (but sandboxed) task end-to-end.</label></li>
 <li><label><input type="checkbox">Take a <strong>first supervised real
-task</strong> — a real ingest or QC review, reviewed before you
+task</strong>, a real ingest or QC review, reviewed before you
 approve.</label></li>
 <li><label><input type="checkbox">Make your <strong>first
 contribution</strong>: fix a typo or unclear line in a guide via a PR.
@@ -269,12 +269,12 @@ never leaves the system.</label></li>
 <li>The <a href="da-cheatsheet.html">DA cheat sheet</a> and the <a href="troubleshooting.html">troubleshooting card</a> are your desk
 reference.</li>
 <li>The <a href="https://thecartercenter.github.io/erifunctions/articles/">Articles
-menu</a> is the <strong>“how do I do X?”</strong> lookup — start there,
+menu</a> is the <strong>“how do I do X?”</strong> lookup, start there,
 not the function reference.</li>
 <li>Keep a <strong>buddy/mentor</strong> for the first month; questions
 are faster than docs at first.</li>
 <li>When you hit something the guides don’t cover, that’s a gap worth
-filing — open an issue.</li>
+filing, open an issue.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

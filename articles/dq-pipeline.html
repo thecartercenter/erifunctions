@@ -188,42 +188,42 @@ optionally in Azure <code>schemas/</code>). The key blocks are:</p>
 <p>The pipeline runs these steps in order:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Preprocessing</strong> — removes smart quotes, optionally
+<strong>Preprocessing</strong>: removes smart quotes, optionally
 strips column name whitespace, drops rows with a missing year
 value.</li>
 <li>
-<strong>Alias resolution</strong> — renames recognised alternative
+<strong>Alias resolution</strong>: renames recognised alternative
 column headers to the canonical name defined in the schema.</li>
 <li>
-<strong>Required-column check</strong> — adds a <code>NA</code>-row
+<strong>Required-column check</strong>: adds a <code>NA</code>-row
 flag for any column marked <code>required: true</code> that is
 completely absent from the data.</li>
 <li>
-<strong>Type coercion</strong> — converts columns to
+<strong>Type coercion</strong>: converts columns to
 <code>numeric</code>, <code>date</code>, or <code>character</code> as
 declared; flags values that cannot be coerced.</li>
 <li>
-<strong>Range checks</strong> — flags numeric values outside the
+<strong>Range checks</strong>: flags numeric values outside the
 <code>[min, max]</code> range.</li>
 <li>
-<strong>Translations and corrections</strong> — applies the lookup
+<strong>Translations and corrections</strong>: applies the lookup
 maps silently, logging each change to <code>$log</code>.</li>
 <li>
-<strong>Allowed-values check</strong> — flags values not in the
+<strong>Allowed-values check</strong>: flags values not in the
 <code>allowed_values</code> list.</li>
 <li>
-<strong>NA fill</strong> — fills <code>NA</code> in
+<strong>NA fill</strong>: fills <code>NA</code> in
 <code>na_fill</code>-annotated columns with the specified default and
 logs the change.</li>
 <li>
-<strong>Temporal cross-check</strong> — flags rows where
+<strong>Temporal cross-check</strong>: flags rows where
 <code>year(date_col) != year_col</code>.</li>
 <li>
-<strong>Derived columns</strong> — evaluates each
+<strong>Derived columns</strong>: evaluates each
 <code>formula</code> with <code>with(data, ...)</code> and adds the
 result as a new column.</li>
 <li>
-<strong>Aggregate consistency</strong> — for any derived column,
+<strong>Aggregate consistency</strong>: for any derived column,
 checks the formula against the existing value and flags discrepancies
 (useful for pre-computed totals).</li>
 </ol>
@@ -296,7 +296,7 @@ review:</p>
 </h2>
 <p>After the baseline checks you can chain additional anomaly detectors.
 All three accept either a plain tibble or a <code>dq_result</code>, and
-return the same type — so they compose with <code>|&gt;</code>.</p>
+return the same type, so they compose with <code>|&gt;</code>.</p>
 <div class="section level3">
 <h3 id="period-over-period-percent-change">Period-over-period percent change<a class="anchor" aria-label="anchor" href="#period-over-period-percent-change"></a>
 </h3>

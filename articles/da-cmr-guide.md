@@ -1,10 +1,10 @@
 # Uploading and processing a monthly country report (CMR) (for data analysts)
 
-Every month, country programmes file a **Case Management Report (CMR)**
-— a filled Excel template of treatment, training, and survey numbers.
-This guide, for a **Data Analyst**, walks the monthly job: take that
-incoming Excel, **upload** it to Azure, **stage** it, **parse** each
-sheet, and **approve** it into the governed data system.
+Every month, country programmes file a **Case Management Report (CMR)**,
+a filled Excel template of treatment, training, and survey numbers. This
+guide, for a **Data Analyst**, walks the monthly job: take that incoming
+Excel, **upload** it to Azure, **stage** it, **parse** each sheet, and
+**approve** it into the governed data system.
 
 The trick that makes it manageable: every CMR template has a row of
 **machine-readable field codes** (`#rbtrt_year`, `#rbtrt_treated`, …).
@@ -30,11 +30,11 @@ G\["eri_approve() each disease/measure -\> processed/ + catalog"\]
 
 - `remotes::install_github("thecartercenter/erifunctions")`.
 - **Azure access** for the upload / stage / approve steps (zero-config
-  browser sign-in — see the [connections
+  browser sign-in, see the [connections
   guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)).
   The **parsing** step
   ([`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md))
-  is offline — it just reads a local Excel file.
+  is offline, it just reads a local Excel file.
 
 ``` r
 
@@ -43,7 +43,7 @@ library(erifunctions)
 
 > **A note on the examples below.** The upload, stage, and approve steps
 > run against the live Azure `projects`/`data` blobs and real,
-> registered countries — so the outputs for those are shown as
+> registered countries, so the outputs for those are shown as
 > illustrations rather than run here. Unlike the surveillance and ODK
 > guides, there is **no throwaway-sandbox path** for stage/approve:
 > [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
@@ -61,8 +61,8 @@ per-country, per-period folder. The period is a six-digit `YYYYMM`:
     e.g.      …/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx
 
 Do this from R with
-[`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md)
-— it keeps the whole monthly run in one place and one tool. (If a file
+[`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md),
+it keeps the whole monthly run in one place and one tool. (If a file
 already arrived via Azure Storage Explorer or SharePoint, that’s fine
 too; you can skip ahead to staging.) Connect to the `projects` blob and
 upload the file to that path:
@@ -82,13 +82,13 @@ eri_upload(
 
 ### What the template looks like
 
-Every CMR sheet has the same shape — a few rows of human-readable
+Every CMR sheet has the same shape, a few rows of human-readable
 headers, then the **field-code row**, then the data:
 
 | Excel row | Contents |
 |----|----|
 | 1–4 | Title, group headers, human-readable column names |
-| **5** | **`#field codes`** (e.g. `#rbtrt_year`, `#rbtrt_adm1`, `#rbtrt_treated`) — the parsing anchor |
+| **5** | **`#field codes`** (e.g. `#rbtrt_year`, `#rbtrt_adm1`, `#rbtrt_treated`), the parsing anchor |
 | 6+ | The monthly numbers |
 
 That row 5 is what makes the whole thing work, as you’ll see in §3.
@@ -121,14 +121,14 @@ eri_stage_cmr("uga")
 #> …
 ```
 
-(CMR data lives under the `rblf` disease folder — RB for onchocerciasis,
+(CMR data lives under the `rblf` disease folder, RB for onchocerciasis,
 LF for lymphatic filariasis, the two programmes these reports cover.
-Only the registered RB-expansion countries — `eth`, `nga`, `sdn`, `ssd`,
-`uga`, `mad`, `tcd` — can be staged.)
+Only the registered RB-expansion countries, `eth`, `nga`, `sdn`, `ssd`,
+`uga`, `mad`, `tcd`, can be staged.)
 
 > **Heads-up on the `rblf` coordinate.** CMR always uses
-> `disease = "rblf"` — the combined RB + LF programme code — so the
-> paths are `{country}/rblf/cmr/…` and you approve with
+> `disease = "rblf"`, the combined RB + LF programme code, so the paths
+> are `{country}/rblf/cmr/…` and you approve with
 > `eri_approve(country, "rblf", "cmr", period)`. Scaffolding a new
 > country’s CMR with `eri_onboard_cmr(create_dirs = TRUE)` creates those
 > same `{country}/rblf/cmr/` folders.
@@ -138,7 +138,7 @@ Only the registered RB-expansion countries — `eth`, `nga`, `sdn`, `ssd`,
 > (ADR-0012)](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md),
 > CMR is a *format* of the `programmatic` channel, and
 > [`eri_split_cmr()`](#split) (below) routes each sheet to its own
-> disease and measure — e.g. RB Treatment →
+> disease and measure, e.g. RB Treatment →
 > `{country}/oncho/programmatic/treatment/`. You then approve **each
 > disease/measure**, not one combined `rblf`/`cmr` bucket.
 
@@ -160,7 +160,7 @@ names(schema$sheets)
 #> [13] "RB Epi Surveys"                "RB Ento Surveys"
 ```
 
-(A real monthly file has many sheets — treatments, MMDP, the various
+(A real monthly file has many sheets, treatments, MMDP, the various
 trainings, and surveys. The bundled `cmr-example.xlsx` below is a small
 **two-sheet** subset, `RB Treatment` + `SCH Treatment`, so you can run
 the parse and split offline.)
@@ -168,8 +168,8 @@ the parse and split offline.)
 Then read a sheet with
 [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md).
 It reads from **row 5** (the field codes), keeps only the `#`-coded
-columns, drops the template’s blank spacer rows, and — when you pass
-`country` — tags each row with it. (We use the package’s bundled
+columns, drops the template’s blank spacer rows, and, when you pass
+`country`, tags each row with it. (We use the package’s bundled
 synthetic example here; in real work you’d point at your staged file.)
 
 ``` r
@@ -196,7 +196,7 @@ sch <- eri_ingest_cmr(report, sheet = "SCH Treatment", country = "uga")
 #> ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.
 ```
 
-The column names *are* the field codes — stable identifiers you can rely
+The column names *are* the field codes, stable identifiers you can rely
 on across every monthly file. This is the moment to eyeball the numbers
 (treated vs target, missing districts) before you sign off.
 
@@ -204,7 +204,7 @@ on across every monthly file. This is the moment to eyeball the numbers
 > language-neutral, so the *same*
 > [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
 > parses a French template too. For a French file, the sheet is named in
-> French (e.g. `"Oncho Traitement"`) — pass the **canonical slug** and
+> French (e.g. `"Oncho Traitement"`), pass the **canonical slug** and
 > the country, and the schema’s `sheet_aliases` resolves it:
 >
 > ``` r
@@ -219,13 +219,13 @@ The sheets are per-programme, but the canonical store is
 **per-disease**.
 [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
 reads every routable sheet and routes its rows to
-`{country}/{disease}/programmatic/{measure}/staged/` — the **disease
-from the sheet** (RB Treatment → `oncho`, SCH Treatment → `sch`, LF MMDP
-→ `lf`), the **measure from its category**. It reads the Excel
+`{country}/{disease}/programmatic/{measure}/staged/`: the **disease from
+the sheet** (RB Treatment → `oncho`, SCH Treatment → `sch`, LF MMDP →
+`lf`), the **measure from its category**. It reads the Excel
 **directly** (here the bundled example; in real work the file you
 uploaded), independently of the `rblf/cmr/staged/` copy
 [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
-made — that copy is the raw archive; this is the parse + route. Preview
+made, that copy is the raw archive; this is the parse + route. Preview
 the routing first with `dry_run`:
 
 ``` r
@@ -242,14 +242,14 @@ eri_split_cmr(report, "uga", dry_run = TRUE)
 ```
 
 A sheet the schema routes but the workbook doesn’t contain is **skipped
-with a warning** — expected here, since the example is a two-sheet
+with a warning**, expected here, since the example is a two-sheet
 subset. (If *none* of the routable sheets are present,
 [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
 errors instead of silently doing nothing.)
 
 > **Why the sheet, not the row?** Each sheet carries a per-row
 > `#…_disease` field whose values are *programme-coverage* codes (`RB` /
-> `RBLF` / `RBLFSCH` — which programmes run at that location), **not** a
+> `RBLF` / `RBLFSCH`, which programmes run at that location), **not** a
 > single disease.
 > [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
 > keeps that field as a data column and takes the routing disease from
@@ -257,7 +257,7 @@ errors instead of silently doing nothing.)
 > across diseases. Cross-programme **Training** sheets, which serve all
 > programmes at once, route together under the combined `rblf` disease.
 
-Then stage for real — one parquet per sheet, in its disease/measure
+Then stage for real, one parquet per sheet, in its disease/measure
 folder:
 
 ``` r
@@ -272,7 +272,7 @@ eri_split_cmr(report, "uga")
 
 ## 5. Approve each disease/measure
 
-Each split dataset passes through the same human gate — once per
+Each split dataset passes through the same human gate, once per
 disease/measure:
 
 ``` r
@@ -306,14 +306,14 @@ That’s the monthly loop: **upload → stage → split → approve.**
 ## What’s next
 
 - **A new country files its first report?** Its CMR schema (which
-  sheets, which field codes) has to exist first — see the CMR section of
+  sheets, which field codes) has to exist first, see the CMR section of
   the [onboarding
   guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
   ([`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md)).
 - **[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
   says “No routable sheets”?** A sheet only routes when its schema entry
   declares a `disease` and a `data_type`. `uga` is the worked example;
-  other countries’ routing keys are being filled in — add them to the
+  other countries’ routing keys are being filled in, add them to the
   country’s `inst/schemas/cmr/{code}.yaml` (one `disease` + `data_type`
   per sheet) to enable the split there.
 - The [surveillance ingest
@@ -322,7 +322,7 @@ That’s the monthly loop: **upload → stage → split → approve.**
   the data-catalog mechanics in more depth.
 
 > **Real reports are not practice data.** The monthly CMR files are
-> protected country data — staged and approved through this pipeline,
+> protected country data, staged and approved through this pipeline,
 > never deleted or moved casually. (The example here is synthetic, which
 > is the only reason we could pass it around freely.)
 

@@ -119,10 +119,10 @@ files one at a time.</p>
 </h2>
 <blockquote>
 <p><strong><code><a href="../reference/eri_query.html">eri_query()</a></code> runs SQL across <em>processed</em>
-data — the approved, trustworthy layer — without moving it out of Azure
-or standing up a database.</strong> It attaches the relevant parquet
-into an in-process <a href="https://duckdb.org" class="external-link">DuckDB</a> session, runs
-your query, and hands back a tibble.</p>
+data, the approved, trustworthy layer, without moving it out of Azure or
+standing up a database.</strong> It attaches the relevant parquet into
+an in-process <a href="https://duckdb.org" class="external-link">DuckDB</a> session, runs your
+query, and hands back a tibble.</p>
 </blockquote>
 <div class="mermaid">
 flowchart LR
@@ -136,12 +136,12 @@ flowchart LR
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># eri_query needs two optional packages — install them once:</span></span>
+<code class="sourceCode R"><span><span class="co"># eri_query needs two optional packages, install them once:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"duckdb"</span>, <span class="st">"DBI"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span></code></pre></div>
 <p>Querying approved data in Azure also needs a connection (the browser
-opens on first use); pure in-memory queries — the examples in <a href="#explicit">Joins and aggregations</a> below — need nothing.</p>
+opens on first use); pure in-memory queries, the examples in <a href="#explicit">Joins and aggregations</a> below, need nothing.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -152,7 +152,7 @@ opens on first use); pure in-memory queries — the examples in <a href="#explic
 can see, and they combine:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Catalog-driven</strong> — name the data by its axes
+<strong>Catalog-driven</strong>: name the data by its axes
 (<code>country</code>, <code>disease</code>, <code>data_type</code>, …)
 and <code><a href="../reference/eri_query.html">eri_query()</a></code> finds the matching
 <strong>processed</strong> files, stamps each row with its
@@ -160,7 +160,7 @@ and <code><a href="../reference/eri_query.html">eri_query()</a></code> finds the
 and unions them into one table called <code>data</code>. This is how you
 roll up across countries or periods.</li>
 <li>
-<strong>Explicit tables</strong> — hand it named tables directly
+<strong>Explicit tables</strong>: hand it named tables directly
 (<code>tables = list(name = …)</code>), where each is a data.frame, a
 local <code>.parquet</code>, or a <code>data/</code> blob path. This is
 how you join your own inputs (a population table, a lookup) to approved
@@ -186,20 +186,20 @@ aggregate dataset:</p>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;dbl&gt;</span></span>
 <span><span class="co">#&gt; 1 ht      12345</span></span>
 <span><span class="co">#&gt; 2 dr       9876</span></span></code></pre></div>
-<p><em>(Illustrative numbers — your catalog will differ. The in-memory
+<p><em>(Illustrative numbers, your catalog will differ. The in-memory
 examples below are real output you can reproduce.)</em></p>
 <p>Because every row is stamped with its provenance, you can
 <code>GROUP BY country</code>, <code>period</code>,
 <code>data_type</code>, etc. without joining anything. (Those five names
-are reserved in this mode — see <code><a href="../reference/eri_query.html">?eri_query</a></code>.) Not sure
-what’s available? <a href="../reference/eri_catalog_query.html"><code>eri_catalog_query()</code></a>
+are reserved in this mode, see <code><a href="../reference/eri_query.html">?eri_query</a></code>.) Not sure what’s
+available? <a href="../reference/eri_catalog_query.html"><code>eri_catalog_query()</code></a>
 with the same filters lists the files that would be attached.</p>
 </div>
 <div class="section level2">
 <h2 id="explicit">Joins and aggregations<a class="anchor" aria-label="anchor" href="#explicit"></a>
 </h2>
 <p>The explicit mode runs entirely in memory, so these you can run right
-now. Say a request lands as two small tables — weekly case counts and a
+now. Say a request lands as two small tables, weekly case counts and a
 population denominator:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cases</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -211,7 +211,7 @@ population denominator:</p>
 <span>  province <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"North"</span>, <span class="st">"South"</span>, <span class="st">"East"</span><span class="op">)</span>,</span>
 <span>  pop      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">120000</span>, <span class="fl">45000</span>, <span class="fl">80000</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><strong>Aggregate</strong> — total cases by province:</p>
+<p><strong>Aggregate</strong>: total cases by province:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_query.html">eri_query</a></span><span class="op">(</span></span>
 <span>  <span class="st">"SELECT province, SUM(cases) AS cases</span></span>
@@ -226,7 +226,7 @@ population denominator:</p>
 <span><span class="co">#&gt; 1 North       95</span></span>
 <span><span class="co">#&gt; 2 East        30</span></span>
 <span><span class="co">#&gt; 3 South       21</span></span></code></pre></div>
-<p><strong>Join</strong> — incidence per 1,000, combining the two
+<p><strong>Join</strong>: incidence per 1,000, combining the two
 tables:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_query.html">eri_query</a></span><span class="op">(</span></span>
@@ -243,7 +243,7 @@ tables:</p>
 <span><span class="co">#&gt; 1 North                 0.792</span></span>
 <span><span class="co">#&gt; 2 South                 0.467</span></span>
 <span><span class="co">#&gt; 3 East                  0.375</span></span></code></pre></div>
-<p><strong>Window functions</strong> — week-over-week change, which is
+<p><strong>Window functions</strong>: week-over-week change, which is
 awkward in base R but one line of SQL:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_query.html">eri_query</a></span><span class="op">(</span></span>
@@ -262,7 +262,7 @@ awkward in base R but one line of SQL:</p>
 <span><span class="co">#&gt; 3 North          2    55         15</span></span>
 <span><span class="co">#&gt; 4 South          1    12         NA</span></span>
 <span><span class="co">#&gt; 5 South          2     9         -3</span></span></code></pre></div>
-<p>You can mix the modes — pass catalog filters <strong>and</strong>
+<p>You can mix the modes, pass catalog filters <strong>and</strong>
 <code>tables = list(pop = …)</code> to join approved cases to a
 population table you supply.</p>
 </div>
@@ -270,11 +270,10 @@ population table you supply.</p>
 <h2 id="turn-the-answer-into-an-output">Turn the answer into an output<a class="anchor" aria-label="anchor" href="#turn-the-answer-into-an-output"></a>
 </h2>
 <p><code><a href="../reference/eri_query.html">eri_query()</a></code> returns an ordinary tibble, so the result
-flows straight into the rest of the toolkit — <a href="../reference/eri_table.html"><code>eri_table()</code></a> for a
+flows straight into the rest of the toolkit, <a href="../reference/eri_table.html"><code>eri_table()</code></a> for a
 branded table, <code>ggplot2</code> / the <code>eri_map_*</code> helpers
 for a figure, or <code><a href="../reference/eri_case_summary.html">eri_case_summary()</a></code> /
-<code><a href="../reference/eri_incidence_rate.html">eri_incidence_rate()</a></code> for standard epi summaries — see the
-<a href="../reference/index.html">function reference</a> for the full
+<code><a href="../reference/eri_incidence_rate.html">eri_incidence_rate()</a></code> for standard epi summaries, see the <a href="../reference/index.html">function reference</a> for the full
 reporting toolkit.</p>
 </div>
 <div class="section level2">
@@ -284,7 +283,7 @@ reporting toolkit.</p>
 <li>
 <strong>It queries <em>approved</em> data.</strong>
 <code><a href="../reference/eri_query.html">eri_query()</a></code> reads the <code>processed/</code> layer through
-the catalog — the data the team trusts — not <code>raw/</code> or
+the catalog, the data the team trusts, not <code>raw/</code> or
 <code>staged/</code>.</li>
 <li>
 <strong>Big scans are bounded by memory/download</strong>
@@ -292,7 +291,7 @@ the catalog — the data the team trusts — not <code>raw/</code> or
 (<code>country</code>/<code>disease</code>/<code>period</code>) so you
 attach only what you need.</li>
 <li>
-<strong>It’s DuckDB SQL</strong> — joins, <code>GROUP BY</code>,
+<strong>It’s DuckDB SQL</strong>: joins, <code>GROUP BY</code>,
 window functions, CTEs, date functions all work; see the <a href="https://duckdb.org/docs/sql/introduction" class="external-link">DuckDB docs</a>.</li>
 </ul>
 </div>
@@ -301,8 +300,8 @@ window functions, CTEs, date functions all work; see the <a href="https://duckdb
 </h2>
 <ul>
 <li>The <a href="../reference/eri_catalog_query.html">data catalog
-reference</a> — see what approved data exists before you query it.</li>
-<li>The <a href="da-ingest-guide.html">surveillance ingest guide</a> —
+reference</a>, see what approved data exists before you query it.</li>
+<li>The <a href="da-ingest-guide.html">surveillance ingest guide</a>,
 how data <em>gets</em> approved in the first place.</li>
 <li>The <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide
 index</a>. ```</li>

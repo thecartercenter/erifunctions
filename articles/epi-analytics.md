@@ -1,7 +1,7 @@
 # Epidemiological Analytics
 
 This vignette covers the epidemiological helper functions for malaria,
-lymphatic filariasis, and onchocerciasis analyses — from computing
+lymphatic filariasis, and onchocerciasis analyses, from computing
 incidence rates and epiweek dates to LF pooled prevalence and
 onchocerciasis programme-status maps.
 
@@ -43,7 +43,7 @@ ggplot(weekly, aes(week_start, n_cases, colour = province)) +
 ### Study week
 
 [`eri_study_week()`](https://thecartercenter.github.io/erifunctions/reference/eri_study_week.md)
-expresses epiweeks relative to an index event — useful for intervention
+expresses epiweeks relative to an index event, useful for intervention
 analyses such as IRS campaigns:
 
 ``` r

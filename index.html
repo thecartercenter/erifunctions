@@ -120,18 +120,18 @@
 <h2 id="guides">Guides<a class="anchor" aria-label="anchor" href="#guides"></a>
 </h2>
 <p>These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them on the <a href="https://thecartercenter.github.io/erifunctions/articles/">documentation site</a>, which groups them <strong>Get started → your role → topic deep-dives → contributing</strong>. The <a href="https://thecartercenter.github.io/erifunctions/articles/getting-started.html"><strong>Getting started</strong></a> article is the front door.</p>
-<p><strong>New Data Analyst?</strong> Start with the <strong><a href="https://thecartercenter.github.io/erifunctions/articles/onboarding.html">onboarding path</a></strong> — a paced Week-0 → Week-2 track through the guides below — and keep the quick-reference articles open as you work:</p>
+<p><strong>New Data Analyst?</strong> Start with the <strong><a href="https://thecartercenter.github.io/erifunctions/articles/onboarding.html">onboarding path</a></strong>, a paced Week-0 → Week-2 track through the guides below, and keep the quick-reference articles open as you work:</p>
 <ul>
 <li>
-<a href="https://thecartercenter.github.io/erifunctions/articles/orientation.html">Orientation</a> — the big picture: the data system, the pipeline, and where your tasks live</li>
+<a href="https://thecartercenter.github.io/erifunctions/articles/orientation.html">Orientation</a>: the big picture: the data system, the pipeline, and where your tasks live</li>
 <li>
-<a href="https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html">DA cheat sheet</a> — the ~15 functions you use, the path model, and the “which pipeline?” decision tree</li>
+<a href="https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html">DA cheat sheet</a>: the ~15 functions you use, the path model, and the “which pipeline?” decision tree</li>
 <li>
-<a href="https://thecartercenter.github.io/erifunctions/articles/data-model-card.html">Data-model card</a> — channel (<code>data_source</code>) vs. measure (<code>data_type</code>)</li>
+<a href="https://thecartercenter.github.io/erifunctions/articles/data-model-card.html">Data-model card</a>: channel (<code>data_source</code>) vs. measure (<code>data_type</code>)</li>
 <li>
-<a href="https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html">Troubleshooting card</a> — common errors → fixes + the log-triage loop</li>
+<a href="https://thecartercenter.github.io/erifunctions/articles/troubleshooting.html">Troubleshooting card</a>: common errors → fixes + the log-triage loop</li>
 </ul>
-<p><strong>New here? Do these in order</strong> (then dip into the rest as your work needs them). First, run <code><a href="reference/eri_data_model.html">eri_data_model()</a></code> once — it prints the data-addressing vocabulary (channel vs. measure) every guide assumes.</p>
+<p><strong>New here? Do these in order</strong> (then dip into the rest as your work needs them). First, run <code><a href="reference/eri_data_model.html">eri_data_model()</a></code> once, it prints the data-addressing vocabulary (channel vs. measure) every guide assumes.</p>
 <ul>
 <li>
 <strong>New Data Analyst:</strong> <a href="https://thecartercenter.github.io/erifunctions/articles/connections-guide.html">Connections</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html">Onboard a space</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html">Ingest a dataset</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html">Triage the log backlog</a>. Then <a href="https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html">CMR</a> and <a href="https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html">ODK</a> when you file those.</li>
@@ -151,11 +151,11 @@
 <tbody>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/connections-guide.html">Connecting to Azure, ODK, SharePoint &amp; Teams</a></td>
-<td>Everyone — how to authenticate to each service and confirm it works (start here)</td>
+<td>Everyone, how to authenticate to each service and confirm it works (start here)</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></td>
-<td>Epidemiologists running a study end-to-end — from a fresh project to a citable, reproducible result</td>
+<td>Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html">Ingesting a surveillance dataset (raw → approved)</a></td>
@@ -241,33 +241,29 @@
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
-<p>Add the following to your project <code>.Renviron</code> (<code>usethis::edit_r_environ(scope = "project")</code>):</p>
-<pre><code># Azure storage
-ERIFUNCTIONS_TENANT_ID=&lt;Azure tenant ID&gt;
-ERIFUNCTIONS_APP_ID=&lt;Azure app registration ID&gt;
-ERIFUNCTIONS_RESOURCE_ENDPOINT=&lt;storage account endpoint URL&gt;
-ERIFUNCTIONS_STORAGE_NAME=projects
-ERIFUNCTIONS_DATA_STORAGE_NAME=data
-
-# Service principal — for scripted/automated use only
-ERIFUNCTIONS_SP_CLIENT_ID=&lt;SP client ID&gt;
-ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
-
-# Your analyst identity (appears in approval and access logs)
+<p>Azure needs no configuration. The first command that touches Azure opens your browser to sign in with your Carter Center account, and access is validated against your own identity. The tenant, app registration, and storage endpoint are built into the package.</p>
+<p>Only a couple of entries go in your project <code>.Renviron</code> (<code>usethis::edit_r_environ(scope = "project")</code>), and only if you need them:</p>
+<pre><code># Your analyst identity, recorded in approval and access logs (recommended)
 ERI_ANALYST_ID=firstname.lastname
 
-# ODK Central
-ODK_URL=https://rblf.tccodk.org/
+# ODK Central credentials (only if you sync ODK data)
 ODK_USER=your.email@cartercenter.org
 ODK_PASS=&lt;ODK password&gt;</code></pre>
 <p>Restart R after editing <code>.Renviron</code>.</p>
+<p>Advanced settings, rarely needed:</p>
+<pre><code>ERIFUNCTIONS_STORAGE_NAME=projects           # only for data-analyst pipeline work against the projects blob
+ODK_URL=https://rblf.tccodk.org/             # only if your ODK server is not the default
+ERIFUNCTIONS_SP_CLIENT_ID=&lt;SP client ID&gt;     # unattended service-principal auth (automation only)
+ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
+# ERIFUNCTIONS_TENANT_ID / ERIFUNCTIONS_APP_ID / ERIFUNCTIONS_RESOURCE_ENDPOINT override the built-in defaults</code></pre>
+<p>The full connection walkthrough, including the service-principal and Teams paths, is in the <a href="https://thecartercenter.github.io/erifunctions/articles/connections-guide.html">Connections guide</a>.</p>
 <hr>
 </div>
 <div class="section level2">
 <h2 id="daily-workflow">Daily workflow<a class="anchor" aria-label="anchor" href="#daily-workflow"></a>
 </h2>
 <p>Two templates ship with the package. Pull either one with <code><a href="reference/eri_template_pull.html">eri_template_pull()</a></code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Data analyst daily workflow (connections, ODK sync, DQ, approve)</span></span>
 <span><span class="fu"><a href="reference/eri_template_pull.html">eri_template_pull</a></span><span class="op">(</span><span class="st">"eri_daily_workflow"</span><span class="op">)</span></span>
 <span></span>
@@ -287,12 +283,12 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
                                                    raw/        &lt;- as-received from source
                                                    staged/     &lt;- DQ-checked, awaiting approval
                                                    processed/  &lt;- analyst-approved, canonical</code></pre>
-<p>The <code>data_type</code> (measure) level is optional — channel-only data lands one level shallower. The two addressing axes are explained just below. <code><a href="reference/eri_approve.html">eri_approve()</a></code> is the explicit human gate. Nothing reaches <code>processed/</code> without it.</p>
+<p>The <code>data_type</code> (measure) level is optional, channel-only data lands one level shallower. The two addressing axes are explained just below. <code><a href="reference/eri_approve.html">eri_approve()</a></code> is the explicit human gate. Nothing reaches <code>processed/</code> without it.</p>
 </div>
 <div class="section level3">
 <h3 id="how-data-is-addressed-vocabulary">How data is addressed (vocabulary)<a class="anchor" aria-label="anchor" href="#how-data-is-addressed-vocabulary"></a>
 </h3>
-<p>A path has <strong>five independent axes</strong> (<a href="docs/adr/0012-source-measure-data-model.html">ADR-0012</a>) — the key is that <strong>how the data arrives (<code>data_source</code>) is separate from what it measures (<code>data_type</code>)</strong>:</p>
+<p>A path has <strong>five independent axes</strong> (<a href="docs/adr/0012-source-measure-data-model.html">ADR-0012</a>), the key is that <strong>how the data arrives (<code>data_source</code>) is separate from what it measures (<code>data_type</code>)</strong>:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -321,14 +317,14 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 </tr>
 <tr>
 <td><code>data_source</code></td>
-<td><strong>the channel — how it arrives</strong></td>
+<td><strong>the channel, how it arrives</strong></td>
 <td>
 <code>surveillance</code>, <code>programmatic</code>, <code>research</code>
 </td>
 </tr>
 <tr>
 <td><code>data_type</code></td>
-<td><strong>the measure — what it captures</strong></td>
+<td><strong>the measure, what it captures</strong></td>
 <td>
 <code>case</code>, <code>aggregate</code>, <code>treatment</code>, <code>tas</code>
 </td>
@@ -342,16 +338,16 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/eri_data_path.html">eri_data_path</a></span><span class="op">(</span><span class="st">"dr"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"case"</span>, <span class="st">"processed"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      "dr/malaria/surveillance/case/processed"</span></span></code></pre></div>
-<p>One source can carry many measures (a CMR yields <code>treatment</code> + <code>mmdp</code> + <code>survey</code>; the same source + disease is <code>case</code> in one country, <code>aggregate</code> in another). <code>data_source</code> and <code>data_type</code> are <strong>extensible</strong> — <code><a href="reference/eri_data_model.html">eri_data_model()</a></code> lists the known values, and an unregistered one <em>warns</em> rather than errors so new data is never blocked. (The schema set is keyed by <code>country</code> / <code>disease</code> / <code>data_source</code> / <code>data_type</code>; the legacy four-axis path form and schema names are being migrated under #175.)</p>
+<p>One source can carry many measures (a CMR yields <code>treatment</code> + <code>mmdp</code> + <code>survey</code>; the same source + disease is <code>case</code> in one country, <code>aggregate</code> in another). <code>data_source</code> and <code>data_type</code> are <strong>extensible</strong>: <code><a href="reference/eri_data_model.html">eri_data_model()</a></code> lists the known values, and an unregistered one <em>warns</em> rather than errors so new data is never blocked. (The schema set is keyed by <code>country</code> / <code>disease</code> / <code>data_source</code> / <code>data_type</code>; the legacy four-axis path form and schema names are being migrated under #175.)</p>
 </div>
 <div class="section level3">
 <h3 id="data-catalog">Data catalog<a class="anchor" aria-label="anchor" href="#data-catalog"></a>
 </h3>
 <p>Every file promoted by <code><a href="reference/eri_approve.html">eri_approve()</a></code> is automatically registered in <code>_catalog/data_catalog.yaml</code>. Query it to see what data exists on the system:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># What processed Uganda oncho data do we have?</span></span>
 <span><span class="fu"><a href="reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, disease <span class="op">=</span> <span class="st">"oncho"</span>, layer <span class="op">=</span> <span class="st">"processed"</span><span class="op">)</span></span>
 <span></span>
@@ -699,7 +695,7 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 <tbody>
 <tr>
 <td><code>eri_research_scaffold(name, country, disease, description)</code></td>
-<td>Create a <strong>standalone research-project repository</strong> (ADR-0006) at <code>dest/name/</code> — a full repo skeleton that depends on erifunctions</td>
+<td>Create a <strong>standalone research-project repository</strong> (ADR-0006) at <code>dest/name/</code>, a full repo skeleton that depends on erifunctions</td>
 </tr>
 <tr>
 <td><code>eri_research_init(project_name, country, disease, description)</code></td>
@@ -744,7 +740,7 @@ ODK_PASS=&lt;ODK password&gt;</code></pre>
 </tr>
 </tbody>
 </table>
-<p><code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> vs <code><a href="reference/eri_research_init.html">eri_research_init()</a></code>: <strong>scaffold</strong> stands up a new, separate project <em>repository</em> (the ADR-0006 way — its own git repo); <strong>init</strong> initialises a project in a directory you are already in. Most new studies start with <code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code>.</p>
+<p><code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code> vs <code><a href="reference/eri_research_init.html">eri_research_init()</a></code>: <strong>scaffold</strong> stands up a new, separate project <em>repository</em> (the ADR-0006 way, its own git repo); <strong>init</strong> initialises a project in a directory you are already in. Most new studies start with <code><a href="reference/eri_research_scaffold.html">eri_research_scaffold()</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="template-management">Template management<a class="anchor" aria-label="anchor" href="#template-management"></a>

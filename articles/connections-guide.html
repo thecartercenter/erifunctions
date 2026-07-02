@@ -109,44 +109,44 @@
     
     
 <p><code>erifunctions</code> talks to four outside services on your
-behalf — <strong>Azure</strong> (where the data lives), <strong>ODK
+behalf, <strong>Azure</strong> (where the data lives), <strong>ODK
 Central</strong> (where field submissions come from),
 <strong>SharePoint</strong> (shared files), and <strong>Teams</strong>
 (notifications). This is the one place that shows how to connect to each
 and <strong>confirm it works</strong>.</p>
 <p>The good news: most need little or no setup. Azure and SharePoint are
-<strong>zero-config</strong> — you just sign in through your browser.
-ODK needs three lines in a settings file. Teams is optional. Work
-through the service(s) you need; skip the rest.</p>
+<strong>zero-config</strong>, you just sign in through your browser. ODK
+needs three lines in a settings file. Teams is optional. Work through
+the service(s) you need; skip the rest.</p>
 <blockquote>
 <p><strong>A note on secrets.</strong> Where a service needs a
 credential, it lives in your <strong><code>.Renviron</code></strong>
-file — never typed into a script and never committed to git. We point
+file, never typed into a script and never committed to git. We point
 that out at each step.</p>
 </blockquote>
 <blockquote>
 <p><strong>Do this first: set your analyst identity.</strong> Before
 your <strong>first governed action</strong> (approving data, registering
 a catalog entry, syncing a form), set <code>ERI_ANALYST_ID</code> in
-your <code>.Renviron</code> — <code>usethis::edit_r_environ()</code>,
-add <code>ERI_ANALYST_ID=firstname.lastname</code>, save, and
+your <code>.Renviron</code>, <code>usethis::edit_r_environ()</code>, add
+<code>ERI_ANALYST_ID=firstname.lastname</code>, save, and
 <strong>restart R</strong>. Every approval log, catalog entry, and
 operation log is stamped with it. If it is unset,
 <code>erifunctions</code> warns once and records the approver as
 <strong><code>jsmith (unverified)</code></strong> (your OS username,
 marked so the audit trail shows the attribution is provisional). Set it
 once and the attribution is correct everywhere. A team or automated run
-can <strong>require</strong> it — set
+can <strong>require</strong> it, set
 <code>ERI_REQUIRE_ANALYST_ID=true</code> and governed actions refuse to
 run until <code>ERI_ANALYST_ID</code> is configured.</p>
 </blockquote>
 <div class="mermaid">
 flowchart TD
     You["Your R session"] --&gt; P["erifunctions"]
-    P --&gt; AZ["Azure Storage — where the data lives"]
-    P --&gt; ODK["ODK Central — field submissions"]
-    P --&gt; SP["SharePoint — shared files"]
-    P --&gt; TM["Teams — notifications"]
+    P --&gt; AZ["Azure Storage, where the data lives"]
+    P --&gt; ODK["ODK Central, field submissions"]
+    P --&gt; SP["SharePoint, shared files"]
+    P --&gt; TM["Teams, notifications"]
 </div>
 <div class="section level2">
 <h2 id="at-a-glance">At a glance<a class="anchor" aria-label="anchor" href="#at-a-glance"></a>
@@ -202,7 +202,7 @@ flowchart TD
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="azure">Azure — nothing to configure<a class="anchor" aria-label="anchor" href="#azure"></a>
+<h2 id="azure">Azure, nothing to configure<a class="anchor" aria-label="anchor" href="#azure"></a>
 </h2>
 <p>This is the big one: <strong>the data system itself</strong>. And
 there is nothing to set up. Thanks to baked-in defaults (see
@@ -212,14 +212,14 @@ you sign in with your Carter Center account, and the sign-in is
 remembered for the rest of the session.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The first call this session opens your browser to sign in.</span></span>
-<span><span class="co"># Nothing prints on success — you get a connection object back.</span></span>
+<span><span class="co"># Nothing prints on success, you get a connection object back.</span></span>
 <span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
 <p>The <code>storage_name</code> picks <strong>which blob you connect
 to</strong>: <code>"data"</code> (the governed three-layer data system)
 or <code>"projects"</code> (the legacy contractor space). Most analyst
 work is in <code>"data"</code>.</p>
-<p><strong>Confirm it works</strong> by listing the top of the container
-— if you get a tibble back, you are in:</p>
+<p><strong>Confirm it works</strong> by listing the top of the
+container, if you get a tibble back, you are in:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_list.html">eri_list</a></span><span class="op">(</span><span class="st">""</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 5 × 4</span></span>
@@ -236,23 +236,23 @@ from the container root (so a deeper listing like
 <code>full_names = FALSE</code> for just the leaf filenames.</p>
 <blockquote>
 <p><strong>For automation / CI (headless).</strong> A scheduled job has
-no browser. Set a <strong>service principal</strong> —
+no browser. Set a <strong>service principal</strong>,
 <code>ERIFUNCTIONS_SP_CLIENT_ID</code> and
 <code>ERIFUNCTIONS_SP_CLIENT_SECRET</code> in the environment (or pass
-<code>creds_yaml_path=</code>) — and
+<code>creds_yaml_path=</code>), and
 <code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> signs in non-interactively
 instead. The secret is the <em>only</em> true secret here; the tenant,
 app, and endpoint are non-sensitive defaults.</p>
 </blockquote>
 <blockquote>
-<p><strong><code>403 Forbidden</code>?</strong> That is not a bug — it
-is Azure telling you your account does not have access to that storage.
+<p><strong><code>403 Forbidden</code>?</strong> That is not a bug, it is
+Azure telling you your account does not have access to that storage.
 Access is granted by an administrator (Azure RBAC), not by the package.
 Ask your ERI admin to add you.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="odk">ODK Central — three lines in your settings file<a class="anchor" aria-label="anchor" href="#odk"></a>
+<h2 id="odk">ODK Central, three lines in your settings file<a class="anchor" aria-label="anchor" href="#odk"></a>
 </h2>
 <p>ODK Central signs in with your <strong>email and password</strong>,
 so those go in your <code>.Renviron</code> once. Open it with:</p>
@@ -262,7 +262,7 @@ so those go in your <code>.Renviron</code> once. Open it with:</p>
 <pre><code>ODK_URL=https://your-odk-server.org/
 ODK_USER=you@example.org
 ODK_PASS=your-password</code></pre>
-<p>Now connect — <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code> reads those
+<p>Now connect, <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code> reads those
 automatically, so your password never appears in a script:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/init_odk_connection.html">init_odk_connection</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -278,17 +278,17 @@ see:</p>
 <span><span class="co">#&gt; 2          7 Training  NA</span></span>
 <span><span class="co">#&gt; 3         11 testing   NA</span></span></code></pre></div>
 <p>Pass that <code>con</code> to the other ODK functions as
-<code>con = con</code>. For the full ODK workflow — registering a form,
-monitoring it, and pulling submissions — see the <a href="da-odk-guide.html">ODK Central guide</a>.</p>
+<code>con = con</code>. For the full ODK workflow, registering a form,
+monitoring it, and pulling submissions, see the <a href="da-odk-guide.html">ODK Central guide</a>.</p>
 <blockquote>
 <p><strong>For automation / CI.</strong> Instead of email+password, you
 can reuse a <strong>bearer token</strong>: set <code>ODK_TOKEN</code> in
-the environment and call the ODK functions with <code>con = NULL</code>
-— they fall back to <code>ODK_URL</code> + <code>ODK_TOKEN</code>.</p>
+the environment and call the ODK functions with <code>con = NULL</code>,
+they fall back to <code>ODK_URL</code> + <code>ODK_TOKEN</code>.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="sharepoint">SharePoint — just the site URL<a class="anchor" aria-label="anchor" href="#sharepoint"></a>
+<h2 id="sharepoint">SharePoint, just the site URL<a class="anchor" aria-label="anchor" href="#sharepoint"></a>
 </h2>
 <p>SharePoint uses the same browser sign-in as Azure (via
 <code>Microsoft365R</code>), so all you supply is the <strong>site
@@ -311,14 +311,14 @@ document library:</p>
 <code><a href="../reference/eri_sharepoint_upload.html">eri_sharepoint_upload()</a></code> and the <a href="sharepoint-workflow.html">SharePoint workflow</a> vignette.</p>
 <blockquote>
 <p><strong>No service-principal path.</strong> SharePoint is
-browser-sign-in only in <code>erifunctions</code> — there is no
+browser-sign-in only in <code>erifunctions</code>, there is no
 headless/CI path for it. Use it interactively.</p>
 </blockquote>
 </div>
 <div class="section level2">
-<h2 id="teams">Teams — for posting notifications<a class="anchor" aria-label="anchor" href="#teams"></a>
+<h2 id="teams">Teams, for posting notifications<a class="anchor" aria-label="anchor" href="#teams"></a>
 </h2>
-<p>Teams is <strong>optional</strong> — you only need it if you want
+<p>Teams is <strong>optional</strong>, you only need it if you want
 <code>erifunctions</code> to post messages (for example, <a href="../reference/eri_notify_dq.html"><code>eri_notify_dq()</code></a>
 posts a data-quality summary to a channel). There are three ways in,
 easiest first:</p>
@@ -331,7 +331,7 @@ at all:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_teams_send.html">eri_teams_send</a></span><span class="op">(</span>message <span class="op">=</span> <span class="st">"Hello from erifunctions."</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Sending Teams message via incoming webhook.</span></span></code></pre></div>
 <p><strong>For direct messages, use the Graph API.</strong>
-<code><a href="../reference/get_teams_connection.html">get_teams_connection()</a></code> returns a token — from
+<code><a href="../reference/get_teams_connection.html">get_teams_connection()</a></code> returns a token, from
 <code>ERIFUNCTIONS_TEAMS_TOKEN</code> if you have one, otherwise via an
 interactive device-code sign-in. Unlike Azure, this path is
 <strong>not</strong> zero-config: the device-code flow needs
@@ -348,7 +348,7 @@ covers.</p>
 <blockquote>
 <p><strong>For automation / CI.</strong> A webhook
 (<code>ERIFUNCTIONS_TEAMS_WEBHOOK</code>) is the most robust for
-scheduled jobs — it needs no interactive sign-in. Where
+scheduled jobs, it needs no interactive sign-in. Where
 conditional-access policies block the device-code flow, the webhook is
 the way through. For DMs in automation, set a pre-obtained
 <code>ERIFUNCTIONS_TEAMS_TOKEN</code>.</p>
@@ -386,7 +386,7 @@ ODK_PASS=your-password
 # ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;service principal client secret&gt;</code></pre>
 <p><strong>Always restart R after editing
 <code>.Renviron</code>.</strong> Everything in this file is read once at
-startup — and none of it is ever written into your scripts or committed
+startup, and none of it is ever written into your scripts or committed
 to git.</p>
 </div>
 <div class="section level2">
@@ -408,7 +408,7 @@ to git.</p>
 <td>Azure <code>403 Forbidden</code>
 </td>
 <td>Your account lacks access to that storage (RBAC)</td>
-<td>Ask an ERI admin to grant access — it is not a code problem</td>
+<td>Ask an ERI admin to grant access, it is not a code problem</td>
 </tr>
 <tr class="even">
 <td>ODK: <em>“ODK username is required”</em>
@@ -420,7 +420,7 @@ to git.</p>
 <tr class="odd">
 <td>A call re-opens the browser unexpectedly</td>
 <td>Your cached session expired</td>
-<td>Just sign in again — connections are session-scoped</td>
+<td>Just sign in again, connections are session-scoped</td>
 </tr>
 <tr class="even">
 <td>Teams device-code sign-in is blocked</td>
@@ -443,14 +443,14 @@ instead</td>
 work:</p>
 <ul>
 <li>
-<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>
-— the <code>raw → staged → approved</code> pipeline.</li>
+<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>:
+the <code>raw → staged → approved</code> pipeline.</li>
 <li>
-<a href="da-odk-guide.html">Working with ODK Central</a> — register,
+<a href="da-odk-guide.html">Working with ODK Central</a>: register,
 monitor, and pull form data.</li>
 <li>
 <a href="epi-research-guide.html">A complete research workflow for
-epidemiologists</a> — running a study.</li>
+epidemiologists</a>: running a study.</li>
 </ul>
 <p>For every connection function grouped together, see the
 <strong>Connections &amp; authentication</strong> section of the <a href="../reference/index.html">reference</a>.</p>

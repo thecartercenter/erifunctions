@@ -11,7 +11,7 @@ one at a time.
 ## The golden rule
 
 > **[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
-> runs SQL across *processed* data — the approved, trustworthy layer —
+> runs SQL across *processed* data, the approved, trustworthy layer,
 > without moving it out of Azure or standing up a database.** It
 > attaches the relevant parquet into an in-process
 > [DuckDB](https://duckdb.org) session, runs your query, and hands back
@@ -25,7 +25,7 @@ R\["a tibble"\] R --\> O\["table / figure / answer"\]
 
 ``` r
 
-# eri_query needs two optional packages — install them once:
+# eri_query needs two optional packages, install them once:
 install.packages(c("duckdb", "DBI"))
 ```
 
@@ -35,8 +35,8 @@ library(erifunctions)
 ```
 
 Querying approved data in Azure also needs a connection (the browser
-opens on first use); pure in-memory queries — the examples in [Joins and
-aggregations](#explicit) below — need nothing.
+opens on first use); pure in-memory queries, the examples in [Joins and
+aggregations](#explicit) below, need nothing.
 
 ``` r
 
@@ -48,14 +48,14 @@ data_con <- get_azure_storage_connection(storage_name = "data")
 [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
 gives you two ways to choose what your SQL can see, and they combine:
 
-1.  **Catalog-driven** — name the data by its axes (`country`,
-    `disease`, `data_type`, …) and
+1.  **Catalog-driven**: name the data by its axes (`country`, `disease`,
+    `data_type`, …) and
     [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
     finds the matching **processed** files, stamps each row with its
     `country`/`disease`/`data_source`/`data_type`/`period`, and unions
     them into one table called `data`. This is how you roll up across
     countries or periods.
-2.  **Explicit tables** — hand it named tables directly
+2.  **Explicit tables**: hand it named tables directly
     (`tables = list(name = …)`), where each is a data.frame, a local
     `.parquet`, or a `data/` blob path. This is how you join your own
     inputs (a population table, a lookup) to approved data.
@@ -83,12 +83,12 @@ eri_query(
 #> 2 dr       9876
 ```
 
-*(Illustrative numbers — your catalog will differ. The in-memory
-examples below are real output you can reproduce.)*
+*(Illustrative numbers, your catalog will differ. The in-memory examples
+below are real output you can reproduce.)*
 
 Because every row is stamped with its provenance, you can
 `GROUP BY country`, `period`, `data_type`, etc. without joining
-anything. (Those five names are reserved in this mode — see
+anything. (Those five names are reserved in this mode, see
 [`?eri_query`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md).)
 Not sure what’s available?
 [`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
@@ -97,7 +97,7 @@ with the same filters lists the files that would be attached.
 ## Joins and aggregations
 
 The explicit mode runs entirely in memory, so these you can run right
-now. Say a request lands as two small tables — weekly case counts and a
+now. Say a request lands as two small tables, weekly case counts and a
 population denominator:
 
 ``` r
@@ -113,7 +113,7 @@ pop <- data.frame(
 )
 ```
 
-**Aggregate** — total cases by province:
+**Aggregate**: total cases by province:
 
 ``` r
 
@@ -132,7 +132,7 @@ eri_query(
 #> 3 South       21
 ```
 
-**Join** — incidence per 1,000, combining the two tables:
+**Join**: incidence per 1,000, combining the two tables:
 
 ``` r
 
@@ -152,7 +152,7 @@ eri_query(
 #> 3 East                  0.375
 ```
 
-**Window functions** — week-over-week change, which is awkward in base R
+**Window functions**: week-over-week change, which is awkward in base R
 but one line of SQL:
 
 ``` r
@@ -175,7 +175,7 @@ eri_query(
 #> 5 South          2     9         -3
 ```
 
-You can mix the modes — pass catalog filters **and**
+You can mix the modes, pass catalog filters **and**
 `tables = list(pop = …)` to join approved cases to a population table
 you supply.
 
@@ -183,14 +183,14 @@ you supply.
 
 [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
 returns an ordinary tibble, so the result flows straight into the rest
-of the toolkit —
+of the toolkit,
 [`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
 for a branded table, `ggplot2` / the `eri_map_*` helpers for a figure,
 or
 [`eri_case_summary()`](https://thecartercenter.github.io/erifunctions/reference/eri_case_summary.md)
 /
 [`eri_incidence_rate()`](https://thecartercenter.github.io/erifunctions/reference/eri_incidence_rate.md)
-for standard epi summaries — see the [function
+for standard epi summaries, see the [function
 reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
 for the full reporting toolkit.
 
@@ -198,22 +198,22 @@ for the full reporting toolkit.
 
 - **It queries *approved* data.**
   [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
-  reads the `processed/` layer through the catalog — the data the team
-  trusts — not `raw/` or `staged/`.
+  reads the `processed/` layer through the catalog, the data the team
+  trusts, not `raw/` or `staged/`.
 - **Big scans are bounded by memory/download** (ADR-0004): filter tight
   (`country`/`disease`/`period`) so you attach only what you need.
-- **It’s DuckDB SQL** — joins, `GROUP BY`, window functions, CTEs, date
+- **It’s DuckDB SQL**: joins, `GROUP BY`, window functions, CTEs, date
   functions all work; see the [DuckDB
   docs](https://duckdb.org/docs/sql/introduction).
 
 ## What’s next
 
 - The [data catalog
-  reference](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
-  — see what approved data exists before you query it.
+  reference](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md),
+  see what approved data exists before you query it.
 - The [surveillance ingest
-  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
-  — how data *gets* approved in the first place.
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md),
+  how data *gets* approved in the first place.
 - The [guide
   index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md).
   \`\`\`

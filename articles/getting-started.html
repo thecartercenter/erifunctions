@@ -108,7 +108,7 @@
 
     
     
-<p><code>erifunctions</code> is the Carter Center ERI team’s R package —
+<p><code>erifunctions</code> is the Carter Center ERI team’s R package,
 the way <strong>Data Analysts</strong> and
 <strong>Epidemiologists</strong> work with TCC’s Azure-centred data
 system across countries (Haiti, DR, Uganda, OEPA, …) and diseases
@@ -123,11 +123,11 @@ assumes, then follow your role’s path.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"thecartercenter/erifunctions"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span></code></pre></div>
-<p>Azure access is <strong>zero-config</strong> — the first command that
+<p>Azure access is <strong>zero-config</strong>, the first command that
 needs it opens your browser to sign in. ODK, SharePoint, and Teams need
 a little setup. The <strong><a href="connections-guide.html">Connecting
 to Azure, ODK, SharePoint &amp; Teams</a></strong> guide walks through
-each and how to confirm it works — including the one thing to do
+each and how to confirm it works, including the one thing to do
 <strong>before your first governed action</strong>: set
 <code>ERI_ANALYST_ID</code> so approvals and logs carry your name, not
 your OS username.</p>
@@ -145,7 +145,7 @@ channel is a <code>case</code> line-list in one country and an
 <code>aggregate</code> weekly count in another; one CMR fans out to
 <code>treatment</code>, <code>mmdp</code>, and survey measures across
 diseases.</p>
-<p>Run <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> once — it prints the whole
+<p>Run <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> once, it prints the whole
 vocabulary, so you never have to guess a value:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_data_model.html">eri_data_model</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -157,7 +157,7 @@ vocabulary, so you never have to guess a value:</p>
 <span><span class="co">#&gt; • programmatic -- Programmatic activity/coverage data (CMR, MDA feeds); spans diseases.</span></span>
 <span><span class="co">#&gt; • research     -- Research surveys/studies; DA-managed, flexible measure.</span></span>
 <span><span class="co">#&gt;   (… plus the measures, formats, and layers, and the transitional cmr/odk tokens.)</span></span></code></pre></div>
-<p>Everything moves through three <strong>layers</strong> —
+<p>Everything moves through three <strong>layers</strong>,
 <code>raw/</code> (as received) → <code>staged/</code> (DQ-checked) →
 <code>processed/</code> (the canonical data the whole team trusts).
 Nothing reaches <code>processed/</code> without a human calling
@@ -180,14 +180,14 @@ work.</p>
 <li><a href="connections-guide.html">Connecting to the services</a></li>
 <li>
 <a href="da-onboard-guide.html">Onboarding a new country / disease /
-data type</a> — stand up the space</li>
+data type</a>: stand up the space</li>
 <li>
-<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>
-— raw → DQ → staged → <strong>approved</strong>
+<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>:
+raw → DQ → staged → <strong>approved</strong>
 </li>
 <li>
 <a href="da-logs-guide.html">Triaging the error &amp; DQ log
-backlog</a> — find what failed and close it out</li>
+backlog</a>: find what failed and close it out</li>
 </ol>
 <p>Then, as those feeds arrive: <a href="da-cmr-guide.html">monthly
 <strong>CMR</strong> reports</a> and <a href="da-odk-guide.html"><strong>ODK Central</strong> forms</a>.</p>
@@ -198,14 +198,14 @@ backlog</a> — find what failed and close it out</li>
 <ol style="list-style-type: decimal">
 <li><a href="connections-guide.html">Connecting to the services</a></li>
 <li>
-<a href="epi-research-guide.html">A complete research workflow</a> —
+<a href="epi-research-guide.html">A complete research workflow</a>:
 source approved data, analyse, tag a version</li>
 <li>
 <a href="epi-reconcile-guide.html">Reconciling localities to admin
-units</a> — messy place names → canonical units</li>
+units</a>: messy place names → canonical units</li>
 <li>
-<a href="epi-dq-guide.html">Catching anomalies in a new extract</a>
-— QC for epidemiological sense</li>
+<a href="epi-dq-guide.html">Catching anomalies in a new extract</a>:
+QC for epidemiological sense</li>
 </ol>
 <p>Then the <a href="epi-analytics.html">epi analytics helpers</a> for
 incidence, epiweeks, and curves.</p>
@@ -220,7 +220,7 @@ incidence, epiweeks, and curves.</p>
 role guides: the <a href="dq-pipeline.html">data-quality pipeline</a>,
 the <a href="spatial-workflow.html">spatial workflow</a>, and <a href="sharepoint-workflow.html">SharePoint &amp; Teams</a>.</li>
 <li>
-<strong>Extending the package</strong> — <a href="adding-a-program.html">adding a new program</a>: contribute a
+<strong>Extending the package</strong>: <a href="adding-a-program.html">adding a new program</a>: contribute a
 schema and disease analytics for a new country/disease.</li>
 <li>The <a href="../reference/index.html">function reference</a> groups
 every function by purpose, and the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">roadmap</a>

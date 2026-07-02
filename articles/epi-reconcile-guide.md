@@ -1,8 +1,8 @@
 # Reconciling free-text localities to admin units (for epidemiologists)
 
-Surveillance data arrives with **messy, free-text place names** —
-`"Jínova"`, `"JUAN DE HERRERA"`, `"S. Juan"` — that have to be matched
-to the **canonical admin units** in an authoritative boundary before you
+Surveillance data arrives with **messy, free-text place names**,
+`"Jínova"`, `"JUAN DE HERRERA"`, `"S. Juan"`: that have to be matched to
+the **canonical admin units** in an authoritative boundary before you
 can aggregate cases, compute incidence, or map anything. Doing that by
 hand is slow and error-prone. This guide, for **epidemiologists**, shows
 how
@@ -29,8 +29,8 @@ U\["✗ unresolved"\]
 - `remotes::install_github("thecartercenter/erifunctions")`, plus the
   **`sf`** package (`install.packages("sf")`).
 - The **string-match** step runs fully offline. The optional
-  **geocoding** step uses **OpenStreetMap (Nominatim)** by default —
-  keyless, so no setup — though it makes network calls. (Higher-quality
+  **geocoding** step uses **OpenStreetMap (Nominatim)** by default,
+  keyless, so no setup, though it makes network calls. (Higher-quality
   geocoding via Google is available with a key; see [the
   end](#real-data).)
 
@@ -42,9 +42,8 @@ library(sf)
 
 ## 1. The reference boundary and your messy data
 
-Reconciliation needs an **authoritative boundary** — an `sf` object
-whose columns hold the canonical admin names. In real work you load it
-with
+Reconciliation needs an **authoritative boundary**, an `sf` object whose
+columns hold the canonical admin names. In real work you load it with
 [`eri_spatial_load()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_load.md);
 for this guide we build a tiny one by hand (two real places so the live
 geocoder has somewhere to land):
@@ -64,7 +63,7 @@ boundary <- st_sf(
 )
 ```
 
-And the incoming data — five localities with the usual problems (case, a
+And the incoming data, five localities with the usual problems (case, a
 typo, names not in the boundary, and one that is pure noise):
 
 ``` r
@@ -90,7 +89,7 @@ You describe the hierarchy with two **parallel** vectors, **finest →
 coarsest**: your data’s columns (`loc_cols`) and the matching boundary
 columns (`admin_cols`).
 
-## 2. Pass 1 — string match (offline)
+## 2. Pass 1, string match (offline)
 
 First, match what you can with no network at all. Setting
 `method = NULL` disables geocoding entirely, and `max_dist = 1` allows a
@@ -103,7 +102,7 @@ matched <- eri_spatial_reconcile(
   loc_cols   = c("locality", "county", "state"),
   admin_cols = c("adm3_name", "adm2_name", "adm1_name"),
   shapefile  = boundary,
-  method     = NULL,    # string match only — fully offline
+  method     = NULL,    # string match only, fully offline
   max_dist   = 1L       # tolerate a 1-character typo in the finest name
 )
 #> ✔ Reconciled 5 distinct localities: 2 matched, 0 geocoded, 0 need review, 3 unresolved.
@@ -122,12 +121,12 @@ matched[, c("locality", "county", "state", "reconcile_status")]
 Two wins already, offline: `"boston"` matched `Boston`
 (case-insensitive, accent-insensitive), and the typo `"Cambrige"`
 matched `Cambridge` (within `max_dist`). For a `matched` row the **whole
-hierarchy** is rewritten to the boundary’s canonical spelling — not just
-the locality, but the county and state too — so a misspelled parent gets
+hierarchy** is rewritten to the boundary’s canonical spelling, not just
+the locality, but the county and state too, so a misspelled parent gets
 fixed as well. The other three don’t appear in the boundary, so they’re
-`unresolved` — they’re the residual to geocode.
+`unresolved`: they’re the residual to geocode.
 
-## 3. Pass 2 — geocode the residual
+## 3. Pass 2, geocode the residual
 
 Now let geocoding handle the rows that didn’t match. `method = "osm"`
 uses keyless OpenStreetMap; `country_name` is appended to each address
@@ -163,22 +162,22 @@ Three different outcomes for the three residual rows:
 
 - **`Fenway Park` → `geocoded`.** It geocoded to a point inside the
   **Boston/Suffolk** polygon, which *agrees* with the county you
-  supplied — so it’s trusted: the name is rewritten to the canonical
+  supplied, so it’s trusted: the name is rewritten to the canonical
   `Boston` and you get coordinates.
 - **`MIT` → `geocoded_review`.** It geocoded fine, but the point falls
-  in the **Cambridge/Middlesex** polygon — while you claimed
-  **Suffolk**. That disagreement is the **trust guard** firing: the
-  coordinates are kept for you to inspect, but the names are **left
-  exactly as you supplied them** (not silently “corrected”). Maybe MIT
-  really is across the county line from where you expected — or maybe
-  the county was mis-entered. *You* decide.
+  in the **Cambridge/Middlesex** polygon, while you claimed **Suffolk**.
+  That disagreement is the **trust guard** firing: the coordinates are
+  kept for you to inspect, but the names are **left exactly as you
+  supplied them** (not silently “corrected”). Maybe MIT really is across
+  the county line from where you expected, or maybe the county was
+  mis-entered. *You* decide.
 - **`Zzqxborough Nowhere` → `unresolved`.** The geocoder returned
   nothing. No coordinates, nothing changed.
 
 You don’t have to take “Cambridge/Middlesex” on faith.
 [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
 returns the admin units the geocoded point actually fell into as
-`geocoded_<admin_col>` columns — so a flagged row tells you *exactly*
+`geocoded_<admin_col>` columns, so a flagged row tells you *exactly*
 what it disagreed with, with no manual
 [`sf::st_join()`](https://r-spatial.github.io/sf/reference/st_join.html)
 to re-derive it:
@@ -193,18 +192,18 @@ result[result$reconcile_status == "geocoded_review",
 #> 1 MIT      Suffolk Cambridge          Middlesex
 ```
 
-Your `county` is still **Suffolk** (untouched — the trust guard never
+Your `county` is still **Suffolk** (untouched, the trust guard never
 overwrote it), but `geocoded_adm2_name` shows the point landed in
 **Middlesex**. That side-by-side is the whole conflict, ready for you to
 confirm or fix. (These columns are `NA` for `matched`, `unresolved`, and
 outside-polygon rows.)
 
-## 4. What the statuses mean — and what to do
+## 4. What the statuses mean, and what to do
 
 | `reconcile_status` | What happened | What you do |
 |----|----|----|
-| `matched` | Name matched the boundary (offline) | Trust it — canonical name assigned |
-| `geocoded` | Geocoded **and** the admin parents agree with your data | Trust it — canonical name + coordinates assigned |
+| `matched` | Name matched the boundary (offline) | Trust it, canonical name assigned |
+| `geocoded` | Geocoded **and** the admin parents agree with your data | Trust it, canonical name + coordinates assigned |
 | `geocoded_review` | Geocoded, but the assigned admin unit **disagrees** with your claim (or the service flagged low confidence) | **Inspect** the `geocoded_*` columns to see what it disagreed with. Coordinates kept; names left untouched. Confirm or fix before using |
 | `unresolved` | No match, and either no geocode result **or** a point that fell outside every boundary (such rows may still carry coordinates) | Chase the source, or exclude with a note |
 
@@ -214,7 +213,7 @@ analysis.
 
 ## 5. Feed it downstream
 
-The result is a plain tibble — your original rows, with canonical names
+The result is a plain tibble, your original rows, with canonical names
 filled in where confident and `longitude`/`latitude` for anything
 geocoded. From here it is ordinary analysis (in *your* research project,
 not the package): aggregate the trusted rows, join to case counts, or
@@ -236,15 +235,15 @@ aggregate(cases ~ county, data = trusted, sum)
   `eri_spatial_load("dr", level = 3)` (or your country/level) to
   reconcile against the real admin units.
 - **Better geocoding:** OpenStreetMap is free and keyless but coarse.
-  For higher accuracy use `method = "google"` — it needs your own API
-  key in `.Renviron` (`GOOGLEGEOCODE_API_KEY=...`);
+  For higher accuracy use `method = "google"`, it needs your own API key
+  in `.Renviron` (`GOOGLEGEOCODE_API_KEY=...`);
   [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
   checks for it up front and tells you exactly what to add if it’s
   missing. **Never put a key in a script or commit it.** Google also
   returns a `partial_match` flag, which feeds the same `geocoded_review`
   trust guard.
-- **No clean-up needed:** reconciliation is entirely in-memory — it
-  reads your boundary and writes nothing to Azure.
+- **No clean-up needed:** reconciliation is entirely in-memory, it reads
+  your boundary and writes nothing to Azure.
 
 ## What’s next
 
@@ -253,11 +252,11 @@ units with coordinates, with the uncertain ones flagged rather than
 hidden. From here:
 
 - [Running a research
-  study](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md)
-  — where reconciled data feeds the analysis.
+  study](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md):
+  where reconciled data feeds the analysis.
 - [Spatial
-  workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md)
-  — mapping and joining on the canonical units.
+  workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md):
+  mapping and joining on the canonical units.
 
 See the [guide
 index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)

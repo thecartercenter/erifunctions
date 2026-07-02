@@ -145,7 +145,7 @@ how to work the shared error/DQ log backlog with
 <tr class="odd">
 <td><code>… is not a known ERI country</code></td>
 <td>
-<code><a href="../reference/eri_odk_register.html">eri_odk_register()</a></code> checks a fixed list —
+<code><a href="../reference/eri_odk_register.html">eri_odk_register()</a></code> checks a fixed list,
 <code>dr/ht/eth/nga/sdn/ssd/uga/mad/tcd</code> (disease is free text).
 Note: the general pipeline
 (<code>eri_ingest</code>/<code>eri_approve</code>) takes free-text
@@ -179,7 +179,7 @@ author one (<a href="da-onboard-guide.html">onboarding guide</a>).</td>
 <code>data_source</code>/<code>data_type</code></em>
 </td>
 <td>The axis value isn’t in the registry</td>
-<td>Expected for a new space — it <strong>warns, not errors</strong>.
+<td>Expected for a new space, it <strong>warns, not errors</strong>.
 Confirm the spelling, or onboard the new value.</td>
 </tr>
 <tr class="even">
@@ -218,7 +218,7 @@ expired session or an unset variable.</p>
 <h2 id="working-the-log-backlog-task-review-errors-logs">Working the log backlog (task: review errors &amp; logs)<a class="anchor" aria-label="anchor" href="#working-the-log-backlog-task-review-errors-logs"></a>
 </h2>
 <p>Every operation leaves a structured log in Azure.
-<code><a href="../reference/eri_logs.html">eri_logs()</a></code> is the <strong>shared backlog</strong> — any
+<code><a href="../reference/eri_logs.html">eri_logs()</a></code> is the <strong>shared backlog</strong>, any
 analyst can see what failed or needs review and close it out.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span>status <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span>                 <span class="co"># the open error backlog (across the tree)</span></span>
@@ -231,12 +231,12 @@ analyst can see what failed or needs review and close it out.</p>
 <span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span>include_handled <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>           <span class="co"># confirm it's closed</span></span></code></pre></div>
 <ul>
 <li>
-<code><a href="../reference/eri_logs.html">eri_logs()</a></code> hides handled items by default — the open
+<code><a href="../reference/eri_logs.html">eri_logs()</a></code> hides handled items by default, the open
 list shrinks as you resolve.</li>
 <li>Persist a DQ result’s flags yourself with
 <code>eri_dq_log(result, country, disease, data_source, data_type = )</code>
 (note: <code>data_source</code> is the 4th argument, the measure
-<code>data_type</code> the 5th — mind the source/measure order).</li>
+<code>data_type</code> the 5th, mind the source/measure order).</li>
 <li>Full walkthrough: the <a href="da-logs-guide.html">log-triage
 guide</a>.</li>
 </ul>

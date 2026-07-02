@@ -1,7 +1,7 @@
 # Ingesting a surveillance dataset: raw to approved (for data analysts)
 
 This is a hands-on, **start-to-finish walkthrough** of getting a
-surveillance dataset into the Carter Center data system — the daily work
+surveillance dataset into the Carter Center data system, the daily work
 of a **Data Analyst (DA)**. It is written for domain experts who are
 *not* software developers. Work through it once, in order, and you will
 have done every step a real dataset needs: store the raw file,
@@ -9,14 +9,14 @@ quality-check it, stage it, and **approve** it so the rest of the team
 can trust it.
 
 So you can practise the whole thing safely, we will invent a
-**make-believe country** — *Atlantis* — and make up some malaria
+**make-believe country**, *Atlantis*, and make up some malaria
 surveillance data for it. Nothing here touches real country data, and
-the very last section — [**Clean up**](#clean-up) — deletes everything
-you created, so you can run the full loop end-to-end and leave no trace.
+the very last section, [**Clean up**](#clean-up), deletes everything you
+created, so you can run the full loop end-to-end and leave no trace.
 
 > **You can run this for real.** Every command below works against the
 > live Azure system. Because *Atlantis* is a sandbox of your own, you
-> can ingest, break, fix, and approve data without affecting anyone —
+> can ingest, break, fix, and approve data without affecting anyone,
 > then wipe it.
 
 ## The golden rule
@@ -25,7 +25,7 @@ you created, so you can run the full loop end-to-end and leave no trace.
 > without your sign-off.** Every dataset travels `raw/` → `staged/` →
 > `processed/`. `raw/` is the file exactly as it arrived. `staged/` is
 > the cleaned, quality-checked version awaiting review. `processed/` is
-> the **canonical data the whole team builds on** — and a file only gets
+> the **canonical data the whole team builds on**, and a file only gets
 > there when *you* call
 > [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md).
 > That approval is the human gate.
@@ -53,11 +53,11 @@ You need two things, once:
 **Azure access** needs no configuration. The first time a command needs
 Azure, your browser opens and you sign in with your Carter Center
 account; the sign-in is remembered for the rest of the session. (No
-keys, no environment variables — see
+keys, no environment variables, see
 [`?get_azure_storage_connection`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).)
 
 `erifunctions` narrates what it is doing. Load it and leave the
-verbosity at its default `"full"` for this walkthrough — that is the
+verbosity at its default `"full"` for this walkthrough, that is the
 step-by-step output shown in the blocks below:
 
 ``` r
@@ -77,7 +77,7 @@ writing functions
 [`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md),
 [`eri_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_upload.md))
 talk to your *default* connection, so we make one pointed at `data` and
-pass it explicitly everywhere below — that way every step targets the
+pass it explicitly everywhere below, that way every step targets the
 right place:
 
 ``` r
@@ -87,13 +87,13 @@ data_con <- get_azure_storage_connection(storage_name = "data")
 
 Every dataset is identified by five coordinates
 ([ADR-0012](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md)):
-**country**, **disease**, **data_source** (the *channel* — how the data
-arrives), **data_type** (the *measure* — what it captures), and
+**country**, **disease**, **data_source** (the *channel*, how the data
+arrives), **data_type** (the *measure*, what it captures), and
 **layer**. The key idea is that the channel is **separate** from the
 measure: `surveillance` data can be a `case` line-list in one country
-and an `aggregate` weekly count in another. Our extract is a line-list —
-one row per case — so its measure is `case`. Never hand-type the folder
-paths — let
+and an `aggregate` weekly count in another. Our extract is a line-list,
+one row per case, so its measure is `case`. Never hand-type the folder
+paths, let
 [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
 build the canonical path for you, so every step agrees on where things
 go:
@@ -113,10 +113,10 @@ eri_data_path(country, disease, data_source, data_type, "staged")
 #> [1] "atlantis/malaria/surveillance/case/staged"
 ```
 
-`data_source` and `data_type` are **extensible** —
+`data_source` and `data_type` are **extensible**,
 [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
 lists the known values, and an unregistered one *warns* rather than
-blocks — while `layer` is one of `"raw"`, `"staged"`, `"processed"`.
+blocks, while `layer` is one of `"raw"`, `"staged"`, `"processed"`.
 **Country and disease are free text**, which is exactly why we can stand
 up an *atlantis* sandbox next to the real countries without disturbing
 them.
@@ -134,7 +134,7 @@ eri_dir_create(eri_data_path(country, disease, data_source, data_type, "staged")
 ## 2. Simulate an as-received extract and store it in `raw/`
 
 In real life a surveillance officer emails you a spreadsheet. Here we
-*make one up* — a tiny line-list of malaria cases, one row per case.
+*make one up*, a tiny line-list of malaria cases, one row per case.
 Notice it is deliberately a little messy, the way real data always is:
 some sex values are in Spanish (`Masculino`/`Femenino`/`M`), and a
 couple of district names are mis-cased or use an old spelling
@@ -173,29 +173,29 @@ eri_write(extract1, raw_path1, azcontainer = data_con)
 ```
 
 `raw/` is your archive of the source. From here on we work toward
-`staged/` — but the original is safe if you ever need to start over.
+`staged/`, but the original is safe if you ever need to start over.
 
 ## 3. Author a data-quality schema
 
 How does `erifunctions` know that `Masculino` should become `Male`, or
-that `Age` cannot be 250? You tell it, once, in a **DQ schema** — a
-small YAML file describing each column: its type, its allowed range or
-allowed values, known fixes, and translations. The schema is the
-contract every future extract for this dataset is checked against.
+that `Age` cannot be 250? You tell it, once, in a **DQ schema**, a small
+YAML file describing each column: its type, its allowed range or allowed
+values, known fixes, and translations. The schema is the contract every
+future extract for this dataset is checked against.
 
 Open a text editor and save the following as
-**`atlantis_malaria_surveillance_case.yaml`** in your working directory
-— the filename is the four-part identity
+**`atlantis_malaria_surveillance_case.yaml`** in your working directory,
+the filename is the four-part identity
 `{country}_{disease}_{data_source}_{data_type}`, which is how
 [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
-finds it. (It is intentionally short — a real schema like
+finds it. (It is intentionally short, a real schema like
 `dr_malaria_surveillance_case.yaml` has more columns, but the *shape* is
 exactly this.)
 
 > **One source, many measures.** If you stood up this space with the
 > [onboarding
 > guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md),
-> its scaffold defaults to the **`aggregate`** measure (weekly counts) —
+> its scaffold defaults to the **`aggregate`** measure (weekly counts),
 > `atlantis_malaria_surveillance_aggregate.yaml`. Our extract here is a
 > line-list, so we author the **`case`** measure alongside it. That is
 > the whole point of separating the channel from the measure: the same
@@ -260,7 +260,7 @@ columns:
     range: [0, 120]
 ```
 
-Read it slowly — each block is a rule:
+Read it slowly, each block is a rule:
 
 | Block | What it does | DQ result |
 |----|----|----|
@@ -291,7 +291,7 @@ Load your raw file back from `raw/`, load the schema, and run the
 checks.
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
 applies every rule in the schema and hands back the cleaned data plus
-two ledgers — what it *fixed*, and what it wants *you* to look at:
+two ledgers, what it *fixed*, and what it wants *you* to look at:
 
 ``` r
 
@@ -318,8 +318,8 @@ result1
 #> ✔ No flags.
 ```
 
-Six things were fixed automatically and **nothing needs your review** —
-a clean extract. You can always see exactly *what* was changed in the
+Six things were fixed automatically and **nothing needs your review**, a
+clean extract. You can always see exactly *what* was changed in the
 `$log` ledger:
 
 ``` r
@@ -336,7 +336,7 @@ result1$log
 #> 6     6 District Nerei City     Nerei           correction  corrected
 ```
 
-The cleaned data lives in `result1$data` — Spanish sexes mapped to
+The cleaned data lives in `result1$data`, Spanish sexes mapped to
 `Male`/`Female`, district names canonicalised. **That** is what we
 stage.
 
@@ -344,8 +344,8 @@ stage.
 
 `staged/` holds DQ-checked data that is awaiting your approval. We store
 it as **parquet** (compact, typed, fast). Give the file a name that
-contains the reporting period — you will use that period to approve it
-in the next step:
+contains the reporting period, you will use that period to approve it in
+the next step:
 
 ``` r
 
@@ -384,7 +384,7 @@ Passing `data_type` records the **measure** on the catalog entry. (Omit
 it and
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 files the data at the channel level with `data_type = NA`, and says so
-once — fine for channel-only data, but here our line-list is `case`.)
+once, fine for channel-only data, but here our line-list is `case`.)
 
 The catalog is the team’s index of canonical data. Confirm your dataset
 is now in it:
@@ -411,7 +411,7 @@ nrow(official)   # 10 approved cases
 
 That is the whole loop: **raw → DQ → staged → approved.**
 
-## 7. A second extract arrives — this time with errors
+## 7. A second extract arrives, this time with errors
 
 The next reporting file lands, and real data is rarely clean. This one
 has two genuine problems an analyst must judge: an `Age` of **250**
@@ -460,8 +460,8 @@ result2
 ```
 
 This time there are **two flags**. The schema fixed what it safely
-could, but it will not guess about an age of 250 or an unknown district
-— those are *your* call. Look at exactly which rows:
+could, but it will not guess about an age of 250 or an unknown district,
+those are *your* call. Look at exactly which rows:
 
 ``` r
 
@@ -490,7 +490,7 @@ result2b <- run_dq_checks(fixed, schema)
 
 > **Why not just edit the schema?** If `Atlantica` were a *real* new
 > district, the right fix is to add it to `allowed_values` and re-upload
-> the schema — then every future extract accepts it. Use a
+> the schema, then every future extract accepts it. Use a
 > correction/translation for genuine fixes; use a flag-then-edit only
 > for one-off data errors like the impossible age.
 
@@ -516,8 +516,8 @@ You now have **two approved periods** in the catalog for *atlantis*,
 each with its own approval log recording that you signed off and when.
 
 > **Going further: cross-period anomalies.** Range and allowed-value
-> checks catch bad *cells*. To catch a suspicious *trend* — a district
-> whose case count suddenly triples — see
+> checks catch bad *cells*. To catch a suspicious *trend*, a district
+> whose case count suddenly triples, see
 > [`add_anomaly_pct_change()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_pct_change.md),
 > which you can chain onto a
 > [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
@@ -559,34 +559,34 @@ unlink("atlantis_malaria_surveillance_case.yaml")   # the local schema file
 ```
 
 > **Why we could delete freely here:** *Atlantis* is invented and its
-> data is fake. **Real Carter Center surveillance data is different** —
+> data is fake. **Real Carter Center surveillance data is different**,
 > approved country data must never be deleted casually, copied off
-> Azure, or committed to git. The discipline this guide builds — raw
-> kept untouched, DQ before staging, and a human approval gate before
-> anything becomes canonical — is exactly what keeps protected data
+> Azure, or committed to git. The discipline this guide builds, raw kept
+> untouched, DQ before staging, and a human approval gate before
+> anything becomes canonical, is exactly what keeps protected data
 > trustworthy. When in doubt, ask before you delete.
 
 ## What’s next
 
 You have now done the full DA ingest loop: store raw, quality-check
 against a schema, fix what only a human can, stage, and **approve** into
-the canonical layer — twice, including a messy extract.
+the canonical layer, twice, including a messy extract.
 
-One call —
-[`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
-— does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
+One call,
+[`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
+does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 **any** data including the sandbox you just built (it takes the same
 `country` / `disease` / `data_source` / `data_type` you have been
 using). We did each step by hand here so you could *see* every layer;
 once you are comfortable,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
 is the fast path, and
-[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
-— your sign-off — is always the same human gate at the end. *(For the
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md):
+your sign-off, is always the same human gate at the end. *(For the
 legacy `hsp-mal` cutover, passing `mirror_pipeline = "hsp-mal"` also
-mirrors the output to the old `projects` blob — off by default.)*
+mirrors the output to the old `projects` blob, off by default.)*
 
-This is one of a planned set of short, task-oriented guides — **one for
+This is one of a planned set of short, task-oriented guides, **one for
 each common job** an analyst or epidemiologist does. See [the guide
 index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 for what exists today and what is coming, and the

@@ -108,14 +108,14 @@
 
     
     
-<p>Every operation <code>erifunctions</code> runs — an ingest, an
-approval, an ODK sync — <strong>leaves a log</strong> in Azure. When
+<p>Every operation <code>erifunctions</code> runs, an ingest, an
+approval, an ODK sync, <strong>leaves a log</strong> in Azure. When
 something fails, or a data-quality check raises issues, that log is the
 record. This guide is for a <strong>Data Analyst</strong> working the
 <strong>backlog</strong>: finding what failed or needs review with <a href="../reference/eri_logs.html"><code>eri_logs()</code></a>, and
 closing items out with <a href="../reference/eri_logs_resolve.html"><code>eri_logs_resolve()</code></a>.</p>
 <p>Because the logs live in Azure, the backlog is
-<strong>shared</strong> — if a teammate is out, you can run
+<strong>shared</strong>, if a teammate is out, you can run
 <code><a href="../reference/eri_logs.html">eri_logs()</a></code>, see exactly what broke, and pick up where they
 left off. We will practise on the <strong><code>atlantis</code></strong>
 sandbox from the <a href="da-ingest-guide.html">ingest</a> and <a href="da-onboard-guide.html">onboarding</a> guides.</p>
@@ -128,16 +128,16 @@ accident.</strong> Operations write structured logs as they go;
 data-quality flags are persisted with <a href="../reference/eri_dq_log.html"><code>eri_dq_log()</code></a> (and
 <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> does it for you). <code><a href="../reference/eri_logs.html">eri_logs()</a></code>
 turns that pile into a triage list, and <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>
-marks an item handled — with <em>who</em> handled it and <em>when</em> —
+marks an item handled, with <em>who</em> handled it and <em>when</em>,
 so it drops off the open backlog without ever erasing the record.</p>
 </blockquote>
 <div class="mermaid">
 flowchart TD
     A["An operation runs (ingest / approve / sync)"] --&gt; B["Writes a log to …/logs/"]
     C["run_dq_checks() flags issues"] --&gt; D["eri_dq_log() persists them"]
-    B --&gt; E["eri_logs() — the backlog"]
+    B --&gt; E["eri_logs(), the backlog"]
     D --&gt; E
-    E --&gt; F["eri_logs_resolve() — mark handled"]
+    E --&gt; F["eri_logs_resolve(), mark handled"]
     F --&gt; G["Drops off the open backlog (record kept)"]
 </div>
 </div>
@@ -154,17 +154,17 @@ the <a href="connections-guide.html">connections guide</a>).</p>
 </h2>
 <p>Two kinds of log end up in
 <code>{country}/{disease}/{data_source}/[{data_type}/]logs/</code> (the
-measure level is present when the data was approved with one —
+measure level is present when the data was approved with one,
 <code><a href="../reference/eri_logs.html">eri_logs()</a></code> reads both layouts):</p>
 <ul>
 <li>
-<strong>Operation logs</strong> — written automatically by
+<strong>Operation logs</strong>: written automatically by
 <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>, <code><a href="../reference/eri_approve.html">eri_approve()</a></code>,
 <code><a href="../reference/eri_stage.html">eri_stage()</a></code>, <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code>, and friends. Each
-records the operation, who ran it, its parameters, and — if it failed —
+records the operation, who ran it, its parameters, and, if it failed,
 the <strong>error</strong>.</li>
 <li>
-<strong>Data-quality logs</strong> — the <code>$flags</code> from <a href="../reference/run_dq_checks.html"><code>run_dq_checks()</code></a>
+<strong>Data-quality logs</strong>: the <code>$flags</code> from <a href="../reference/run_dq_checks.html"><code>run_dq_checks()</code></a>
 are only in your R session until you persist them.
 <code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code> writes them to the same place (and
 <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> calls it automatically), so a data-quality
@@ -189,7 +189,7 @@ Persist it:</p>
 <h3 id="cause-a-failure">Cause a failure<a class="anchor" aria-label="anchor" href="#cause-a-failure"></a>
 </h3>
 <p>Now a common slip: you try to approve a period before the file is
-staged. It errors — <strong>and leaves an error log</strong> behind:</p>
+staged. It errors, <strong>and leaves an error log</strong> behind:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"2024-02"</span>, data_type <span class="op">=</span> <span class="st">"case"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Operation log: atlantis/malaria/surveillance/case/logs/20260626_100000_eri_approve_2024-02.yaml</span></span>
@@ -211,7 +211,7 @@ system-wide view:</p>
 <span><span class="co">#&gt; 1 2026-06-26T10:00:00Z eri_approve error        2024-02 No staged files…  da.one</span></span>
 <span><span class="co">#&gt; 2 2026-06-26T09:30:00Z dq_flags    needs_review 2024-01 2 flags           da.one</span></span></code></pre></div>
 <p>(The tibble also carries <code>log_path</code>,
-<code>n_issues</code>, and the <code>handled*</code> columns — shown
+<code>n_issues</code>, and the <code>handled*</code> columns, shown
 trimmed here.) Filter to just the failures:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, status <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span></span>
@@ -234,7 +234,7 @@ out scans the whole data blob for a <strong>system-wide backlog</strong>
 </h2>
 <p>You investigate the failure, stage the file, and re-approve it
 successfully. Now close out the original error so it leaves the open
-backlog — with a note for whoever reads it next:</p>
+backlog, with a note for whoever reads it next:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">backlog</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, status <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span></span>
 <span></span>
@@ -243,7 +243,7 @@ backlog — with a note for whoever reads it next:</p>
 <span>  note <span class="op">=</span> <span class="st">"Staged the file, then re-approved 2024-02."</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Marked 20260626_100000_eri_approve_2024-02.yaml handled.</span></span></code></pre></div>
-<p>Re-list, and the error is gone from the open backlog — only the
+<p>Re-list, and the error is gone from the open backlog, only the
 data-quality item remains:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span><span class="op">)</span></span>
@@ -252,7 +252,7 @@ data-quality item remains:</p>
 <span><span class="co">#&gt;   operation status       period  summary</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;</span></span>
 <span><span class="co">#&gt; 1 dq_flags  needs_review 2024-01 2 flags</span></span></code></pre></div>
-<p>Resolving never deletes the log — it adds a <code>triage</code>
+<p>Resolving never deletes the log, it adds a <code>triage</code>
 record. Pass <code>include_handled = TRUE</code> to see the closed item,
 with who handled it and your note:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -267,14 +267,14 @@ with who handled it and your note:</p>
 <h2 id="teammate">4. When a teammate steps in<a class="anchor" aria-label="anchor" href="#teammate"></a>
 </h2>
 <p>This is the point of a <em>shared</em> backlog. The logs live in
-Azure, not on anyone’s laptop — so when an analyst is away and something
+Azure, not on anyone’s laptop, so when an analyst is away and something
 needs attention, a colleague can run one command to see the whole
 picture:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Anyone on the team, across every dataset:</span></span>
 <span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span>status <span class="op">=</span> <span class="st">"error"</span><span class="op">)</span></span></code></pre></div>
-<p>They see the same failures, the same error messages, and — for
-anything already handled — <em>who</em> dealt with it and the note they
+<p>They see the same failures, the same error messages, and, for
+anything already handled, <em>who</em> dealt with it and the note they
 left. No “what was going on with the DR upload last week?”
 guesswork.</p>
 </div>
@@ -298,14 +298,14 @@ pipeline and audits what happened. Resolve items; don’t delete them.
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>
 </h2>
 <p>You can now find, filter, and close out the error/data-quality
-backlog — solo or covering for a teammate. The logs you are reading are
+backlog, solo or covering for a teammate. The logs you are reading are
 written by the workflows in the other guides:</p>
 <ul>
 <li>
-<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>
-— where DQ flags and approval logs come from.</li>
+<a href="da-ingest-guide.html">Ingesting a surveillance dataset</a>:
+where DQ flags and approval logs come from.</li>
 <li>
-<a href="da-odk-guide.html">Working with ODK Central</a> — sync
+<a href="da-odk-guide.html">Working with ODK Central</a>: sync
 logs.</li>
 </ul>
 <p>See the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide

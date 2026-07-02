@@ -113,11 +113,11 @@
 describes the data, and the <code>raw → staged → processed</code>
 folders it will move through. This guide is for a <strong>Data
 Analyst</strong> standing up that space for a new country, disease, or
-data type. It is the <strong>prequel</strong> to the <a href="da-ingest-guide.html">ingest</a> and <a href="da-odk-guide.html">ODK</a> guides — do this once, and those
+data type. It is the <strong>prequel</strong> to the <a href="da-ingest-guide.html">ingest</a> and <a href="da-odk-guide.html">ODK</a> guides, do this once, and those
 workflows have somewhere to land.</p>
-<p>We will practise on a make-believe country —
-<strong>Atlantis</strong> — so you can run every step and then delete
-it. Each <code>eri_onboard_*</code> function also has a
+<p>We will practise on a make-believe country,
+<strong>Atlantis</strong>, so you can run every step and then delete it.
+Each <code>eri_onboard_*</code> function also has a
 <strong>dry-run</strong> mode, so you can always look before you touch
 anything.</p>
 <blockquote>
@@ -135,7 +135,7 @@ the exact same steps with a real country name.</p>
 with the standard structure and <code>TODO</code> markers, and creates
 the Azure folders. <em>You</em> fill in the disease-specific details,
 <strong>validate</strong> the schema, and submit it to the package.
-Nothing is guessed — the template is a correct starting point you
+Nothing is guessed, the template is a correct starting point you
 complete.</p>
 </blockquote>
 <div class="mermaid">
@@ -155,10 +155,10 @@ flowchart TD
 <li>
 <strong>R and RStudio</strong> installed.</li>
 <li>
-<strong>The package</strong> —
+<strong>The package</strong>:
 <code>remotes::install_github("thecartercenter/erifunctions")</code>.</li>
 <li>
-<strong>Azure access</strong> — zero-config browser sign-in; see the
+<strong>Azure access</strong>: zero-config browser sign-in; see the
 <a href="connections-guide.html">connections guide</a> if this is your
 first time.</li>
 </ol>
@@ -207,7 +207,7 @@ the data blob.</p>
 <h3 id="fill-in-the-template">Fill in the template<a class="anchor" aria-label="anchor" href="#fill-in-the-template"></a>
 </h3>
 <p>Open <code>atlantis_malaria_surveillance_aggregate.yaml</code>. It is
-a <strong>correct, structured starting point</strong> — the standard
+a <strong>correct, structured starting point</strong>, the standard
 sections are there, with <code>TODO</code> markers where your data is
 unique. Here it is <strong>trimmed for readability</strong> (your actual
 file also lists <code>aliases:</code> for each column and a few
@@ -259,9 +259,9 @@ commented options like <code>time_grain</code> and
 <span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a></span>
 <span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="fu">consistency</span><span class="kw">:</span></span>
 <span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">  # </span><span class="al">TODO</span><span class="co">: add cross-field rules here</span></span></code></pre></div>
-<p>The schema structure — <code>columns</code> with
+<p>The schema structure, <code>columns</code> with
 <code>type</code>/<code>required</code>/<code>range</code>/<code>allowed_values</code>,
-the <code>temporal</code> block, <code>consistency</code> rules — is
+the <code>temporal</code> block, <code>consistency</code> rules, is
 exactly what the data-quality engine reads. The <a href="da-ingest-guide.html">ingest guide</a> shows what each rule
 <em>does</em> when data runs through it.</p>
 </div>
@@ -269,7 +269,7 @@ exactly what the data-quality engine reads. The <a href="da-ingest-guide.html">i
 <h3 id="validate-your-edits">Validate your edits<a class="anchor" aria-label="anchor" href="#validate-your-edits"></a>
 </h3>
 <p><code><a href="../reference/eri_schema_validate.html">eri_schema_validate()</a></code> checks the
-<strong>structure</strong> — required sections, valid column types, and
+<strong>structure</strong>, required sections, valid column types, and
 that temporal/consistency rules reference columns that actually exist.
 Run it on the file you just edited:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -303,7 +303,7 @@ green light to use it.</p>
 returns from country programs. Onboarding one writes a CMR schema
 template and (when you pass <code>create_dirs = TRUE</code>) the staging
 folders under the combined <strong><code>rblf</code></strong> disease
-code (RB + LF — the programmes these reports cover), where <a href="da-cmr-guide.html"><code>eri_stage_cmr()</code></a> lands the raw
+code (RB + LF, the programmes these reports cover), where <a href="da-cmr-guide.html"><code>eri_stage_cmr()</code></a> lands the raw
 Excel. Dry-run it first:</p>
 <blockquote>
 <p><strong><code>rblf</code>/<code>cmr</code> is the staging archive,
@@ -311,7 +311,7 @@ not the canonical home.</strong> Under the <a href="https://github.com/thecarter
 ≠ measure model (ADR-0012)</a>, CMR is a <em>format</em> of the
 <code>programmatic</code> channel. <a href="da-cmr-guide.html"><code>eri_split_cmr()</code></a> reads the
 staged Excel and routes <strong>each sheet to its own disease and
-measure</strong> — e.g. RB Treatment →
+measure</strong>, e.g. RB Treatment →
 <code>{country}/oncho/programmatic/treatment/</code>, then you approve
 <strong>each disease/measure</strong>. So <code>rblf/cmr/</code> is the
 transitional landing/archive; the canonical, approved data is
@@ -336,7 +336,7 @@ split → approve flow.</p>
 <span><span class="co">#&gt;   2. Match field_code_prefix to the #tag_ row in your CMR Excel file.</span></span>
 <span><span class="co">#&gt;   3. Submit via pull request to: inst/schemas/cmr/atlantis.yaml</span></span>
 <span><span class="co">#&gt;   4. Test ingestion with eri_ingest_cmr('your_file.xlsx', country = 'atlantis').</span></span></code></pre></div>
-<p>A CMR template ships with the common report sheets commented out —
+<p>A CMR template ships with the common report sheets commented out,
 uncomment the ones your country files, and make each sheet’s
 <code>field_code_prefix</code> match the <code>#tag_</code> row in the
 Excel file. Then test with <code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code>.</p>
@@ -346,7 +346,7 @@ Excel file. Then test with <code><a href="../reference/eri_ingest_cmr.html">eri_
 </h2>
 <p>For an <strong>NTD treatment/survey program</strong>,
 <code><a href="../reference/eri_onboard_disease.html">eri_onboard_disease()</a></code> scaffolds the two schemas that
-pattern needs — <strong>MDA</strong> (mass drug administration) and
+pattern needs, <strong>MDA</strong> (mass drug administration) and
 <strong>prevalence</strong>. Note the argument order here is
 <strong>disease first, then country</strong>:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -357,13 +357,13 @@ pattern needs — <strong>MDA</strong> (mass drug administration) and
 <span><span class="co">#&gt;   1. Open each file and fill in the TODO sections.</span></span>
 <span><span class="co">#&gt;   2. Run eri_schema_validate('&lt;path&gt;') to check your edits.</span></span>
 <span><span class="co">#&gt;   3. Submit via pull request to inst/schemas/.</span></span></code></pre></div>
-<p>These are <strong>local-only</strong> templates (no Azure folders) —
+<p>These are <strong>local-only</strong> templates (no Azure folders),
 an MDA schema with <code>year</code>, <code>round</code>,
 <code>target_pop</code>, <code>treated</code>, and a <code>TODO</code>
 for the geographic unit, and a matching prevalence schema. Fill,
 validate, and submit them exactly as in §2.</p>
 <blockquote>
-<p><strong>Contributing the schema to the package — and disease
+<p><strong>Contributing the schema to the package, and disease
 analytics.</strong> Submitting your finished schema via pull request,
 the schema-validation test, and adding disease-specific analytics
 functions are covered in depth in the <a href="adding-a-program.html"><strong>Adding a new program</strong></a>
@@ -392,13 +392,13 @@ sync).</li>
 <div class="section level2">
 <h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
-<p>Practice run — remove everything you created. Delete the Azure
+<p>Practice run, remove everything you created. Delete the Azure
 namespace and the local schema files:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Deletes atlantis/malaria/surveillance/* and atlantis/rblf/cmr/* in one go,</span></span>
-<span><span class="co"># recursively — the in-package path, so you stay in erifunctions instead of</span></span>
+<span><span class="co"># recursively, the in-package path, so you stay in erifunctions instead of</span></span>
 <span><span class="co"># dropping to raw AzureStor / Storage Explorer.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span></span>
@@ -408,7 +408,7 @@ namespace and the local schema files:</p>
 <blockquote>
 <p><strong>Why deleting was fine here:</strong> <em>Atlantis</em> is
 invented. <strong>A real onboarded country is not torn down
-casually</strong> — once data lands in it, those folders are the home of
+casually</strong>, once data lands in it, those folders are the home of
 real surveillance records. There is deliberately no one-click
 “un-onboard” command; removing a real space is a considered, manual
 act.</p>
@@ -417,16 +417,16 @@ act.</p>
 <div class="section level2">
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>
 </h2>
-<p>You have stood up a new space three ways — surveillance, CMR, and an
-NTD program — and validated the schemas. The data guides take it from
+<p>You have stood up a new space three ways, surveillance, CMR, and an
+NTD program, and validated the schemas. The data guides take it from
 here:</p>
 <ul>
 <li><a href="da-ingest-guide.html">Ingesting a surveillance
 dataset</a></li>
 <li><a href="da-odk-guide.html">Working with ODK Central</a></li>
 <li>
-<a href="adding-a-program.html">Adding a new program</a> —
-contribute your schema to the package.</li>
+<a href="adding-a-program.html">Adding a new program</a>: contribute
+your schema to the package.</li>
 </ul>
 <p>See the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide
 index</a> for the full set, and the <a href="../reference/index.html">reference</a> for every function grouped

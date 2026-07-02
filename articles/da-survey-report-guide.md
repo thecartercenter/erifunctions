@@ -21,7 +21,7 @@ to package the result. The summary itself is offline.
 > [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
 > /
 > [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md),
-> summarise, then package — don’t re-summarise an ad-hoc export that
+> summarise, then package, don’t re-summarise an ad-hoc export that
 > never went through the gate.
 
 ## The survey data
@@ -30,7 +30,7 @@ In practice you’d read the approved survey:
 `eri_read("ht/lf/research/processed/…")` or an
 [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
 roll-up. Here is a small individual-level **LF TAS** (Transmission
-Assessment Survey) extract — one row per child tested, with FTS and RDT
+Assessment Survey) extract, one row per child tested, with FTS and RDT
 antigen results:
 
 ``` r
@@ -69,7 +69,7 @@ summary
 Read it per commune by summing the `Positive` FTS rows: Saut-d’Eau has
 **2 of 6** FTS-positive children, Mirebalais **3 of 6**. In a real TAS
 you compare that antigen-positive count against the survey’s **critical
-cutoff** to decide pass/fail — the helper gives you the counts the
+cutoff** to decide pass/fail, the helper gives you the counts the
 decision rests on.
 
 Other survey measures have their own helpers:
@@ -78,14 +78,14 @@ for entomology/xenomonitoring pooled prevalence, and
 [`eri_oncho_program_levels()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_program_levels.md)
 /
 [`eri_oncho_status_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_oncho_status_map.md)
-for oncho — see [epi
+for oncho, see [epi
 analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md).
 
 ## Package it for sharing
 
 The summary is an ordinary tibble, so the [reporting
 toolkit](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md)
-takes it the rest of the way — a branded table for the report:
+takes it the rest of the way, a branded table for the report:
 
 ``` r
 
@@ -119,14 +119,14 @@ workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workfl
 ## What’s next
 
 - The [reporting
-  guide](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md)
-  — the full table/figure/deck/Excel toolkit.
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md),
+  the full table/figure/deck/Excel toolkit.
 - [Epi
-  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
-  — the disease helpers (LF/oncho) and indicators.
+  analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md):
+  the disease helpers (LF/oncho) and indicators.
 - [Working with ODK
-  Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
-  — pulling the survey in the first place.
+  Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):
+  pulling the survey in the first place.
 - The [guide
   index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md).
   \`\`\`

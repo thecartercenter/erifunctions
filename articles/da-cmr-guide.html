@@ -109,7 +109,7 @@
     
     
 <p>Every month, country programmes file a <strong>Case Management Report
-(CMR)</strong> — a filled Excel template of treatment, training, and
+(CMR)</strong>, a filled Excel template of treatment, training, and
 survey numbers. This guide, for a <strong>Data Analyst</strong>, walks
 the monthly job: take that incoming Excel, <strong>upload</strong> it to
 Azure, <strong>stage</strong> it, <strong>parse</strong> each sheet, and
@@ -143,9 +143,9 @@ flowchart TD
 <code>remotes::install_github("thecartercenter/erifunctions")</code>.</li>
 <li>
 <strong>Azure access</strong> for the upload / stage / approve steps
-(zero-config browser sign-in — see the <a href="connections-guide.html">connections guide</a>). The
-<strong>parsing</strong> step (<code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code>) is offline
-— it just reads a local Excel file.</li>
+(zero-config browser sign-in, see the <a href="connections-guide.html">connections guide</a>). The
+<strong>parsing</strong> step (<code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code>) is
+offline, it just reads a local Excel file.</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/thecartercenter/erifunctions" class="external-link">erifunctions</a></span><span class="op">)</span></span></code></pre></div>
@@ -153,7 +153,7 @@ flowchart TD
 <p><strong>A note on the examples below.</strong> The upload, stage, and
 approve steps run against the live Azure
 <code>projects</code>/<code>data</code> blobs and real, registered
-countries — so the outputs for those are shown as illustrations rather
+countries, so the outputs for those are shown as illustrations rather
 than run here. Unlike the surveillance and ODK guides, there is
 <strong>no throwaway-sandbox path</strong> for stage/approve:
 <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> only accepts a registered RB-expansion
@@ -171,7 +171,7 @@ blob</strong>, under a per-country, per-period folder. The period is a
 six-digit <code>YYYYMM</code>:</p>
 <pre><code>projects: health-rb-country-expansion-dev/raw/filled_templates/{country}/{period}/{file}.xlsx
 e.g.      …/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx</code></pre>
-<p>Do this from R with <code><a href="../reference/eri_upload.html">eri_upload()</a></code> — it keeps the whole
+<p>Do this from R with <code><a href="../reference/eri_upload.html">eri_upload()</a></code>, it keeps the whole
 monthly run in one place and one tool. (If a file already arrived via
 Azure Storage Explorer or SharePoint, that’s fine too; you can skip
 ahead to staging.) Connect to the <code>projects</code> blob and upload
@@ -189,7 +189,7 @@ the file to that path:</p>
 <div class="section level3">
 <h3 id="what-the-template-looks-like">What the template looks like<a class="anchor" aria-label="anchor" href="#what-the-template-looks-like"></a>
 </h3>
-<p>Every CMR sheet has the same shape — a few rows of human-readable
+<p>Every CMR sheet has the same shape, a few rows of human-readable
 headers, then the <strong>field-code row</strong>, then the data:</p>
 <table class="table">
 <colgroup>
@@ -210,7 +210,7 @@ headers, then the <strong>field-code row</strong>, then the data:</p>
 <td>
 <strong><code>#field codes</code></strong>
 (e.g. <code>#rbtrt_year</code>, <code>#rbtrt_adm1</code>,
-<code>#rbtrt_treated</code>) — the parsing anchor</td>
+<code>#rbtrt_treated</code>), the parsing anchor</td>
 </tr>
 <tr class="odd">
 <td>6+</td>
@@ -243,16 +243,16 @@ for you, and says so:</p>
 <span><span class="co">#&gt; ℹ No period specified; staging most recent: 202406</span></span>
 <span><span class="co">#&gt; ✔ Staged: uga_cmr_2024_06.xlsx</span></span>
 <span><span class="co">#&gt; …</span></span></code></pre></div>
-<p>(CMR data lives under the <code>rblf</code> disease folder — RB for
+<p>(CMR data lives under the <code>rblf</code> disease folder, RB for
 onchocerciasis, LF for lymphatic filariasis, the two programmes these
-reports cover. Only the registered RB-expansion countries —
+reports cover. Only the registered RB-expansion countries,
 <code>eth</code>, <code>nga</code>, <code>sdn</code>, <code>ssd</code>,
-<code>uga</code>, <code>mad</code>, <code>tcd</code> — can be
+<code>uga</code>, <code>mad</code>, <code>tcd</code>, can be
 staged.)</p>
 <blockquote>
 <p><strong>Heads-up on the <code>rblf</code> coordinate.</strong> CMR
-always uses <code>disease = "rblf"</code> — the combined RB + LF
-programme code — so the paths are <code>{country}/rblf/cmr/…</code> and
+always uses <code>disease = "rblf"</code>, the combined RB + LF
+programme code, so the paths are <code>{country}/rblf/cmr/…</code> and
 you approve with
 <code>eri_approve(country, "rblf", "cmr", period)</code>. Scaffolding a
 new country’s CMR with <code>eri_onboard_cmr(create_dirs = TRUE)</code>
@@ -262,7 +262,7 @@ per-disease.</strong> <code>rblf</code>/<code>cmr</code> were interim
 coordinates: under the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">source
 ≠ measure model (ADR-0012)</a>, CMR is a <em>format</em> of the
 <code>programmatic</code> channel, and <a href="#split"><code>eri_split_cmr()</code></a> (below) routes each sheet
-to its own disease and measure — e.g. RB Treatment →
+to its own disease and measure, e.g. RB Treatment →
 <code>{country}/oncho/programmatic/treatment/</code>. You then approve
 <strong>each disease/measure</strong>, not one combined
 <code>rblf</code>/<code>cmr</code> bucket.</p>
@@ -283,7 +283,7 @@ country’s template has:</p>
 <span><span class="co">#&gt;  [9] "MMDP (patient) Training"       "Field Ento Training"</span></span>
 <span><span class="co">#&gt; [11] "Lab Training"                  "LF Surveys"</span></span>
 <span><span class="co">#&gt; [13] "RB Epi Surveys"                "RB Ento Surveys"</span></span></code></pre></div>
-<p>(A real monthly file has many sheets — treatments, MMDP, the various
+<p>(A real monthly file has many sheets, treatments, MMDP, the various
 trainings, and surveys. The bundled <code>cmr-example.xlsx</code> below
 is a small <strong>two-sheet</strong> subset, <code>RB Treatment</code>
 + <code>SCH Treatment</code>, so you can run the parse and split
@@ -291,9 +291,9 @@ offline.)</p>
 <p>Then read a sheet with <a href="../reference/eri_ingest_cmr.html"><code>eri_ingest_cmr()</code></a>.
 It reads from <strong>row 5</strong> (the field codes), keeps only the
 <code>#</code>-coded columns, drops the template’s blank spacer rows,
-and — when you pass <code>country</code> — tags each row with it. (We
-use the package’s bundled synthetic example here; in real work you’d
-point at your staged file.)</p>
+and, when you pass <code>country</code>, tags each row with it. (We use
+the package’s bundled synthetic example here; in real work you’d point
+at your staged file.)</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">report</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"cmr-example.xlsx"</span>, package <span class="op">=</span> <span class="st">"erifunctions"</span><span class="op">)</span></span>
 <span></span>
@@ -311,16 +311,15 @@ point at your staged file.)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr</a></span><span class="op">(</span><span class="va">report</span>, sheet <span class="op">=</span> <span class="st">"SCH Treatment"</span>, country <span class="op">=</span> <span class="st">"uga"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.</span></span></code></pre></div>
-<p>The column names <em>are</em> the field codes — stable identifiers
-you can rely on across every monthly file. This is the moment to eyeball
-the numbers (treated vs target, missing districts) before you sign
-off.</p>
+<p>The column names <em>are</em> the field codes, stable identifiers you
+can rely on across every monthly file. This is the moment to eyeball the
+numbers (treated vs target, missing districts) before you sign off.</p>
 <blockquote>
 <p><strong>Same codes, any language.</strong> The field codes
 (<code>#rbtrt_…</code>) are language-neutral, so the <em>same</em>
 <code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> parses a French template too. For a French
 file, the sheet is named in French
-(e.g. <code>"Oncho Traitement"</code>) — pass the <strong>canonical
+(e.g. <code>"Oncho Traitement"</code>), pass the <strong>canonical
 slug</strong> and the country, and the schema’s
 <code>sheet_aliases</code> resolves it:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
@@ -334,13 +333,13 @@ slug</strong> and the country, and the schema’s
 <p>The sheets are per-programme, but the canonical store is
 <strong>per-disease</strong>. <a href="../reference/eri_split_cmr.html"><code>eri_split_cmr()</code></a>
 reads every routable sheet and routes its rows to
-<code>{country}/{disease}/programmatic/{measure}/staged/</code> — the
+<code>{country}/{disease}/programmatic/{measure}/staged/</code>: the
 <strong>disease from the sheet</strong> (RB Treatment →
 <code>oncho</code>, SCH Treatment → <code>sch</code>, LF MMDP →
 <code>lf</code>), the <strong>measure from its category</strong>. It
 reads the Excel <strong>directly</strong> (here the bundled example; in
 real work the file you uploaded), independently of the
-<code>rblf/cmr/staged/</code> copy <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> made —
+<code>rblf/cmr/staged/</code> copy <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code> made,
 that copy is the raw archive; this is the parse + route. Preview the
 routing first with <code>dry_run</code>:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
@@ -354,7 +353,7 @@ routing first with <code>dry_run</code>:</p>
 <span><span class="co">#&gt; Warning: Sheet "VHT Training" not found in cmr-example.xlsx; skipping.  # other</span></span>
 <span><span class="co">#&gt; # ... (the example has only the two treatment sheets; a real file routes them all)</span></span></code></pre></div>
 <p>A sheet the schema routes but the workbook doesn’t contain is
-<strong>skipped with a warning</strong> — expected here, since the
+<strong>skipped with a warning</strong>, expected here, since the
 example is a two-sheet subset. (If <em>none</em> of the routable sheets
 are present, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> errors instead of silently
 doing nothing.)</p>
@@ -362,7 +361,7 @@ doing nothing.)</p>
 <p><strong>Why the sheet, not the row?</strong> Each sheet carries a
 per-row <code>#…_disease</code> field whose values are
 <em>programme-coverage</em> codes (<code>RB</code> / <code>RBLF</code> /
-<code>RBLFSCH</code> — which programmes run at that location),
+<code>RBLFSCH</code>, which programmes run at that location),
 <strong>not</strong> a single disease. <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>
 keeps that field as a data column and takes the routing disease from the
 sheet, so the same treatment numbers are <strong>never
@@ -370,7 +369,7 @@ duplicated</strong> across diseases. Cross-programme
 <strong>Training</strong> sheets, which serve all programmes at once,
 route together under the combined <code>rblf</code> disease.</p>
 </blockquote>
-<p>Then stage for real — one parquet per sheet, in its disease/measure
+<p>Then stage for real, one parquet per sheet, in its disease/measure
 folder:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span><span class="op">)</span></span>
@@ -383,7 +382,7 @@ folder:</p>
 <div class="section level2">
 <h2 id="approve">5. Approve each disease/measure<a class="anchor" aria-label="anchor" href="#approve"></a>
 </h2>
-<p>Each split dataset passes through the same human gate — once per
+<p>Each split dataset passes through the same human gate, once per
 disease/measure:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"oncho"</span>, <span class="st">"programmatic"</span>, <span class="st">"202406"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span>
@@ -413,14 +412,14 @@ approve.</strong></p>
 <ul>
 <li>
 <strong>A new country files its first report?</strong> Its CMR
-schema (which sheets, which field codes) has to exist first — see the
-CMR section of the <a href="da-onboard-guide.html">onboarding guide</a>
+schema (which sheets, which field codes) has to exist first, see the CMR
+section of the <a href="da-onboard-guide.html">onboarding guide</a>
 (<code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code>).</li>
 <li>
 <strong><code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> says “No routable
 sheets”?</strong> A sheet only routes when its schema entry declares a
 <code>disease</code> and a <code>data_type</code>. <code>uga</code> is
-the worked example; other countries’ routing keys are being filled in —
+the worked example; other countries’ routing keys are being filled in,
 add them to the country’s <code>inst/schemas/cmr/{code}.yaml</code> (one
 <code>disease</code> + <code>data_type</code> per sheet) to enable the
 split there.</li>
@@ -430,7 +429,7 @@ data, and the data-catalog mechanics in more depth.</li>
 </ul>
 <blockquote>
 <p><strong>Real reports are not practice data.</strong> The monthly CMR
-files are protected country data — staged and approved through this
+files are protected country data, staged and approved through this
 pipeline, never deleted or moved casually. (The example here is
 synthetic, which is the only reason we could pass it around freely.)</p>
 </blockquote>

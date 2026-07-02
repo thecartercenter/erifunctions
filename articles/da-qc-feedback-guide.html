@@ -109,7 +109,7 @@
     
     
 <p>When a country sends a data extract, quality-checking it is only half
-the job — the other half is telling them, <strong>specifically and
+the job, the other half is telling them, <strong>specifically and
 clearly, what needs fixing</strong>. <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> does
 both: it <strong>auto-corrects</strong> the safe, unambiguous things
 (and records what it changed) and <strong>flags</strong> the rest for a
@@ -122,9 +122,9 @@ human. The flags are your feedback to the country.</p>
 back.</strong> A correction is something the schema can fix
 unambiguously (a known spelling, a translation). A flag is something
 only the country can resolve (an impossible age, an unknown locality).
-Never “fix” a flag by guessing — send it back.</p>
+Never “fix” a flag by guessing, send it back.</p>
 </blockquote>
-<p>This is offline — the DQ engine runs on a plain data frame. For where
+<p>This is offline, the DQ engine runs on a plain data frame. For where
 DQ sits in the full pipeline see the <a href="da-ingest-guide.html">ingest guide</a>; for the engine internals
 and custom checks, the <a href="dq-pipeline.html">DQ pipeline</a>.</p>
 </div>
@@ -133,8 +133,8 @@ and custom checks, the <a href="dq-pipeline.html">DQ pipeline</a>.</p>
 </h2>
 <p>In practice you’d read the submitted file (<code><a href="../reference/eri_read.html">eri_read()</a></code> /
 the raw layer). Here is a small DR malaria surveillance extract with a
-few deliberate problems — two values that the schema can normalise, and
-a few that it cannot:</p>
+few deliberate problems, two values that the schema can normalise, and a
+few that it cannot:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">extract</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  Year                   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2026</span>, <span class="fl">2026</span>, <span class="fl">2026</span>, <span class="fl">2026</span>, <span class="fl">2026</span><span class="op">)</span>,</span>
@@ -177,7 +177,7 @@ then run the checks and print the report:</p>
 <div class="section level2">
 <h2 id="corrections">What was fixed automatically<a class="anchor" aria-label="anchor" href="#corrections"></a>
 </h2>
-<p><code>res$log</code> is the audit trail of every auto-correction —
+<p><code>res$log</code> is the audit trail of every auto-correction,
 what changed, in which row, and why. Share it so the country knows what
 was normalised on their behalf (it is not an error on their part, but
 they should see it):</p>
@@ -193,7 +193,7 @@ they should see it):</p>
 <div class="section level2">
 <h2 id="flags">What the country must fix<a class="anchor" aria-label="anchor" href="#flags"></a>
 </h2>
-<p><code>res$flags</code> is the feedback list — the rows the schema
+<p><code>res$flags</code> is the feedback list, the rows the schema
 could <strong>not</strong> resolve. This is what you send back:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span><span class="op">$</span><span class="va">flags</span></span>
@@ -209,7 +209,7 @@ could <strong>not</strong> resolve. This is what you send back:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_table.html">eri_table</a></span><span class="op">(</span></span>
 <span>  <span class="va">res</span><span class="op">$</span><span class="va">flags</span>,</span>
-<span>  title    <span class="op">=</span> <span class="st">"DR malaria — items to correct and resubmit"</span>,</span>
+<span>  title    <span class="op">=</span> <span class="st">"DR malaria, items to correct and resubmit"</span>,</span>
 <span>  footnote <span class="op">=</span> <span class="st">"Auto-corrected values are not listed; only rows needing your review."</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -218,8 +218,8 @@ could <strong>not</strong> resolve. This is what you send back:</p>
 </h2>
 <p><a href="../reference/eri_notify_dq.html"><code>eri_notify_dq()</code></a>
 posts a one-glance summary (rows, corrections, flags, the most-flagged
-columns) to Teams — handy for a shared channel that tracks each
-country’s submissions:</p>
+columns) to Teams, handy for a shared channel that tracks each country’s
+submissions:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_notify_dq.html">eri_notify_dq</a></span><span class="op">(</span><span class="va">res</span>, country <span class="op">=</span> <span class="st">"dr"</span>, disease <span class="op">=</span> <span class="st">"malaria"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Sending Teams message via incoming webhook.</span></span></code></pre></div>
@@ -232,21 +232,21 @@ Flags          : 5
 Top flagged    : Age, EpiWeek, Province_Residence, SampleDate, Sex</code></pre>
 <p>To target a specific Teams channel instead of the default webhook,
 pass <code>team =</code> / <code>channel =</code> with a token (the
-Graph-API path) — see the <a href="connections-guide.html#teams">connections guide</a>.</p>
+Graph-API path), see the <a href="connections-guide.html#teams">connections guide</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>
 </h2>
 <ul>
 <li>The cleaned data (<code>res$data</code>) continues through the
-pipeline — see the <a href="da-ingest-guide.html">ingest guide</a> for
+pipeline, see the <a href="da-ingest-guide.html">ingest guide</a> for
 stage → <strong>approve</strong>.</li>
-<li>The <a href="dq-pipeline.html">DQ pipeline</a> — the check engine,
+<li>The <a href="dq-pipeline.html">DQ pipeline</a>, the check engine,
 schema rules, and adding <code>custom_checks</code>.</li>
-<li>The <a href="epi-dq-guide.html">epi anomaly guide</a> — spikes,
-gaps, and cross-field/spatial anomalies beyond cell-level validity.</li>
+<li>The <a href="epi-dq-guide.html">epi anomaly guide</a>, spikes, gaps,
+and cross-field/spatial anomalies beyond cell-level validity.</li>
 <li>Persist the flags to the shared backlog with
-<code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code> — the <a href="da-logs-guide.html">log-triage
+<code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code>, the <a href="da-logs-guide.html">log-triage
 guide</a>. ```</li>
 </ul>
 </div>

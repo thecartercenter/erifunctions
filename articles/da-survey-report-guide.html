@@ -125,8 +125,8 @@ result. The summary itself is offline.</p>
 not a working copy.</strong> The number in your report should trace to a
 specific approved file in the catalog. Pull it with
 <code><a href="../reference/eri_read.html">eri_read()</a></code> / <code><a href="../reference/eri_query.html">eri_query()</a></code>, summarise, then
-package — don’t re-summarise an ad-hoc export that never went through
-the gate.</p>
+package, don’t re-summarise an ad-hoc export that never went through the
+gate.</p>
 </blockquote>
 </div>
 <div class="section level2">
@@ -135,7 +135,7 @@ the gate.</p>
 <p>In practice you’d read the approved survey:
 <code>eri_read("ht/lf/research/processed/…")</code> or an
 <code><a href="../reference/eri_query.html">eri_query()</a></code> roll-up. Here is a small individual-level
-<strong>LF TAS</strong> (Transmission Assessment Survey) extract — one
+<strong>LF TAS</strong> (Transmission Assessment Survey) extract, one
 row per child tested, with FTS and RDT antigen results:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tas</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -169,17 +169,17 @@ summary, optionally per survey unit:</p>
 Saut-d’Eau has <strong>2 of 6</strong> FTS-positive children, Mirebalais
 <strong>3 of 6</strong>. In a real TAS you compare that antigen-positive
 count against the survey’s <strong>critical cutoff</strong> to decide
-pass/fail — the helper gives you the counts the decision rests on.</p>
+pass/fail, the helper gives you the counts the decision rests on.</p>
 <p>Other survey measures have their own helpers:
 <code><a href="../reference/eri_lf_pooled_prev.html">eri_lf_pooled_prev()</a></code> for entomology/xenomonitoring pooled
 prevalence, and <code><a href="../reference/eri_oncho_program_levels.html">eri_oncho_program_levels()</a></code> /
-<code><a href="../reference/eri_oncho_status_map.html">eri_oncho_status_map()</a></code> for oncho — see <a href="epi-analytics.html">epi analytics</a>.</p>
+<code><a href="../reference/eri_oncho_status_map.html">eri_oncho_status_map()</a></code> for oncho, see <a href="epi-analytics.html">epi analytics</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="package">Package it for sharing<a class="anchor" aria-label="anchor" href="#package"></a>
 </h2>
 <p>The summary is an ordinary tibble, so the <a href="da-reporting-guide.html">reporting toolkit</a> takes it the rest
-of the way — a branded table for the report:</p>
+of the way, a branded table for the report:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_table.html">eri_table</a></span><span class="op">(</span></span>
 <span>  <span class="va">summary</span>,</span>
@@ -203,13 +203,13 @@ of the way — a branded table for the report:</p>
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>
 </h2>
 <ul>
-<li>The <a href="da-reporting-guide.html">reporting guide</a> — the full
+<li>The <a href="da-reporting-guide.html">reporting guide</a>, the full
 table/figure/deck/Excel toolkit.</li>
 <li>
-<a href="epi-analytics.html">Epi analytics</a> — the disease helpers
+<a href="epi-analytics.html">Epi analytics</a>: the disease helpers
 (LF/oncho) and indicators.</li>
 <li>
-<a href="da-odk-guide.html">Working with ODK Central</a> — pulling
+<a href="da-odk-guide.html">Working with ODK Central</a>: pulling
 the survey in the first place.</li>
 <li>The <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">guide
 index</a>. ```</li>

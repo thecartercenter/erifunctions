@@ -108,18 +108,18 @@
 
     
     
-<p>The big picture for a new Data Analyst — the data system, the
+<p>The big picture for a new Data Analyst, the data system, the
 human-gated pipeline, and where your tasks live. Read this once before
 the hands-on guides; it’s also the basis for a first training session.
 (For the step-by-step path, see <a href="onboarding.html">Onboarding</a>.)</p>
 <div class="section level2">
 <h2 id="what-erifunctions-is">What erifunctions is<a class="anchor" aria-label="anchor" href="#what-erifunctions-is"></a>
 </h2>
-<p>The ERI team’s R package — the <strong>API to TCC’s Azure data
+<p>The ERI team’s R package, the <strong>API to TCC’s Azure data
 system</strong> across countries (Haiti, DR, Uganda, OEPA, …) and
 diseases (malaria, oncho, LF, SCH, STH). You are a <strong>domain
 expert</strong>, not a software developer: you install it and
-<strong>call functions</strong> — you don’t edit the package. Every
+<strong>call functions</strong>, you don’t edit the package. Every
 function is built to make <em>your</em> work clearer and more
 reliable.</p>
 </div>
@@ -129,7 +129,7 @@ reliable.</p>
 <pre><code>data/{country}/{disease}/{data_source}/{data_type}/
    raw/        as-received from the source
    staged/     DQ-checked, awaiting sign-off
-   processed/  analyst-approved — the data the whole team trusts</code></pre>
+   processed/  analyst-approved, the data the whole team trusts</code></pre>
 <p>Data flows <strong>one way</strong>:
 <code>raw → staged → processed</code>. Raw is untouched; staged is
 cleaned but provisional; processed is canonical. The direction never
@@ -140,7 +140,7 @@ reverses.</p>
 </h2>
 <blockquote>
 <p><strong>Nothing reaches <code>processed/</code> without
-<code><a href="../reference/eri_approve.html">eri_approve()</a></code> — the human gate.</strong></p>
+<code><a href="../reference/eri_approve.html">eri_approve()</a></code>, the human gate.</strong></p>
 </blockquote>
 <p><code><a href="../reference/eri_approve.html">eri_approve()</a></code> moves staged → processed, writes an
 approval log, and registers the file in the catalog. <strong>You are the
@@ -164,11 +164,11 @@ research</li>
 · mmdp · survey · …</li>
 </ul>
 <p>Run <strong><code><a href="../reference/eri_data_model.html">eri_data_model()</a></code></strong> to print the live
-vocabulary. Channel and measure are <strong>independent</strong> — the
+vocabulary. Channel and measure are <strong>independent</strong>, the
 same channel carries different measures, and the same (channel, disease)
 differs by country (DR malaria surveillance is <code>case</code>; Haiti
 malaria surveillance is <code>aggregate</code>). A missing combination
-is <em>normal</em> — it warns, it doesn’t error. The <a href="data-model-card.html">data-model card</a> is the deep
+is <em>normal</em>, it warns, it doesn’t error. The <a href="data-model-card.html">data-model card</a> is the deep
 reference.</p>
 </div>
 <div class="section level2">
@@ -253,7 +253,7 @@ treatment + prevalence)</li>
 </h2>
 <p><strong>Creating ODK forms is <em>not</em> an erifunctions
 task.</strong> Survey <strong>forms are authored in the ODK Central
-UI</strong> (XLSForm); erifunctions picks up at <strong>sync</strong> —
+UI</strong> (XLSForm); erifunctions picks up at <strong>sync</strong>,
 it pulls submissions, monitors deployment, and backfills records. (In R,
 you don’t <em>make</em> a form; you make it in ODK, then the package
 takes over.)</p>
@@ -267,7 +267,7 @@ takes over.)</p>
 <code><a href="../reference/eri_approve.html">eri_approve()</a></code>; never touch <code>processed/</code> by
 hand.</li>
 <li>
-<strong>Secrets live only in <code>.Renviron</code></strong> — never
+<strong>Secrets live only in <code>.Renviron</code></strong>: never
 in a script, never in git. Set <code>ERI_ANALYST_ID</code> first.</li>
 <li>
 <strong>Real country data never leaves the system.</strong> Practice
@@ -278,9 +278,9 @@ on the sandbox; protect the real thing.</li>
 <h2 id="where-to-learn-next">Where to learn next<a class="anchor" aria-label="anchor" href="#where-to-learn-next"></a>
 </h2>
 <ul>
-<li>The <a href="onboarding.html">onboarding path</a> — the paced Week-0
+<li>The <a href="onboarding.html">onboarding path</a>, the paced Week-0
 → Week-2 track.</li>
-<li>The <a href="da-cheatsheet.html">cheat sheet</a>, <a href="data-model-card.html">data-model card</a>, and <a href="troubleshooting.html">troubleshooting card</a> — your desk
+<li>The <a href="da-cheatsheet.html">cheat sheet</a>, <a href="data-model-card.html">data-model card</a>, and <a href="troubleshooting.html">troubleshooting card</a>, your desk
 reference.</li>
 <li>The run-it-live guides in the <strong>Articles</strong> menu, and
 <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> as your in-session lookup.</li>

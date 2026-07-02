@@ -1,7 +1,7 @@
 # Quality-check an extract and give a country feedback
 
 When a country sends a data extract, quality-checking it is only half
-the job — the other half is telling them, **specifically and clearly,
+the job, the other half is telling them, **specifically and clearly,
 what needs fixing**.
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
 does both: it **auto-corrects** the safe, unambiguous things (and
@@ -14,9 +14,9 @@ are your feedback to the country.
 > correction is something the schema can fix unambiguously (a known
 > spelling, a translation). A flag is something only the country can
 > resolve (an impossible age, an unknown locality). Never “fix” a flag
-> by guessing — send it back.
+> by guessing, send it back.
 
-This is offline — the DQ engine runs on a plain data frame. For where DQ
+This is offline, the DQ engine runs on a plain data frame. For where DQ
 sits in the full pipeline see the [ingest
 guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md);
 for the engine internals and custom checks, the [DQ
@@ -27,8 +27,8 @@ pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md
 In practice you’d read the submitted file
 ([`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
 / the raw layer). Here is a small DR malaria surveillance extract with a
-few deliberate problems — two values that the schema can normalise, and
-a few that it cannot:
+few deliberate problems, two values that the schema can normalise, and a
+few that it cannot:
 
 ``` r
 
@@ -74,7 +74,7 @@ dq_report(res)
 
 ## What was fixed automatically
 
-`res$log` is the audit trail of every auto-correction — what changed, in
+`res$log` is the audit trail of every auto-correction, what changed, in
 which row, and why. Share it so the country knows what was normalised on
 their behalf (it is not an error on their part, but they should see it):
 
@@ -91,7 +91,7 @@ res$log
 
 ## What the country must fix
 
-`res$flags` is the feedback list — the rows the schema could **not**
+`res$flags` is the feedback list, the rows the schema could **not**
 resolve. This is what you send back:
 
 ``` r
@@ -114,7 +114,7 @@ Turn it into a clean artifact to attach to your message with
 
 eri_table(
   res$flags,
-  title    = "DR malaria — items to correct and resubmit",
+  title    = "DR malaria, items to correct and resubmit",
   footnote = "Auto-corrected values are not listed; only rows needing your review."
 )
 ```
@@ -123,8 +123,8 @@ eri_table(
 
 [`eri_notify_dq()`](https://thecartercenter.github.io/erifunctions/reference/eri_notify_dq.md)
 posts a one-glance summary (rows, corrections, flags, the most-flagged
-columns) to Teams — handy for a shared channel that tracks each
-country’s submissions:
+columns) to Teams, handy for a shared channel that tracks each country’s
+submissions:
 
 ``` r
 
@@ -142,25 +142,25 @@ points at:
     Top flagged    : Age, EpiWeek, Province_Residence, SampleDate, Sex
 
 To target a specific Teams channel instead of the default webhook, pass
-`team =` / `channel =` with a token (the Graph-API path) — see the
+`team =` / `channel =` with a token (the Graph-API path), see the
 [connections
 guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html#teams).
 
 ## What’s next
 
-- The cleaned data (`res$data`) continues through the pipeline — see the
+- The cleaned data (`res$data`) continues through the pipeline, see the
   [ingest
   guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
   for stage → **approve**.
 - The [DQ
-  pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md)
-  — the check engine, schema rules, and adding `custom_checks`.
+  pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md),
+  the check engine, schema rules, and adding `custom_checks`.
 - The [epi anomaly
-  guide](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md)
-  — spikes, gaps, and cross-field/spatial anomalies beyond cell-level
+  guide](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md),
+  spikes, gaps, and cross-field/spatial anomalies beyond cell-level
   validity.
 - Persist the flags to the shared backlog with
-  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
-  — the [log-triage
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md),
+  the [log-triage
   guide](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md).
   \`\`\`
