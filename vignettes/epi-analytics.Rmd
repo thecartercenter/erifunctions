@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 This vignette covers the epidemiological helper functions for malaria, lymphatic
-filariasis, and onchocerciasis analyses — from computing incidence rates and
+filariasis, and onchocerciasis analyses, from computing incidence rates and
 epiweek dates to LF pooled prevalence and onchocerciasis programme-status maps.
 
 ## Malaria: incidence and epidemic curves
@@ -54,7 +54,7 @@ ggplot(weekly, aes(week_start, n_cases, colour = province)) +
 
 ### Study week
 
-`eri_study_week()` expresses epiweeks relative to an index event — useful for
+`eri_study_week()` expresses epiweeks relative to an index event, useful for
 intervention analyses such as IRS campaigns:
 
 ```{r study-week}

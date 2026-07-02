@@ -23,13 +23,13 @@ result. The summary itself is offline.
 
 > **Report from the approved (`processed/`) dataset, not a working copy.** The number in your report
 > should trace to a specific approved file in the catalog. Pull it with `eri_read()` / `eri_query()`,
-> summarise, then package — don't re-summarise an ad-hoc export that never went through the gate.
+> summarise, then package, don't re-summarise an ad-hoc export that never went through the gate.
 
 ## The survey data {#data}
 
 In practice you'd read the approved survey: `eri_read("ht/lf/research/processed/…")` or an
 `eri_query()` roll-up. Here is a small individual-level **LF TAS** (Transmission Assessment Survey)
-extract — one row per child tested, with FTS and RDT antigen results:
+extract, one row per child tested, with FTS and RDT antigen results:
 
 ```{r data}
 tas <- data.frame(
@@ -64,16 +64,16 @@ summary
 Read it per commune by summing the `Positive` FTS rows: Saut-d'Eau has **2 of 6** FTS-positive children,
 Mirebalais **3 of 6**. In a real
 TAS you compare that antigen-positive count against the survey's **critical cutoff** to decide
-pass/fail — the helper gives you the counts the decision rests on.
+pass/fail, the helper gives you the counts the decision rests on.
 
 Other survey measures have their own helpers: `eri_lf_pooled_prev()` for entomology/xenomonitoring
-pooled prevalence, and `eri_oncho_program_levels()` / `eri_oncho_status_map()` for oncho — see
+pooled prevalence, and `eri_oncho_program_levels()` / `eri_oncho_status_map()` for oncho, see
 [epi analytics](epi-analytics.html).
 
 ## Package it for sharing {#package}
 
 The summary is an ordinary tibble, so the [reporting toolkit](da-reporting-guide.html) takes it the rest
-of the way — a branded table for the report:
+of the way, a branded table for the report:
 
 ```{r table}
 eri_table(
@@ -99,8 +99,8 @@ spatial helpers (see the [spatial workflow](spatial-workflow.html)).
 
 ## What's next
 
-- The [reporting guide](da-reporting-guide.html) — the full table/figure/deck/Excel toolkit.
-- [Epi analytics](epi-analytics.html) — the disease helpers (LF/oncho) and indicators.
-- [Working with ODK Central](da-odk-guide.html) — pulling the survey in the first place.
+- The [reporting guide](da-reporting-guide.html), the full table/figure/deck/Excel toolkit.
+- [Epi analytics](epi-analytics.html): the disease helpers (LF/oncho) and indicators.
+- [Working with ODK Central](da-odk-guide.html): pulling the survey in the first place.
 - The [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md).
 ```

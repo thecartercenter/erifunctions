@@ -11,7 +11,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-When a country sends a data extract, quality-checking it is only half the job — the other half is
+When a country sends a data extract, quality-checking it is only half the job, the other half is
 telling them, **specifically and clearly, what needs fixing**. `run_dq_checks()` does both: it
 **auto-corrects** the safe, unambiguous things (and records what it changed) and **flags** the rest for
 a human. The flags are your feedback to the country.
@@ -20,16 +20,16 @@ a human. The flags are your feedback to the country.
 
 > **Auto-corrections are applied and logged; flags are handed back.** A correction is something the
 > schema can fix unambiguously (a known spelling, a translation). A flag is something only the country
-> can resolve (an impossible age, an unknown locality). Never "fix" a flag by guessing — send it back.
+> can resolve (an impossible age, an unknown locality). Never "fix" a flag by guessing, send it back.
 
-This is offline — the DQ engine runs on a plain data frame. For where DQ sits in the full pipeline see
+This is offline, the DQ engine runs on a plain data frame. For where DQ sits in the full pipeline see
 the [ingest guide](da-ingest-guide.html); for the engine internals and custom checks, the
 [DQ pipeline](dq-pipeline.html).
 
 ## The extract {#extract}
 
 In practice you'd read the submitted file (`eri_read()` / the raw layer). Here is a small DR malaria
-surveillance extract with a few deliberate problems — two values that the schema can normalise, and a
+surveillance extract with a few deliberate problems, two values that the schema can normalise, and a
 few that it cannot:
 
 ```{r data}
@@ -74,7 +74,7 @@ dq_report(res)
 
 ## What was fixed automatically {#corrections}
 
-`res$log` is the audit trail of every auto-correction — what changed, in which row, and why. Share it
+`res$log` is the audit trail of every auto-correction, what changed, in which row, and why. Share it
 so the country knows what was normalised on their behalf (it is not an error on their part, but they
 should see it):
 
@@ -90,7 +90,7 @@ res$log
 
 ## What the country must fix {#flags}
 
-`res$flags` is the feedback list — the rows the schema could **not** resolve. This is what you send
+`res$flags` is the feedback list, the rows the schema could **not** resolve. This is what you send
 back:
 
 ```{r flags}
@@ -111,7 +111,7 @@ Turn it into a clean artifact to attach to your message with
 ```{r feedback-table}
 eri_table(
   res$flags,
-  title    = "DR malaria — items to correct and resubmit",
+  title    = "DR malaria, items to correct and resubmit",
   footnote = "Auto-corrected values are not listed; only rows needing your review."
 )
 ```
@@ -119,7 +119,7 @@ eri_table(
 ## Notify the team / country {#notify}
 
 [`eri_notify_dq()`](../reference/eri_notify_dq.html) posts a one-glance summary (rows, corrections,
-flags, the most-flagged columns) to Teams — handy for a shared channel that tracks each country's
+flags, the most-flagged columns) to Teams, handy for a shared channel that tracks each country's
 submissions:
 
 ```{r notify}
@@ -138,15 +138,15 @@ Top flagged    : Age, EpiWeek, Province_Residence, SampleDate, Sex
 ```
 
 To target a specific Teams channel instead of the default webhook, pass `team =` / `channel =` with a
-token (the Graph-API path) — see the [connections guide](connections-guide.html#teams).
+token (the Graph-API path), see the [connections guide](connections-guide.html#teams).
 
 ## What's next
 
-- The cleaned data (`res$data`) continues through the pipeline — see the
+- The cleaned data (`res$data`) continues through the pipeline, see the
   [ingest guide](da-ingest-guide.html) for stage → **approve**.
-- The [DQ pipeline](dq-pipeline.html) — the check engine, schema rules, and adding `custom_checks`.
-- The [epi anomaly guide](epi-dq-guide.html) — spikes, gaps, and cross-field/spatial anomalies beyond
+- The [DQ pipeline](dq-pipeline.html), the check engine, schema rules, and adding `custom_checks`.
+- The [epi anomaly guide](epi-dq-guide.html), spikes, gaps, and cross-field/spatial anomalies beyond
   cell-level validity.
-- Persist the flags to the shared backlog with `eri_dq_log()` — the
+- Persist the flags to the shared backlog with `eri_dq_log()`, the
   [log-triage guide](da-logs-guide.html).
 ```

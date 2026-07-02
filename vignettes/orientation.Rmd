@@ -7,15 +7,15 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-The big picture for a new Data Analyst — the data system, the human-gated pipeline, and where your
+The big picture for a new Data Analyst, the data system, the human-gated pipeline, and where your
 tasks live. Read this once before the hands-on guides; it's also the basis for a first training
 session. (For the step-by-step path, see [Onboarding](onboarding.html).)
 
 ## What erifunctions is
 
-The ERI team's R package — the **API to TCC's Azure data system** across countries (Haiti, DR, Uganda,
+The ERI team's R package, the **API to TCC's Azure data system** across countries (Haiti, DR, Uganda,
 OEPA, …) and diseases (malaria, oncho, LF, SCH, STH). You are a **domain expert**, not a software
-developer: you install it and **call functions** — you don't edit the package. Every function is built
+developer: you install it and **call functions**, you don't edit the package. Every function is built
 to make *your* work clearer and more reliable.
 
 ## The data lives in three layers
@@ -24,7 +24,7 @@ to make *your* work clearer and more reliable.
 data/{country}/{disease}/{data_source}/{data_type}/
    raw/        as-received from the source
    staged/     DQ-checked, awaiting sign-off
-   processed/  analyst-approved — the data the whole team trusts
+   processed/  analyst-approved, the data the whole team trusts
 ```
 
 Data flows **one way**: `raw → staged → processed`. Raw is untouched; staged is cleaned but
@@ -32,7 +32,7 @@ provisional; processed is canonical. The direction never reverses.
 
 ## The golden rule
 
-> **Nothing reaches `processed/` without `eri_approve()` — the human gate.**
+> **Nothing reaches `processed/` without `eri_approve()`, the human gate.**
 
 `eri_approve()` moves staged → processed, writes an approval log, and registers the file in the
 catalog. **You are the gate**: nothing is "official" until you sign off, and the sign-off is stamped
@@ -48,9 +48,9 @@ data / country / disease / data_source / data_type / layer
 - **`data_source`** = the **channel** (how it arrives): surveillance · programmatic · research
 - **`data_type`** = the **measure** (what it counts): case · aggregate · treatment · mmdp · survey · …
 
-Run **`eri_data_model()`** to print the live vocabulary. Channel and measure are **independent** — the
+Run **`eri_data_model()`** to print the live vocabulary. Channel and measure are **independent**, the
 same channel carries different measures, and the same (channel, disease) differs by country (DR malaria
-surveillance is `case`; Haiti malaria surveillance is `aggregate`). A missing combination is *normal* —
+surveillance is `case`; Haiti malaria surveillance is `aggregate`). A missing combination is *normal*,
 it warns, it doesn't error. The [data-model card](data-model-card.html) is the deep reference.
 
 ## Which pipeline for which data?
@@ -78,18 +78,18 @@ full decision tree.
 ## A boundary worth stating
 
 **Creating ODK forms is *not* an erifunctions task.** Survey **forms are authored in the ODK Central
-UI** (XLSForm); erifunctions picks up at **sync** — it pulls submissions, monitors deployment, and
+UI** (XLSForm); erifunctions picks up at **sync**, it pulls submissions, monitors deployment, and
 backfills records. (In R, you don't *make* a form; you make it in ODK, then the package takes over.)
 
 ## Three golden rules to leave with
 
 1. **The gate is sacred.** Nothing is real until `eri_approve()`; never touch `processed/` by hand.
-2. **Secrets live only in `.Renviron`** — never in a script, never in git. Set `ERI_ANALYST_ID` first.
+2. **Secrets live only in `.Renviron`**: never in a script, never in git. Set `ERI_ANALYST_ID` first.
 3. **Real country data never leaves the system.** Practice on the sandbox; protect the real thing.
 
 ## Where to learn next
 
-- The [onboarding path](onboarding.html) — the paced Week-0 → Week-2 track.
+- The [onboarding path](onboarding.html), the paced Week-0 → Week-2 track.
 - The [cheat sheet](da-cheatsheet.html), [data-model card](data-model-card.html), and
-  [troubleshooting card](troubleshooting.html) — your desk reference.
+  [troubleshooting card](troubleshooting.html), your desk reference.
 - The run-it-live guides in the **Articles** menu, and `eri_data_model()` as your in-session lookup.

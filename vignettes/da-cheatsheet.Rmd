@@ -14,22 +14,22 @@ when you want the full walkthrough.*
 ## The data system in one picture
 
 Everything lives in the Azure **`data/`** blob under a canonical 5-axis path. Build it with
-`eri_data_path()` — never hand-type it.
+`eri_data_path()`: never hand-type it.
 
 ```
 data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
         dr         malaria     surveillance    case          raw        as-received
         uga        oncho       programmatic    treatment     staged     DQ-checked, awaiting sign-off
-        ht         lf          research        prevalence    processed  approved — the team trusts this
+        ht         lf          research        prevalence    processed  approved, the team trusts this
 ```
 
 - **`data_source` = the channel** (how the data arrives): `surveillance` · `programmatic` · `research`.
 - **`data_type` = the measure** (what it counts): `case` · `aggregate` · `treatment` · `mmdp` ·
   `training` · `survey` · `tas` · `prevalence` · `entomology`.
 - Run **`eri_data_model()`** once to print the full, current vocabulary. Unknown values *warn, not
-  error* — a new country/disease/source/measure is a normal gap, not a bug.
+  error*, a new country/disease/source/measure is a normal gap, not a bug.
 
-> **The golden rule:** nothing reaches **`processed/`** without **`eri_approve()`** — the human gate.
+> **The golden rule:** nothing reaches **`processed/`** without **`eri_approve()`**, the human gate.
 > It moves staged → processed, writes an approval log, and registers the file in the catalog. Never
 > hand-edit or delete `processed/` data.
 
@@ -85,7 +85,7 @@ eri_approve(c, d, src, period, data_type = mea, azcontainer = data_con)   # the 
 | Triage errors / DQ backlog | `eri_logs` · `eri_logs_resolve` | `eri_logs(status = "error")` → `eri_logs_resolve(log_path, note =)` |
 
 *Signatures to mind:* `eri_onboard_disease(disease, country, …)` takes **disease first** (unlike the
-others); `eri_approve()`'s **5th arg is `data_type`** (the measure) — omit it and the catalog records
+others); `eri_approve()`'s **5th arg is `data_type`** (the measure), omit it and the catalog records
 the measure as `NA`.
 
 ## Quick analytics (for initial epi QC products)
@@ -97,7 +97,7 @@ eri_epidemic_curve(data, date_col, count_col =, period = "week")
 # disease helpers: eri_lf_tas_summary(), eri_oncho_program_levels(), eri_lf_pooled_prev() …
 ```
 
-## Don't reinvent — search first
+## Don't reinvent, search first
 
 Before writing new code, reuse `azure_io()` / `eri_read()` / `eri_write()` / `eri_data_path()` and the
 DQ / catalog / logs machinery. If a problem is general, it probably already has a helper (and if it

@@ -11,12 +11,12 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-Once data is approved, a lot of the job is turning it into **outputs** — a table for a memo, a figure
+Once data is approved, a lot of the job is turning it into **outputs**, a table for a memo, a figure
 for proceedings, a workbook for a partner, a slide deck for a meeting. `erifunctions` ships a small,
 consistent **reporting toolkit** so those come out on-brand without fiddling with styling each time.
 
 This guide is the general toolkit (it runs on any data frame). Specific recurring reports get their own
-templates as they're defined; the domain figures — **maps** and **epidemic curves** — live in the
+templates as they're defined; the domain figures, **maps** and **epidemic curves**, live in the
 [spatial workflow](spatial-workflow.html) and [epi analytics](epi-analytics.html) guides.
 
 ## Before you start {#before-you-start}
@@ -25,7 +25,7 @@ templates as they're defined; the domain figures — **maps** and **epidemic cur
 library(erifunctions)
 ```
 
-In practice you'd pull approved data first — `eri_query()` for a roll-up (see the
+In practice you'd pull approved data first, `eri_query()` for a roll-up (see the
 [ad-hoc guide](da-adhoc-guide.html)) or `eri_read()` for one dataset. Here we use a small frame so every
 chunk runs as-is:
 
@@ -41,8 +41,8 @@ dat$positivity <- round(dat$cases / dat$tested * 100, 1)
 ## A branded table {#table}
 
 [`eri_table()`](../reference/eri_table.html) turns a data frame into a styled
-[`flextable`](https://davidgohel.github.io/flextable/) — ERI navy header, banded rows, an optional
-title and footnote — ready to drop into an HTML/Word/PowerPoint output:
+[`flextable`](https://davidgohel.github.io/flextable/): ERI navy header, banded rows, an optional
+title and footnote, ready to drop into an HTML/Word/PowerPoint output:
 
 ```{r table}
 eri_table(
@@ -54,7 +54,7 @@ eri_table(
 ```
 
 It returns a `flextable` object; print it in a report, or hand it to the Word/PowerPoint/HTML helpers.
-`highlight_cols` is a **named list** mapping a column to a fill colour (`list(col = "#hex")`) — use it to
+`highlight_cols` is a **named list** mapping a column to a fill colour (`list(col = "#hex")`), use it to
 shade the column you want the eye to land on.
 
 ## An on-brand figure {#figure}
@@ -70,7 +70,7 @@ p <- ggplot(dat, aes(x = province, y = cases)) +
 p
 ```
 
-For domain figures there are purpose-built helpers — `eri_plot_theme("map" | "epicurve")` and
+For domain figures there are purpose-built helpers, `eri_plot_theme("map" | "epicurve")` and
 `eri_color_scheme()` (e.g. the standard `"malaria.incidence"` bins), and the `eri_map_*` family for
 choropleths and point maps. Those need boundary data; the [spatial workflow](spatial-workflow.html)
 guide covers them end-to-end, and [epi analytics](epi-analytics.html) covers `eri_epidemic_curve()`.
@@ -78,7 +78,7 @@ guide covers them end-to-end, and [epi analytics](epi-analytics.html) covers `er
 ## An Excel workbook {#excel}
 
 For a partner who wants the numbers, [`eri_report_excel()`](../reference/eri_report_excel.html) writes a
-styled multi-sheet workbook in one call — each named element of `sheets` becomes a tab:
+styled multi-sheet workbook in one call, each named element of `sheets` becomes a tab:
 
 ```{r excel}
 eri_report_excel(
@@ -94,7 +94,7 @@ Need finer control (multiple sheets, added titles)? Build it up with `eri_wb_cre
 
 ## A slide deck for proceedings {#pptx}
 
-The `eri_pptx_*` family builds a PowerPoint slide by slide — title, sections, tables, and plots — so a
+The `eri_pptx_*` family builds a PowerPoint slide by slide, title, sections, tables, and plots, so a
 meeting deck is reproducible code, not manual copy-paste:
 
 ```{r pptx}
@@ -117,8 +117,8 @@ accepts a `template =` to start from a branded master.
 
 ## What's next
 
-- **Maps:** the [spatial workflow](spatial-workflow.html) — choropleths, incidence maps, insets.
-- **Curves & indicators:** [epi analytics](epi-analytics.html) — `eri_epidemic_curve()`, incidence,
+- **Maps:** the [spatial workflow](spatial-workflow.html), choropleths, incidence maps, insets.
+- **Curves & indicators:** [epi analytics](epi-analytics.html), `eri_epidemic_curve()`, incidence,
   disease helpers.
 - **Where the data comes from:** the [ad-hoc guide](da-adhoc-guide.html) (`eri_query`) and the
   [ingest guide](da-ingest-guide.html).
