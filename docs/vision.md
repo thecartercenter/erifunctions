@@ -1,4 +1,4 @@
-# erifunctions — Founding Vision
+# erifunctions, Founding Vision
 
 > This is the original founding brief for the erifunctions data system, written by an
 > epidemiologist on the ERI team. It is the source-of-truth for *user intent* behind the package and the V2
