@@ -22,9 +22,26 @@ Schemas live in `inst/schemas/` (surveillance) and `inst/schemas/cmr/` (CMR).
 - All exported functions are named `eri_*()` — verb-first, tab-completable.
 - Internal helpers are prefixed with `.` and documented with `#' @keywords internal`.
 - Use `cli::cli_abort()` / `cli::cli_inform()` / `cli::cli_alert_success()` for all user-facing messages — no `message()`, `warning()`, or `stop()`.
-- No non-ASCII characters in R source files (no em dashes, smart quotes, tab literals).
+- No non-ASCII characters in R source files (no em dashes, smart quotes, tab literals). Prose files have their own rule; see Documentation prose below.
 - No `withr::local_mocked_bindings` — use `testthat::local_mocked_bindings()`.
 - Temp files cleaned up with `withr::defer(unlink(tmp))`.
+
+## Documentation prose
+
+Vignettes (`vignettes/*.Rmd`), `README.md`, and the files under `docs/` are the public
+pkgdown site. Keep the prose in a consistent voice:
+
+- **No em dashes as connectors.** Use a comma, semicolon, colon, parentheses, or a period
+  instead. This is the one hard rule; em dashes are the most common drift.
+- **Oxford commas** in lists; specific hedging over vague ("may reflect X rather than Y", not
+  "might possibly").
+- **No end-of-paragraph recaps** of what the reader just read, and no triadic lists used as a
+  reflex rather than because three items are actually true.
+- **Register by file.** The how-to guides address the reader directly ("you", imperatives); keep
+  that. The narrative docs (`README.md`, `docs/vision.md`, `docs/roadmap.md`) carry the
+  declarative, caveat-forward voice ("This does X", "We caution that Y").
+- **Bolding** is fine for UI terms, role names, and layer names; it is a navigational cue, not
+  emphasis for its own sake.
 
 ## Phase releases
 
