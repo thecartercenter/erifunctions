@@ -269,7 +269,9 @@ test_that(".odk_data_con delegates auto-connect to get_azure_storage_connection"
     },
     .package = "erifunctions"
   )
-  withr::local_envvar(ERIFUNCTIONS_DATA_STORAGE_NAME = "")
+  # NA unsets the var on every platform; "" would stay an empty string on Linux
+  # but unset the var on Windows, so `unset=` diverges across OSes.
+  withr::local_envvar(ERIFUNCTIONS_DATA_STORAGE_NAME = NA)
   expect_equal(erifunctions:::.odk_data_con(NULL), "auto_con")
   expect_equal(seen, "data")   # default when the env var is unset
 })
