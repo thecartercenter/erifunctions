@@ -76,6 +76,76 @@ test_that(".eri_yaml_write_conditional sends If-Match for an update and reports 
   expect_equal(seen[["If-Match"]], "\"v1\"")
 })
 
+# --- .eri_blob_metadata_con (ADLS Gen2 -> blob routing, ADR-0016) -------------
+
+test_that(".eri_blob_metadata_con routes an ADLS (dfs) container to the blob endpoint", {
+  seen_url <- NULL; seen_name <- NULL
+  local_mocked_bindings(
+    blob_endpoint = function(endpoint, ...) {
+      seen_url <<- endpoint
+      structure(list(url = endpoint), class = "blob_endpoint")
+    },
+    storage_container = function(endpoint, name) {
+      seen_name <<- name
+      structure(list(endpoint = endpoint, name = name),
+                class = c("blob_container", "storage_container"))
+    },
+    .package = "AzureStor"
+  )
+  adls <- structure(
+    list(
+      endpoint = structure(
+        list(url = "https://eridev.dfs.core.windows.net/",
+             token = "T", key = NULL, sas = NULL),
+        class = "adls_endpoint"),
+      name = "data"),
+    class = c("adls_filesystem", "storage_container"))
+
+  out <- erifunctions:::.eri_blob_metadata_con(adls)
+  expect_equal(seen_url, "https://eridev.blob.core.windows.net/")  # dfs host -> blob host
+  expect_equal(seen_name, "data")                                  # same filesystem
+  expect_s3_class(out, "blob_container")
+})
+
+test_that(".eri_blob_metadata_con leaves a non-ADLS container unchanged", {
+  expect_identical(erifunctions:::.eri_blob_metadata_con("con"), "con")   # test double
+  blob <- structure(list(name = "data"), class = c("blob_container", "storage_container"))
+  expect_identical(erifunctions:::.eri_blob_metadata_con(blob), blob)     # already blob
+})
+
+test_that(".eri_yaml_write_conditional PUTs to the blob endpoint but ensures the dir on ADLS", {
+  # The load-bearing split of the fix: given a real ADLS (dfs) container, the
+  # conditional PUT must target the blob-derived container while the parent-dir
+  # ensure stays on the ADLS container (HNS directories are a dfs concept).
+  adls <- structure(
+    list(
+      endpoint = structure(
+        list(url = "https://eridev.dfs.core.windows.net/",
+             token = "T", key = NULL, sas = NULL, api_version = "2023-11-03"),
+        class = "adls_endpoint"),
+      name = "data"),
+    class = c("adls_filesystem", "storage_container"))
+  blob <- structure(list(name = "data"), class = c("blob_container", "storage_container"))
+
+  put_con <- NULL; dir_con <- NULL
+  local_mocked_bindings(
+    blob_endpoint     = function(endpoint, ...) structure(list(url = endpoint), class = "blob_endpoint"),
+    storage_container = function(endpoint, name) blob,
+    do_container_op   = function(container, operation, ...) { put_con <<- container; fake_resp(201L) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_create_azure_dir = function(azcontainer, path) { dir_con <<- azcontainer; invisible(NULL) },
+    .package = "erifunctions"
+  )
+
+  ok <- erifunctions:::.eri_yaml_write_conditional(adls, "odk/registry.yaml",
+                                                   list(forms = list()), etag = NULL)
+  expect_true(ok)
+  expect_s3_class(put_con, "blob_container")     # conditional PUT -> blob endpoint
+  expect_s3_class(dir_con, "adls_filesystem")    # dir-ensure -> ADLS container
+})
+
 # --- .eri_yaml_update (retry / re-apply) --------------------------------------
 
 test_that(".eri_yaml_update commits the mutated value when there is no conflict", {

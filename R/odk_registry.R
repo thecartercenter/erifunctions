@@ -27,15 +27,15 @@
 #' @keywords internal
 .odk_data_con <- function(data_con) {
   if (!is.null(data_con)) return(data_con)
-  token <- AzureAuth::get_azure_token(
-    resource  = "https://storage.azure.com/",
-    tenant    = Sys.getenv("ERIFUNCTIONS_TENANT_ID"),
-    app       = Sys.getenv("ERIFUNCTIONS_APP_ID"),
-    auth_type = "authorization_code"
-  )
-  AzureStor::storage_container(
-    AzureStor::storage_endpoint(Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT"), token = token),
-    Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+  # Delegate to the shared connector so auto-connect inherits the zero-config
+  # interactive-auth defaults (app_id / tenant_id / resource_endpoint). Building
+  # the token here from bare `Sys.getenv()` reads — as this once did — sent an
+  # empty `client_id` when those vars were unset, failing with AADSTS900144.
+  # Mirrors `.eri_research_con()` / `.eri_logs_con()` / `.eri_catalog_con()`.
+  suppressMessages(
+    get_azure_storage_connection(
+      storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+    )
   )
 }
 

@@ -251,3 +251,27 @@ test_that("form_display_name defaults to form_id when not supplied", {
 
   expect_equal(store$data$forms[[1]]$form_display_name, "MyForm")
 })
+
+# --- .odk_data_con auto-connect ------------------------------------------------
+
+test_that(".odk_data_con delegates auto-connect to get_azure_storage_connection", {
+  # A passed connection short-circuits (no auth).
+  expect_equal(erifunctions:::.odk_data_con("passed"), "passed")
+
+  # Auto-connect (NULL) routes through the shared connector — which carries the
+  # zero-config auth defaults — targeting the data container. Reimplementing the
+  # token from bare Sys.getenv() (as this once did) sent an empty client_id.
+  seen <- NULL
+  local_mocked_bindings(
+    get_azure_storage_connection = function(storage_name, ...) {
+      seen <<- storage_name
+      "auto_con"
+    },
+    .package = "erifunctions"
+  )
+  # NA unsets the var on every platform; "" would stay an empty string on Linux
+  # but unset the var on Windows, so `unset=` diverges across OSes.
+  withr::local_envvar(ERIFUNCTIONS_DATA_STORAGE_NAME = NA)
+  expect_equal(erifunctions:::.odk_data_con(NULL), "auto_con")
+  expect_equal(seen, "data")   # default when the env var is unset
+})
