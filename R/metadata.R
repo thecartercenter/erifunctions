@@ -26,7 +26,8 @@
   ep      <- con$endpoint
   blob_ep <- AzureStor::blob_endpoint(
     sub("\\.dfs\\.", ".blob.", ep$url),
-    token = ep$token, key = ep$key, sas = ep$sas
+    token = ep$token, key = ep$key, sas = ep$sas,
+    api_version = ep$api_version
   )
   AzureStor::storage_container(blob_ep, con$name)
 }
