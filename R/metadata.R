@@ -10,11 +10,34 @@
 # fails with HTTP 412; we re-read, re-apply `mutate` to the *fresh* data, and
 # retry — so neither writer's entry is lost. See ADR-0002.
 
+# The conditional metadata ops below use blob-API semantics — `x-ms-blob-type:
+# BlockBlob` with an `If-Match`/`If-None-Match` PUT of the whole body. The ADLS
+# Gen2 **dfs** endpoint (the package default) rejects that shape with HTTP 400
+# ("An HTTP header that's mandatory for this request is not specified") and writes
+# nothing; the same account's **blob** endpoint serves the identical files and
+# supports these ops natively (create/conditional-update/412-on-stale). So the
+# versioned read *and* the conditional write route through the blob endpoint,
+# derived in-place from the passed container (dfs host -> blob host, same token
+# and filesystem). A container that is already blob-backed — or any test double
+# that isn't a real ADLS filesystem — is returned unchanged. See ADR-0016.
+#' @keywords internal
+.eri_blob_metadata_con <- function(con) {
+  if (!inherits(con, "adls_filesystem")) return(con)
+  ep      <- con$endpoint
+  blob_ep <- AzureStor::blob_endpoint(
+    sub("\\.dfs\\.", ".blob.", ep$url),
+    token = ep$token, key = ep$key, sas = ep$sas,
+    api_version = ep$api_version
+  )
+  AzureStor::storage_container(blob_ep, con$name)
+}
+
 # Read a YAML blob together with its ETag in a single GET.
 # Returns list(data = <parsed yaml or `default`>, etag = <chr or NULL>).
 # A missing blob yields the default and a NULL etag (signals "create").
 #' @keywords internal
 .eri_yaml_read_versioned <- function(con, path, default = list()) {
+  con  <- .eri_blob_metadata_con(con)
   resp <- AzureStor::do_container_op(
     con, path, http_verb = "GET", http_status_handler = "pass"
   )
@@ -46,7 +69,10 @@
   tmp <- tempfile(fileext = ".yaml")
   on.exit(unlink(tmp))
   yaml::write_yaml(data, tmp)
+  # Ensure the parent directory on the ADLS container (where the rest of the
+  # package reads/writes); the conditional PUT itself goes to the blob endpoint.
   .eri_create_azure_dir(con, dirname(path))
+  blob_con <- .eri_blob_metadata_con(con)
 
   body    <- readBin(tmp, "raw", n = file.info(tmp)$size)
   headers <- list(
@@ -60,7 +86,7 @@
   }
 
   resp <- AzureStor::do_container_op(
-    con, path, headers = headers, body = body,
+    blob_con, path, headers = headers, body = body,
     http_verb = "PUT", http_status_handler = "pass"
   )
   status <- resp$status_code
@@ -68,7 +94,7 @@
   if (status >= 300L) {
     # Re-issue with the "stop" handler to surface the real storage error.
     AzureStor::do_container_op(
-      con, path, headers = headers, body = body, http_verb = "PUT"
+      blob_con, path, headers = headers, body = body, http_verb = "PUT"
     )
   }
   TRUE

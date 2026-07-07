@@ -1,4 +1,26 @@
-# erifunctions (development version)
+# erifunctions 0.9.1
+
+## Fix: metadata writes on ADLS Gen2, and ODK auto-connect
+
+- **Concurrency-safe metadata writes now work on the ADLS Gen2 (`dfs`) endpoint.**
+  The conditional write behind `.eri_yaml_update()` (ADR-0002) issued a blob-API
+  PUT (`x-ms-blob-type: BlockBlob` with `If-Match`/`If-None-Match`) that the `dfs`
+  endpoint — the package default — rejects with `HTTP 400 ("An HTTP header that's
+  mandatory for this request is not specified")`, writing nothing. Every metadata
+  store was affected: the ODK registry, the data catalog, the artifact registry,
+  and `eri_feedback()`. The versioned read and conditional write now route through
+  the same account's **blob** endpoint, which supports these operations natively —
+  including the `412` stale-ETag conflict that guards the optimistic-concurrency
+  retry loop. Parquet/file writes (which already used the correct `storage_upload`
+  path) are unchanged. This had surfaced as `eri_odk_sync()` erroring on its final
+  `last_synced` update even though every Parquet had already landed in `raw/`.
+  See ADR-0016.
+- **The ODK functions auto-connect again.** With no `data_con` passed,
+  `.odk_data_con()` built its token from bare `Sys.getenv()` reads and sent an
+  empty `client_id` when those vars were unset, failing with `AADSTS900144`. It now
+  delegates to `get_azure_storage_connection()` — the same zero-config connector
+  the rest of the package uses — so auto-connect inherits the interactive-auth
+  defaults (mirrors `.eri_research_con()` / `.eri_logs_con()`).
 
 ## Feature: `eri_simulate_check()` — confirm the cutover gate catches divergence
 
