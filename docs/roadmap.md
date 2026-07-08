@@ -199,6 +199,11 @@ against existing Azure data as a simulation; validated against real uploads when
   CMR period/sheet hardening (#252); the DQ→triage fold was already in place (`eri_ingest()` persists
   flags via `eri_dq_log()` into the `eri_logs()` backlog), and stage/ingest already have full op-log +
   tryCatch capture.
+- **Training/testing sandbox for the CMR pipeline** — shipped a synthetic `atlantis` CMR schema
+  (`inst/schemas/cmr/atlantis.yaml`) so the full `eri_split_cmr → eri_approve → eri_read` flow runs
+  end-to-end without writing into a real country's namespace. Deliberately **narrow** (CMR-only) for
+  now; a general first-class "registered sandbox" namespace usable across pipelines (ODK, general
+  ingest, research) is a candidate for a future ADR rather than one fake schema per pipeline.
 - **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates: the
   `projects`-blob dual-write (`mirror_pipeline`), `.eri_pipeline_registry`, `.eri_schema_country_map`,
   and the `rblf` combined code. **Deferred to the cutover itself** (irreversible; only once a stream's
