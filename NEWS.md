@@ -1,3 +1,36 @@
+# erifunctions 0.9.5
+
+## Fix / add: data-quality schemas rebuilt against the real CMR field codes
+
+- **`uga_oncho_programmatic_treatment.yaml` rewritten.** It previously targeted a
+  community-level format (`round`, `sub_county`, `community` all required) that
+  the real monthly CMR does not have. Against a real Uganda submission it
+  returned 7 "required column missing" flags and nothing else, because none of
+  its aliases resolved. It now maps the real `#rbtrt_*` field codes
+  (`eri_ingest_cmr()` output) to canonical columns, with `district`, `year`, and
+  `treated` required and the rest range-checked.
+- **New: `uga_sch_programmatic_treatment.yaml`, `ssd_oncho_programmatic_treatment.yaml`,
+  `sdn_oncho_programmatic_treatment.yaml`.** Same real-field-code structure.
+  District `allowed_values` are the real historical district lists for each
+  country (public administrative units).
+- **Verified against real submitted CMR** (read-only recon, aggregate counts
+  only): all four schemas resolve every column with 0 "missing required column"
+  errors. Confirmed two real anomalies the schemas now catch automatically via
+  the `target_pop` range floor: Sudan's most recent submission had a target of 0
+  for all 10 districts, and Uganda's had a target of 0 for 45 of 52 districts.
+- **Known but not auto-corrected:** the historical district lists carry
+  near-duplicate entries ("Moyo" / "MOYO" in Uganda; "Aweil West" / "Awiel West"
+  in South Sudan) and non-geographic values ("Passive", "Refugees" in Uganda;
+  "Maban Refugees" in South Sudan). All are left in `allowed_values` rather than
+  merged, since it has not been confirmed which are real duplicates versus
+  distinct reporting categories.
+- **Note:** a schema's `consistency:` block is not run automatically by
+  `run_dq_checks()`; it requires an explicit
+  `run_dq_checks(data, schema) |> add_anomaly_consistency(schema)` chain. The
+  schemas here rely on automatic `range` checks instead, which cover the cases
+  that matter for a first pass (a present-but-invalid target, an out-of-range
+  treated count, coverage outside 0-150%).
+
 # erifunctions 0.9.4
 
 ## Add: `atlantis` data-quality schema for the training sandbox

@@ -1,0 +1,112 @@
+country: uga
+disease: sch
+data_source: programmatic
+data_type: treatment
+version: "1.0"
+description: "Uganda schistosomiasis MDA coverage, SCH Treatment sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-08 against the REAL CMR field codes (eri_ingest_cmr() output,
+# #schtrt_* prefix, one row per district per reporting year). Same structure as
+# uga_oncho_programmatic_treatment.yaml; see that file's header note for the
+# recon and known district-list data issues.
+#
+# SCH is currently reported by a small set of districts (7 seen historically).
+# This allowed_values list will need extending if new districts start reporting.
+
+temporal:
+  year_col: year
+  period_col: treatment_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#schtrt_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#schtrt_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#schtrt_adm2"]
+    allowed_values: [Adjumani, Amuru, Kitgum, Lamwo, Moyo, Passive, Refugees]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#schtrt_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#schtrt_disease"]
+
+  population:
+    required: false
+    type: numeric
+    aliases: [Population, "#schtrt_pop"]
+    range: [0, 5000000]
+
+  treatment_round:
+    required: false
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round, "#schtrt_trtrd"]
+    range: [0, 10]
+
+  target_pop:
+    required: false
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop, "#schtrt_trttarget"]
+    range: [1, 2000000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#schtrt_villagetarget"]
+    range: [0, 5000]
+
+  male_treated:
+    required: false
+    type: numeric
+    aliases: ["#schtrt_male_tot"]
+    range: [0, 2000000]
+
+  female_treated:
+    required: false
+    type: numeric
+    aliases: ["#schtrt_fem_tot"]
+    range: [0, 2000000]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, "#schtrt_tot"]
+    range: [0, 2000000]
+
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases: [CoveragePct, coverage, "#schtrt_coverage"]
+    range: [0, 150]
+
+# NOTE: consistency rules require explicit chaining, see uga_oncho's header note.
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (over 100% raw coverage)"
+  treated_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"

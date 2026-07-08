@@ -432,3 +432,62 @@ test_that("load_dq_schema resolves the ADR-0012 identity and legacy aliases", {
   expect_equal(load_dq_schema("haiti", "malaria", azcontainer = NULL)$data_type, "aggregate")
   expect_equal(load_dq_schema("ht", "malaria_case", azcontainer = NULL)$data_type, "case")
 })
+
+#### Tests for the real-field-code CMR treatment schemas (uga/ssd/sdn) ####
+
+test_that("uga_oncho_programmatic_treatment schema resolves the real #rbtrt_ field codes", {
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("district" %in% names(schema$columns))
+  expect_true("#rbtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("#rbtrt_tot" %in% schema$columns$treated$aliases)
+  # rewritten schema: only district/year/treated required, NOT the old
+  # community-level fields (round/sub_county/community), which the real CMR
+  # does not carry at this grain
+  expect_true(schema$columns$district$required)
+  expect_true(schema$columns$treated$required)
+  expect_false(isTRUE(schema$columns$sub_county$required))
+})
+
+test_that("uga_oncho schema flags a present-but-zero target_pop, not a missing one", {
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026", "2026"),
+    `#rbtrt_adm2` = c("Arua", "Gulu", "Jinja"),
+    `#rbtrt_tot`  = c("100", "200", "300"),
+    `#rbtrt_trttarget` = c("0", NA_character_, "500")   # zero flagged; NA not required
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_oncho schema flags a district not in the real allowed_values list", {
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = "2026", `#rbtrt_adm2` = "Not A Real District", `#rbtrt_tot` = "50"
+  )
+  res <- run_dq_checks(df, schema)
+  expect_true(any(res$flags$column == "district"))
+})
+
+test_that("uga_sch_programmatic_treatment schema loads and resolves #schtrt_ codes", {
+  schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#schtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Moyo" %in% schema$columns$district$allowed_values)
+})
+
+test_that("ssd_oncho_programmatic_treatment schema loads with the real district list", {
+  schema <- load_dq_schema("ssd", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("Juba" %in% schema$columns$district$allowed_values)
+  expect_true("#rbtrt_adm2" %in% schema$columns$district$aliases)
+})
+
+test_that("sdn_oncho_programmatic_treatment schema loads and flags a zero target", {
+  schema <- load_dq_schema("sdn", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = "2026", `#rbtrt_adm2` = "Barbar",
+    `#rbtrt_tot` = "10", `#rbtrt_trttarget` = "0"
+  )
+  res <- run_dq_checks(df, schema)
+  expect_true(any(res$flags$column == "target_pop"))
+})
