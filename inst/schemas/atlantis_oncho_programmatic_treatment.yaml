@@ -1,0 +1,76 @@
+country: atlantis
+disease: oncho
+data_source: programmatic
+data_type: treatment
+version: "1.0"
+description: "Atlantis synthetic training sandbox: river blindness (onchocerciasis) MDA treatment coverage. Not a real reporting country; used to teach and test the data-quality checks."
+language: en
+time_grain: annual
+
+# Aliases map the CMR field codes (#rbtrt_*) onto the canonical DQ columns, so
+# run_dq_checks() works directly on data parsed by eri_ingest_cmr().
+
+temporal:
+  year_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rbtrt_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rbtrt_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rbtrt_adm2"]
+    allowed_values: [Kampala, Mbarara, Soroti, Gulu, Lira, Jinja, Mbale, Arua, Masaka, Hoima, "Fort Portal", Moroto]
+    corrections:
+      kampala: Kampala
+      mbarara: Mbarara
+      soroti: Soroti
+      gulu: Gulu
+      lira: Lira
+      jinja: Jinja
+      mbale: Mbale
+      arua: Arua
+      masaka: Masaka
+      hoima: Hoima
+      moroto: Moroto
+
+  target_pop:
+    required: true
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop, target, "#rbtrt_target"]
+    range: [0, 10000000]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, ivermectin_treated, "#rbtrt_treated"]
+    range: [0, 10000000]
+
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (coverage over 100%)"
+  treated_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "negative treated count"
+  target_positive:
+    lhs: target_pop
+    op: ">"
+    rhs_value: 0
+    message: "target_pop must be positive"

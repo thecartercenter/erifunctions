@@ -1,3 +1,15 @@
+# erifunctions 0.9.4
+
+## Add: `atlantis` data-quality schema for the training sandbox
+
+- **New DQ schema `inst/schemas/atlantis_oncho_programmatic_treatment.yaml`.** Lets
+  `load_dq_schema("atlantis", "oncho", "programmatic", "treatment")` and
+  `run_dq_checks()` run on the synthetic CMR training data. The schema maps the CMR
+  field codes (`#rbtrt_*`) to canonical columns via aliases, corrects district
+  casing, flags an unknown district (allowed-values) and an out-of-range treated
+  count, so training can demonstrate the correct-and-flag behaviour without a real
+  country schema. Not a real reporting country.
+
 # erifunctions 0.9.3
 
 ## Improve: richer bundled CMR example data
