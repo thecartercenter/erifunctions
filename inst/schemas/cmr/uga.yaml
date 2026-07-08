@@ -9,6 +9,15 @@ template: english_cmr
 # sheet; Training sheets -> combined `rblf`). Sheets without routing keys
 # (reference tabs with no field codes) are skipped; ToT routes with the trainings.
 # `required_fields` lists the stable (non-monthly) identifier columns.
+#
+# Uganda's 2026 template has NO separate "CDD Training", "CS Training", or
+# "STH Treatment" sheets, on purpose, not a gap in this routing list. Per the
+# real pipeline's 2026 template notes (health-rb-country-expansion,
+# config/versions/2026.yaml): CDD is now a downstream aggregate (VHT Training +
+# Local Leaders Training, both routed below), CS Training was dropped for 2026,
+# and STH treatment is not part of Uganda's disease program (only Nigeria
+# reports STH). Sudan/South Sudan's templates still have CDD/CS as raw sheets;
+# don't assume Uganda's structure matches theirs.
 
 sheets:
   "RB Treatment":
