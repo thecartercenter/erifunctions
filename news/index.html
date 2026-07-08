@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,6 +71,14 @@
       <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.4" id="erifunctions-094">erifunctions 0.9.4<a class="anchor" aria-label="anchor" href="#erifunctions-094"></a></h2>
+<div class="section level3">
+<h3 id="add-atlantis-data-quality-schema-for-the-training-sandbox-0-9-4">Add: <code>atlantis</code> data-quality schema for the training sandbox<a class="anchor" aria-label="anchor" href="#add-atlantis-data-quality-schema-for-the-training-sandbox-0-9-4"></a></h3>
+<ul><li>
+<strong>New DQ schema <code>inst/schemas/atlantis_oncho_programmatic_treatment.yaml</code>.</strong> Lets <code>load_dq_schema("atlantis", "oncho", "programmatic", "treatment")</code> and <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> run on the synthetic CMR training data. The schema maps the CMR field codes (<code>#rbtrt_*</code>) to canonical columns via aliases, corrects district casing, flags an unknown district (allowed-values) and an out-of-range treated count, so training can demonstrate the correct-and-flag behaviour without a real country schema. Not a real reporting country.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.3" id="erifunctions-093">erifunctions 0.9.3<a class="anchor" aria-label="anchor" href="#erifunctions-093"></a></h2>
 <div class="section level3">
