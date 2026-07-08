@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,6 +71,22 @@
       <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.5" id="erifunctions-095">erifunctions 0.9.5<a class="anchor" aria-label="anchor" href="#erifunctions-095"></a></h2>
+<div class="section level3">
+<h3 id="fix--add-data-quality-schemas-rebuilt-against-the-real-cmr-field-codes-0-9-5">Fix / add: data-quality schemas rebuilt against the real CMR field codes<a class="anchor" aria-label="anchor" href="#fix--add-data-quality-schemas-rebuilt-against-the-real-cmr-field-codes-0-9-5"></a></h3>
+<ul><li>
+<strong><code>uga_oncho_programmatic_treatment.yaml</code> rewritten.</strong> It previously targeted a community-level format (<code>round</code>, <code>sub_county</code>, <code>community</code> all required) that the real monthly CMR does not have. Against a real Uganda submission it returned 7 “required column missing” flags and nothing else, because none of its aliases resolved. It now maps the real <code>#rbtrt_*</code> field codes (<code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> output) to canonical columns, with <code>district</code>, <code>year</code>, and <code>treated</code> required and the rest range-checked.</li>
+<li>
+<strong>New: <code>uga_sch_programmatic_treatment.yaml</code>, <code>ssd_oncho_programmatic_treatment.yaml</code>, <code>sdn_oncho_programmatic_treatment.yaml</code>.</strong> Same real-field-code structure. District <code>allowed_values</code> are the real historical district lists for each country (public administrative units).</li>
+<li>
+<strong>Verified against real submitted CMR</strong> (read-only recon, aggregate counts only): all four schemas resolve every column with 0 “missing required column” errors. Confirmed two real anomalies the schemas now catch automatically via the <code>target_pop</code> range floor: Sudan’s most recent submission had a target of 0 for all 10 districts, and Uganda’s had a target of 0 for 45 of 52 districts.</li>
+<li>
+<strong>Known but not auto-corrected:</strong> the historical district lists carry near-duplicate entries (“Moyo” / “MOYO” in Uganda; “Aweil West” / “Awiel West” in South Sudan) and non-geographic values (“Passive”, “Refugees” in Uganda; “Maban Refugees” in South Sudan). All are left in <code>allowed_values</code> rather than merged, since it has not been confirmed which are real duplicates versus distinct reporting categories.</li>
+<li>
+<strong>Note:</strong> a schema’s <code>consistency:</code> block is not run automatically by <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>; it requires an explicit <code>run_dq_checks(data, schema) |&gt; add_anomaly_consistency(schema)</code> chain. The schemas here rely on automatic <code>range</code> checks instead, which cover the cases that matter for a first pass (a present-but-invalid target, an out-of-range treated count, coverage outside 0-150%).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.4" id="erifunctions-094">erifunctions 0.9.4<a class="anchor" aria-label="anchor" href="#erifunctions-094"></a></h2>
 <div class="section level3">
