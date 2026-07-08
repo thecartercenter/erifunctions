@@ -161,6 +161,27 @@ test_that("load_cmr_schema Ethiopia has the RB+LF entomology/survey sheets (real
   expect_false("SCH Treatment" %in% sheet_names)
 })
 
+#### Tests for the atlantis training sandbox schema (demo) ####
+
+test_that("load_cmr_schema atlantis is a synthetic sandbox mirroring uga routing", {
+  schema <- load_cmr_schema("atlantis")
+  expect_equal(schema$country_code, "atlantis")
+  # Routes the two treatment sheets to the same diseases as uga, so the bundled
+  # synthetic workbook can drive the whole pipeline without a real namespace.
+  expect_equal(schema$sheets[["RB Treatment"]]$disease, "oncho")
+  expect_equal(schema$sheets[["SCH Treatment"]]$disease, "sch")
+  expect_equal(schema$sheets[["RB Treatment"]]$field_code_prefix, "#rbtrt_")
+})
+
+test_that("eri_split_cmr dry_run routes the bundled example under atlantis/", {
+  ex <- system.file("extdata", "cmr-example.xlsx", package = "erifunctions")
+  skip_if(!nzchar(ex) || !file.exists(ex), "bundled cmr-example.xlsx not available")
+  plan <- eri_split_cmr(ex, country = "atlantis", dry_run = TRUE)
+  expect_s3_class(plan, "tbl_df")
+  expect_true(all(startsWith(plan$dest, "atlantis/")))
+  expect_setequal(plan$disease, c("oncho", "sch"))
+})
+
 #### Tests for French CMR schemas (issue #29) ####
 
 test_that("load_cmr_schema tcd has correct metadata", {

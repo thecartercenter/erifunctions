@@ -1,3 +1,18 @@
+# erifunctions 0.9.2
+
+## Add: `atlantis` synthetic training sandbox for the CMR pipeline
+
+- **New demo CMR schema `inst/schemas/cmr/atlantis.yaml`.** `atlantis` is a
+  fictional country whose CMR schema mirrors `uga.yaml`'s sheet routing, so the
+  bundled synthetic `inst/extdata/cmr-example.xlsx` drives the full
+  `eri_split_cmr()` → `eri_approve()` → `eri_read()`/`eri_catalog_query()` flow
+  **without writing into any real country's namespace**. This closes the gap that
+  the CMR path — unlike the general pipeline, whose `eri_approve()` is not
+  country-locked — could only be exercised end-to-end against a real reporting
+  country, because `load_cmr_schema()` requires a per-country schema file. Use it
+  for training and for testing the CMR pipeline; it is not a real reporting
+  country.
+
 # erifunctions 0.9.1
 
 ## Fix: metadata writes on ADLS Gen2, and ODK auto-connect
