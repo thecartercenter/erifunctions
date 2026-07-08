@@ -7,7 +7,10 @@
 load_cmr_schema(country)
 }
 \arguments{
-\item{country}{\code{str} Three-letter country code (e.g. \code{"uga"}, \code{"eth"}).}
+\item{country}{\code{str} Country code, usually the three-letter reporting code
+(e.g. \code{"uga"}, \code{"eth"}). A training sandbox schema such as \code{"atlantis"} —
+a fictional country for exercising the pipeline without touching real data
+— is also accepted.}
 }
 \value{
 A named list with keys \code{country}, \code{country_code}, \code{language},

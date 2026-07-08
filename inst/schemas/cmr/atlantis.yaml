@@ -1,0 +1,219 @@
+country: atlantis
+country_code: atlantis
+language: en
+template: english_cmr
+
+# SYNTHETIC TRAINING SANDBOX. `atlantis` is a fictional country used for teaching
+# and testing the CMR pipeline end-to-end WITHOUT touching a real country's
+# namespace. Sheet routing mirrors uga.yaml so the bundled synthetic
+# inst/extdata/cmr-example.xlsx (sheets "RB Treatment"/"SCH Treatment", field
+# codes #rbtrt_/#schtrt_) routes identically. Not a real reporting country.
+#
+# This is a DELIBERATE full copy of the uga template (all sheets) so the demo
+# faithfully resembles a real CMR and reproduces the "Skipped N sheets" routing
+# message. Only "RB Treatment"/"SCH Treatment" are exercised by the bundled
+# workbook; if uga's routing changes, re-copy this file from uga.yaml.
+#
+# Per-sheet `disease`/`data_type` route eri_split_cmr()
+# to {country}/{disease}/programmatic/{data_type}/staged/ (disease from the
+# sheet; Training sheets -> combined `rblf`). Sheets without routing keys
+# (reference tabs with no field codes) are skipped; ToT routes with the trainings.
+# `required_fields` lists the stable (non-monthly) identifier columns.
+
+sheets:
+  "RB Treatment":
+    field_code_prefix: "#rbtrt_"
+    disease: oncho
+    data_type: treatment
+    required_fields:
+      - "#rbtrt_year"
+      - "#rbtrt_adm0"
+      - "#rbtrt_adm0_id"
+      - "#rbtrt_adm1"
+      - "#rbtrt_adm1_id"
+      - "#rbtrt_adm2"
+      - "#rbtrt_adm2_id"
+      - "#rbtrt_adm3"
+      - "#rbtrt_disease"
+  "SCH Treatment":
+    field_code_prefix: "#schtrt_"
+    disease: sch
+    data_type: treatment
+    required_fields:
+      - "#schtrt_year"
+      - "#schtrt_adm0"
+      - "#schtrt_adm0_id"
+      - "#schtrt_adm1"
+      - "#schtrt_adm1_id"
+      - "#schtrt_adm2"
+      - "#schtrt_adm2_id"
+      - "#schtrt_adm3"
+      - "#schtrt_disease"
+  "LF MMDP":
+    field_code_prefix: "#lfdmdi_"
+    disease: lf
+    data_type: mmdp
+    required_fields:
+      - "#lfdmdi_year"
+      - "#lfdmdi_adm0"
+      - "#lfdmdi_adm0_id"
+      - "#lfdmdi_adm1"
+      - "#lfdmdi_adm1_id"
+      - "#lfdmdi_adm2"
+      - "#lfdmdi_adm2_id"
+      - "#lfdmdi_adm3"
+      - "#lfdmdi_disease"
+  "VHT Training":
+    field_code_prefix: "#vhttrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#vhttrn_year"
+      - "#vhttrn_adm0"
+      - "#vhttrn_adm0_id"
+      - "#vhttrn_adm1"
+      - "#vhttrn_adm1_id"
+      - "#vhttrn_adm2"
+      - "#vhttrn_adm2_id"
+      - "#vhttrn_adm3"
+      - "#vhttrn_disease"
+  "Parish Supervisors Training":
+    field_code_prefix: "#pstrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#pstrn_year"
+      - "#pstrn_adm0"
+      - "#pstrn_adm0_id"
+      - "#pstrn_adm1"
+      - "#pstrn_adm1_id"
+      - "#pstrn_adm2"
+      - "#pstrn_adm2_id"
+      - "#pstrn_adm3"
+      - "#pstrn_disease"
+  "Local Leaders Training":
+    field_code_prefix: "#lltrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#lltrn_year"
+      - "#lltrn_adm0"
+      - "#lltrn_adm0_id"
+      - "#lltrn_adm1"
+      - "#lltrn_adm1_id"
+      - "#lltrn_adm2"
+      - "#lltrn_adm2_id"
+      - "#lltrn_adm3"
+      - "#lltrn_disease"
+  "Subcounty Supervisor Training":
+    field_code_prefix: "#sstrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#sstrn_year"
+      - "#sstrn_adm0"
+      - "#sstrn_adm0_id"
+      - "#sstrn_adm1"
+      - "#sstrn_adm1_id"
+      - "#sstrn_adm2"
+      - "#sstrn_adm2_id"
+      - "#sstrn_adm3"
+      - "#sstrn_disease"
+  "MMDP (surgery) Training":
+    field_code_prefix: "#dmditrnsx_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#dmditrnsx_year"
+      - "#dmditrnsx_adm0"
+      - "#dmditrnsx_adm0_id"
+      - "#dmditrnsx_adm1"
+      - "#dmditrnsx_adm1_id"
+      - "#dmditrnsx_adm2"
+      - "#dmditrnsx_adm2_id"
+      - "#dmditrnsx_adm3"
+      - "#dmditrnsx_disease"
+  "MMDP (patient) Training":
+    field_code_prefix: "#dmditrnpt_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#dmditrnpt_year"
+      - "#dmditrnpt_adm0"
+      - "#dmditrnpt_adm0_id"
+      - "#dmditrnpt_adm1"
+      - "#dmditrnpt_adm1_id"
+      - "#dmditrnpt_adm2"
+      - "#dmditrnpt_adm2_id"
+      - "#dmditrnpt_adm3"
+      - "#dmditrnpt_disease"
+  "Field Ento Training":
+    field_code_prefix: "#entotrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#entotrn_year"
+      - "#entotrn_adm0"
+      - "#entotrn_adm0_id"
+      - "#entotrn_adm1"
+      - "#entotrn_adm1_id"
+      - "#entotrn_adm2"
+      - "#entotrn_adm2_id"
+      - "#entotrn_adm3"
+      - "#entotrn_disease"
+  "Lab Training":
+    field_code_prefix: "#labtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#labtrn__year"
+      - "#labtrn__adm0"
+      - "#labtrn__adm0_id"
+      - "#labtrn__adm1"
+      - "#labtrn__adm1_id"
+      - "#labtrn__adm2"
+      - "#labtrn__adm2_id"
+      - "#labtrn__adm3"
+      - "#labtrn__disease"
+  "LF Surveys":
+    field_code_prefix: "#lfsurv_"
+    disease: lf
+    data_type: tas
+    required_fields:
+      - "#lfsurv_year"
+      - "#lfsurv_adm0"
+      - "#lfsurv_adm0_id"
+      - "#lfsurv_adm1"
+      - "#lfsurv_adm1_id"
+      - "#lfsurv_adm2"
+      - "#lfsurv_adm2_id"
+      - "#lfsurv_adm3"
+      - "#lfsurv_disease"
+  "RB Epi Surveys":
+    field_code_prefix: "#rb_epi_surv_"
+    disease: oncho
+    data_type: prevalence
+    required_fields:
+      - "#rb_epi_surv_year"
+      - "#rb_epi_surv_adm0"
+      - "#rb_epi_surv_adm0_id"
+      - "#rb_epi_surv_adm1"
+      - "#rb_epi_surv_adm1_id"
+      - "#rb_epi_surv_adm2"
+      - "#rb_epi_surv_adm2_id"
+      - "#rb_epi_surv_adm3"
+      - "#rb_epi_surv_disease"
+  "RB Ento Surveys":
+    field_code_prefix: "#rb_ento_surv_"
+    disease: oncho
+    data_type: entomology
+    required_fields:
+      - "#rb_ento_surv_year"
+      - "#rb_ento_surv_adm0"
+      - "#rb_ento_surv_adm0_id"
+      - "#rb_ento_surv_adm1"
+      - "#rb_ento_surv_adm1_id"
+      - "#rb_ento_surv_adm2"
+      - "#rb_ento_surv_adm2_id"
+      - "#rb_ento_surv_adm3"
+      - "#rb_ento_surv_disease"

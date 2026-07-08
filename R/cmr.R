@@ -1,5 +1,11 @@
 # CMR - Monthly Report ingestion and schema loading
 
+# Synthetic, non-real "countries" whose CMR schema exists only to exercise the
+# pipeline for training/testing (no real reporting country's namespace touched).
+# Listed separately in the schema-not-found hint so a DA who mistypes a real
+# code isn't offered a fictional one as if it were real.
+.eri_cmr_sandbox_countries <- "atlantis"
+
 #' Load a CMR country schema
 #'
 #' @description
@@ -9,7 +15,10 @@
 #' `inst/schemas/cmr/` and define which sheets are present for that country and
 #' the required field codes expected in each sheet.
 #'
-#' @param country `str` Three-letter country code (e.g. `"uga"`, `"eth"`).
+#' @param country `str` Country code, usually the three-letter reporting code
+#'   (e.g. `"uga"`, `"eth"`). A training sandbox schema such as `"atlantis"` —
+#'   a fictional country for exercising the pipeline without touching real data
+#'   — is also accepted.
 #'
 #' @returns A named list with keys `country`, `country_code`, `language`,
 #'   `template`, and `sheets`. Each element of `sheets` is itself a named list
@@ -25,12 +34,17 @@ load_cmr_schema <- function(country) {
   }
   path <- file.path(schema_dir, paste0(country, ".yaml"))
   if (!file.exists(path)) {
-    available <- tools::file_path_sans_ext(
+    all_schemas <- tools::file_path_sans_ext(
       list.files(schema_dir, pattern = "\\.yaml$")
     )
+    sandbox   <- intersect(all_schemas, .eri_cmr_sandbox_countries)
+    available <- setdiff(all_schemas, sandbox)
     cli::cli_abort(c(
       "No CMR schema found for country {.val {country}}.",
-      "i" = "Available: {.val {available}}"
+      "i" = "Available: {.val {available}}",
+      if (length(sandbox) > 0) {
+        c("i" = "Training sandbox (not a real country): {.val {sandbox}}")
+      }
     ))
   }
   yaml::read_yaml(path)
