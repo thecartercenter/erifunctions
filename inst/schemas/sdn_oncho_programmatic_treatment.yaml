@@ -1,0 +1,114 @@
+country: sdn
+disease: oncho
+data_source: programmatic
+data_type: treatment
+version: "1.0"
+description: "Sudan river blindness (onchocerciasis) MDA coverage, RB Treatment sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-08 against the REAL CMR field codes (eri_ingest_cmr() output,
+# #rbtrt_* prefix). Same structure as uga_oncho_programmatic_treatment.yaml.
+#
+# The most recent real submission scanned (period 202605) had #rbtrt_trttarget
+# = 0 for every row. The target_pop range floor below (>= 1) is set specifically
+# so this class of error is flagged automatically rather than silently passing.
+
+temporal:
+  year_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rbtrt_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rbtrt_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rbtrt_adm2"]
+    allowed_values: ["Abu Hamad", "Al Buhaira", "Al Qureisha", "Al Radom", Barbar,
+      Basundah, "Galabat Ash-Shargiah", Geisan, Merwoe, "Wad El Mahi"]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#rbtrt_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#rbtrt_disease"]
+
+  population:
+    required: false
+    type: numeric
+    aliases: [Population, "#rbtrt_pop"]
+    range: [0, 5000000]
+
+  treatment_round:
+    required: false
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round, "#rbtrt_trtrd"]
+    range: [0, 10]
+
+  target_pop:
+    required: false
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop, "#rbtrt_trttarget"]
+    # A present target of 0 is a real, confirmed anomaly in this country's data
+    # (the 202605 submission had target = 0 for every district); this floor
+    # catches it automatically.
+    range: [1, 2000000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_villagetarget"]
+    range: [0, 5000]
+
+  male_treated:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_male_tot"]
+    range: [0, 2000000]
+
+  female_treated:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_fem_tot"]
+    range: [0, 2000000]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, "#rbtrt_tot"]
+    range: [0, 2000000]
+
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases: [CoveragePct, coverage, "#rbtrt_coverage"]
+    range: [0, 150]
+
+# NOTE: consistency rules require explicit chaining, see uga_oncho's header note.
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (over 100% raw coverage)"
+  treated_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"

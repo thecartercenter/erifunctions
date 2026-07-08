@@ -2,14 +2,28 @@ country: uga
 disease: oncho
 data_source: programmatic
 data_type: treatment
-version: "1.0"
-description: "Uganda river blindness (onchocerciasis) MDA coverage -- APOC community-directed treatment (CDT)"
+version: "2.0"
+description: "Uganda river blindness (onchocerciasis) MDA coverage, RB Treatment sheet of the monthly CMR"
 language: en
 time_grain: annual
 
+# Rewritten 2026-07-08 against the REAL CMR field codes (eri_ingest_cmr() output,
+# #rbtrt_* prefix, one row per district per reporting year). The prior version of
+# this schema targeted a different, community-level format (round/sub_county/
+# community required) that the real CMR does not have; run_dq_checks() against a
+# real file returned 7 "required column missing" flags because none of its
+# aliases matched. See docs/adr or the erifunctions nice-to-haves memory for the
+# full recon.
+#
+# KNOWN DATA ISSUE, not auto-corrected: the historical district list carries both
+# "Moyo" and "MOYO", and "Passive" / "Refugees" appear as district values (likely
+# non-geographic reporting categories, not typos). All are left as allowed_values
+# rather than merged or dropped, since it is not yet confirmed which are distinct
+# real categories and which are entry duplicates. Flag to the maintainer before
+# assuming either.
+
 temporal:
   year_col: year
-  period_col: round
 
 preprocessing:
   - remove_smart_quotes
@@ -18,68 +32,98 @@ columns:
   year:
     required: true
     type: numeric
-    aliases: [Year, YEAR]
+    aliases: [Year, YEAR, "#rbtrt_year"]
     range: [1990, 2035]
 
-  round:
-    required: true
-    type: numeric
-    aliases: [Round, MDA_round, treatment_round]
-    range: [1, 4]
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rbtrt_adm1"]
 
   district:
     required: true
     type: character
-    aliases: [District, district_name, adm2]
+    aliases: [District, district_name, adm2, "#rbtrt_adm2"]
+    allowed_values: [Adjumani, Amuru, Arua, Bududa, Buhweju, Buliisa, Bushenyi, Gulu,
+      "Gulu City", Hoima, Ibanda, Jinja, Kabarole, Kagadi, Kamuli, Kanungu, Kasese,
+      Kayunga, Kikuube, Kisoro, Kitagwenda, Kitgum, KOBOKO, Kyenjojo, Lamwo, Lira,
+      MadI-Okollo, Manafwa, "Maracha/Teregago", Masindi, Mayuge, Mbale, "Mbale City",
+      Mitooma, Moyo, MOYO, Mukono, Namisindwa, Nebbi, Nwoya, Obongi, Omoro, Oyam,
+      Pader, Pakwach, Passive, Refugees, Rubanda, Rubirizi, Sironko, Terego, YUMBE, Zombo]
 
   sub_county:
     required: false
     type: character
-    aliases: [SubCounty, sub_county, parish]
+    aliases: [SubCounty, sub_county, adm3, "#rbtrt_adm3"]
 
-  community:
-    required: true
+  disease_reported:
+    required: false
     type: character
-    aliases: [Community, village, community_name]
+    aliases: ["#rbtrt_disease"]
+
+  population:
+    required: false
+    type: numeric
+    aliases: [Population, "#rbtrt_pop"]
+    range: [0, 5000000]
+
+  treatment_round:
+    required: false
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round, "#rbtrt_trtrd"]
+    range: [0, 10]
 
   target_pop:
-    required: true
+    required: false
     type: numeric
-    aliases: [TargetPop, target_population, eligible_pop]
+    aliases: [TargetPop, target_population, eligible_pop, "#rbtrt_trttarget"]
+    # A present target of 0 (or negative) is implausible for a reporting district
+    # and is what this range floor catches; a MISSING target is common (roughly
+    # half of historical rows) and is not flagged, since it is not required.
+    range: [1, 2000000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_villagetarget"]
+    range: [0, 5000]
+
+  male_treated:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_male_tot"]
+    range: [0, 2000000]
+
+  female_treated:
+    required: false
+    type: numeric
+    aliases: ["#rbtrt_fem_tot"]
+    range: [0, 2000000]
 
   treated:
     required: true
     type: numeric
-    aliases: [Treated, people_treated, ivermectin_treated]
+    aliases: [Treated, people_treated, ivermectin_treated, "#rbtrt_tot"]
+    range: [0, 2000000]
 
   coverage_pct:
-    required: true
+    required: false
     type: numeric
-    aliases: [CoveragePct, coverage, geographic_coverage]
+    aliases: [CoveragePct, coverage, geographic_coverage, "#rbtrt_coverage"]
     range: [0, 150]
 
-  albendazole_coadmin:
-    required: false
-    type: categorical
-    aliases: [AlbendazoleCoadmin, alb_coadmin, co_admin]
-    allowed_values: [Yes, No, yes, no]
-    translations:
-      yes: Yes
-      no: No
-
+# NOTE: consistency rules are NOT run automatically by run_dq_checks(). They must
+# be chained explicitly: run_dq_checks(data, schema) |> add_anomaly_consistency(schema).
+# The automatic range checks above (target_pop >= 1, treated >= 0, coverage_pct in
+# [0, 150]) already catch the cases that matter most for a first pass.
 consistency:
   implausible_overcoverage:
     lhs: treated
     op: "<="
     rhs: target_pop
-    message: "treated exceeds target_pop (>100% raw coverage)"
-  coverage_nonneg:
+    message: "treated exceeds target_pop (over 100% raw coverage)"
+  treated_nonneg:
     lhs: treated
     op: ">="
     rhs_value: 0
     message: "Negative treated count"
-  target_positive:
-    lhs: target_pop
-    op: ">"
-    rhs_value: 0
-    message: "target_pop must be positive"
