@@ -24,6 +24,7 @@ time_grain: annual
 
 temporal:
   year_col: year
+  period_col: treatment_round
 
 preprocessing:
   - remove_smart_quotes

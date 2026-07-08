@@ -280,6 +280,9 @@ test_that("eri_onboard_disease errors on unsupported data_type", {
 new_schemas <- list(
   c("uga",    "oncho",   "programmatic", "treatment"),
   c("uga",    "oncho",   "research",     "prevalence"),
+  c("uga",    "sch",     "programmatic", "treatment"),
+  c("ssd",    "oncho",   "programmatic", "treatment"),
+  c("sdn",    "oncho",   "programmatic", "treatment"),
   c("global", "schisto", "programmatic", "treatment"),
   c("global", "schisto", "research",     "prevalence"),
   c("global", "sth",     "programmatic", "treatment"),
