@@ -1,5 +1,18 @@
 # Changelog
 
+## erifunctions 0.9.3
+
+### Improve: richer bundled CMR example data
+
+- **`inst/extdata/cmr-example.xlsx` now carries a realistic spread of
+  treatment coverage** (per-district `treated` values give ~62–99%
+  coverage instead of a flat ~95%). The structure, sheets, field codes,
+  and row counts are unchanged — only the `#rbtrt_treated` /
+  `#schtrt_treated` values differ — so the bundled example now tells a
+  real “which district is behind target” story for figures in the CMR
+  guide and training materials. Purely demonstration data; no real
+  records.
+
 ## erifunctions 0.9.2
 
 ### Add: `atlantis` synthetic training sandbox for the CMR pipeline
