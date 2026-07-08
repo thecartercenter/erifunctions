@@ -1,6 +1,58 @@
 # Changelog
 
-## erifunctions (development version)
+## erifunctions 0.9.2
+
+### Add: `atlantis` synthetic training sandbox for the CMR pipeline
+
+- **New demo CMR schema `inst/schemas/cmr/atlantis.yaml`.** `atlantis`
+  is a fictional country whose CMR schema mirrors `uga.yaml`’s sheet
+  routing, so the bundled synthetic `inst/extdata/cmr-example.xlsx`
+  drives the full
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  →
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  →
+  [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)/[`eri_catalog_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_query.md)
+  flow **without writing into any real country’s namespace**. This
+  closes the gap that the CMR path — unlike the general pipeline, whose
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  is not country-locked — could only be exercised end-to-end against a
+  real reporting country, because
+  [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
+  requires a per-country schema file. Use it for training and for
+  testing the CMR pipeline; it is not a real reporting country.
+
+## erifunctions 0.9.1
+
+### Fix: metadata writes on ADLS Gen2, and ODK auto-connect
+
+- **Concurrency-safe metadata writes now work on the ADLS Gen2 (`dfs`)
+  endpoint.** The conditional write behind `.eri_yaml_update()`
+  (ADR-0002) issued a blob-API PUT (`x-ms-blob-type: BlockBlob` with
+  `If-Match`/`If-None-Match`) that the `dfs` endpoint — the package
+  default — rejects with
+  `HTTP 400 ("An HTTP header that's mandatory for this request is not specified")`,
+  writing nothing. Every metadata store was affected: the ODK registry,
+  the data catalog, the artifact registry, and
+  [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md).
+  The versioned read and conditional write now route through the same
+  account’s **blob** endpoint, which supports these operations natively
+  — including the `412` stale-ETag conflict that guards the
+  optimistic-concurrency retry loop. Parquet/file writes (which already
+  used the correct `storage_upload` path) are unchanged. This had
+  surfaced as
+  [`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)
+  erroring on its final `last_synced` update even though every Parquet
+  had already landed in `raw/`. See ADR-0016.
+- **The ODK functions auto-connect again.** With no `data_con` passed,
+  `.odk_data_con()` built its token from bare
+  [`Sys.getenv()`](https://rdrr.io/r/base/Sys.getenv.html) reads and
+  sent an empty `client_id` when those vars were unset, failing with
+  `AADSTS900144`. It now delegates to
+  [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
+  — the same zero-config connector the rest of the package uses — so
+  auto-connect inherits the interactive-auth defaults (mirrors
+  `.eri_research_con()` / `.eri_logs_con()`).
 
 ### Feature: `eri_simulate_check()` — confirm the cutover gate catches divergence
 

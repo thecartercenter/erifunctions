@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   adding-a-program: adding-a-program.html
@@ -26,7 +26,7 @@ articles:
   sharepoint-workflow: sharepoint-workflow.html
   spatial-workflow: spatial-workflow.html
   troubleshooting: troubleshooting.html
-last_built: 2026-07-02T14:59Z
+last_built: 2026-07-08T14:12Z
 urls:
   reference: https://thecartercenter.github.io/erifunctions/reference
   article: https://thecartercenter.github.io/erifunctions/articles

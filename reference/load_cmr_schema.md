@@ -16,7 +16,10 @@ load_cmr_schema(country)
 
 - country:
 
-  `str` Three-letter country code (e.g. `"uga"`, `"eth"`).
+  `str` Country code, usually the three-letter reporting code (e.g.
+  `"uga"`, `"eth"`). A training sandbox schema such as `"atlantis"` — a
+  fictional country for exercising the pipeline without touching real
+  data — is also accepted.
 
 ## Value
 
