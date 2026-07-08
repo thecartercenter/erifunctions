@@ -12,8 +12,7 @@ time_grain: annual
 # this schema targeted a different, community-level format (round/sub_county/
 # community required) that the real CMR does not have; run_dq_checks() against a
 # real file returned 7 "required column missing" flags because none of its
-# aliases matched. See docs/adr or the erifunctions nice-to-haves memory for the
-# full recon.
+# aliases matched. See PR #267 for the full recon against real submitted CMR.
 #
 # KNOWN DATA ISSUE, not auto-corrected: the historical district list carries both
 # "Moyo" and "MOYO", and "Passive" / "Refugees" appear as district values (likely
