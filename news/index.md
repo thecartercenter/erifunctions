@@ -1,5 +1,21 @@
 # Changelog
 
+## erifunctions 0.9.6
+
+### Docs: explain why Uganda’s CMR routing has no CDD/CS/STH sheets
+
+- **`inst/schemas/cmr/uga.yaml` gets a comment explaining a real-world
+  routing question a Data Analyst raised** (a DA expected to see “CDD
+  Training”, “CS Training”, and “STH Treatment” sheets for Uganda). The
+  routing was already correct; the confusion was structural, not a bug.
+  Per the real pipeline’s 2026 template notes: Uganda’s CDD count is now
+  a downstream aggregate (VHT Training + Local Leaders Training), CS
+  Training was dropped for 2026, and STH treatment is not part of
+  Uganda’s program (only Nigeria reports it). Sudan and South Sudan’s
+  templates still carry CDD/CS as their own sheets, so it is an easy
+  assumption to carry across countries. No routing logic changed;
+  comment-only.
+
 ## erifunctions 0.9.5
 
 ### Fix / add: data-quality schemas rebuilt against the real CMR field codes

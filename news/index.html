@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,6 +71,14 @@
       <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.6" id="erifunctions-096">erifunctions 0.9.6<a class="anchor" aria-label="anchor" href="#erifunctions-096"></a></h2>
+<div class="section level3">
+<h3 id="docs-explain-why-ugandas-cmr-routing-has-no-cddcssth-sheets-0-9-6">Docs: explain why Uganda’s CMR routing has no CDD/CS/STH sheets<a class="anchor" aria-label="anchor" href="#docs-explain-why-ugandas-cmr-routing-has-no-cddcssth-sheets-0-9-6"></a></h3>
+<ul><li>
+<strong><code>inst/schemas/cmr/uga.yaml</code> gets a comment explaining a real-world routing question a Data Analyst raised</strong> (a DA expected to see “CDD Training”, “CS Training”, and “STH Treatment” sheets for Uganda). The routing was already correct; the confusion was structural, not a bug. Per the real pipeline’s 2026 template notes: Uganda’s CDD count is now a downstream aggregate (VHT Training + Local Leaders Training), CS Training was dropped for 2026, and STH treatment is not part of Uganda’s program (only Nigeria reports it). Sudan and South Sudan’s templates still carry CDD/CS as their own sheets, so it is an easy assumption to carry across countries. No routing logic changed; comment-only.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.5" id="erifunctions-095">erifunctions 0.9.5<a class="anchor" aria-label="anchor" href="#erifunctions-095"></a></h2>
 <div class="section level3">
