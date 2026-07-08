@@ -9,6 +9,11 @@ template: english_cmr
 # inst/extdata/cmr-example.xlsx (sheets "RB Treatment"/"SCH Treatment", field
 # codes #rbtrt_/#schtrt_) routes identically. Not a real reporting country.
 #
+# This is a DELIBERATE full copy of the uga template (all sheets) so the demo
+# faithfully resembles a real CMR and reproduces the "Skipped N sheets" routing
+# message. Only "RB Treatment"/"SCH Treatment" are exercised by the bundled
+# workbook; if uga's routing changes, re-copy this file from uga.yaml.
+#
 # Per-sheet `disease`/`data_type` route eri_split_cmr()
 # to {country}/{disease}/programmatic/{data_type}/staged/ (disease from the
 # sheet; Training sheets -> combined `rblf`). Sheets without routing keys

@@ -173,6 +173,12 @@ test_that("load_cmr_schema atlantis is a synthetic sandbox mirroring uga routing
   expect_equal(schema$sheets[["RB Treatment"]]$field_code_prefix, "#rbtrt_")
 })
 
+test_that("load_cmr_schema lists the atlantis sandbox separately from real countries", {
+  # A DA who mistypes a real code should not be offered the fictional sandbox as
+  # if it were a real reporting country.
+  expect_error(load_cmr_schema("zzz"), "Training sandbox")
+})
+
 test_that("eri_split_cmr dry_run routes the bundled example under atlantis/", {
   ex <- system.file("extdata", "cmr-example.xlsx", package = "erifunctions")
   skip_if(!nzchar(ex) || !file.exists(ex), "bundled cmr-example.xlsx not available")
