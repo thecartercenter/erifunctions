@@ -9,7 +9,10 @@ eri_split_cmr(
   country,
   data_con = NULL,
   overwrite = FALSE,
-  dry_run = FALSE
+  dry_run = FALSE,
+  mirror_pipeline = NULL,
+  period = NULL,
+  projects_con = NULL
 )
 }
 \arguments{
@@ -26,6 +29,17 @@ existing staged file.}
 
 \item{dry_run}{\code{logical} If \code{TRUE}, returns the routing plan and writes
 nothing. Default \code{FALSE}.}
+
+\item{mirror_pipeline}{\code{str} or \code{NULL} Registered pipeline name (e.g.
+\code{"rb-expansion"}) whose legacy raw-drop location \code{path} should also be
+uploaded to. Default \code{NULL} (no mirror; sandbox-safe).}
+
+\item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}) for the
+mirror upload. \code{NULL} (default) parses a leading \code{YYYYMM_} from
+\code{basename(path)}; required if that can't be parsed.}
+
+\item{projects_con}{Azure container for the \code{projects} blob; used only when
+\code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}
 }
 \value{
 Invisibly, a tibble with one row per routed sheet: \code{sheet}, \code{disease},
@@ -47,6 +61,24 @@ duplicated across diseases.
 Data is staged \strong{parsed as-is} (machine-readable \verb{#field-code} columns; no
 reshape, no automated DQ — CMR review is manual). \code{\link[=eri_approve]{eri_approve()}} then promotes
 each \code{{disease}/programmatic/{data_type}} to \verb{processed/}.
+
+If \code{country} has no bundled CMR schema, this does not just abort: it also
+writes a starter schema template for that country to the working directory
+(the same template \code{\link[=eri_onboard_cmr]{eri_onboard_cmr()}} produces) so the failure leaves you
+with something to edit and submit, not just a dead end.
+\subsection{Mirroring to the legacy contractor pipeline}{
+
+During the Phase-3 parallel run, some countries' CMR still also feeds a
+legacy contractor process that reads the raw workbook from a fixed Azure
+location (\verb{\{project_folder\}/\{raw_dir\}/\{country\}/\{period\}/}, e.g.
+\verb{health-rb-country-expansion-dev/raw/filled_templates/ssd/202605/}). Passing
+\code{mirror_pipeline} uploads \code{path} there too, so a DA does \strong{one step}
+(\code{eri_split_cmr(..., mirror_pipeline = "rb-expansion")}) instead of also
+separately dropping the file for the legacy pipeline to pick up. \code{period}
+defaults to a \code{YYYYMM} prefix parsed from \code{basename(path)} (the real
+convention observed in submitted filenames); pass it explicitly if the
+filename doesn't start that way.
+}
 }
 \examples{
 \dontrun{
@@ -55,5 +87,7 @@ eri_split_cmr("uga_2024_06.xlsx", "uga", dry_run = TRUE)
 # Stage for real, then approve each disease/measure
 eri_split_cmr("uga_2024_06.xlsx", "uga")
 eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
+# One step: also mirror the raw file to the legacy contractor pipeline
+eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
 }
 }

@@ -122,6 +122,26 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   expect_true(all(startsWith(names(out), "#")))
 })
 
+test_that("eri_ingest_cmr survives a real-world duplicate field code in row 5 without dropping data", {
+  # Real defect seen in the RB-expansion CMR template's "RB Ento Surveys" sheet:
+  # a field code was typed twice (a copy-paste slip across monthly blocks), which
+  # otherwise crashes tibble::as_tibble() with "must not be duplicated" and aborts
+  # ingestion of an otherwise-valid sheet.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
+    data_rows   = list(c("2026", "ZoneA", "ZoneA-dup"), c("2026", "ZoneB", "ZoneB-dup"))
+  )
+  expect_warning(
+    out <- eri_ingest_cmr(tmp, sheet = "RB Treatment"),
+    "duplicate field code"
+  )
+  expect_equal(nrow(out), 2L)
+  expect_true(all(c("#rb_ento_surv_otz", "#rb_ento_surv_otz__1") %in% names(out)))
+  expect_equal(out[["#rb_ento_surv_otz"]], c("ZoneA", "ZoneB"))
+  expect_equal(out[["#rb_ento_surv_otz__1"]], c("ZoneA-dup", "ZoneB-dup"))
+})
+
 #### Tests for load_cmr_schema ####
 
 test_that("load_cmr_schema returns a list with expected top-level keys", {
@@ -298,6 +318,27 @@ test_that("load_cmr_schema required_fields all start with #", {
 test_that("load_cmr_schema errors informatively for unknown country", {
   expect_error(load_cmr_schema("xyz"), "No CMR schema found")
   expect_error(load_cmr_schema("xyz"), "Available")
+})
+
+test_that("eri_split_cmr scaffolds a starter schema template for an unknown country", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp)
+  wd <- withr::local_tempdir()
+  withr::local_dir(wd)
+
+  expect_error(
+    eri_split_cmr(tmp, "xyz", dry_run = TRUE),
+    "starter template"
+  )
+  expect_true(file.exists(file.path(wd, "xyz_cmr_schema.yaml")))
+
+  # A second failure does not clobber an already-scaffolded (possibly edited) file.
+  writeLines("edited-by-analyst", file.path(wd, "xyz_cmr_schema.yaml"))
+  expect_error(eri_split_cmr(tmp, "xyz", dry_run = TRUE), "starter template")
+  expect_identical(
+    readLines(file.path(wd, "xyz_cmr_schema.yaml")),
+    "edited-by-analyst"
+  )
 })
 
 test_that("eri_ingest_cmr parses French template identically (same field codes)", {
@@ -486,4 +527,94 @@ test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", 
   expect_true(any(grepl("^uga/oncho/programmatic/treatment/staged/", written)))
   expect_true(any(grepl("^uga/sch/programmatic/treatment/staged/", written)))
   expect_true(any(grepl("^uga/lf/programmatic/mmdp/staged/", written)))
+})
+
+test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-drop location", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  mirrored <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { mirrored <<- c(mirrored, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202406")
+  )
+
+  legacy_dest <- mirrored[grepl("raw/filled_templates", mirrored)]
+  expect_length(legacy_dest, 1L)
+  expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
+  expect_match(legacy_dest, basename(tmp))
+})
+
+test_that("eri_split_cmr mirror_pipeline auto-detects the period from a YYYYMM_ filename", {
+  tmp <- withr::local_tempfile(pattern = "202605_report", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  mirrored <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { mirrored <<- c(mirrored, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion")
+  )
+
+  legacy_dest <- mirrored[grepl("raw/filled_templates", mirrored)]
+  expect_match(legacy_dest, "/202605/")
+})
+
+test_that("eri_split_cmr mirror_pipeline dry_run previews without writing", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  expect_message(
+    suppressWarnings(
+      eri_split_cmr(tmp, "uga", dry_run = TRUE, mirror_pipeline = "rb-expansion", period = "202406")
+    ),
+    "Would also mirror raw file"
+  )
+})
+
+test_that("eri_split_cmr mirror_pipeline errors clearly for an unregistered pipeline/country/period", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  expect_error(
+    eri_split_cmr(tmp, "uga", dry_run = TRUE, mirror_pipeline = "not-a-pipeline"),
+    "Unknown pipeline"
+  )
+  expect_error(
+    eri_split_cmr(tmp, "zzz", dry_run = TRUE, mirror_pipeline = "rb-expansion", period = "202406"),
+    "not registered for pipeline"
+  )
+  expect_error(
+    eri_split_cmr(tmp, "dr", dry_run = TRUE, mirror_pipeline = "hsp-mal"),
+    "no legacy raw-drop location"
+  )
+  expect_error(
+    eri_split_cmr(tmp, "uga", dry_run = TRUE, mirror_pipeline = "rb-expansion"),
+    "Could not parse"
+  )
 })

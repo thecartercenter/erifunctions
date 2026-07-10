@@ -1,0 +1,60 @@
+country: sdn
+disease: oncho
+data_source: programmatic
+data_type: prevalence
+version: "1.0"
+description: "Sudan onchocerciasis epidemiological surveys, RB Epi Surveys sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (#rb_epi_surv_* prefix), via
+# read-only recon against the real May 2026 (202605) submission. See PR #269.
+#
+# Same shape issue as sdn_lf_programmatic_tas.yaml: dbs/skin_snips/type/notes are
+# monthly-only fields with no annual roll-up. Scoped to the identifier spine
+# only; see that file's header note for the fuller rationale.
+#
+# Sudan's epi survey district roster (10 districts) is a much smaller sentinel
+# set than South Sudan's (35 districts) in the sampled period -- real program
+# scope (fewer active survey sites reported this month), not a bug.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rb_epi_surv_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rb_epi_surv_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rb_epi_surv_adm2"]
+    allowed_values: ["Abu Hamad", "Al Buhaira", "Al Qureisha", "Al Radom", Barbar,
+      Basundah, "Galabat Ash-Shargiah", Geisan, Merwoe, "Wad El Mahi"]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#rb_epi_surv_adm3"]
+
+  otz:
+    required: false
+    type: character
+    aliases: ["#rb_epi_surv_otz"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#rb_epi_surv_disease"]

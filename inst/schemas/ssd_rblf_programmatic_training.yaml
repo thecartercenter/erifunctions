@@ -1,0 +1,110 @@
+country: ssd
+disease: rblf
+data_source: programmatic
+data_type: training
+version: "1.0"
+description: "South Sudan RB+LF programme trainings (CDD, CS, MMDP surgery/patient, Field Ento, Health Workers), combined training sheets of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes, via read-only recon against
+# the real May 2026 (202605) submission. See PR #269.
+#
+# ONE schema covers all 6 training sheets (CDD Training #cddtrn_, CS Training
+# #cstrn_, MMDP surgery Training #dmditrnsx_, MMDP patient Training #dmditrnpt_,
+# Field Ento Training #entotrn_, Health Workers Training #hwtrn_) because
+# eri_split_cmr() routes all of them to the same disease/data_type combo
+# (rblf/training, per ADR-0012's combined training code) -- load_dq_schema() can
+# only resolve one file per (country, disease, data_source, data_type). Each
+# ingested sheet only ever has ONE of the six prefixes present, so aliasing all
+# six under one canonical column set works: run_dq_checks() resolves whichever
+# alias matches the data actually present (see .dq_resolve_aliases()).
+#
+# As with the other survey/training measures, the annual roll-up columns
+# (goal/tot_male/tot_fem/tot/achieved) are validated; the 12 monthly
+# refresh/new/tot blocks are left unvalidated (same scoping as the treatment
+# schemas' precedent).
+#
+# UNVERIFIED CEILING: goal/tot ranges below are set from the observed spread
+# across all 6 training types this period (goal up to ~2,832 for CDD Training);
+# not confirmed against a full year of data.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#cddtrn_year", "#cstrn_year", "#dmditrnsx_year",
+      "#dmditrnpt_year", "#entotrn_year", "#hwtrn_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#cddtrn_adm1", "#cstrn_adm1", "#dmditrnsx_adm1",
+      "#dmditrnpt_adm1", "#entotrn_adm1", "#hwtrn_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#cddtrn_adm2", "#cstrn_adm2",
+      "#dmditrnsx_adm2", "#dmditrnpt_adm2", "#entotrn_adm2", "#hwtrn_adm2"]
+    allowed_values: [Akobo, Aweil Center, Aweil South, Aweil West, Cueibet, Ezo,
+      Gogrial East, Gogrial West, Ibba, Juba, Jur River, Maban, "Maban Refugees",
+      Magwi, Maridi, Mundri East, Mundri West, Mvolo, Nagero, Nzara, Pibor, Pochalla,
+      Raja, Rumbek East, Rumbek North, Tambura, Terekeka, Tonj South, Torit,
+      Twic Mayerdit, Wau, Wulu, Yambio, Yirol East, Yirol West]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#cddtrn_adm3", "#cstrn_adm3",
+      "#dmditrnsx_adm3", "#dmditrnpt_adm3", "#entotrn_adm3", "#hwtrn_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#cddtrn_disease", "#cstrn_disease", "#dmditrnsx_disease",
+      "#dmditrnpt_disease", "#entotrn_disease", "#hwtrn_disease"]
+
+  goal:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_goal", "#cstrn_goal", "#dmditrnsx_goal", "#dmditrnpt_goal",
+      "#entotrn_goal", "#hwtrn_goal"]
+    range: [0, 5000]
+
+  male_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_male", "#cstrn_tot_male", "#dmditrnsx_tot_male",
+      "#dmditrnpt_tot_male", "#entotrn_tot_male", "#hwtrn_tot_male"]
+    range: [0, 5000]
+
+  female_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_fem", "#cstrn_tot_fem", "#dmditrnsx_tot_fem",
+      "#dmditrnpt_tot_fem", "#entotrn_tot_fem", "#hwtrn_tot_fem"]
+    range: [0, 5000]
+
+  tot:
+    required: true
+    type: numeric
+    aliases: [Trained, "#cddtrn_tot", "#cstrn_tot", "#dmditrnsx_tot",
+      "#dmditrnpt_tot", "#entotrn_tot", "#hwtrn_tot"]
+    range: [0, 5000]
+
+  achieved_pct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_achieved", "#cstrn_achieved", "#dmditrnsx_achieved",
+      "#dmditrnpt_achieved", "#entotrn_achieved", "#hwtrn_achieved"]
+    # Proportion scale (observed up to ~1.03), not percentage.
+    range: [0, 2]
