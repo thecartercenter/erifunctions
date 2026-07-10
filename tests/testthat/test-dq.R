@@ -803,3 +803,172 @@ test_that("load_dq_schema legacy two-argument form never resolves a local overri
   expect_equal(schema$schema_source, "bundled")
   expect_false(identical(schema$columns$year$range, list(1, 2)))
 })
+
+#### Tests for .eri_dq_schema_diff() and eri_dq_schema_submit() ####
+
+test_that(".eri_dq_schema_diff reports an added alias as a set diff, not a value change", {
+  base <- list(columns = list(district = list(aliases = list("District", "adm2"))))
+  edit <- list(columns = list(district = list(aliases = list("District", "adm2", "Province_Residence"))))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_true(any(grepl('columns.district.aliases: added "Province_Residence"', out, fixed = TRUE)))
+  expect_false(any(grepl("removed", out)))
+})
+
+test_that(".eri_dq_schema_diff reports an added allowed_value", {
+  base <- list(columns = list(district = list(allowed_values = list("Kampala", "Mbarara"))))
+  edit <- list(columns = list(district = list(allowed_values = list("Kampala", "Mbarara", "Barbar"))))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_true(any(grepl('columns.district.allowed_values: added "Barbar"', out, fixed = TRUE)))
+})
+
+test_that(".eri_dq_schema_diff reports a range widening as before -> after, without scientific notation", {
+  base <- list(columns = list(target_pop = list(range = list(0, 10000000))))
+  edit <- list(columns = list(target_pop = list(range = list(0, 20000000))))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_true(any(grepl("columns.target_pop.range: [0, 10000000] -> [0, 20000000]", out, fixed = TRUE)))
+})
+
+test_that(".eri_dq_schema_diff recurses through nested named blocks", {
+  base <- list(columns = list(district = list(required = TRUE)))
+  edit <- list(columns = list(district = list(required = FALSE)))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_equal(out, "columns.district.required: TRUE -> FALSE")
+})
+
+test_that(".eri_dq_schema_diff returns nothing when the schemas are identical", {
+  base <- list(columns = list(x = list(range = list(0, 1))))
+  expect_length(.eri_dq_schema_diff(base, base), 0L)
+})
+
+test_that("eri_dq_schema_submit errors when there is no override to submit", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL),
+    "No local schema override"
+  )
+})
+
+test_that("eri_dq_schema_submit errors on a stale override instead of submitting a diff against a moved-on base", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  meta_path <- file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml")
+  meta <- yaml::read_yaml(meta_path)
+  meta$base_hash <- "not-the-real-hash"
+  yaml::write_yaml(meta, meta_path)
+
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL),
+    "stale"
+  )
+})
+
+test_that("eri_dq_schema_submit reports nothing to submit when the override is untouched", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_message(
+    out <- suppressWarnings(
+      eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+    ),
+    "identical to upstream"
+  )
+  expect_null(out)
+})
+
+test_that("eri_dq_schema_submit files a ticket with the diff, axes context, and the override attached", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  override <- yaml::read_yaml(path)
+  override$columns$district$allowed_values <- c(override$columns$district$allowed_values, "Barbar")
+  yaml::write_yaml(override, path)
+
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "test.user", .package = "erifunctions")
+  uploaded <- NULL
+  local_mocked_bindings(
+    .eri_blob_write = function(con, src, dest, ...) { uploaded <<- list(src = src, dest = dest); invisible(dest) },
+    .package = "erifunctions"
+  )
+
+  ticket <- suppressWarnings(eri_dq_schema_submit(
+    "atlantis", "oncho", "programmatic", "treatment",
+    note = "Barbar shows up in real submissions", azcontainer = "mock"
+  ))
+
+  expect_equal(ticket$area, "dq")
+  expect_equal(ticket$context$schema, "atlantis_oncho_programmatic_treatment")
+  expect_equal(ticket$context$country, "atlantis")
+  expect_match(ticket$message, "allowed_values: added \"Barbar\"")
+  expect_match(ticket$message, "Barbar shows up in real submissions", fixed = TRUE)
+  expect_match(ticket$message, "load_dq_schema\\(\\) prefers")
+  expect_equal(uploaded$src, path)
+  expect_equal(ticket$attachment, uploaded$dest)
+})
+
+test_that("eri_dq_schema_submit errors clearly when upstream is unreachable", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  local_mocked_bindings(
+    .eri_dq_schema_upstream = function(stem, azcontainer) NULL,
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL),
+    "unreachable"
+  )
+})
+
+test_that("eri_dq_schema_submit rejects a non-scalar note before doing any work", {
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment",
+                         note = c("a", "b"), azcontainer = NULL),
+    "single string"
+  )
+})
+
+test_that(".eri_dq_schema_diff returns nothing for two empty/NULL schemas", {
+  expect_length(.eri_dq_schema_diff(list(), list()), 0L)
+  expect_length(.eri_dq_schema_diff(NULL, NULL), 0L)
+})
+
+test_that(".eri_dq_schema_diff is insensitive to key order (semantically identical, reordered)", {
+  base    <- list(columns = list(a = list(required = TRUE), b = list(required = FALSE)))
+  reorder <- list(columns = list(b = list(required = FALSE), a = list(required = TRUE)))
+  expect_length(.eri_dq_schema_diff(base, reorder), 0L)
+})
+
+test_that(".eri_dq_schema_diff reports a wholly new sub-block as added, not a crash", {
+  base <- list(columns = list(a = list(required = TRUE)))
+  edit <- list(columns = list(a = list(required = TRUE),
+                              b = list(required = FALSE, type = "numeric")))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_true(any(grepl("^columns.b: added", out)))
+})

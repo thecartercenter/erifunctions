@@ -29,7 +29,14 @@ Add `eri_feedback(message, area)` that appends a ticket to a single YAML log,
 - **Ticket schema:** `id`, `submitted_at` (UTC), `submitted_by` (verified), `area`, `status`,
   `message`. `area` is `"general"` or a section (`"odk"`, `"ingest"`, `"reporting"`, …); it is free
   text (a typo must never reject a user's feedback) with a non-blocking nudge toward the known set so
-  the vocabulary self-converges for triage.
+  the vocabulary self-converges for triage. Two optional fields (added in the DQ workflow redesign,
+  phase 4; see [ADR-0018](0018-dq-schema-local-overrides.md)) are present only when actually used, so
+  a ticket filed without them is byte-for-byte the shape above: `context` (a named list scoping the
+  ticket to a specific dataset/object, e.g. the four ADR-0012 axes) and `attachment` (a blob path
+  under `_feedback/attachments/{token}/`, uploaded *before* the log append — a failed upload aborts
+  before any ticket exists; the converse, an upload that succeeds followed by a log-append failure,
+  is an accepted low-probability gap that leaves an orphaned blob with no automatic cleanup, per
+  `eri_feedback()`'s own `@param attachment` doc).
 - **Status lifecycle:** tickets are born `"submitted"`. Advancing them (`planned`, `in_progress`,
   `fixed`, `declined`) is the job of the triage surface — `eri_feedback_status(id, status, note)` (which
   records a who/when/from/to audit entry on the ticket's `history`) and `eri_feedback_board()` (the

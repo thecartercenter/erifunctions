@@ -89,7 +89,8 @@ test_that("eri_feedback_list returns the backlog and filters by area / status", 
   all <- eri_feedback_list(data_con = "mock")
   expect_s3_class(all, "tbl_df")
   expect_equal(nrow(all), 2L)
-  expect_named(all, c("id", "submitted_at", "submitted_by", "area", "status", "message"))
+  expect_named(all, c("id", "submitted_at", "submitted_by", "area", "status", "message",
+                      "context", "attachment"))
 
   expect_equal(eri_feedback_list(area = "odk", data_con = "mock")$id, 2L)
   expect_equal(eri_feedback_list(status = "submitted", data_con = "mock")$id, 1L)
@@ -102,7 +103,8 @@ test_that("eri_feedback_list returns a typed empty tibble when nothing is logged
   out <- suppressMessages(eri_feedback_list(data_con = "mock"))
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 0L)
-  expect_named(out, c("id", "submitted_at", "submitted_by", "area", "status", "message"))
+  expect_named(out, c("id", "submitted_at", "submitted_by", "area", "status", "message",
+                      "context", "attachment"))
 })
 
 # --- eri_feedback_status (triage) ---------------------------------------------
@@ -248,4 +250,106 @@ test_that("eri_feedback_report treats a missing/NA status as submitted without c
 
   expect_no_error(suppressMessages(eri_feedback_report(file = f, format = "md", data_con = "mock")))
   expect_match(paste(readLines(f, warn = FALSE), collapse = "\n"), "Open backlog \\(1\\)")
+})
+
+# --- eri_feedback context/attachment -----------------------------------------
+
+test_that("eri_feedback stores context only when supplied, byte-for-byte legacy shape otherwise", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+
+  plain <- suppressMessages(eri_feedback("no context here", data_con = "mock"))
+  expect_false("context" %in% names(plain))
+
+  scoped <- suppressMessages(eri_feedback(
+    "scoped ticket", area = "dq",
+    context = list(country = "sdn", disease = "oncho"),
+    data_con = "mock"
+  ))
+  expect_equal(scoped$context, list(country = "sdn", disease = "oncho"))
+})
+
+test_that("eri_feedback rejects a non-list context", {
+  expect_error(eri_feedback("x", context = "not a list"), "named list")
+})
+
+test_that("eri_feedback uploads an attachment before logging the ticket, keyed by a token not the ticket id", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+
+  uploaded <- NULL
+  local_mocked_bindings(
+    .eri_blob_write = function(con, src, dest, ...) { uploaded <<- list(src = src, dest = dest); invisible(dest) },
+    .package = "erifunctions"
+  )
+
+  tmp <- withr::local_tempfile(fileext = ".yaml")
+  writeLines("a: 1", tmp)
+
+  out <- suppressMessages(eri_feedback("with an attachment", area = "dq",
+                                        attachment = tmp, data_con = "mock"))
+
+  expect_false(is.null(uploaded))
+  expect_equal(uploaded$src, tmp)
+  expect_match(uploaded$dest, "^_feedback/attachments/.+/", perl = TRUE)
+  expect_match(uploaded$dest, basename(tmp), fixed = TRUE)
+  expect_equal(out$attachment, uploaded$dest)
+  # the token in the path is NOT the ticket's own id -- it's generated before
+  # the id is known (the id is only assigned inside the racing log mutate)
+  expect_false(grepl(paste0("/", out$id, "/"), uploaded$dest, fixed = TRUE))
+})
+
+test_that("eri_feedback errors on a missing attachment path before touching Azure", {
+  expect_error(eri_feedback("x", attachment = "definitely/not/a/real/file.yaml"), "not found")
+})
+
+test_that("eri_feedback surfaces the error, uploading nothing further, if the log append fails after a successful upload", {
+  # A known, accepted gap (documented on eri_feedback()'s attachment param):
+  # if .eri_blob_write() succeeds but .eri_yaml_update() then fails, the
+  # attachment blob is left orphaned -- but the caller must see the error,
+  # not a silent success, and no ticket should come back.
+  local_mocked_bindings(.eri_analyst_id = function(...) "u", .package = "erifunctions")
+  uploaded <- FALSE
+  local_mocked_bindings(
+    .eri_blob_write = function(con, src, dest, ...) { uploaded <<- TRUE; invisible(dest) },
+    .eri_yaml_update = function(...) cli::cli_abort("simulated log-append failure"),
+    .package = "erifunctions"
+  )
+
+  tmp <- withr::local_tempfile(fileext = ".yaml")
+  writeLines("a: 1", tmp)
+
+  expect_error(
+    eri_feedback("x", attachment = tmp, data_con = "mock"),
+    "simulated log-append failure"
+  )
+  expect_true(uploaded)   # the upload really did happen before the failure
+})
+
+test_that("eri_feedback_list surfaces context as a list-column and attachment as a character column", {
+  store <- new_yaml_store(list(entries = list(
+    list(id = 1L, submitted_at = iso_ago(1), submitted_by = "u", area = "dq",
+         status = "submitted", message = "scoped",
+         context = list(country = "sdn", disease = "oncho"),
+         attachment = "_feedback/attachments/tok/sdn_oncho.yaml"),
+    list(id = 2L, submitted_at = iso_ago(1), submitted_by = "u", area = "general",
+         status = "submitted", message = "plain, no context/attachment")
+  )))
+  local_yaml_store(store)
+
+  tbl <- eri_feedback_list(data_con = "mock")
+  expect_equal(tbl$attachment, c("_feedback/attachments/tok/sdn_oncho.yaml", NA_character_))
+  expect_true(is.list(tbl$context))
+  expect_equal(tbl$context[[1]], list(country = "sdn", disease = "oncho"))
+  expect_null(tbl$context[[2]])
+})
+
+test_that("eri_feedback_list on an empty backlog still has context/attachment columns", {
+  store <- new_yaml_store(list(entries = list()))
+  local_yaml_store(store)
+  tbl <- suppressMessages(eri_feedback_list(data_con = "mock"))
+  expect_equal(nrow(tbl), 0L)
+  expect_true(all(c("context", "attachment") %in% names(tbl)))
 })

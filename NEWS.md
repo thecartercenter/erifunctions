@@ -1,4 +1,26 @@
-# erifunctions 0.9.12
+# erifunctions 0.9.13
+
+## Feedback tickets gain context/attachments; `eri_dq_schema_submit()` packages a schema fix for a maintainer (Phase 4 of the DQ workflow redesign)
+
+- **`eri_feedback()` gains optional `context` and `attachment` parameters**, both backward-compatible
+  (default `NULL`; a ticket filed without them is byte-for-byte the same shape a pre-this-feature
+  ticket would be). `context` is a named list (e.g. dataset axes) stored as a sub-block, not five new
+  formal arguments -- keeps every existing caller's call untouched and lets other areas scope tickets
+  differently later without another signature change. `attachment` is a local file path, uploaded to
+  `_feedback/attachments/{token}/{basename}` **before** the ticket is logged, so a failed upload never
+  leaves a ticket referencing a blob that isn't actually there. `eri_feedback_list()` gains matching
+  `context` (list-column) and `attachment` columns.
+- **New `eri_dq_schema_submit(country, disease, data_source, data_type, note)`**: packages a live local
+  schema override (from `eri_dq_schema_edit()`) into a `dq`-area ticket. The message is an auto-drafted,
+  human-readable diff against the schema it was forked from (added/removed `aliases`/`allowed_values`
+  shown as a set diff, everything else -- ranges, flags, scalars -- as a before → after change), the
+  full override file is attached, and the four ADR-0012 axes plus the schema's own stem are recorded
+  as `context`. Refuses to submit a stale or unverifiable override (submitting a diff against a base
+  that's already moved on isn't a reliable diff) and reports "nothing to submit" rather than filing an
+  empty ticket when the override is untouched.
+- **Submitting only files the ticket -- it doesn't apply anything.** A maintainer folds the change in
+  by updating the Azure `schemas/*.yaml` blob directly (`load_dq_schema()` already prefers it over the
+  bundled copy), which takes effect for every DA within minutes, not at the next package release.
 
 ## DQ schema local overrides: three-tier resolution, hash-based expiry (Phase 3 of the DQ workflow redesign)
 
@@ -25,7 +47,7 @@ Also confirms Phase 2 (CMR re-run hygiene) was already shipped and validates it 
   carries both into the `dq_result`; `.eri_dq_log_write()` records both in every `dq_flags` log
   entry. A DQ result produced under a modified schema is now always distinguishable, in the
   permanent log, from one produced under the canonical schema -- load-bearing groundwork for the
-  planned `eri_audit()` timeline (phase 4).
+  planned `eri_audit()` timeline (phase 5).
 - **Phase 2 (CMR re-run hygiene) confirmed shipped and now validated end-to-end**: those three
   landmine fixes (`supersede_staged` / ADR-0017, `eri_cmr_dq_report(supersede = TRUE)`, `excel_row`
   provenance) actually landed in v0.9.10, before the design consult was even commissioned. A live
@@ -51,7 +73,7 @@ to them.
   used for identity, not security): `eri_ingest()`, `eri_stage_cmr()`, `eri_split_cmr()`, and the
   `dq_flags` entries written by `eri_dq_log()`/`eri_cmr_dq_report()`. `eri_cmr_last_plan()` surfaces
   it (falling back to `NA` for log entries written before this change).
-- This is the traceability groundwork for the planned `eri_audit()` timeline function (phase 3 of
+- This is the traceability groundwork for the planned `eri_audit()` timeline function (phase 5 of
   the DQ workflow redesign, not to be confused with the V2 roadmap's own "Phase 3"): being able to
   walk from a figure in a final table back through `processed` -> `staged` -> the exact `raw/`
   bytes and DQ review that approved them.

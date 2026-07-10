@@ -54,6 +54,24 @@
 #'   for system-wide feedback, or a specific section — suggested values:
 #'   `r paste(setdiff(.ERI_FEEDBACK_AREAS, "general"), collapse = ", ")`. Free text
 #'   is accepted; the value is lower-cased.
+#' @param context `list` or `NULL` Optional named list scoping the ticket to a
+#'   specific dataset or object (e.g.
+#'   `list(country = "sdn", disease = "oncho", data_source = "programmatic",
+#'   data_type = "treatment", period = "202605", schema = "sdn_oncho_programmatic_treatment")`).
+#'   Stored as a sub-block on the ticket, not new formal arguments, so any area
+#'   can scope its tickets differently without a signature change. `NULL`
+#'   (default) omits it entirely — a ticket with no `context` looks exactly
+#'   like one filed before this feature existed.
+#' @param attachment `chr` or `NULL` Optional path to a local file to attach —
+#'   e.g. a full schema override for a `dq` ticket. Uploaded to
+#'   `_feedback/attachments/{token}/{basename}` in the `data/` blob **before**
+#'   the ticket is logged, so a failed *upload* never leaves a ticket
+#'   referencing a file that isn't actually there. The reverse is a known,
+#'   accepted, low-probability gap: if the upload succeeds but the log append
+#'   then fails (e.g. exhausts its concurrency retries), the blob is left
+#'   orphaned with no ticket pointing at it — you'll see the error (nothing
+#'   silently succeeds for you), but there's no automatic cleanup sweep for
+#'   the orphaned attachment. `NULL` (default): no attachment.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
 #' @returns The logged ticket (invisibly), as a named list.
 #' @examples
@@ -63,10 +81,18 @@
 #'
 #' # Feedback about a specific section
 #' eri_feedback("ODK sync timed out on the big LF form.", area = "odk")
+#'
+#' # Scoped to a dataset, with an attachment (see eri_dq_schema_submit() for
+#' # the DA-facing wrapper that packages this automatically for schema edits)
+#' eri_feedback("District list is missing a valid admin name.", area = "dq",
+#'              context = list(country = "sdn", disease = "oncho"),
+#'              attachment = "sdn_oncho_programmatic_treatment.yaml")
 #' }
-#' @seealso [eri_feedback_list()] to read the backlog.
+#' @seealso [eri_feedback_list()] to read the backlog, [eri_dq_schema_submit()]
+#'   for the DQ-schema-specific wrapper.
 #' @export
-eri_feedback <- function(message, area = "general", data_con = NULL) {
+eri_feedback <- function(message, area = "general", context = NULL, attachment = NULL,
+                          data_con = NULL) {
   if (!is.character(message) || length(message) != 1L || is.na(message) ||
       !nzchar(trimws(message))) {
     cli::cli_abort("{.arg message} must be a single non-empty string.")
@@ -84,9 +110,47 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
       "*" = "Known areas: {.val {known_areas}}."
     ))
   }
+  if (!is.null(context) && !is.list(context)) {
+    cli::cli_abort("{.arg context} must be a named list, or {.code NULL}.")
+  }
+  if (!is.null(context)) {
+    # list()'s constructor keeps a NULL-valued element (unlike assigning NULL
+    # into an existing list, which removes it), and yaml::write_yaml() renders
+    # that as a literal `~`. Scrub centrally, here, rather than leaving every
+    # caller to rediscover this -- context is meant to be a general mechanism
+    # other areas reuse (e.g. eri_dq_schema_submit()'s research-lane calls,
+    # which have no data_type), not a one-off worked around by one caller.
+    context <- Filter(Negate(is.null), context)
+  }
+  if (!is.null(attachment)) {
+    if (!is.character(attachment) || length(attachment) != 1L || is.na(attachment)) {
+      cli::cli_abort("{.arg attachment} must be a single path, or {.code NULL}.")
+    }
+    if (!file.exists(attachment)) {
+      cli::cli_abort("{.arg attachment} not found: {.path {attachment}}")
+    }
+  }
 
   data_con <- .eri_feedback_con(data_con)
   author   <- .eri_analyst_id(data_con)
+
+  # Upload the attachment BEFORE the log append: a failed upload aborts here,
+  # before any ticket exists, rather than leaving a ticket whose `attachment`
+  # field points at a blob that was never actually written. Keyed by a token
+  # generated up front (timestamp + a short random suffix) rather than the
+  # ticket's own auto-increment id -- that id is only assigned inside the log
+  # mutate below (racing with other filers), so it isn't known yet, and tying
+  # the attachment path to it would mean either uploading after the log write
+  # (the ordering this comment says to avoid) or risking a mismatch on retry.
+  attachment_path <- NULL
+  if (!is.null(attachment)) {
+    token <- paste0(
+      format(Sys.time(), "%Y%m%dT%H%M%OS3Z", tz = "UTC"), "-",
+      paste(sample(c(0:9, letters), 4L, replace = TRUE), collapse = "")
+    )
+    attachment_path <- paste0("_feedback/attachments/", token, "/", basename(attachment))
+    .eri_blob_write(data_con, attachment, attachment_path)
+  }
 
   # The committed ticket is captured here; the auto-increment id is computed
   # inside the mutate against the freshly-read log so parallel filings each get a
@@ -96,7 +160,7 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
     if (is.null(log$entries)) log$entries <- list()
     ids <- vapply(log$entries, function(e) as.integer(e$id %||% 0L), integer(1L))
     next_id <- if (length(ids)) max(ids, 0L) + 1L else 1L
-    ticket <<- list(
+    entry <- list(
       id           = next_id,
       submitted_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       submitted_by = author,
@@ -104,7 +168,12 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
       status       = "submitted",
       message      = trimws(message)
     )
-    log$entries <- c(log$entries, list(ticket))
+    # Only present on the entry when actually used, so a ticket filed without
+    # them is byte-for-byte the same shape a pre-this-feature ticket would be.
+    if (!is.null(context))         entry$context    <- context
+    if (!is.null(attachment_path)) entry$attachment <- attachment_path
+    ticket <<- entry
+    log$entries <- c(log$entries, list(entry))
     log
   }, default = list(entries = list()))
 
@@ -112,6 +181,9 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
   cli::cli_alert_success(
     "Feedback logged as {.field {id_label}} · area {.val {area}} · status {.val submitted}."
   )
+  if (!is.null(attachment_path)) {
+    cli::cli_alert_info("Attachment: {.path {attachment_path}}")
+  }
   invisible(ticket)
 }
 
@@ -127,7 +199,8 @@ eri_feedback <- function(message, area = "general", data_con = NULL) {
 #' @param status `chr` or `NULL` Filter by status (e.g. `"submitted"`). `NULL` = all.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
 #' @returns A tibble with columns `id`, `submitted_at`, `submitted_by`, `area`,
-#'   `status`, `message`.
+#'   `status`, `message`, `context` (a list-column: `NULL` or a named list per
+#'   ticket), `attachment` (blob path, or `NA` if none).
 #' @examples
 #' \dontrun{
 #' eri_feedback_list()
@@ -148,7 +221,9 @@ eri_feedback_list <- function(area = NULL, status = NULL, data_con = NULL) {
     submitted_by = character(),
     area         = character(),
     status       = character(),
-    message      = character()
+    message      = character(),
+    context      = list(),
+    attachment   = character()
   )
 
   if (length(entries) == 0L) {
@@ -179,7 +254,9 @@ eri_feedback_list <- function(area = NULL, status = NULL, data_con = NULL) {
     submitted_by = vapply(entries, function(e) .na_chr(e$submitted_by), character(1L)),
     area         = vapply(entries, function(e) .na_chr(e$area),         character(1L)),
     status       = vapply(entries, function(e) .na_chr(e$status),       character(1L)),
-    message      = vapply(entries, function(e) .na_chr(e$message),      character(1L))
+    message      = vapply(entries, function(e) .na_chr(e$message),      character(1L)),
+    context      = lapply(entries, function(e) e$context %||% NULL),
+    attachment   = vapply(entries, function(e) .na_chr(e$attachment),   character(1L))
   )
 }
 

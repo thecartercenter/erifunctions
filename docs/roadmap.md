@@ -233,12 +233,20 @@ three-tier resolution (local override → Azure → bundled) inside `load_dq_sch
 `eri_dq_schema_path/edit/status/reset()`, sidecar metadata, hash-based retire-on-upstream-change (an
 override is retired, never kept forever or silently discarded, once the Azure/bundled copy it forked
 from changes), `schema_source`+`schema_hash` carried from the schema through `run_dq_checks()` into
-every `dq_flags` log entry; (4) `eri_audit()` — walk a canonical value back through
-`processed → staged → raw` and the DQ review that approved it; (5) `eri_feedback()` +
-`eri_dq_schema_submit()` for DA-authored schema-edit tickets; (6) `eri_approve_cmr()` force-approve path;
-(7) an interactive `eri_dq_review()` wrapper over the existing scriptable per-flag triage
-(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8) `eri_dq_export()` (PDF flag report) + guide
-convergence. Phases 4–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
+every `dq_flags` log entry; (4) `eri_feedback()` context/attachment + `eri_dq_schema_submit()` —
+**shipped**: `eri_feedback()` gained optional `context` (a named list, e.g. dataset axes) and
+`attachment` (a local file uploaded to `_feedback/attachments/{token}/`, *before* the log append so a
+failed upload never leaves a dangling reference) params, both backward-compatible (`NULL` default,
+legacy-shaped tickets read fine); `eri_dq_schema_submit()` packages a live local schema override into
+a `dq`-area ticket with an auto-drafted human-readable diff against the schema it forked from (typed
+alias/allowed-values edits shown as set diffs, everything else as before → after), the full override
+file attached, and the four ADR-0012 axes as `context` — a maintainer folds it in by updating the
+Azure `schemas/` blob directly (`load_dq_schema()` already prefers it), not by cutting a release; (5)
+`eri_audit()` — walk a canonical value back through `processed → staged → raw` and the DQ review that
+approved it; (6) `eri_approve_cmr()` force-approve path; (7) an interactive `eri_dq_review()` wrapper
+over the existing scriptable per-flag triage (`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8)
+`eri_dq_export()` (PDF flag report) + guide convergence. Phases 5–8 are not yet started; each ships as
+its own PR against this plan, not a rewrite.
 
 ---
 

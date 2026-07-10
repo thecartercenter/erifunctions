@@ -15,7 +15,8 @@ eri_feedback_list(area = NULL, status = NULL, data_con = NULL)
 }
 \value{
 A tibble with columns \code{id}, \code{submitted_at}, \code{submitted_by}, \code{area},
-\code{status}, \code{message}.
+\code{status}, \code{message}, \code{context} (a list-column: \code{NULL} or a named list per
+ticket), \code{attachment} (blob path, or \code{NA} if none).
 }
 \description{
 Reads the team's feedback backlog from \verb{_feedback/feedback_log.yaml} in the
