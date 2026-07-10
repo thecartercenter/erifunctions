@@ -2,8 +2,11 @@
 
 **\[experimental\]**
 
-The general analyst ingest entry point. Reads a raw local file, runs all
-DQ checks via
+The general analyst ingest entry point. Reads a raw local file, archives
+the original file as-is to
+`data/{country}/{disease}/{data_source}/{data_type}/raw/`
+(timestamp-suffixed, so re-ingesting the same filename never collides
+with an earlier archive of it), runs all DQ checks via
 [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md),
 prints the flags, and writes the cleaned parquet to
 `data/{country}/{disease}/{data_source}/{data_type}/staged/` — feeding
@@ -11,6 +14,11 @@ prints the flags, and writes the cleaned parquet to
 with the matching measure. It runs on **any** data, including a
 throwaway sandbox: there is no pipeline-registry or country gate by
 default.
+
+The raw archive and the logged DQ flags both carry an MD5 hash of the
+source file (identity, not security) — reproducing an old submission, or
+answering "which exact bytes did this review look at", doesn't depend on
+whoever still has a copy of the original email/upload.
 
 The legacy `projects`-blob dual-write (the hsp-mal cutover comparison)
 is an **opt-in** mirror: pass `mirror_pipeline = "hsp-mal"` to

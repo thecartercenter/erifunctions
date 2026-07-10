@@ -22,7 +22,8 @@ eri_dq_log(
   data_source,
   data_type = NULL,
   period = NULL,
-  data_con = NULL
+  data_con = NULL,
+  source_hash = NULL
 )
 ```
 
@@ -58,6 +59,14 @@ eri_dq_log(
 
   Azure container for the `data/` blob. If `NULL`, connects
   automatically.
+
+- source_hash:
+
+  `chr` or `NULL` MD5 hash of the source file this check ran against
+  (identity, not security), if you have one – lets a later audit trail
+  confirm exactly which bytes were reviewed. `NULL` (default) when
+  there's no local file to hash (e.g. checking data already staged in
+  Azure).
 
 ## Value
 

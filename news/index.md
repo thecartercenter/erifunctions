@@ -1,6 +1,38 @@
 # Changelog
 
-## erifunctions 0.9.10
+## erifunctions 0.9.11
+
+### Raw retention and source hashing generalized to `eri_ingest()` (Phase 1 of the DQ workflow redesign)
+
+The first phase of the pilot-feedback-driven DQ workflow redesign
+(design consult with Fable; see the “DQ workflow redesign” entry under
+Phase 3 of `docs/roadmap.md` for the full 8-phase plan): every ingest
+now keeps the exact bytes it was given, and every downstream copy can be
+traced back to them.
+
+- **[`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  now archives the source file to `raw/` before doing anything else**,
+  under a timestamp-suffixed filename so repeat ingests never collide,
+  then runs DQ and stages as before. This was previously a manual step
+  DAs did themselves (as in the `da-ingest-guide.Rmd` sandbox
+  walkthrough); it is now automatic on the fast path.
+- **Every op-log along the ingest/CMR path now carries a `source_hash`**
+  (MD5 of the source file, used for identity, not security):
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
+  [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md),
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md),
+  and the `dq_flags` entries written by
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)/[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md).
+  [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md)
+  surfaces it (falling back to `NA` for log entries written before this
+  change).
+- This is the traceability groundwork for the planned `eri_audit()`
+  timeline function (phase 3 of the DQ workflow redesign, not to be
+  confused with the V2 roadmap’s own “Phase 3”): being able to walk from
+  a figure in a final table back through `processed` -\> `staged` -\>
+  the exact `raw/` bytes and DQ review that approved them.
+- `da-ingest-guide.Rmd` updated to describe the new automatic
+  raw-archival step.
 
 ### Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval
 

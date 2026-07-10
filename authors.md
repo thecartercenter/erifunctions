@@ -11,12 +11,12 @@ Source:
 [`DESCRIPTION`](https://github.com/thecartercenter/erifunctions/blob/main/DESCRIPTION)
 
 Kishore N (2026). *erifunctions: ERI team functions*. R package version
-0.9.10, <https://github.com/thecartercenter/erifunctions>.
+0.9.11, <https://github.com/thecartercenter/erifunctions>.
 
     @Manual{,
       title = {erifunctions: ERI team functions},
       author = {Nishant Kishore},
       year = {2026},
-      note = {R package version 0.9.10},
+      note = {R package version 0.9.11},
       url = {https://github.com/thecartercenter/erifunctions},
     }

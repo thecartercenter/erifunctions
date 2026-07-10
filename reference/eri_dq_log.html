@@ -15,7 +15,7 @@ eri_ingest() calls this automatically."><meta property="og:image" content="https
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,7 +97,8 @@ to a YAML log in <code>{country}/{disease}/{data_source}[/{data_type}]/logs/</co
 <span>  <span class="va">data_source</span>,</span>
 <span>  data_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  data_con <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  source_hash <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -133,6 +134,13 @@ to a YAML log in <code>{country}/{disease}/{data_source}[/{data_type}]/logs/</co
 
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container for the <code>data/</code> blob. If <code>NULL</code>, connects automatically.</p></dd>
+
+
+<dt id="arg-source-hash">source_hash<a class="anchor" aria-label="anchor" href="#arg-source-hash"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> MD5 hash of the source file this check ran
+against (identity, not security), if you have one – lets a later audit
+trail confirm exactly which bytes were reviewed. <code>NULL</code> (default) when
+there's no local file to hash (e.g. checking data already staged in Azure).</p></dd>
 
 </dl></div>
     <div class="section level2">

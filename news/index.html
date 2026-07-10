@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,9 +72,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.9.10" id="erifunctions-0910">erifunctions 0.9.10<a class="anchor" aria-label="anchor" href="#erifunctions-0910"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.9.11" id="erifunctions-0911">erifunctions 0.9.11<a class="anchor" aria-label="anchor" href="#erifunctions-0911"></a></h2>
 <div class="section level3">
-<h3 id="per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-10">Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval<a class="anchor" aria-label="anchor" href="#per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-10"></a></h3>
+<h3 id="raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-11">Raw retention and source hashing generalized to <code>eri_ingest()</code> (Phase 1 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-11"></a></h3>
+<p>The first phase of the pilot-feedback-driven DQ workflow redesign (design consult with Fable; see the “DQ workflow redesign” entry under Phase 3 of <code>docs/roadmap.md</code> for the full 8-phase plan): every ingest now keeps the exact bytes it was given, and every downstream copy can be traced back to them.</p>
+<ul><li>
+<strong><code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> now archives the source file to <code>raw/</code> before doing anything else</strong>, under a timestamp-suffixed filename so repeat ingests never collide, then runs DQ and stages as before. This was previously a manual step DAs did themselves (as in the <code>da-ingest-guide.Rmd</code> sandbox walkthrough); it is now automatic on the fast path.</li>
+<li>
+<strong>Every op-log along the ingest/CMR path now carries a <code>source_hash</code></strong> (MD5 of the source file, used for identity, not security): <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>, <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code>, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>, and the <code>dq_flags</code> entries written by <code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code>/<code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>. <code><a href="../reference/eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code> surfaces it (falling back to <code>NA</code> for log entries written before this change).</li>
+<li>This is the traceability groundwork for the planned <code>eri_audit()</code> timeline function (phase 3 of the DQ workflow redesign, not to be confused with the V2 roadmap’s own “Phase 3”): being able to walk from a figure in a final table back through <code>processed</code> -&gt; <code>staged</code> -&gt; the exact <code>raw/</code> bytes and DQ review that approved them.</li>
+<li>
+<code>da-ingest-guide.Rmd</code> updated to describe the new automatic raw-archival step.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-11">Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval<a class="anchor" aria-label="anchor" href="#per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-11"></a></h3>
 <ul><li>
 <strong>New <code>eri_cmr_dq_report(country, period)</code></strong>: runs and logs DQ checks for every measure a CMR workbook routed to, in one call, returning <strong>one tibble</strong> spanning every flag from every measure (<code>sheet</code>, <code>disease</code>, <code>data_type</code>, <code>log_path</code>, <code>flag_id</code>, <code>row</code>, <code>column</code>, <code>value</code>, <code>issue</code>, <code>status</code>) instead of twelve separate <code><a href="../reference/dq_report.html">dq_report()</a></code> printouts.</li>
 <li>
@@ -87,7 +98,7 @@
 <code>da-cmr-guide.Rmd</code> updated for this workflow.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-10">Three real bugs found and fixed during design review of the workflow above<a class="anchor" aria-label="anchor" href="#three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-10"></a></h3>
+<h3 id="three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-11">Three real bugs found and fixed during design review of the workflow above<a class="anchor" aria-label="anchor" href="#three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-11"></a></h3>
 <p>A design consult on the next phase of this DQ workflow surfaced three real defects in the shipped-this-week CMR pipeline (not hypothetical future issues) – fixed here rather than shipping known-broken and patching later:</p>
 <ul><li>
 <strong>Fix: re-splitting a corrected file duplicated staged data.</strong> <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> names each staged parquet from the workbook’s filename, so re-splitting a “<code>_fixed.xlsx</code>” copy for a period already split left the broken original’s staged file sitting alongside the corrected one – <code><a href="../reference/eri_approve.html">eri_approve()</a></code>’s period match then promoted <strong>both</strong> to <code>processed/</code>. <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> now detects prior staged files for the same period in each destination folder (matched by the real filename convention – name <em>starts with</em> the period, not merely mentions it, so it can’t collide with an unrelated file that happens to share those six digits) and reports them. New <code>supersede_staged</code> parameter (default <code>FALSE</code>, this package’s first destructive Azure operation is opt-in, not automatic) actually removes them when set <code>TRUE</code>, logged as <code>supersede_staged</code> steps.</li>

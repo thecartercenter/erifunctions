@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -660,16 +660,22 @@ against a schema, fix what only a human can, stage, and
 <strong>approve</strong> into the canonical layer, twice, including a
 messy extract.</p>
 <p>One call, <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a>, does
-the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
+the archive-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 <strong>any</strong> data including the sandbox you just built (it takes
 the same <code>country</code> / <code>disease</code> /
 <code>data_source</code> / <code>data_type</code> you have been using).
-We did each step by hand here so you could <em>see</em> every layer;
-once you are comfortable, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the fast path,
-and <code><a href="../reference/eri_approve.html">eri_approve()</a></code>: your sign-off, is always the same human
-gate at the end. <em>(For the legacy <code>hsp-mal</code> cutover,
-passing <code>mirror_pipeline = "hsp-mal"</code> also mirrors the output
-to the old <code>projects</code> blob, off by default.)</em></p>
+It archives the file you hand it to <code>raw/</code> under a
+timestamped name before doing anything else, records an MD5 hash of that
+source file in the operation log (so any later
+<code>staged</code>/<code>processed</code> copy can be traced back to
+the exact bytes that were reviewed), then runs the DQ checks and stages
+the result. We did each step by hand here so you could <em>see</em>
+every layer; once you are comfortable, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is the
+fast path, and <code><a href="../reference/eri_approve.html">eri_approve()</a></code>: your sign-off, is always the
+same human gate at the end. <em>(For the legacy <code>hsp-mal</code>
+cutover, passing <code>mirror_pipeline = "hsp-mal"</code> also mirrors
+the output to the old <code>projects</code> blob, off by
+default.)</em></p>
 <p>This is one of a planned set of short, task-oriented guides,
 <strong>one for each common job</strong> an analyst or epidemiologist
 does. See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md" class="external-link">the

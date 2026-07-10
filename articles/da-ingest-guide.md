@@ -574,11 +574,15 @@ the canonical layer, twice, including a messy extract.
 
 One call,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
-does the read-and-DQ-and-stage steps (§2, §4, §5) in a single shot, on
+does the archive-DQ-and-stage steps (§2, §4, §5) in a single shot, on
 **any** data including the sandbox you just built (it takes the same
 `country` / `disease` / `data_source` / `data_type` you have been
-using). We did each step by hand here so you could *see* every layer;
-once you are comfortable,
+using). It archives the file you hand it to `raw/` under a timestamped
+name before doing anything else, records an MD5 hash of that source file
+in the operation log (so any later `staged`/`processed` copy can be
+traced back to the exact bytes that were reviewed), then runs the DQ
+checks and stages the result. We did each step by hand here so you could
+*see* every layer; once you are comfortable,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
 is the fast path, and
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md):
