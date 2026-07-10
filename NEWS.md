@@ -2,9 +2,10 @@
 
 ## Raw retention and source hashing generalized to `eri_ingest()` (Phase 1 of the DQ workflow redesign)
 
-The first phase of the pilot-feedback-driven DQ workflow redesign (design consult with Fable,
-see the plan referenced in the CMR workflow above): every ingest now keeps the exact bytes it was
-given, and every downstream copy can be traced back to them.
+The first phase of the pilot-feedback-driven DQ workflow redesign (design consult with Fable;
+see the "DQ workflow redesign" entry under Phase 3 of `docs/roadmap.md` for the full 8-phase plan):
+every ingest now keeps the exact bytes it was given, and every downstream copy can be traced back
+to them.
 
 - **`eri_ingest()` now archives the source file to `raw/` before doing anything else**, under a
   timestamp-suffixed filename so repeat ingests never collide, then runs DQ and stages as before.
@@ -14,9 +15,10 @@ given, and every downstream copy can be traced back to them.
   used for identity, not security): `eri_ingest()`, `eri_stage_cmr()`, `eri_split_cmr()`, and the
   `dq_flags` entries written by `eri_dq_log()`/`eri_cmr_dq_report()`. `eri_cmr_last_plan()` surfaces
   it (falling back to `NA` for log entries written before this change).
-- This is the traceability groundwork for the planned `eri_audit()` timeline function (Phase 3):
-  being able to walk from a figure in a final table back through `processed` -> `staged` -> the
-  exact `raw/` bytes and DQ review that approved them.
+- This is the traceability groundwork for the planned `eri_audit()` timeline function (phase 3 of
+  the DQ workflow redesign, not to be confused with the V2 roadmap's own "Phase 3"): being able to
+  walk from a figure in a final table back through `processed` -> `staged` -> the exact `raw/`
+  bytes and DQ review that approved them.
 - `da-ingest-guide.Rmd` updated to describe the new automatic raw-archival step.
 
 

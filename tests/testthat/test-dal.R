@@ -420,6 +420,53 @@ test_that("eri_ingest archives the original source file to raw/ before staging",
   expect_equal(logged_op$source_hash, unname(tools::md5sum(raw_csv)))
 })
 
+test_that("eri_ingest still archives to raw/ and logs the failure when reading the file errors", {
+  raw_csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(data.frame(Year = 2024L, EpiWeek = 1L), raw_csv, row.names = FALSE)
+
+  schema <- list(
+    country = "uga", disease = "oncho",
+    data_source = "programmatic", data_type = "treatment",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year    = list(required = TRUE, type = "numeric"),
+      EpiWeek = list(required = TRUE, type = "numeric")
+    )
+  )
+
+  written_dests <- character(0)
+  logged_op     <- NULL
+
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { written_dests <<- c(written_dests, dest); invisible(NULL) },
+    .eri_write_log   = function(op_log, con, dir, ...) { logged_op <<- op_log; invisible(NULL) },
+    eri_read         = function(...) stop("corrupt or unreadable file"),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    .package = "AzureStor"
+  )
+
+  expect_error(
+    eri_ingest(raw_csv, "uga", "oncho",
+               data_source = "programmatic", data_type = "treatment",
+               schema = schema, data_con = structure(list(), class = "mock")),
+    "corrupt or unreadable file"
+  )
+
+  # the raw archive still happened even though the read that follows it failed
+  raw_write <- written_dests[grepl("^uga/oncho/programmatic/treatment/raw/", written_dests)]
+  expect_length(raw_write, 1L)
+
+  # ...and the failure is visible in the op-log, not silently lost
+  expect_equal(logged_op$status, "error")
+  expect_match(logged_op$error, "corrupt or unreadable file")
+  step_names <- vapply(logged_op$steps, function(s) s$step, character(1L))
+  expect_true("archive_raw" %in% step_names)
+})
+
 #### Tests for eri_approve error paths (no Azure needed) ####
 
 test_that("eri_approve errors informatively when staged dir does not exist", {

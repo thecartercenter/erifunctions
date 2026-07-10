@@ -1463,20 +1463,6 @@ eri_ingest <- function(path, country, disease,
     )
   }
 
-  if (is.null(schema)) {
-    schema <- load_dq_schema(country, disease, data_source, data_type, azcontainer = data_con)
-  }
-
-  raw_data <- eri_read(path, azure = FALSE)
-  if (is.list(raw_data) && !is.data.frame(raw_data)) {
-    raw_data <- raw_data[[1]]
-    cli::cli_alert_info("Multi-sheet Excel detected: using first sheet for DQ.")
-  }
-
-  result <- run_dq_checks(raw_data, schema)
-  dq_report(result)
-
-  fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
   # Five-axis staging (ADR-0012): the measure lands in the path, so a later
   # eri_approve(country, disease, data_source, period, data_type) promotes it.
   # c() drops a NULL data_type, so a measure-less ingest stays four-axis.
@@ -1513,13 +1499,16 @@ eri_ingest <- function(path, country, disease,
   written   <- character(0)
   had_error <- FALSE
   err_msg   <- NULL
+  result    <- NULL
 
   tryCatch({
     # Archive the original source file to the raw/ layer before anything else
-    # touches it -- ADR-0012's five-axis model already has this layer; this
-    # generalizes what eri_stage_cmr() already does for CMR into the general
-    # ingest path, so reproducing a submission later doesn't depend on
-    # whoever has a copy of the original email/upload.
+    # touches it -- including before the file is even read or DQ-checked --
+    # ADR-0012's five-axis model already has this layer; this generalizes what
+    # eri_stage_cmr() already does for CMR into the general ingest path, so
+    # reproducing a submission later, or debugging why a malformed file was
+    # rejected, doesn't depend on whoever still has a copy of the original
+    # email/upload.
     if (!AzureStor::storage_dir_exists(data_con, raw_dir)) {
       AzureStor::create_storage_dir(data_con, raw_dir)
       op_log$steps <- .eri_log_step(op_log$steps, "create_raw_dir", path = raw_dir)
@@ -1528,6 +1517,21 @@ eri_ingest <- function(path, country, disease,
     written      <- c(written, raw_dest)
     op_log$steps <- .eri_log_step(op_log$steps, "archive_raw", dest = raw_dest, source_hash = source_hash)
     .eri_say_done("Archived raw source: {.path {raw_dest}}")
+
+    if (is.null(schema)) {
+      schema <- load_dq_schema(country, disease, data_source, data_type, azcontainer = data_con)
+    }
+
+    raw_data <- eri_read(path, azure = FALSE)
+    if (is.list(raw_data) && !is.data.frame(raw_data)) {
+      raw_data <- raw_data[[1]]
+      cli::cli_alert_info("Multi-sheet Excel detected: using first sheet for DQ.")
+    }
+
+    result <- run_dq_checks(raw_data, schema)
+    dq_report(result)
+
+    fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
 
     if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
       AzureStor::create_storage_dir(data_con, staged_dir)
