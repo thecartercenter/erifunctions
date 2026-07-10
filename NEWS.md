@@ -34,6 +34,8 @@ Also confirms Phase 2 (CMR re-run hygiene) was already shipped and validates it 
   promoted, with no leftover duplicate and no blocking log pileup; all test artifacts were cleaned
   up afterward. See `docs/roadmap.md`'s "DQ workflow redesign" entry.
 
+# erifunctions 0.9.11
+
 ## Raw retention and source hashing generalized to `eri_ingest()` (Phase 1 of the DQ workflow redesign)
 
 The first phase of the pilot-feedback-driven DQ workflow redesign (design consult with Fable;
@@ -55,6 +57,7 @@ to them.
   bytes and DQ review that approved them.
 - `da-ingest-guide.Rmd` updated to describe the new automatic raw-archival step.
 
+# erifunctions 0.9.10
 
 ## Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval
 
