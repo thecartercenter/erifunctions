@@ -48,6 +48,17 @@ may still want both: `eri_split_cmr(..., mirror_pipeline = ...)` then
 [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
 (or the reverse order; neither depends on the other having run first).
 
+### Re-splitting the same period from a corrected file
+
+If you fix an issue upstream and re-run this on a different local file
+(e.g. the `_fixed.xlsx` copy convention) for a period already split, the
+prior staged file(s) for each sheet's destination folder are removed
+first (when `period` is known) – otherwise both the broken original and
+the corrected file would sit in `staged/` together, and
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)'s
+period-substring match would promote both. Each removal is logged as a
+`supersede_staged` step.
+
 ## Usage
 
 ``` r
@@ -59,7 +70,8 @@ eri_split_cmr(
   dry_run = FALSE,
   mirror_pipeline = NULL,
   period = NULL,
-  projects_con = NULL
+  projects_con = NULL,
+  supersede_staged = FALSE
 )
 ```
 
@@ -115,6 +127,21 @@ eri_split_cmr(
   Azure container for the `projects` blob; used only when
   `mirror_pipeline` is set. If `NULL`, connects automatically.
 
+- supersede_staged:
+
+  `logical` Re-splitting the same period from a DIFFERENT local file
+  (e.g. a `_fixed.xlsx` correction) can leave a prior staged file behind
+  in each destination folder –
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)'s
+  period match would then promote both to `processed/`. When `period` is
+  known, candidate stale files (their name starts with `period`, not
+  just contains it anywhere – the real filename convention, so this
+  doesn't collide with an unrelated file that merely mentions those six
+  digits) are always detected and reported. Default `FALSE` only warns
+  about them – **this package's first destructive Azure operation is
+  opt-in, not automatic**; set `TRUE` to actually delete them. Ignored
+  (nothing detected or deleted) when `period` couldn't be resolved.
+
 ## Value
 
 Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
@@ -131,5 +158,8 @@ eri_split_cmr("uga_2024_06.xlsx", "uga")
 eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
 # One step: also mirror the raw file to the legacy contractor pipeline
 eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
+# Re-splitting a corrected file for a period already staged: opt in to
+# actually removing the superseded original (default only warns)
+eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 } # }
 ```

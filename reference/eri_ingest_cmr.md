@@ -46,8 +46,10 @@ eri_ingest_cmr(path, sheet, country = NULL)
 
 ## Value
 
-A tibble with field-code column names and data from row 6 onward. All-NA
-spacer rows are dropped. If `country` is supplied it is prepended as a
+A tibble with field-code column names and data from row 6 onward, plus
+an `excel_row` column recording each row's real position in the workbook
+(survives all-NA spacer-row dropping, so it stays accurate even after
+rows are removed). If `country` is supplied it is prepended as a
 `country` column.
 
 ## Examples

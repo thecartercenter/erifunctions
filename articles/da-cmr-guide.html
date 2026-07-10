@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.9/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -133,8 +133,9 @@ flowchart TD
     C --&gt; D["eri_ingest_cmr(): parse each sheet by its #field codes"]
     D --&gt; E["Review the numbers"]
     E --&gt; F["eri_split_cmr(): route each sheet to {disease}/programmatic/{measure}/staged/"]
-    F --&gt; G["DQ-check each measure, eri_dq_log() the flags"]
-    G --&gt; H["eri_approve_cmr(): approve everything at once, only if all clean"]
+    F --&gt; G["eri_cmr_dq_report(): one combined flags tibble across every measure"]
+    G --&gt; H["eri_dq_flag_resolve() issue by issue, then eri_logs_resolve() each measure"]
+    H --&gt; I["eri_approve_cmr(): approve everything at once, only if all clean"]
 </div>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
@@ -399,42 +400,62 @@ the split in an earlier session? Recover it without rerunning anything
 writes):</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_cmr_last_plan.html">eri_cmr_last_plan</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Re-splitting a corrected file.</strong> Fixed something
+upstream and re-splitting a <code>_fixed.xlsx</code> copy for a period
+you already split? By default <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> only
+<em>warns</em> about the now-superseded prior staged file(s) – it never
+deletes anything without you opting in, since this is the one place in
+the package that can remove previously-staged data:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">fixed_report</span>, <span class="st">"uga"</span>, supersede_staged <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Superseded a prior staged file for this period: cmr-example_rb_treatment.parquet</span></span></code></pre></div>
+<p>Leave it <code>FALSE</code> (the default) if you’d rather review the
+warning and remove the old file by hand.</p>
 </div>
 <div class="section level2">
 <h2 id="dq-check">5. Check data quality before approving<a class="anchor" aria-label="anchor" href="#dq-check"></a>
 </h2>
 <p>CMR routing does <strong>not</strong> auto-run DQ checks – CMR review
-is manual, on purpose. <code>plan</code> tells you exactly what got
-routed (<code>sheet</code>, <code>disease</code>,
-<code>data_type</code>, <code>dest</code>, <code>n_rows</code>); loop
-over it, and log each measure’s flags so they’re visible for triage (and
-so <a href="#approve"><code>eri_approve_cmr()</code></a> below knows
-what’s been reviewed):</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ERIFUNCTIONS_DATA_STORAGE_NAME"</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">plan</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">row</span>    <span class="op">&lt;-</span> <span class="va">plan</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span></span>
-<span>  <span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">row</span><span class="op">$</span><span class="va">dest</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
-<span>  <span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="va">row</span><span class="op">$</span><span class="va">disease</span>, <span class="st">"programmatic"</span>, <span class="va">row</span><span class="op">$</span><span class="va">data_type</span><span class="op">)</span></span>
-<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_dq_checks.html">run_dq_checks</a></span><span class="op">(</span><span class="va">staged</span>, <span class="va">schema</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/eri_dq_log.html">eri_dq_log</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"uga"</span>, <span class="va">row</span><span class="op">$</span><span class="va">disease</span>, <span class="st">"programmatic"</span>, <span class="va">row</span><span class="op">$</span><span class="va">data_type</span>, period <span class="op">=</span> <span class="st">"202406"</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-<p><code>dq_report(result)</code> is a console pretty-printer for one
-measure at a time – reading twelve of those back to back is a lot. For a
-scannable view <strong>across every measure at once</strong>, work
-directly with the tibble underneath (<code>result$flags</code>, or the
-logged version via <code><a href="../reference/eri_logs.html">eri_logs()</a></code>):</p>
+is manual, on purpose. <a href="../reference/eri_cmr_dq_report.html"><code>eri_cmr_dq_report()</code></a>
+runs and logs DQ checks for every measure <code>plan</code> routed, in
+one call, and gives you back <strong>one combined tibble</strong> –
+every flag from every measure – instead of twelve separate
+<code><a href="../reference/dq_report.html">dq_report()</a></code> printouts:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">flags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Logged 1 DQ flag (needs_review).</span></span>
+<span><span class="co">#&gt; ✔ Logged 0 DQ flags (clean).</span></span>
+<span><span class="va">flags</span></span>
+<span><span class="co">#&gt; # A tibble: 1 × 10</span></span>
+<span><span class="co">#&gt;   sheet        disease data_type log_path      flag_id        row column value issue         status</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;         &lt;chr&gt;        &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;         &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open</span></span></code></pre></div>
+<p>Work through it <strong>issue by issue</strong>, not measure by
+measure: mark each flag <code>"not_important"</code>,
+<code>"fixed"</code>, or <code>"noted"</code>, with a note explaining
+what you did or decided:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve</a></span><span class="op">(</span><span class="va">flags</span><span class="op">$</span><span class="va">flag_id</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="st">"not_important"</span>,</span>
+<span>                   note <span class="op">=</span> <span class="st">"confirmed with the country: target is genuinely 0 this period"</span><span class="op">)</span></span></code></pre></div>
+<p>Once every flag in a measure’s report has been triaged, close out
+that measure’s whole log entry – this is what actually unblocks <a href="#approve"><code>eri_approve_cmr()</code></a> below. Skip
+<code>note</code> and it auto-summarizes from the per-flag decisions you
+just made instead of leaving the entry’s own note blank:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs_resolve.html">eri_logs_resolve</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">flags</span><span class="op">$</span><span class="va">log_path</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Marked ...yaml handled.</span></span>
+<span><span class="co"># note auto-filled as "1 not important" from the per-flag triage above</span></span></code></pre></div>
+<p>If you’d rather scan the <em>logged</em> state across the team’s
+whole backlog (not just this run’s in-memory tibble),
+<code><a href="../reference/eri_logs.html">eri_logs()</a></code> still works the same way, one row per
+measure:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span><span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span>, operation <span class="op">=</span> <span class="st">"dq_flags"</span>, since <span class="op">=</span> <span class="st">"2026-07-01"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 15</span></span>
 <span><span class="co">#&gt;   log_path       timestamp  operation status       disease data_type n_issues …</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;          &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;     &lt;int&gt;</span></span>
 <span><span class="co">#&gt; 1 uga/oncho/...  2026-07-...dq_flags  needs_review oncho   treatment 1</span></span>
 <span><span class="co">#&gt; 2 uga/sch/...    2026-07-...dq_flags  clean        sch     treatment 0</span></span></code></pre></div>
-<p>One row per measure, sortable/filterable, <code>n_issues</code> at a
-glance – filter to <code>status == "needs_review"</code> to see exactly
-what still needs your attention before approving.</p>
 </div>
 <div class="section level2">
 <h2 id="approve">6. Approve<a class="anchor" aria-label="anchor" href="#approve"></a>
@@ -443,13 +464,13 @@ what still needs your attention before approving.</p>
 approves all of them in one call <strong>but only if every one is
 clean</strong> – reviewed via the DQ-check step above, with no
 outstanding flags:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Approved 2 measures for "uga" / "202406".</span></span></code></pre></div>
 <p>If anything’s still outstanding (a measure was never DQ-checked, or
 has unresolved flags), <strong>nothing is approved</strong> – you get a
 task list back instead:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; x 1 measure still needs attention -- approving nothing.</span></span>
 <span><span class="co">#&gt; # A tibble: 1 × 4</span></span>
@@ -466,7 +487,13 @@ on its own coordinates. (You can still approve one measure at a time
 with plain <a href="../reference/eri_approve.html"><code>eri_approve()</code></a> –
 <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> is a convenience wrapper around exactly
 that, looped, with the DQ gate in front.)</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> also writes its own log entry
+recording exactly which <code>dq_flags</code> log(s) it verified clean
+for this approval (<code>dq_reviewed</code>) – so the audit trail from
+“this data is now processed” back to “here’s every flag that was raised,
+and what was decided about each one” is traceable via
+<code><a href="../reference/eri_logs.html">eri_logs()</a></code>, not just a bare approval stamp.</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 13</span></span>
 <span><span class="co">#&gt;   path                              country disease data_source  data_type layer …</span></span>

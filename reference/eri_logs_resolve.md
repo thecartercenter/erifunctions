@@ -32,6 +32,14 @@ eri_logs_resolve(log_path, note = NULL, data_con = NULL)
 
 Invisibly, `TRUE`.
 
+## Details
+
+Same single-editor caveat as
+[`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md):
+this is a read-modify-write with no optimistic-concurrency protection,
+so two people resolving the *same* log entry around the same time can
+silently clobber one another.
+
 ## Examples
 
 ``` r

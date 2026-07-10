@@ -24,8 +24,10 @@ to the projects blob"\] B --\> C\["eri_stage_cmr(): projects -\>
 staged/"\] C --\> D\["eri_ingest_cmr(): parse each sheet by its \#field
 codes"\] D --\> E\["Review the numbers"\] E --\> F\["eri_split_cmr():
 route each sheet to {disease}/programmatic/{measure}/staged/"\] F --\>
-G\["DQ-check each measure, eri_dq_log() the flags"\] G --\>
-H\["eri_approve_cmr(): approve everything at once, only if all clean"\]
+G\["eri_cmr_dq_report(): one combined flags tibble across every
+measure"\] G --\> H\["eri_dq_flag_resolve() issue by issue, then
+eri_logs_resolve() each measure"\] H --\> I\["eri_approve_cmr(): approve
+everything at once, only if all clean"\]
 
 ## Before you start
 
@@ -297,32 +299,73 @@ table is persisted in the op-log every real run writes):
 plan <- eri_cmr_last_plan("uga", "202406")
 ```
 
-## 5. Check data quality before approving
-
-CMR routing does **not** auto-run DQ checks – CMR review is manual, on
-purpose. `plan` tells you exactly what got routed (`sheet`, `disease`,
-`data_type`, `dest`, `n_rows`); loop over it, and log each measure’s
-flags so they’re visible for triage (and so
-[`eri_approve_cmr()`](#approve) below knows what’s been reviewed):
+**Re-splitting a corrected file.** Fixed something upstream and
+re-splitting a `_fixed.xlsx` copy for a period you already split? By
+default
+[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+only *warns* about the now-superseded prior staged file(s) – it never
+deletes anything without you opting in, since this is the one place in
+the package that can remove previously-staged data:
 
 ``` r
 
-data_con <- get_azure_storage_connection(storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data"))
-
-for (i in seq_len(nrow(plan))) {
-  row    <- plan[i, ]
-  staged <- eri_read(row$dest, azcontainer = data_con)
-  schema <- load_dq_schema("uga", row$disease, "programmatic", row$data_type)
-  result <- run_dq_checks(staged, schema)
-  eri_dq_log(result, "uga", row$disease, "programmatic", row$data_type, period = "202406")
-}
+eri_split_cmr(fixed_report, "uga", supersede_staged = TRUE)
+#> ✔ Superseded a prior staged file for this period: cmr-example_rb_treatment.parquet
 ```
 
-`dq_report(result)` is a console pretty-printer for one measure at a
-time – reading twelve of those back to back is a lot. For a scannable
-view **across every measure at once**, work directly with the tibble
-underneath (`result$flags`, or the logged version via
-[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)):
+Leave it `FALSE` (the default) if you’d rather review the warning and
+remove the old file by hand.
+
+## 5. Check data quality before approving
+
+CMR routing does **not** auto-run DQ checks – CMR review is manual, on
+purpose.
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+runs and logs DQ checks for every measure `plan` routed, in one call,
+and gives you back **one combined tibble** – every flag from every
+measure – instead of twelve separate
+[`dq_report()`](https://thecartercenter.github.io/erifunctions/reference/dq_report.md)
+printouts:
+
+``` r
+
+flags <- eri_cmr_dq_report("uga", "202406")
+#> ✔ Logged 1 DQ flag (needs_review).
+#> ✔ Logged 0 DQ flags (clean).
+flags
+#> # A tibble: 1 × 10
+#>   sheet        disease data_type log_path      flag_id        row column value issue         status
+#>   <chr>        <chr>   <chr>     <chr>         <chr>        <int> <chr>  <chr> <chr>         <chr>
+#> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open
+```
+
+Work through it **issue by issue**, not measure by measure: mark each
+flag `"not_important"`, `"fixed"`, or `"noted"`, with a note explaining
+what you did or decided:
+
+``` r
+
+eri_dq_flag_resolve(flags$flag_id[1], "not_important",
+                   note = "confirmed with the country: target is genuinely 0 this period")
+```
+
+Once every flag in a measure’s report has been triaged, close out that
+measure’s whole log entry – this is what actually unblocks
+[`eri_approve_cmr()`](#approve) below. Skip `note` and it
+auto-summarizes from the per-flag decisions you just made instead of
+leaving the entry’s own note blank:
+
+``` r
+
+eri_logs_resolve(unique(flags$log_path)[1])
+#> ✔ Marked ...yaml handled.
+# note auto-filled as "1 not important" from the per-flag triage above
+```
+
+If you’d rather scan the *logged* state across the team’s whole backlog
+(not just this run’s in-memory tibble),
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+still works the same way, one row per measure:
 
 ``` r
 
@@ -333,10 +376,6 @@ eri_logs("uga", data_source = "programmatic", operation = "dq_flags", since = "2
 #> 1 uga/oncho/...  2026-07-...dq_flags  needs_review oncho   treatment 1
 #> 2 uga/sch/...    2026-07-...dq_flags  clean        sch     treatment 0
 ```
-
-One row per measure, sortable/filterable, `n_issues` at a glance –
-filter to `status == "needs_review"` to see exactly what still needs
-your attention before approving.
 
 ## 6. Approve
 
@@ -378,6 +417,14 @@ plain
 [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
 is a convenience wrapper around exactly that, looped, with the DQ gate
 in front.)
+
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+also writes its own log entry recording exactly which `dq_flags` log(s)
+it verified clean for this approval (`dq_reviewed`) – so the audit trail
+from “this data is now processed” back to “here’s every flag that was
+raised, and what was decided about each one” is traceable via
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md),
+not just a bare approval stamp.
 
 ``` r
 

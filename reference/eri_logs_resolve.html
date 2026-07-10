@@ -13,7 +13,7 @@ place; the original operation record is preserved."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@ place; the original operation record is preserved."><meta property="og:image" co
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Mark a log entry as handled</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.9/R/logs.R" class="external-link"><code>R/logs.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/logs.R" class="external-link"><code>R/logs.R</code></a></small>
       <div class="d-none name"><code>eri_logs_resolve.Rd</code></div>
     </div>
 
@@ -110,6 +110,12 @@ from <code><a href="eri_logs.html">eri_logs()</a></code>).</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, <code>TRUE</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Same single-editor caveat as <code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code>: this is a read-modify-write
+with no optimistic-concurrency protection, so two people resolving the <em>same</em>
+log entry around the same time can silently clobber one another.</p>
     </div>
 
     <div class="section level2">

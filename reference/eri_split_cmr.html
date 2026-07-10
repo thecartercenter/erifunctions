@@ -37,6 +37,19 @@ DA doing a fresh-period pilot run may still want both:
 eri_split_cmr(..., mirror_pipeline = ...) then eri_stage_cmr() (or the
 reverse order; neither depends on the other having run first).
 
+
+
+Re-splitting the same period from a corrected file
+
+
+If you fix an issue upstream and re-run this on a different local file (e.g.
+the _fixed.xlsx copy convention) for a period already split, the prior
+staged file(s) for each sheet's destination folder are removed first (when
+period is known) – otherwise both the broken original and the corrected
+file would sit in staged/ together, and eri_approve()'s period-substring
+match would promote both. Each removal is logged as a supersede_staged
+step.
+
 "><meta property="og:description" content="
 Reads every sheet a country's CMR schema routes (those declaring a disease
 and a data_type), and writes each sheet's parsed rows to
@@ -75,6 +88,19 @@ DA doing a fresh-period pilot run may still want both:
 eri_split_cmr(..., mirror_pipeline = ...) then eri_stage_cmr() (or the
 reverse order; neither depends on the other having run first).
 
+
+
+Re-splitting the same period from a corrected file
+
+
+If you fix an issue upstream and re-run this on a different local file (e.g.
+the _fixed.xlsx copy convention) for a period already split, the prior
+staged file(s) for each sheet's destination folder are removed first (when
+period is known) – otherwise both the broken original and the corrected
+file would sit in staged/ together, and eri_approve()'s period-substring
+match would promote both. Each removal is logged as a supersede_staged
+step.
+
 "><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
@@ -83,7 +109,7 @@ reverse order; neither depends on the other having run first).
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -144,7 +170,7 @@ reverse order; neither depends on the other having run first).
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Split a CMR monthly report into per-disease, per-measure staged datasets</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.9/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_split_cmr.Rd</code></div>
     </div>
 
@@ -188,6 +214,19 @@ DA doing a fresh-period pilot run may still want both:
 reverse order; neither depends on the other having run first).</p>
 </div>
 
+<div class="section">
+<h3 id="re-splitting-the-same-period-from-a-corrected-file">Re-splitting the same period from a corrected file<a class="anchor" aria-label="anchor" href="#re-splitting-the-same-period-from-a-corrected-file"></a></h3>
+
+
+<p>If you fix an issue upstream and re-run this on a different local file (e.g.
+the <code>_fixed.xlsx</code> copy convention) for a period already split, the prior
+staged file(s) for each sheet's destination folder are removed first (when
+<code>period</code> is known) – otherwise both the broken original and the corrected
+file would sit in <code>staged/</code> together, and <code><a href="eri_approve.html">eri_approve()</a></code>'s period-substring
+match would promote both. Each removal is logged as a <code>supersede_staged</code>
+step.</p>
+</div>
+
     </div>
 
     <div class="section level2">
@@ -200,7 +239,8 @@ reverse order; neither depends on the other having run first).</p>
 <span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mirror_pipeline <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  projects_con <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  projects_con <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  supersede_staged <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -253,6 +293,20 @@ when <code>mirror_pipeline</code> is set.</p></dd>
 <dd><p>Azure container for the <code>projects</code> blob; used only when
 <code>mirror_pipeline</code> is set. If <code>NULL</code>, connects automatically.</p></dd>
 
+
+<dt id="arg-supersede-staged">supersede_staged<a class="anchor" aria-label="anchor" href="#arg-supersede-staged"></a></dt>
+<dd><p><code>logical</code> Re-splitting the same period from a
+DIFFERENT local file (e.g. a <code>_fixed.xlsx</code> correction) can leave a prior
+staged file behind in each destination folder – <code><a href="eri_approve.html">eri_approve()</a></code>'s period
+match would then promote both to <code>processed/</code>. When <code>period</code> is known,
+candidate stale files (their name starts with <code>period</code>, not just contains
+it anywhere – the real filename convention, so this doesn't collide with
+an unrelated file that merely mentions those six digits) are always
+detected and reported. Default <code>FALSE</code> only warns about them – <strong>this
+package's first destructive Azure operation is opt-in, not automatic</strong>;
+set <code>TRUE</code> to actually delete them. Ignored (nothing detected or deleted)
+when <code>period</code> couldn't be resolved.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -270,6 +324,9 @@ when <code>mirror_pipeline</code> is set.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"oncho"</span>, <span class="st">"programmatic"</span>, <span class="st">"2024-06"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># One step: also mirror the raw file to the legacy contractor pipeline</span></span></span>
 <span class="r-in"><span><span class="fu">eri_split_cmr</span><span class="op">(</span><span class="st">"202605_ssd_report.xlsx"</span>, <span class="st">"ssd"</span>, mirror_pipeline <span class="op">=</span> <span class="st">"rb-expansion"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Re-splitting a corrected file for a period already staged: opt in to</span></span></span>
+<span class="r-in"><span><span class="co"># actually removing the superseded original (default only warns)</span></span></span>
+<span class="r-in"><span><span class="fu">eri_split_cmr</span><span class="op">(</span><span class="st">"202605_ssd_report_fixed.xlsx"</span>, <span class="st">"ssd"</span>, supersede_staged <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

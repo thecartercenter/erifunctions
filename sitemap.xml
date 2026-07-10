@@ -81,6 +81,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_catalog_remove.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_catalog_verify.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_color_scheme.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_compare.html</loc></url>
@@ -93,6 +94,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_create.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dir_exists.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_epidemic_curve.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_epiweek_date.html</loc></url>

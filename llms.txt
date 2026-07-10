@@ -499,6 +499,10 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
   **\[experimental\]** : Approve every disease/measure one CMR workbook
   routed to, in one call
 
+- [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+  **\[experimental\]** : Run and log DQ checks for a whole CMR workbook,
+  one combined report
+
 - [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
   **\[experimental\]** : Load a CMR country schema
 
@@ -571,8 +575,17 @@ Persist data-quality flags and triage the error / DQ log backlog.
 
 - [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
   : Persist data-quality flags to the log backlog
+
+- [`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
+  **\[experimental\]** :
+
+  Triage a single DQ flag within a logged
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
+  entry
+
 - [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
   : List the operation / DQ log backlog for triage
+
 - [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
   : Mark a log entry as handled
 
