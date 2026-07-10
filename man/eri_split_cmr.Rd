@@ -27,16 +27,21 @@ CMR schema via \code{\link[=load_cmr_schema]{load_cmr_schema()}}.}
 \item{overwrite}{\code{logical} If \code{FALSE} (default), warns before overwriting an
 existing staged file.}
 
-\item{dry_run}{\code{logical} If \code{TRUE}, returns the routing plan and writes
-nothing. Default \code{FALSE}.}
+\item{dry_run}{\code{logical} If \code{TRUE}, returns the routing plan and writes no
+\emph{data}. Default \code{FALSE}. One exception: if the dry run finds a skipped
+sheet or a warning, that fact \strong{is} logged (a lightweight triage entry,
+not staged data) so there's a stable \code{log_path} to attach an
+\code{\link[=eri_logs_resolve]{eri_logs_resolve()}} note to later -- see step 3 of the CMR guide.}
 
 \item{mirror_pipeline}{\code{str} or \code{NULL} Registered pipeline name (e.g.
 \code{"rb-expansion"}) whose legacy raw-drop location \code{path} should also be
 uploaded to. Default \code{NULL} (no mirror; sandbox-safe).}
 
-\item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}) for the
-mirror upload. \code{NULL} (default) parses a leading \code{YYYYMM_} from
-\code{basename(path)}; required if that can't be parsed.}
+\item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}), used to tag
+the op-log (so \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}} can find this run again) and, if
+\code{mirror_pipeline} is set, the mirror upload. \code{NULL} (default) parses a
+leading \code{YYYYMM_} from \code{basename(path)}; only required to be resolvable
+when \code{mirror_pipeline} is set.}
 
 \item{projects_con}{Azure container for the \code{projects} blob; used only when
 \code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}

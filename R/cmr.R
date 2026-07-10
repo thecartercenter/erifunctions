@@ -214,14 +214,19 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   `ERIFUNCTIONS_DATA_STORAGE_NAME`.
 #' @param overwrite `logical` If `FALSE` (default), warns before overwriting an
 #'   existing staged file.
-#' @param dry_run `logical` If `TRUE`, returns the routing plan and writes
-#'   nothing. Default `FALSE`.
+#' @param dry_run `logical` If `TRUE`, returns the routing plan and writes no
+#'   *data*. Default `FALSE`. One exception: if the dry run finds a skipped
+#'   sheet or a warning, that fact **is** logged (a lightweight triage entry,
+#'   not staged data) so there's a stable `log_path` to attach an
+#'   [eri_logs_resolve()] note to later -- see step 3 of the CMR guide.
 #' @param mirror_pipeline `str` or `NULL` Registered pipeline name (e.g.
 #'   `"rb-expansion"`) whose legacy raw-drop location `path` should also be
 #'   uploaded to. Default `NULL` (no mirror; sandbox-safe).
-#' @param period `str` or `NULL` Reporting period (e.g. `"202605"`) for the
-#'   mirror upload. `NULL` (default) parses a leading `YYYYMM_` from
-#'   `basename(path)`; required if that can't be parsed.
+#' @param period `str` or `NULL` Reporting period (e.g. `"202605"`), used to tag
+#'   the op-log (so [eri_cmr_last_plan()] can find this run again) and, if
+#'   `mirror_pipeline` is set, the mirror upload. `NULL` (default) parses a
+#'   leading `YYYYMM_` from `basename(path)`; only required to be resolvable
+#'   when `mirror_pipeline` is set.
 #' @param projects_con Azure container for the `projects` blob; used only when
 #'   `mirror_pipeline` is set. If `NULL`, connects automatically.
 #' @returns Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
@@ -244,6 +249,15 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   if (!dry_run) .eri_log_session()
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
+  }
+
+  # Resolve period generally (not just for the mirror): a leading YYYYMM_ in
+  # the filename, same convention observed in real submissions. Used to tag
+  # the op-log so eri_cmr_last_plan() can find this run again later. Failing
+  # to detect it here is only fatal if mirror_pipeline needs it (below).
+  if (is.null(period)) {
+    detected <- regmatches(basename(path), regexpr("^\\d{6}(?=_)", basename(path), perl = TRUE))
+    if (length(detected) > 0L) period <- detected
   }
 
   # Validate the optional legacy mirror up front (fail fast, no I/O), same
@@ -271,14 +285,10 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       ))
     }
     if (is.null(period)) {
-      detected <- regmatches(basename(path), regexpr("^\\d{6}(?=_)", basename(path), perl = TRUE))
-      if (length(detected) == 0L) {
-        cli::cli_abort(c(
-          "Could not parse a {.val YYYYMM} period from {.path {basename(path)}}.",
-          "i" = "Pass {.arg period} explicitly (e.g. {.code period = \"202605\"})."
-        ))
-      }
-      period <- detected
+      cli::cli_abort(c(
+        "Could not parse a {.val YYYYMM} period from {.path {basename(path)}}.",
+        "i" = "Pass {.arg period} explicitly (e.g. {.code period = \"202605\"})."
+      ))
     }
     mirror <- list(reg = reg, subfolder = subfolder, period = period)
   }
@@ -312,15 +322,24 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   fbase     <- tools::file_path_sans_ext(basename(path))
   slug      <- function(x) gsub("_+", "_", gsub("[^a-z0-9]+", "_", tolower(x)))
 
-  plan    <- list()
-  skipped <- character(0)
+  plan     <- list()
+  skipped  <- character(0)
+  warnings_seen <- character(0)
   for (sheet_name in names(routable)) {
     spec <- routable[[sheet_name]]
     if (!sheet_name %in% available) {
       skipped <- c(skipped, sheet_name)
       next
     }
-    df       <- eri_ingest_cmr(path, sheet = sheet_name, country = country)
+    # Observe (don't muffle) warnings from parsing -- they still propagate
+    # normally, this just also lets the dry-run summary below say whether
+    # anything needs attention before you run for real.
+    df <- withCallingHandlers(
+      eri_ingest_cmr(path, sheet = sheet_name, country = country),
+      warning = function(w) {
+        warnings_seen <<- c(warnings_seen, paste0(sheet_name, ": ", conditionMessage(w)))
+      }
+    )
     dest_dir <- eri_data_path(country, spec$disease, "programmatic", spec$data_type, "staged")
     dest     <- paste0(dest_dir, "/", fbase, "_", slug(sheet_name), ".parquet")
     plan[[length(plan) + 1L]] <- list(
@@ -355,16 +374,64 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   )
 
   if (dry_run) {
-    cli::cli_inform(c("i" = "Dry run -- nothing written. Routing plan:"))
+    cli::cli_inform(c("i" = "Dry run -- no data written. Routing plan:"))
     for (p in plan) {
       cli::cli_inform("  {.val {p$sheet}} -> {.path {p$dest}} ({p$n_rows} row{?s})")
     }
     if (!is.null(mirror)) {
-      mirror_dest <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
-                              mirror$subfolder, mirror$period, basename(path)), collapse = "/")
-      cli::cli_inform("  Would also mirror raw file -> {.path {mirror_dest}}")
+      mirror_dir <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
+                             mirror$subfolder, mirror$period), collapse = "/")
+      cli::cli_inform(c(
+        "i" = "Would also mirror raw file -> {.path {mirror_dir}}/{country}_{mirror$period}_<timestamp>.{tools::file_ext(path)}",
+        " " = "(the timestamp is generated fresh at write time, not reused from this preview)"
+      ))
     }
+
+    if (length(skipped) == 0L && length(warnings_seen) == 0L) {
+      cli::cli_alert_success("Dry run clean -- no issues found. Ready to run for real.")
+    } else {
+      cli::cli_alert_warning(
+        "Dry run found {length(skipped)} skipped sheet{?s} and {length(warnings_seen)} warning{?s} -- review before running for real."
+      )
+      dr_data_con <- tryCatch(
+        if (is.null(data_con)) {
+          suppressMessages(get_azure_storage_connection(
+            storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+          ))
+        } else data_con,
+        error = function(e) NULL
+      )
+      if (!is.null(dr_data_con)) {
+        dr_log_dir <- paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+        dr_log_path <- .eri_write_log(
+          list(
+            operation  = "eri_split_cmr_dryrun",
+            analyst    = .eri_analyst_id(dr_data_con),
+            timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+            parameters = list(country = country, path = path),
+            status     = "needs_review",
+            skipped    = as.list(skipped),
+            warnings   = as.list(warnings_seen)
+          ),
+          dr_data_con, dr_log_dir
+        )
+        if (!is.null(dr_log_path)) {
+          cli::cli_alert_info(c(
+            "i" = "Once you've fixed things, note what you did with {.run eri_logs_resolve('{dr_log_path}', note = '...')}."
+          ))
+        }
+      }
+    }
+
     return(invisible(plan_tbl))
+  }
+
+  if (is.null(period)) {
+    cli::cli_warn(c(
+      "Could not resolve a period for this run (no {.val YYYYMM_} prefix in {.path {basename(path)}}).",
+      "i" = "This run's op-log will have no period, so {.fn eri_cmr_last_plan} won't be able to find it later.",
+      "i" = "Pass {.arg period} explicitly if you'll want to recover this plan without keeping the R object."
+    ))
   }
 
   data_con <- if (is.null(data_con)) {
@@ -381,8 +448,16 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     operation  = "eri_split_cmr",
     analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-    parameters = list(country = country, path = path),
-    status     = "in_progress", steps = list(), error = NULL, files = NULL
+    parameters = list(country = country, path = path, period = period),
+    status     = "in_progress", steps = list(), error = NULL, files = NULL,
+    # Structured routing table (sheet/disease/data_type/dest/n_rows), not just
+    # the flat `files` path list -- lets eri_cmr_last_plan() reconstruct the
+    # plan tibble later without rerunning eri_split_cmr() or keeping the R
+    # object alive in-session.
+    plan = lapply(plan, function(p) {
+      list(sheet = p$sheet, disease = p$disease, data_type = p$data_type,
+           dest = p$dest, n_rows = p$n_rows)
+    })
   )
 
   written   <- character(0)
@@ -415,7 +490,18 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       }
       mirror_dir  <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
                               mirror$subfolder, mirror$period), collapse = "/")
-      mirror_dest <- paste0(mirror_dir, "/", basename(path))
+      # Generate the destination filename rather than reusing basename(path)
+      # verbatim: real CMR filenames are human-titled ("...Data Report
+      # Submitted_09-June-2026.xlsx") and can contain characters that break
+      # the storage REST call (observed: HTTP 400 "invalid query parameter"
+      # on this upload while the slugified parquet upload succeeded). A
+      # generated name is also self-timestamping, so the DA doesn't need to
+      # rename the local file to embed the period.
+      mirror_ext  <- tools::file_ext(path)
+      mirror_ts   <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+      mirror_name <- paste0(country, "_", mirror$period, "_", mirror_ts,
+                            if (nzchar(mirror_ext)) paste0(".", mirror_ext) else "")
+      mirror_dest <- paste0(mirror_dir, "/", mirror_name)
       if (!AzureStor::storage_dir_exists(projects_con, mirror_dir)) {
         .eri_create_azure_dir(projects_con, mirror_dir)
         op_log$steps <- .eri_log_step(op_log$steps, "create_mirror_dir", path = mirror_dir)
@@ -452,6 +538,173 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   if (had_error) cli::cli_abort(err_msg, call = NULL)
 
   invisible(plan_tbl)
+}
+
+#' Reconstruct a past `eri_split_cmr()` run's routing plan
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Recovers the routing plan (`sheet`, `disease`, `data_type`, `dest`, `n_rows`)
+#' for a country/period from the persisted operation log, without rerunning
+#' [eri_split_cmr()] or needing to have kept its return value in your R
+#' session. [eri_split_cmr()] records the full plan in its op-log on every
+#' successful run; this reads the most recent one back.
+#'
+#' "Most recent" assumes a re-split for the same country/period supersedes the
+#' one before it with an equal-or-larger set of measures (the normal case: a
+#' corrected workbook re-uploaded whole). If a later run split a workbook with
+#' *fewer* routable sheets than an earlier one for the same period, only the
+#' narrower, newer set is returned -- the earlier run's other measures won't
+#' appear here (or in [eri_approve_cmr()]'s task list) even though they were
+#' routed. Not expected in normal use; worth knowing if periods get re-split
+#' from partial/corrective files rather than a full re-upload.
+#'
+#' @param country `str` Country code (e.g. `"sdn"`).
+#' @param period `str` Reporting period matching the run you want (e.g. `"202605"`).
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns A tibble with one row per routed sheet: `sheet`, `disease`, `data_type`,
+#'   `dest`, `n_rows` -- identical in shape to what [eri_split_cmr()] returns.
+#' @examples
+#' \dontrun{
+#' plan <- eri_cmr_last_plan("sdn", "202605")
+#' }
+#' @export
+eri_cmr_last_plan <- function(country, period, data_con = NULL) {
+  data_con <- .eri_logs_con(data_con)
+
+  logs <- eri_logs(country, "rblf", "cmr", operation = "eri_split_cmr",
+                   status = "success", include_handled = TRUE, data_con = data_con)
+  logs <- logs[!is.na(logs$period) & logs$period == period, ]
+
+  if (nrow(logs) == 0L) {
+    cli::cli_abort(c(
+      "No successful {.fn eri_split_cmr} run logged for {.val {country}} / {.val {period}}.",
+      "i" = "Check the period, or recompute it locally instead with {.code eri_split_cmr(path, country, dry_run = TRUE)}."
+    ))
+  }
+
+  log_path <- logs$log_path[[1]]  # eri_logs() returns newest first
+  tmp   <- tempfile(fileext = ".yaml")
+  entry <- tryCatch({
+    .eri_blob_read(data_con, log_path, tmp)
+    yaml::read_yaml(tmp)
+  }, error = function(e) {
+    cli::cli_abort("Could not read log {.path {log_path}}: {conditionMessage(e)}")
+  })
+  unlink(tmp)
+
+  if (is.null(entry$plan) || length(entry$plan) == 0L) {
+    cli::cli_abort(c(
+      "Log {.path {log_path}} has no structured plan recorded.",
+      "i" = "This run predates the structured-plan logging; recompute locally with {.code dry_run = TRUE} instead."
+    ))
+  }
+
+  tibble::tibble(
+    sheet     = vapply(entry$plan, function(p) p$sheet,     character(1L)),
+    disease   = vapply(entry$plan, function(p) p$disease,   character(1L)),
+    data_type = vapply(entry$plan, function(p) p$data_type, character(1L)),
+    dest      = vapply(entry$plan, function(p) p$dest,      character(1L)),
+    n_rows    = vapply(entry$plan, function(p) p$n_rows,    integer(1L))
+  )
+}
+
+#' Approve every disease/measure one CMR workbook routed to, in one call
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' [eri_approve()] promotes one `(disease, data_type)` at a time, but one CMR
+#' workbook fans out into many of them via [eri_split_cmr()]. This looks up
+#' what got routed for `country`/`period` (via [eri_cmr_last_plan()] if `plan`
+#' isn't supplied), checks every measure's DQ-flag log, and only if **none**
+#' have an outstanding item -- either unresolved flags or never having been
+#' DQ-checked at all for this period -- approves every measure in one call.
+#'
+#' If anything is outstanding, **nothing is approved**. This is the explicit
+#' human-review gate for CMR data; the point is that a DA can't accidentally
+#' approve past an unreviewed measure by looping blindly. Instead you get back
+#' a task list: one row per measure still needing attention. Review each,
+#' close it out with [eri_logs_resolve()] (passing what you did/decided via
+#' its `note` argument), and re-run this function -- it re-checks from
+#' scratch each time.
+#'
+#' **A stale flag keeps blocking until it's explicitly resolved.** This checks
+#' every `dq_flags` log entry for the period, not just the most recent one: if
+#' an earlier [eri_dq_log()] run had unresolved flags and a later rerun for the
+#' same period came back `"clean"`, the earlier entry still blocks approval
+#' until you [eri_logs_resolve()] it. This is deliberate (an unreviewed flag
+#' shouldn't be silently superseded by a fresh "clean" run), but it does mean a
+#' truly stale/superseded flag needs an explicit note to clear, not just a
+#' clean recheck.
+#'
+#' @param country `str` Country code (e.g. `"sdn"`).
+#' @param period `str` Reporting period (e.g. `"202605"`).
+#' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] /
+#'   [eri_cmr_last_plan()]. `NULL` (default) looks it up via [eri_cmr_last_plan()].
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Invisibly, a tibble: if everything was clean, one row per
+#'   `(disease, data_type)` that got approved; if anything was outstanding,
+#'   one row per `(disease, data_type)` still needing attention (with
+#'   `log_path`/`issue`) and **nothing was approved**.
+#' @examples
+#' \dontrun{
+#' eri_approve_cmr("sdn", "202605")
+#' }
+#' @export
+eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
+  data_con <- .eri_logs_con(data_con)
+
+  if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
+
+  measures <- unique(plan[, c("disease", "data_type")])
+
+  outstanding <- list()
+  for (i in seq_len(nrow(measures))) {
+    m <- measures[i, ]
+    dq_logs <- eri_logs(country, m$disease, "programmatic", m$data_type,
+                        operation = "dq_flags", include_handled = TRUE,
+                        data_con = data_con)
+    dq_logs <- dq_logs[!is.na(dq_logs$period) & dq_logs$period == period, ]
+
+    if (nrow(dq_logs) == 0L) {
+      outstanding[[length(outstanding) + 1L]] <- tibble::tibble(
+        disease = m$disease, data_type = m$data_type,
+        log_path = NA_character_, issue = "never DQ-checked for this period"
+      )
+      next
+    }
+    open_flags <- dq_logs[dq_logs$status == "needs_review" & !dq_logs$handled, ]
+    if (nrow(open_flags) > 0L) {
+      outstanding[[length(outstanding) + 1L]] <- tibble::tibble(
+        disease = m$disease, data_type = m$data_type,
+        log_path = open_flags$log_path[[1]],
+        issue = paste0(open_flags$n_issues[[1]], " unresolved DQ flag(s)")
+      )
+    }
+  }
+
+  if (length(outstanding) > 0L) {
+    outstanding_tbl <- dplyr::bind_rows(outstanding)
+    cli::cli_alert_danger(c(
+      "{nrow(outstanding_tbl)} measure{?s} still need{?s/} attention -- approving nothing.",
+      "i" = "Review each below, close it out with {.fn eri_logs_resolve} (pass a {.arg note}), then re-run this."
+    ))
+    print(outstanding_tbl)
+    return(invisible(outstanding_tbl))
+  }
+
+  approved <- vector("list", nrow(measures))
+  for (i in seq_len(nrow(measures))) {
+    m <- measures[i, ]
+    eri_approve(country, m$disease, "programmatic", period, data_type = m$data_type,
+               azcontainer = data_con)
+    approved[[i]] <- tibble::tibble(disease = m$disease, data_type = m$data_type)
+  }
+  approved_tbl <- dplyr::bind_rows(approved)
+  cli::cli_alert_success("Approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}.")
+  invisible(approved_tbl)
 }
 
 #' Stage CMR monthly report files into the data/ blob

@@ -155,6 +155,8 @@ reference:
   - eri_ingest_cmr
   - eri_split_cmr
   - eri_stage_cmr
+  - eri_cmr_last_plan
+  - eri_approve_cmr
   - load_cmr_schema
 
 - title: Data quality

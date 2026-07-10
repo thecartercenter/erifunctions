@@ -555,7 +555,10 @@ test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-
   legacy_dest <- mirrored[grepl("raw/filled_templates", mirrored)]
   expect_length(legacy_dest, 1L)
   expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
-  expect_match(legacy_dest, basename(tmp))
+  # Generated name, not the raw local filename (which can carry characters
+  # that break the storage REST call) -- country_period_timestamp.ext.
+  expect_match(legacy_dest, "uga_202406_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
+  expect_false(grepl(basename(tmp), legacy_dest, fixed = TRUE))
 })
 
 test_that("eri_split_cmr mirror_pipeline auto-detects the period from a YYYYMM_ filename", {
@@ -617,4 +620,166 @@ test_that("eri_split_cmr mirror_pipeline errors clearly for an unregistered pipe
     eri_split_cmr(tmp, "uga", dry_run = TRUE, mirror_pipeline = "rb-expansion"),
     "Could not parse"
   )
+})
+
+test_that("eri_split_cmr dry_run alerts clean when nothing was skipped or warned", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp, sheet_name = "RB Treatment")
+
+  # A schema that routes exactly the one sheet the file has -- the genuinely
+  # zero-skip, zero-warning case.
+  local_mocked_bindings(
+    load_cmr_schema = function(country) list(
+      country = country, sheets = list(
+        "RB Treatment" = list(field_code_prefix = "#rbtrt_", disease = "oncho",
+                              data_type = "treatment", required_fields = "#rbtrt_year")
+      )
+    ),
+    .package = "erifunctions"
+  )
+
+  expect_message(
+    eri_split_cmr(tmp, "uga", dry_run = TRUE),
+    "Dry run clean"
+  )
+})
+
+test_that("eri_split_cmr dry_run with issues warns instead of claiming clean, and logs for triage", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
+    sheet_name  = "RB Treatment"
+  )
+
+  logged <- list()
+  local_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_write_log = function(log_list, ...) {
+      logged[[length(logged) + 1L]] <<- log_list
+      "uga/rblf/cmr/logs/fake_dryrun.yaml"
+    },
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    expect_message(
+      eri_split_cmr(tmp, "uga", dry_run = TRUE, data_con = structure(list(), class = "mock")),
+      "Dry run found"
+    ),
+    "duplicate field code"
+  )
+
+  expect_length(logged, 1L)
+  expect_equal(logged[[1]]$operation, "eri_split_cmr_dryrun")
+  expect_equal(logged[[1]]$status, "needs_review")
+  expect_true(length(logged[[1]]$warnings) > 0L)
+})
+
+test_that("eri_cmr_last_plan reconstructs a plan from the persisted op-log", {
+  fake_entry <- list(
+    operation = "eri_split_cmr", status = "success",
+    plan = list(
+      list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+          dest = "sdn/oncho/programmatic/treatment/staged/x.parquet", n_rows = 10L),
+      list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+          dest = "sdn/lf/programmatic/treatment/staged/x.parquet", n_rows = 5L)
+    )
+  )
+
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/rblf/cmr/logs/fake.yaml", period = "202605",
+      operation = "eri_split_cmr", status = "success"
+    ),
+    .eri_blob_read = function(con, src, dest, ...) {
+      yaml::write_yaml(fake_entry, dest); invisible(dest)
+    },
+    .package = "erifunctions"
+  )
+
+  plan <- eri_cmr_last_plan("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_s3_class(plan, "tbl_df")
+  expect_equal(nrow(plan), 2L)
+  expect_setequal(plan$disease, c("oncho", "lf"))
+})
+
+test_that("eri_cmr_last_plan errors clearly when nothing is logged for that period", {
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = character(0), period = character(0),
+      operation = character(0), status = character(0)
+    ),
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_cmr_last_plan("sdn", "202605", data_con = structure(list(), class = "mock")),
+    "No successful"
+  )
+})
+
+test_that("eri_approve_cmr blocks and reports when a measure was never DQ-checked", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = character(0), period = character(0),
+      status = character(0), handled = logical(0), n_issues = integer(0)
+    ),
+    .package = "erifunctions"
+  )
+
+  result <- eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(nrow(result), 2L)
+  expect_true(all(grepl("never DQ-checked", result$issue)))
+})
+
+test_that("eri_approve_cmr blocks on unresolved DQ flags and does not call eri_approve", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "a", n_rows = 1L
+  )
+
+  approve_called <- FALSE
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/oncho/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "needs_review", handled = FALSE, n_issues = 3L
+    ),
+    eri_approve = function(...) { approve_called <<- TRUE },
+    .package = "erifunctions"
+  )
+
+  result <- eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_false(approve_called)
+  expect_match(result$issue, "3 unresolved DQ flag")
+})
+
+test_that("eri_approve_cmr approves every measure once all are clean", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+
+  approved <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/x/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "clean", handled = FALSE, n_issues = 0L
+    ),
+    eri_approve = function(country, disease, data_source, period, data_type = NULL, azcontainer = NULL) {
+      approved[[length(approved) + 1L]] <<- list(disease = disease, data_type = data_type)
+    },
+    .package = "erifunctions"
+  )
+
+  result <- eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_length(approved, 2L)
+  expect_equal(nrow(result), 2L)
 })
