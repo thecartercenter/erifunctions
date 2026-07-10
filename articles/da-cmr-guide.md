@@ -24,7 +24,8 @@ to the projects blob"\] B --\> C\["eri_stage_cmr(): projects -\>
 staged/"\] C --\> D\["eri_ingest_cmr(): parse each sheet by its \#field
 codes"\] D --\> E\["Review the numbers"\] E --\> F\["eri_split_cmr():
 route each sheet to {disease}/programmatic/{measure}/staged/"\] F --\>
-G\["eri_approve() each disease/measure -\> processed/ + catalog"\]
+G\["DQ-check each measure, eri_dq_log() the flags"\] G --\>
+H\["eri_approve_cmr(): approve everything at once, only if all clean"\]
 
 ## Before you start
 
@@ -233,7 +234,7 @@ the routing first with `dry_run`:
 eri_split_cmr(report, "uga", dry_run = TRUE)
 #> ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.
 #> ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.
-#> ℹ Dry run -- nothing written. Routing plan:
+#> ℹ Dry run -- no data written. Routing plan:
 #>   "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)
 #>   "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)
 #> Warning: Sheet "LF MMDP" not found in cmr-example.xlsx; skipping.   # ...and the
@@ -257,12 +258,29 @@ errors instead of silently doing nothing.)
 > across diseases. Cross-programme **Training** sheets, which serve all
 > programmes at once, route together under the combined `rblf` disease.
 
-Then stage for real, one parquet per sheet, in its disease/measure
-folder:
+If the dry run comes back with nothing skipped and no warnings, you’ll
+see a plain “Dry run clean – ready to run for real” instead of having to
+infer it from an absence of complaints. If it does flag something (a
+skipped sheet, or a real template defect like a duplicate field code),
+it’s also logged so you have a stable reference to attach a note to
+later, once you’ve looked into it and fixed whatever needed fixing:
 
 ``` r
 
-eri_split_cmr(report, "uga")
+# ... after investigating and correcting something upstream ...
+eri_logs_resolve("uga/rblf/cmr/logs/20260710_150903_eri_split_cmr_dryrun.yaml",
+                 note = "confirmed the skipped training sheets aren't part of this country's report")
+```
+
+Then stage for real, one parquet per sheet, in its disease/measure
+folder. If this country’s raw file still also needs to reach the legacy
+contractor pipeline during the Phase-3 parallel run, `mirror_pipeline`
+uploads it there in the same call – one step instead of a separate
+manual upload:
+
+``` r
+
+plan <- eri_split_cmr(report, "uga")   # add mirror_pipeline = "rb-expansion" if this country needs it
 #> ✔ "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet
 #> ✔ "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet
 #> ── ✔ Split CMR by disease/measure ───────────────────────
@@ -270,26 +288,96 @@ eri_split_cmr(report, "uga")
 #> Diseases: oncho, sch
 ```
 
-## 5. Approve each disease/measure
-
-Each split dataset passes through the same human gate, once per
-disease/measure:
+Keep `plan` around for the next two steps. Lost it, or ran the split in
+an earlier session? Recover it without rerunning anything (the routing
+table is persisted in the op-log every real run writes):
 
 ``` r
 
-eri_approve("uga", "oncho", "programmatic", "202406", data_type = "treatment")
-#> ✔ Approved: cmr-example_rb_treatment.parquet
-#> ── ✔ Approved "202406" ──────────────────────────────────
-#> Dataset: uga / oncho / programmatic / treatment
-#> Location: uga/oncho/programmatic/treatment/processed
+plan <- eri_cmr_last_plan("uga", "202406")
+```
 
-eri_approve("uga", "sch", "programmatic", "202406", data_type = "treatment")
-#> ── ✔ Approved "202406" ──────────────────────────────────
-#> Dataset: uga / sch / programmatic / treatment
+## 5. Check data quality before approving
+
+CMR routing does **not** auto-run DQ checks – CMR review is manual, on
+purpose. `plan` tells you exactly what got routed (`sheet`, `disease`,
+`data_type`, `dest`, `n_rows`); loop over it, and log each measure’s
+flags so they’re visible for triage (and so
+[`eri_approve_cmr()`](#approve) below knows what’s been reviewed):
+
+``` r
+
+data_con <- get_azure_storage_connection(storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data"))
+
+for (i in seq_len(nrow(plan))) {
+  row    <- plan[i, ]
+  staged <- eri_read(row$dest, azcontainer = data_con)
+  schema <- load_dq_schema("uga", row$disease, "programmatic", row$data_type)
+  result <- run_dq_checks(staged, schema)
+  eri_dq_log(result, "uga", row$disease, "programmatic", row$data_type, period = "202406")
+}
+```
+
+`dq_report(result)` is a console pretty-printer for one measure at a
+time – reading twelve of those back to back is a lot. For a scannable
+view **across every measure at once**, work directly with the tibble
+underneath (`result$flags`, or the logged version via
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)):
+
+``` r
+
+eri_logs("uga", data_source = "programmatic", operation = "dq_flags", since = "2026-07-01")
+#> # A tibble: 2 × 15
+#>   log_path       timestamp  operation status       disease data_type n_issues …
+#>   <chr>          <chr>      <chr>     <chr>        <chr>   <chr>     <int>
+#> 1 uga/oncho/...  2026-07-...dq_flags  needs_review oncho   treatment 1
+#> 2 uga/sch/...    2026-07-...dq_flags  clean        sch     treatment 0
+```
+
+One row per measure, sortable/filterable, `n_issues` at a glance –
+filter to `status == "needs_review"` to see exactly what still needs
+your attention before approving.
+
+## 6. Approve
+
+One CMR workbook fans out into several diseases/measures;
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+approves all of them in one call **but only if every one is clean** –
+reviewed via the DQ-check step above, with no outstanding flags:
+
+``` r
+
+eri_approve_cmr("uga", "202406")
+#> ✔ Approved 2 measures for "uga" / "202406".
+```
+
+If anything’s still outstanding (a measure was never DQ-checked, or has
+unresolved flags), **nothing is approved** – you get a task list back
+instead:
+
+``` r
+
+eri_approve_cmr("uga", "202406")
+#> x 1 measure still needs attention -- approving nothing.
+#> # A tibble: 1 × 4
+#>   disease data_type log_path                                     issue
+#>   <chr>   <chr>     <chr>                                        <chr>
+#> 1 oncho   treatment uga/oncho/programmatic/treatment/logs/x.yaml 1 unresolved DQ flag(s)
+
+# Review the flag, then close it out with a note explaining what you did/decided:
+eri_logs_resolve("uga/oncho/programmatic/treatment/logs/x.yaml",
+                 note = "confirmed with the country: target was genuinely 0 this period")
+eri_approve_cmr("uga", "202406")   # re-run -- now clean, approves everything
 ```
 
 Each disease’s data is now canonical and discoverable in the catalog on
-its own coordinates:
+its own coordinates. (You can still approve one measure at a time with
+plain
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+–
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+is a convenience wrapper around exactly that, looped, with the DQ gate
+in front.)
 
 ``` r
 
@@ -301,7 +389,8 @@ eri_catalog_query(country = "uga", data_source = "programmatic")
 #> 2 uga/sch/programmatic/treatment/…  uga     sch     programmatic treatment proce…
 ```
 
-That’s the monthly loop: **upload → stage → split → approve.**
+That’s the monthly loop: **upload → stage → split → DQ-check →
+approve.**
 
 ## What’s next
 

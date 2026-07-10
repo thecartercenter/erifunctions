@@ -87,8 +87,12 @@ eri_split_cmr(
 
 - dry_run:
 
-  `logical` If `TRUE`, returns the routing plan and writes nothing.
-  Default `FALSE`.
+  `logical` If `TRUE`, returns the routing plan and writes no *data*.
+  Default `FALSE`. One exception: if the dry run finds a skipped sheet
+  or a warning, that fact **is** logged (a lightweight triage entry, not
+  staged data) so there's a stable `log_path` to attach an
+  [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+  note to later – see step 3 of the CMR guide.
 
 - mirror_pipeline:
 
@@ -98,9 +102,13 @@ eri_split_cmr(
 
 - period:
 
-  `str` or `NULL` Reporting period (e.g. `"202605"`) for the mirror
+  `str` or `NULL` Reporting period (e.g. `"202605"`), used to tag the
+  op-log (so
+  [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md)
+  can find this run again) and, if `mirror_pipeline` is set, the mirror
   upload. `NULL` (default) parses a leading `YYYYMM_` from
-  `basename(path)`; required if that can't be parsed.
+  `basename(path)`; only required to be resolvable when
+  `mirror_pipeline` is set.
 
 - projects_con:
 

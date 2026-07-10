@@ -1,5 +1,52 @@
 # Changelog
 
+## erifunctions 0.9.9
+
+### CMR pilot follow-up: fixed a mirror-upload bug, one-call approval, and DQ-flag triage wired in
+
+Feedback from the first live `sdn`/`ssd` CMR pilot session, turned into
+fixes and two new functions.
+
+- **Fix: the mirror upload’s “HTTP 400 Bad Request” error.**
+  `eri_split_cmr(..., mirror_pipeline =)` was reusing the raw local
+  filename verbatim as the Azure destination path — real CMR filenames
+  are human-titled (“…Data Report_Submitted_09-June-2026.xlsx”) and can
+  carry characters that break the storage REST call, which is what broke
+  the projects-blob upload (the data-blob upload, which goes through a
+  slugified name, was unaffected). The destination filename is now
+  generated (`{country}_{period}_{timestamp}.{ext}`, colon-free and
+  Windows/Azure-safe) instead of reused — this also means the DA no
+  longer needs to rename the local file to embed the period.
+- **`eri_split_cmr(dry_run = TRUE)` now says so when it’s clean**: a
+  plain “Dry run clean – ready to run for real” instead of leaving you
+  to infer it from an absence of warnings. When it’s *not* clean (a
+  skipped sheet, a real template defect), the run is now also logged, so
+  there’s a stable `log_path` to attach a note to via
+  [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+  once you’ve looked into and fixed whatever needed it.
+- **New `eri_cmr_last_plan(country, period)`**: reconstructs a real
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  run’s routing plan from the persisted op-log (which now records the
+  full structured table, not just a flat file list) — recovers a plan
+  you didn’t save or lost between sessions, without rerunning anything.
+- **New `eri_approve_cmr(country, period)`**: one call approves every
+  disease/measure one CMR workbook routed to
+  ([`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  is one measure at a time). It gates on DQ status first — if any
+  measure was never DQ-checked for that period, or still has unresolved
+  flags, **nothing is approved**; you get a task list of exactly what
+  needs attention instead. Review each, close it out with
+  `eri_logs_resolve(log_path, note = ...)`, and re-run — it re-checks
+  from scratch every time. Wires the manual CMR DQ step into the
+  existing
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)/[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)/[`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+  triage system rather than inventing a parallel one.
+- **`da-cmr-guide.Rmd` rewritten** for this workflow: a new “check data
+  quality before approving” section wiring
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
+  into the per-measure loop, and the approve section now leads with
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md).
+
 ## erifunctions 0.9.8
 
 ### Sudan / South Sudan CMR pilot: LF + survey + training DQ schemas, a real ingest bug fix, and a one-step legacy mirror

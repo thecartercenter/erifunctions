@@ -83,7 +83,7 @@ reverse order; neither depends on the other having run first).
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -144,7 +144,7 @@ reverse order; neither depends on the other having run first).
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Split a CMR monthly report into per-disease, per-measure staged datasets</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.8/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_split_cmr.Rd</code></div>
     </div>
 
@@ -228,8 +228,11 @@ existing staged file.</p></dd>
 
 
 <dt id="arg-dry-run">dry_run<a class="anchor" aria-label="anchor" href="#arg-dry-run"></a></dt>
-<dd><p><code>logical</code> If <code>TRUE</code>, returns the routing plan and writes
-nothing. Default <code>FALSE</code>.</p></dd>
+<dd><p><code>logical</code> If <code>TRUE</code>, returns the routing plan and writes no
+<em>data</em>. Default <code>FALSE</code>. One exception: if the dry run finds a skipped
+sheet or a warning, that fact <strong>is</strong> logged (a lightweight triage entry,
+not staged data) so there's a stable <code>log_path</code> to attach an
+<code><a href="eri_logs_resolve.html">eri_logs_resolve()</a></code> note to later – see step 3 of the CMR guide.</p></dd>
 
 
 <dt id="arg-mirror-pipeline">mirror_pipeline<a class="anchor" aria-label="anchor" href="#arg-mirror-pipeline"></a></dt>
@@ -239,9 +242,11 @@ uploaded to. Default <code>NULL</code> (no mirror; sandbox-safe).</p></dd>
 
 
 <dt id="arg-period">period<a class="anchor" aria-label="anchor" href="#arg-period"></a></dt>
-<dd><p><code>str</code> or <code>NULL</code> Reporting period (e.g. <code>"202605"</code>) for the
-mirror upload. <code>NULL</code> (default) parses a leading <code>YYYYMM_</code> from
-<code>basename(path)</code>; required if that can't be parsed.</p></dd>
+<dd><p><code>str</code> or <code>NULL</code> Reporting period (e.g. <code>"202605"</code>), used to tag
+the op-log (so <code><a href="eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code> can find this run again) and, if
+<code>mirror_pipeline</code> is set, the mirror upload. <code>NULL</code> (default) parses a
+leading <code>YYYYMM_</code> from <code>basename(path)</code>; only required to be resolvable
+when <code>mirror_pipeline</code> is set.</p></dd>
 
 
 <dt id="arg-projects-con">projects_con<a class="anchor" aria-label="anchor" href="#arg-projects-con"></a></dt>

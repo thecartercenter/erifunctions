@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.8/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -133,7 +133,8 @@ flowchart TD
     C --&gt; D["eri_ingest_cmr(): parse each sheet by its #field codes"]
     D --&gt; E["Review the numbers"]
     E --&gt; F["eri_split_cmr(): route each sheet to {disease}/programmatic/{measure}/staged/"]
-    F --&gt; G["eri_approve() each disease/measure -&gt; processed/ + catalog"]
+    F --&gt; G["DQ-check each measure, eri_dq_log() the flags"]
+    G --&gt; H["eri_approve_cmr(): approve everything at once, only if all clean"]
 </div>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
@@ -346,7 +347,7 @@ routing first with <code>dry_run</code>:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.</span></span>
 <span><span class="co">#&gt; ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.</span></span>
-<span><span class="co">#&gt; ℹ Dry run -- nothing written. Routing plan:</span></span>
+<span><span class="co">#&gt; ℹ Dry run -- no data written. Routing plan:</span></span>
 <span><span class="co">#&gt;   "RB Treatment"  -&gt; uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)</span></span>
 <span><span class="co">#&gt;   "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)</span></span>
 <span><span class="co">#&gt; Warning: Sheet "LF MMDP" not found in cmr-example.xlsx; skipping.   # ...and the</span></span>
@@ -369,41 +370,110 @@ duplicated</strong> across diseases. Cross-programme
 <strong>Training</strong> sheets, which serve all programmes at once,
 route together under the combined <code>rblf</code> disease.</p>
 </blockquote>
-<p>Then stage for real, one parquet per sheet, in its disease/measure
-folder:</p>
+<p>If the dry run comes back with nothing skipped and no warnings,
+you’ll see a plain “Dry run clean – ready to run for real” instead of
+having to infer it from an absence of complaints. If it does flag
+something (a skipped sheet, or a real template defect like a duplicate
+field code), it’s also logged so you have a stable reference to attach a
+note to later, once you’ve looked into it and fixed whatever needed
+fixing:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># ... after investigating and correcting something upstream ...</span></span>
+<span><span class="fu"><a href="../reference/eri_logs_resolve.html">eri_logs_resolve</a></span><span class="op">(</span><span class="st">"uga/rblf/cmr/logs/20260710_150903_eri_split_cmr_dryrun.yaml"</span>,</span>
+<span>                 note <span class="op">=</span> <span class="st">"confirmed the skipped training sheets aren't part of this country's report"</span><span class="op">)</span></span></code></pre></div>
+<p>Then stage for real, one parquet per sheet, in its disease/measure
+folder. If this country’s raw file still also needs to reach the legacy
+contractor pipeline during the Phase-3 parallel run,
+<code>mirror_pipeline</code> uploads it there in the same call – one
+step instead of a separate manual upload:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_split_cmr.html">eri_split_cmr</a></span><span class="op">(</span><span class="va">report</span>, <span class="st">"uga"</span><span class="op">)</span>   <span class="co"># add mirror_pipeline = "rb-expansion" if this country needs it</span></span>
 <span><span class="co">#&gt; ✔ "RB Treatment"  -&gt; uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet</span></span>
 <span><span class="co">#&gt; ✔ "SCH Treatment" -&gt; uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet</span></span>
 <span><span class="co">#&gt; ── ✔ Split CMR by disease/measure ───────────────────────</span></span>
 <span><span class="co">#&gt; Sheets: 2 routed</span></span>
 <span><span class="co">#&gt; Diseases: oncho, sch</span></span></code></pre></div>
+<p>Keep <code>plan</code> around for the next two steps. Lost it, or ran
+the split in an earlier session? Recover it without rerunning anything
+(the routing table is persisted in the op-log every real run
+writes):</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">plan</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_cmr_last_plan.html">eri_cmr_last_plan</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="approve">5. Approve each disease/measure<a class="anchor" aria-label="anchor" href="#approve"></a>
+<h2 id="dq-check">5. Check data quality before approving<a class="anchor" aria-label="anchor" href="#dq-check"></a>
 </h2>
-<p>Each split dataset passes through the same human gate, once per
-disease/measure:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"oncho"</span>, <span class="st">"programmatic"</span>, <span class="st">"202406"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ✔ Approved: cmr-example_rb_treatment.parquet</span></span>
-<span><span class="co">#&gt; ── ✔ Approved "202406" ──────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: uga / oncho / programmatic / treatment</span></span>
-<span><span class="co">#&gt; Location: uga/oncho/programmatic/treatment/processed</span></span>
+<p>CMR routing does <strong>not</strong> auto-run DQ checks – CMR review
+is manual, on purpose. <code>plan</code> tells you exactly what got
+routed (<code>sheet</code>, <code>disease</code>,
+<code>data_type</code>, <code>dest</code>, <code>n_rows</code>); loop
+over it, and log each measure’s flags so they’re visible for triage (and
+so <a href="#approve"><code>eri_approve_cmr()</code></a> below knows
+what’s been reviewed):</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ERIFUNCTIONS_DATA_STORAGE_NAME"</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"sch"</span>, <span class="st">"programmatic"</span>, <span class="st">"202406"</span>, data_type <span class="op">=</span> <span class="st">"treatment"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; ── ✔ Approved "202406" ──────────────────────────────────</span></span>
-<span><span class="co">#&gt; Dataset: uga / sch / programmatic / treatment</span></span></code></pre></div>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">plan</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">row</span>    <span class="op">&lt;-</span> <span class="va">plan</span><span class="op">[</span><span class="va">i</span>, <span class="op">]</span></span>
+<span>  <span class="va">staged</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_read.html">eri_read</a></span><span class="op">(</span><span class="va">row</span><span class="op">$</span><span class="va">dest</span>, azcontainer <span class="op">=</span> <span class="va">data_con</span><span class="op">)</span></span>
+<span>  <span class="va">schema</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_dq_schema.html">load_dq_schema</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="va">row</span><span class="op">$</span><span class="va">disease</span>, <span class="st">"programmatic"</span>, <span class="va">row</span><span class="op">$</span><span class="va">data_type</span><span class="op">)</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_dq_checks.html">run_dq_checks</a></span><span class="op">(</span><span class="va">staged</span>, <span class="va">schema</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/eri_dq_log.html">eri_dq_log</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"uga"</span>, <span class="va">row</span><span class="op">$</span><span class="va">disease</span>, <span class="st">"programmatic"</span>, <span class="va">row</span><span class="op">$</span><span class="va">data_type</span>, period <span class="op">=</span> <span class="st">"202406"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p><code>dq_report(result)</code> is a console pretty-printer for one
+measure at a time – reading twelve of those back to back is a lot. For a
+scannable view <strong>across every measure at once</strong>, work
+directly with the tibble underneath (<code>result$flags</code>, or the
+logged version via <code><a href="../reference/eri_logs.html">eri_logs()</a></code>):</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_logs.html">eri_logs</a></span><span class="op">(</span><span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span>, operation <span class="op">=</span> <span class="st">"dq_flags"</span>, since <span class="op">=</span> <span class="st">"2026-07-01"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 2 × 15</span></span>
+<span><span class="co">#&gt;   log_path       timestamp  operation status       disease data_type n_issues …</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;          &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;     &lt;int&gt;</span></span>
+<span><span class="co">#&gt; 1 uga/oncho/...  2026-07-...dq_flags  needs_review oncho   treatment 1</span></span>
+<span><span class="co">#&gt; 2 uga/sch/...    2026-07-...dq_flags  clean        sch     treatment 0</span></span></code></pre></div>
+<p>One row per measure, sortable/filterable, <code>n_issues</code> at a
+glance – filter to <code>status == "needs_review"</code> to see exactly
+what still needs your attention before approving.</p>
+</div>
+<div class="section level2">
+<h2 id="approve">6. Approve<a class="anchor" aria-label="anchor" href="#approve"></a>
+</h2>
+<p>One CMR workbook fans out into several diseases/measures; <a href="../reference/eri_approve_cmr.html"><code>eri_approve_cmr()</code></a>
+approves all of them in one call <strong>but only if every one is
+clean</strong> – reviewed via the DQ-check step above, with no
+outstanding flags:</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Approved 2 measures for "uga" / "202406".</span></span></code></pre></div>
+<p>If anything’s still outstanding (a measure was never DQ-checked, or
+has unresolved flags), <strong>nothing is approved</strong> – you get a
+task list back instead:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; x 1 measure still needs attention -- approving nothing.</span></span>
+<span><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span><span class="co">#&gt;   disease data_type log_path                                     issue</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;                                        &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 oncho   treatment uga/oncho/programmatic/treatment/logs/x.yaml 1 unresolved DQ flag(s)</span></span>
+<span></span>
+<span><span class="co"># Review the flag, then close it out with a note explaining what you did/decided:</span></span>
+<span><span class="fu"><a href="../reference/eri_logs_resolve.html">eri_logs_resolve</a></span><span class="op">(</span><span class="st">"uga/oncho/programmatic/treatment/logs/x.yaml"</span>,</span>
+<span>                 note <span class="op">=</span> <span class="st">"confirmed with the country: target was genuinely 0 this period"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span><span class="op">)</span>   <span class="co"># re-run -- now clean, approves everything</span></span></code></pre></div>
 <p>Each disease’s data is now canonical and discoverable in the catalog
-on its own coordinates:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+on its own coordinates. (You can still approve one measure at a time
+with plain <a href="../reference/eri_approve.html"><code>eri_approve()</code></a> –
+<code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> is a convenience wrapper around exactly
+that, looped, with the DQ gate in front.)</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 13</span></span>
 <span><span class="co">#&gt;   path                              country disease data_source  data_type layer …</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;                             &lt;chr&gt;   &lt;chr&gt;   &lt;chr&gt;        &lt;chr&gt;     &lt;chr&gt;</span></span>
 <span><span class="co">#&gt; 1 uga/oncho/programmatic/treatmen…  uga     oncho   programmatic treatment proce…</span></span>
 <span><span class="co">#&gt; 2 uga/sch/programmatic/treatment/…  uga     sch     programmatic treatment proce…</span></span></code></pre></div>
-<p>That’s the monthly loop: <strong>upload → stage → split →
+<p>That’s the monthly loop: <strong>upload → stage → split → DQ-check →
 approve.</strong></p>
 </div>
 <div class="section level2">

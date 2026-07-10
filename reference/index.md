@@ -59,21 +59,39 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
 
 - [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
   **\[experimental\]** : Ingest a local data file: DQ-check and stage it
+
 - [`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md)
   **\[experimental\]** : Stage intermediate pipeline output into the
   data/ blob
+
 - [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
   **\[experimental\]** : Approve staged data and promote it to processed
+
 - [`eri_trigger()`](https://thecartercenter.github.io/erifunctions/reference/eri_trigger.md)
   **\[experimental\]** : Trigger a registered GitHub Actions pipeline
+
 - [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
   **\[experimental\]** : Read and parse a CMR monthly report Excel file
+
 - [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
   **\[experimental\]** : Split a CMR monthly report into per-disease,
   per-measure staged datasets
+
 - [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
   **\[experimental\]** : Stage CMR monthly report files into the data/
   blob
+
+- [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md)
+  **\[experimental\]** :
+
+  Reconstruct a past
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  run's routing plan
+
+- [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+  **\[experimental\]** : Approve every disease/measure one CMR workbook
+  routed to, in one call
+
 - [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
   **\[experimental\]** : Load a CMR country schema
 
