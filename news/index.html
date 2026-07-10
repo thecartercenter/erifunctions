@@ -82,8 +82,11 @@
 <li>
 <strong>Submitting only files the ticket – it doesn’t apply anything.</strong> A maintainer folds the change in by updating the Azure <code>schemas/*.yaml</code> blob directly (<code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> already prefers it over the bundled copy), which takes effect for every DA within minutes, not at the next package release.</li>
 </ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.12" id="erifunctions-0912">erifunctions 0.9.12<a class="anchor" aria-label="anchor" href="#erifunctions-0912"></a></h2>
 <div class="section level3">
-<h3 id="dq-schema-local-overrides-three-tier-resolution-hash-based-expiry-phase-of-the-dq-workflow-redesign-0-9-13">DQ schema local overrides: three-tier resolution, hash-based expiry (Phase 3 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#dq-schema-local-overrides-three-tier-resolution-hash-based-expiry-phase-of-the-dq-workflow-redesign-0-9-13"></a></h3>
+<h3 id="dq-schema-local-overrides-three-tier-resolution-hash-based-expiry-phase-of-the-dq-workflow-redesign-0-9-12">DQ schema local overrides: three-tier resolution, hash-based expiry (Phase 3 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#dq-schema-local-overrides-three-tier-resolution-hash-based-expiry-phase-of-the-dq-workflow-redesign-0-9-12"></a></h3>
 <p>Also confirms Phase 2 (CMR re-run hygiene) was already shipped and validates it end-to-end. See <a href="docs/adr/0018-dq-schema-local-overrides.html">ADR-0018</a> for the full design rationale.</p>
 <ul><li>
 <strong><code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> now resolves in three tiers: local override → Azure blob → bundled.</strong> A DA can fork the active schema locally, fix a bad alias/range/allowed-values entry, and keep using the fix across sessions – surviving R restarts, different RStudio projects, machine reboots – without waiting on a package release or an Azure blob update.</li>

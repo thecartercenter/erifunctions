@@ -38,6 +38,8 @@
   already prefers it over the bundled copy), which takes effect for
   every DA within minutes, not at the next package release.
 
+## erifunctions 0.9.12
+
 ### DQ schema local overrides: three-tier resolution, hash-based expiry (Phase 3 of the DQ workflow redesign)
 
 Also confirms Phase 2 (CMR re-run hygiene) was already shipped and
