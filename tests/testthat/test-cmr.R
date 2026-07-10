@@ -783,3 +783,86 @@ test_that("eri_approve_cmr approves every measure once all are clean", {
   expect_length(approved, 2L)
   expect_equal(nrow(result), 2L)
 })
+
+test_that("eri_approve_cmr records a dq_reviewed cross-reference in its own op-log", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "a", n_rows = 1L
+  )
+  logged <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/oncho/programmatic/treatment/logs/dq.yaml", period = "202605",
+      status = "clean", handled = FALSE, n_issues = 0L
+    ),
+    eri_approve = function(...) invisible(NULL),
+    .eri_write_log = function(log_list, ...) {
+      logged[[length(logged) + 1L]] <<- log_list
+      "sdn/rblf/cmr/logs/fake_approve_cmr.yaml"
+    },
+    .package = "erifunctions"
+  )
+
+  eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+
+  expect_length(logged, 1L)
+  expect_equal(logged[[1]]$operation, "eri_approve_cmr")
+  expect_true("sdn/oncho/programmatic/treatment/logs/dq.yaml" %in% unlist(logged[[1]]$dq_reviewed))
+})
+
+test_that("eri_cmr_dq_report combines every measure's flags into one tibble with usable flag_ids", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"),
+    dest = c("sdn/oncho/programmatic/treatment/staged/a.parquet",
+            "sdn/lf/programmatic/treatment/staged/b.parquet"),
+    n_rows = c(1L, 1L)
+  )
+
+  fake_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                flags = tibble::tibble(row = 1L, column = "district",
+                                                        value = "Bad", issue = "not allowed")),
+                           class = "dq_result")
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) fake_result,
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, period, data_con) {
+      list(n_flags = 1L, status = "needs_review",
+          log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
+          flags = list(list(index = 1, row = 1L, column = "district", value = "Bad",
+                            issue = "not allowed", status = "open")))
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(nrow(flags), 2L)
+  expect_setequal(flags$disease, c("oncho", "lf"))
+  expect_true(all(grepl("::1$", flags$flag_id)))
+  expect_true(all(flags$status == "open"))
+})
+
+test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is clean", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
+    n_rows = 1L
+  )
+  clean_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                 flags = tibble::tibble(row = integer(), column = character(),
+                                                         value = character(), issue = character())),
+                            class = "dq_result")
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) clean_result,
+    .eri_dq_log_write = function(...) list(n_flags = 0L, status = "clean", log_path = "x.yaml", flags = list()),
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(nrow(flags), 0L)
+})

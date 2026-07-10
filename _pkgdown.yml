@@ -157,6 +157,7 @@ reference:
   - eri_stage_cmr
   - eri_cmr_last_plan
   - eri_approve_cmr
+  - eri_cmr_dq_report
   - load_cmr_schema
 
 - title: Data quality
@@ -198,6 +199,7 @@ reference:
   desc: Persist data-quality flags and triage the error / DQ log backlog.
   contents:
   - eri_dq_log
+  - eri_dq_flag_resolve
   - eri_logs
   - eri_logs_resolve
 

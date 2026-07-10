@@ -660,7 +660,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
 
   measures <- unique(plan[, c("disease", "data_type")])
 
-  outstanding <- list()
+  outstanding  <- list()
+  dq_reviewed  <- character(0)  # log_paths that backed a clean measure -- for the approval's own audit trail
   for (i in seq_len(nrow(measures))) {
     m <- measures[i, ]
     dq_logs <- eri_logs(country, m$disease, "programmatic", m$data_type,
@@ -682,6 +683,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
         log_path = open_flags$log_path[[1]],
         issue = paste0(open_flags$n_issues[[1]], " unresolved DQ flag(s)")
       )
+    } else {
+      dq_reviewed <- c(dq_reviewed, dq_logs$log_path)
     }
   }
 
@@ -703,8 +706,115 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
     approved[[i]] <- tibble::tibble(disease = m$disease, data_type = m$data_type)
   }
   approved_tbl <- dplyr::bind_rows(approved)
+
+  # One combined record cross-referencing exactly which DQ reviews backed this
+  # approval -- eri_approve() itself writes one op-log per measure, but none
+  # of those reference the dq_flags entries that justified them. This is the
+  # traceable link from "approved/processed" back to "here's what was
+  # reviewed and decided, and by whom" (each dq_flags log_path carries its own
+  # per-flag notes via eri_dq_flag_resolve() and its whole-entry note via
+  # eri_logs_resolve()).
+  .eri_write_log(
+    list(
+      operation  = "eri_approve_cmr",
+      analyst    = .eri_analyst_id(data_con),
+      timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      parameters = list(country = country, period = period),
+      status     = "success",
+      measures   = as.list(paste(approved_tbl$disease, approved_tbl$data_type, sep = "/")),
+      dq_reviewed = as.list(dq_reviewed)
+    ),
+    data_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+  )
+
   cli::cli_alert_success("Approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}.")
   invisible(approved_tbl)
+}
+
+#' Run and log DQ checks for a whole CMR workbook, one combined report
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' [eri_split_cmr()] fans one CMR workbook out into many disease/measure
+#' datasets; checking each with [run_dq_checks()] one at a time means reading
+#' twelve separate `dq_report()` printouts. This runs DQ checks for every
+#' measure in `plan` (looked up via [eri_cmr_last_plan()] if not supplied),
+#' logs each measure's flags with [eri_dq_log()] as usual, and returns **one**
+#' tibble spanning every flag from every measure -- sortable/filterable in
+#' one place instead of twelve.
+#'
+#' Each row's `flag_id` is what you pass to [eri_dq_flag_resolve()] to triage
+#' that specific issue (`"not_important"`, `"fixed"`, or `"noted"`) before
+#' closing out the whole measure with [eri_logs_resolve()].
+#'
+#' @param country `str` Country code (e.g. `"sdn"`).
+#' @param period `str` Reporting period (e.g. `"202605"`).
+#' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] /
+#'   [eri_cmr_last_plan()]. `NULL` (default) looks it up via [eri_cmr_last_plan()].
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns A tibble with one row per flag across every measure: `sheet`,
+#'   `disease`, `data_type`, `log_path`, `flag_id`, `row`, `column`, `value`,
+#'   `issue`, `status` (all `"open"` on a fresh run). Zero rows if every
+#'   measure is clean.
+#' @examples
+#' \dontrun{
+#' flags <- eri_cmr_dq_report("sdn", "202605")
+#' flags[flags$status == "open", ]
+#' eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected upstream")
+#' }
+#' @export
+eri_cmr_dq_report <- function(country, period, plan = NULL, data_con = NULL) {
+  data_con <- .eri_logs_con(data_con)
+
+  if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
+
+  rows <- list()
+  for (i in seq_len(nrow(plan))) {
+    p <- plan[i, ]
+    staged <- tryCatch(
+      eri_read(p$dest, azcontainer = data_con),
+      error = function(e) {
+        cli::cli_alert_warning("{.val {p$sheet}}: could not read {.path {p$dest}}: {conditionMessage(e)}")
+        NULL
+      }
+    )
+    if (is.null(staged)) next
+
+    schema <- tryCatch(
+      load_dq_schema(country, p$disease, "programmatic", p$data_type, azcontainer = data_con),
+      error = function(e) {
+        cli::cli_alert_warning("{.val {p$sheet}}: no DQ schema for {p$disease}/{p$data_type}: {conditionMessage(e)}")
+        NULL
+      }
+    )
+    if (is.null(schema)) next
+
+    result  <- run_dq_checks(staged, schema)
+    written <- .eri_dq_log_write(result, country, p$disease, "programmatic", p$data_type, period, data_con)
+
+    if (written$n_flags == 0L) next
+    for (f in written$flags) {
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        sheet = p$sheet, disease = p$disease, data_type = p$data_type,
+        log_path = written$log_path, flag_id = paste0(written$log_path, "::", f$index),
+        row = f$row, column = f$column, value = f$value, issue = f$issue,
+        status = f$status
+      )
+    }
+  }
+
+  if (length(rows) == 0L) {
+    cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
+    return(tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      column = character(0), value = character(0), issue = character(0),
+      status = character(0)
+    ))
+  }
+
+  dplyr::bind_rows(rows)
 }
 
 #' Stage CMR monthly report files into the data/ blob

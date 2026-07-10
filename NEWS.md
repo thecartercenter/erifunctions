@@ -1,3 +1,25 @@
+# erifunctions 0.9.10
+
+## Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval
+
+- **New `eri_cmr_dq_report(country, period)`**: runs and logs DQ checks for every measure a CMR
+  workbook routed to, in one call, returning **one tibble** spanning every flag from every measure
+  (`sheet`, `disease`, `data_type`, `log_path`, `flag_id`, `row`, `column`, `value`, `issue`,
+  `status`) instead of twelve separate `dq_report()` printouts.
+- **New `eri_dq_flag_resolve(flag_id, status, note)`**: triages **one flag at a time** --
+  `"not_important"`, `"fixed"`, or `"noted"` -- distinct from `eri_logs_resolve()`, which closes out
+  an entire measure's DQ log entry. `eri_dq_log()` now gives every flag a stable index and starts it
+  `"open"`.
+- **`eri_logs_resolve()` auto-summarizes from per-flag decisions**: if you don't pass an explicit
+  `note`, and the entry's flags have already been triaged via `eri_dq_flag_resolve()`, the closing
+  note is generated from those decisions (e.g. `"2 fixed, 1 not important"`) instead of being left
+  blank.
+- **`eri_approve_cmr()` now records which DQ reviews backed the approval**: its own op-log gets a
+  `dq_reviewed` field listing every `dq_flags` log entry it verified clean, so the traceable chain
+  from "this data is now processed" back to "here's every flag raised and what was decided" doesn't
+  stop at a bare approval stamp.
+- `da-cmr-guide.Rmd` updated for this workflow.
+
 # erifunctions 0.9.9
 
 ## CMR pilot follow-up: fixed a mirror-upload bug, one-call approval, and DQ-flag triage wired in

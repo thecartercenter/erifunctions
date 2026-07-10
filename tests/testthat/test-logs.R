@@ -361,6 +361,168 @@ test_that("eri_dq_log rejects non-dq_result input", {
   )
 })
 
+test_that("eri_dq_log writes per-flag index/status/note fields, all open on a fresh run", {
+  captured <- NULL
+  local_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  flags <- tibble::tibble(row = c(1L, 2L), column = c("Age", "Sex"),
+                          value = c("250", "x"),
+                          issue = c("out of range", "not allowed"))
+  res <- structure(
+    list(data = tibble::tibble(a = 1), log = tibble::tibble(row = integer()), flags = flags),
+    class = "dq_result"
+  )
+
+  eri_dq_log(res, "uga", "oncho", "surveillance", period = "2024-01")
+  expect_equal(captured$flags[[1]]$index, 1L)
+  expect_equal(captured$flags[[2]]$index, 2L)
+  expect_true(all(vapply(captured$flags, function(f) f$status, character(1L)) == "open"))
+})
+
+test_that(".eri_dq_log_write returns the log_path alongside n_flags/status", {
+  local_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) invisible(dest),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  flags <- tibble::tibble(row = 1L, column = "Age", value = "250", issue = "out of range")
+  res <- structure(
+    list(data = tibble::tibble(a = 1), log = tibble::tibble(row = integer()), flags = flags),
+    class = "dq_result"
+  )
+
+  written <- .eri_dq_log_write(res, "uga", "oncho", "surveillance", period = "2024-01")
+  expect_equal(written$n_flags, 1L)
+  expect_equal(written$status, "needs_review")
+  expect_match(written$log_path, "^uga/oncho/surveillance/logs/")
+  expect_length(written$flags, 1L)
+})
+
+# --- eri_dq_flag_resolve ----------------------------------------------------
+
+test_that("eri_dq_flag_resolve updates one flag's status/note without touching others", {
+  path  <- "uga/oncho/surveillance/logs/20260604_120000_dq_flags_2024-01.yaml"
+  entry <- list(
+    operation = "dq_flags", status = "needs_review",
+    flags = list(
+      list(index = 1, column = "Age", status = "open", note = NA_character_,
+          resolved_by = NA_character_, resolved_at = NA_character_),
+      list(index = 2, column = "Sex", status = "open", note = NA_character_,
+          resolved_by = NA_character_, resolved_at = NA_character_)
+    )
+  )
+  captured <- NULL
+
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .eri_analyst_id = function(...) "tester",
+    .package = "erifunctions"
+  )
+
+  flag_id <- paste0(path, "::2")
+  res <- eri_dq_flag_resolve(flag_id, "fixed", note = "corrected upstream")
+  expect_true(res)
+  expect_equal(captured$flags[[1]]$status, "open")       # untouched
+  expect_equal(captured$flags[[2]]$status, "fixed")
+  expect_equal(captured$flags[[2]]$note, "corrected upstream")
+  expect_equal(captured$flags[[2]]$resolved_by, "tester")
+  expect_false(is.na(captured$flags[[2]]$resolved_at))
+})
+
+test_that("eri_dq_flag_resolve rejects a malformed flag_id and an unknown index", {
+  expect_error(eri_dq_flag_resolve("not-a-valid-id", "fixed"), "must be")
+
+  path  <- "uga/oncho/surveillance/logs/x.yaml"
+  entry <- list(flags = list(list(index = 1, status = "open")))
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  expect_error(eri_dq_flag_resolve(paste0(path, "::99"), "fixed"), "No flag with index")
+})
+
+test_that("eri_logs_resolve auto-summarizes from per-flag statuses when no note is given", {
+  path  <- "uga/oncho/surveillance/logs/x.yaml"
+  entry <- list(
+    operation = "dq_flags", status = "needs_review",
+    flags = list(
+      list(index = 1, status = "fixed"),
+      list(index = 2, status = "not_important"),
+      list(index = 3, status = "fixed")
+    )
+  )
+  captured <- NULL
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  eri_logs_resolve(path)   # no note passed
+  expect_match(captured$triage$note, "fixed")
+  expect_match(captured$triage$note, "not important")
+})
+
+test_that("eri_logs_resolve still accepts an explicit note over the auto-summary", {
+  path  <- "uga/oncho/surveillance/logs/x.yaml"
+  entry <- list(flags = list(list(index = 1, status = "fixed")))
+  captured <- NULL
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  eri_logs_resolve(path, note = "my own summary")
+  expect_equal(captured$triage$note, "my own summary")
+})
+
 # --- eri_logs_resolve ------------------------------------------------------
 
 test_that("eri_logs_resolve adds a triage block and preserves the record", {
