@@ -1,3 +1,53 @@
+# erifunctions 0.9.10
+
+## Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval
+
+- **New `eri_cmr_dq_report(country, period)`**: runs and logs DQ checks for every measure a CMR
+  workbook routed to, in one call, returning **one tibble** spanning every flag from every measure
+  (`sheet`, `disease`, `data_type`, `log_path`, `flag_id`, `row`, `column`, `value`, `issue`,
+  `status`) instead of twelve separate `dq_report()` printouts.
+- **New `eri_dq_flag_resolve(flag_id, status, note)`**: triages **one flag at a time** --
+  `"not_important"`, `"fixed"`, or `"noted"` -- distinct from `eri_logs_resolve()`, which closes out
+  an entire measure's DQ log entry. `eri_dq_log()` now gives every flag a stable index and starts it
+  `"open"`.
+- **`eri_logs_resolve()` auto-summarizes from per-flag decisions**: if you don't pass an explicit
+  `note`, and the entry's flags have already been triaged via `eri_dq_flag_resolve()`, the closing
+  note is generated from those decisions (e.g. `"2 fixed, 1 not important"`) instead of being left
+  blank.
+- **`eri_approve_cmr()` now records which DQ reviews backed the approval**: its own op-log gets a
+  `dq_reviewed` field listing every `dq_flags` log entry it verified clean, so the traceable chain
+  from "this data is now processed" back to "here's every flag raised and what was decided" doesn't
+  stop at a bare approval stamp.
+- `da-cmr-guide.Rmd` updated for this workflow.
+
+## Three real bugs found and fixed during design review of the workflow above
+
+A design consult on the next phase of this DQ workflow surfaced three real defects in the
+shipped-this-week CMR pipeline (not hypothetical future issues) -- fixed here rather than shipping
+known-broken and patching later:
+
+- **Fix: re-splitting a corrected file duplicated staged data.** `eri_split_cmr()` names each staged
+  parquet from the workbook's filename, so re-splitting a "`_fixed.xlsx`" copy for a period already
+  split left the broken original's staged file sitting alongside the corrected one --
+  `eri_approve()`'s period match then promoted **both** to `processed/`. `eri_split_cmr()` now
+  detects prior staged files for the same period in each destination folder (matched by the real
+  filename convention -- name *starts with* the period, not merely mentions it, so it can't collide
+  with an unrelated file that happens to share those six digits) and reports them. New
+  `supersede_staged` parameter (default `FALSE`, this package's first destructive Azure operation is
+  opt-in, not automatic) actually removes them when set `TRUE`, logged as `supersede_staged` steps.
+- **Fix: re-running the DQ report piled up blocking log entries.** The normal loop is run → fix →
+  re-run, and `eri_approve_cmr()` correctly blocks on *every* unresolved historical entry for a
+  period, not just the newest -- so N re-runs meant N entries to close by hand.
+  `eri_cmr_dq_report()` gains `supersede = TRUE` (default): a fresh run auto-resolves prior open
+  entries for the same measure/period with a "superseded by a newer run" note. Set `FALSE` to keep
+  the strict one-entry-per-run behavior.
+- **Fix: flagged row numbers didn't match the Excel sheet.** A flag's `row` is an index into the
+  post-processing data (after spacer-row/missing-year drops), not the original workbook -- "row 2"
+  in a flag could be row 8 in the actual Excel file. `eri_ingest_cmr()` now records each row's real
+  `excel_row` (data starts at row 6; survives all row-dropping since it's a column, not a position),
+  and `eri_cmr_dq_report()`'s combined tibble surfaces it alongside `row` -- use `excel_row` when
+  telling a DA what to go fix.
+
 # erifunctions 0.9.9
 
 ## CMR pilot follow-up: fixed a mirror-upload bug, one-call approval, and DQ-flag triage wired in

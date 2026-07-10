@@ -18,9 +18,11 @@ When supplied, the country code is prepended as a \code{country} column and slug
 aliases are resolved. Default \code{NULL}.}
 }
 \value{
-A tibble with field-code column names and data from row 6 onward.
-All-NA spacer rows are dropped. If \code{country} is supplied it is prepended
-as a \code{country} column.
+A tibble with field-code column names and data from row 6 onward,
+plus an \code{excel_row} column recording each row's real position in the
+workbook (survives all-NA spacer-row dropping, so it stays accurate even
+after rows are removed). If \code{country} is supplied it is prepended as a
+\code{country} column.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

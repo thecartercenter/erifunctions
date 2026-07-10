@@ -215,6 +215,14 @@
 #' @export
 eri_dq_log <- function(result, country, disease, data_source,
                        data_type = NULL, period = NULL, data_con = NULL) {
+  written <- .eri_dq_log_write(result, country, disease, data_source,
+                               data_type, period, data_con)
+  invisible(written$n_flags)
+}
+
+#' @keywords internal
+.eri_dq_log_write <- function(result, country, disease, data_source,
+                              data_type = NULL, period = NULL, data_con = NULL) {
   if (!inherits(result, "dq_result")) {
     cli::cli_abort("{.arg result} must be a {.cls dq_result} from {.fn run_dq_checks}.")
   }
@@ -224,13 +232,22 @@ eri_dq_log <- function(result, country, disease, data_source,
   n_flags <- nrow(flags)
   flags_list <- lapply(seq_len(n_flags), function(i) {
     list(
+      index  = i,
       row    = .eri_na_int(flags$row[i]),
       column = .eri_na_chr(flags$column[i]),
       value  = .eri_na_chr(flags$value[i]),
-      issue  = .eri_na_chr(flags$issue[i])
+      issue  = .eri_na_chr(flags$issue[i]),
+      # Per-flag triage (distinct from the whole-entry `triage` block
+      # eri_logs_resolve() writes) -- set via eri_dq_flag_resolve(), one
+      # flag at a time. "open" until a DA works through it.
+      status      = "open",
+      note        = NA_character_,
+      resolved_by = NA_character_,
+      resolved_at = NA_character_
     )
   })
 
+  status   <- if (n_flags > 0L) "needs_review" else "clean"
   envelope <- list(
     operation     = "dq_flags",
     analyst       = .eri_analyst_id(data_con),
@@ -238,20 +255,20 @@ eri_dq_log <- function(result, country, disease, data_source,
     parameters    = list(country = country, disease = disease,
                          data_source = data_source, data_type = data_type,
                          period = period),
-    status        = if (n_flags > 0L) "needs_review" else "clean",
+    status        = status,
     n_flags       = n_flags,
     n_corrections = nrow(result$log),
     flags         = flags_list
   )
 
   # c() drops a NULL data_type, so a four-axis call lands at the channel level.
-  log_dir <- paste(c(country, disease, data_source, data_type, "logs"),
-                   collapse = "/")
-  .eri_write_log(envelope, data_con, log_dir)
+  log_dir  <- paste(c(country, disease, data_source, data_type, "logs"),
+                    collapse = "/")
+  log_path <- .eri_write_log(envelope, data_con, log_dir)
   cli::cli_alert_success(
-    "Logged {n_flags} DQ flag{?s} ({envelope$status})."
+    "Logged {n_flags} DQ flag{?s} ({status})."
   )
-  invisible(n_flags)
+  list(n_flags = n_flags, log_path = log_path, status = status, flags = flags_list)
 }
 
 #### eri_logs ####
@@ -380,6 +397,10 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #' `triage` block (`handled`, `handled_by`, `handled_at`, `note`) to the file in
 #' place; the original operation record is preserved.
 #'
+#' Same single-editor caveat as [eri_dq_flag_resolve()]: this is a read-modify-write
+#' with no optimistic-concurrency protection, so two people resolving the *same*
+#' log entry around the same time can silently clobber one another.
+#'
 #' @param log_path `chr` Blob path of the log to resolve (the `log_path` column
 #'   from [eri_logs()]).
 #' @param note `chr` or `NULL` An optional note describing how it was handled.
@@ -402,6 +423,11 @@ eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL) {
     cli::cli_abort("Could not read log {.path {log_path}}: {conditionMessage(e)}")
   })
 
+  # If the DA already worked through this entry's individual flags via
+  # eri_dq_flag_resolve() and didn't pass an explicit note here, summarize
+  # those per-flag decisions instead of leaving the whole-entry note blank.
+  if (is.null(note)) note <- .eri_dq_flags_summary(entry$flags)
+
   entry$triage <- list(
     handled    = TRUE,
     handled_by = .eri_analyst_id(data_con),
@@ -414,5 +440,111 @@ eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL) {
   unlink(tmp)
 
   cli::cli_alert_success("Marked {.path {basename(log_path)}} handled.")
+  invisible(TRUE)
+}
+
+#' @keywords internal
+.eri_dq_flags_summary <- function(flags) {
+  if (is.null(flags) || length(flags) == 0L) return(NULL)
+  statuses <- vapply(flags, function(f) f$status %||% "open", character(1L))
+  if (all(statuses == "open")) return(NULL)
+  counts <- table(statuses)
+  parts  <- paste0(counts, " ", gsub("_", " ", names(counts)))
+  paste(parts, collapse = ", ")
+}
+
+#### eri_dq_flag_resolve ####
+
+#' Triage a single DQ flag within a logged `eri_dq_log()` entry
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Works through **one flag at a time** rather than an entire DQ-log entry:
+#' marks a specific flag `"not_important"`, `"fixed"`, or `"noted"`, with an
+#' optional note, so a DA can triage a multi-flag entry (e.g. one CMR measure
+#' with several issues) issue by issue instead of all-or-nothing. Distinct
+#' from [eri_logs_resolve()], which closes out the *whole* entry (and marks
+#' it `handled`, dropping it from the open backlog / unblocking
+#' [eri_approve_cmr()]) -- resolving every individual flag here does not by
+#' itself mark the entry handled; call [eri_logs_resolve()] afterward for
+#' that (it will auto-summarize from the per-flag decisions if you don't pass
+#' your own note).
+#'
+#' **Known limitation: single-editor assumption.** This does a read-modify-write
+#' of the whole log YAML with no optimistic-concurrency check (no ETag/retry,
+#' unlike the metadata-store writes in `catalog.R`/`odk_registry.R`/`artifacts.R`).
+#' If two people resolve different flags in the *same* log entry around the same time, the second
+#' write can silently overwrite the first. Fine for the current one-DA-per-
+#' country-workbook CMR pilot; revisit before assuming it's safe for two people
+#' triaging the same measure's flags concurrently.
+#'
+#' @param flag_id `chr` A flag identifier from [eri_cmr_dq_report()] (or built
+#'   by hand as `paste0(log_path, "::", index)`, where `index` is the flag's
+#'   1-based position within that log entry).
+#' @param status `chr` One of `"not_important"`, `"fixed"`, or `"noted"`.
+#' @param note `chr` or `NULL` What you did or decided for this specific flag.
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Invisibly, `TRUE`.
+#' @examples
+#' \dontrun{
+#' flags <- eri_cmr_dq_report("sdn", "202605")
+#' eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected district spelling upstream")
+#' eri_dq_flag_resolve(flags$flag_id[2], "not_important", note = "known template quirk")
+#' }
+#' @export
+eri_dq_flag_resolve <- function(flag_id, status = c("not_important", "fixed", "noted"),
+                                note = NULL, data_con = NULL) {
+  status <- match.arg(status)
+
+  # Validate flag_id before touching Azure at all -- a malformed id shouldn't
+  # trigger a connection attempt (and, worse, the interactive browser-auth
+  # fallback in a non-interactive context) before failing.
+  # Split on the LAST "::" (greedy .*), not the first, in case log_path ever
+  # contained the separator itself.
+  m <- regmatches(flag_id, regexec("^(.*)::(.*)$", flag_id))[[1]]
+  if (length(m) != 3L) {
+    cli::cli_abort(c(
+      "{.arg flag_id} must be {.code \"{{log_path}}::{{index}}\"}, got {.val {flag_id}}.",
+      "i" = "Get valid ids from {.fn eri_cmr_dq_report}."
+    ))
+  }
+  log_path <- m[2]
+  index    <- suppressWarnings(as.integer(m[3]))
+  if (is.na(index)) {
+    cli::cli_abort("Could not parse a flag index from {.val {flag_id}}.")
+  }
+
+  data_con <- .eri_logs_con(data_con)
+
+  tmp <- tempfile(fileext = ".yaml")
+  entry <- tryCatch({
+    .eri_blob_read(data_con, log_path, tmp)
+    yaml::read_yaml(tmp)
+  }, error = function(e) {
+    cli::cli_abort("Could not read log {.path {log_path}}: {conditionMessage(e)}")
+  })
+
+  if (is.null(entry$flags) || !any(vapply(entry$flags, function(f) !is.null(f$index), logical(1L)))) {
+    cli::cli_abort(c(
+      "{.path {log_path}} has no per-flag indices to resolve.",
+      "i" = "This entry predates per-flag triage (written before {.fn eri_dq_log} started assigning them), or isn't a {.val dq_flags} entry at all -- use {.fn eri_logs_resolve} to close out the whole entry instead."
+    ))
+  }
+  match_at <- which(vapply(entry$flags, function(f) isTRUE(f$index == index), logical(1L)))
+  if (length(match_at) == 0L) {
+    cli::cli_abort("No flag with index {index} found in {.path {log_path}}.")
+  }
+
+  entry$flags[[match_at[1]]]$status      <- status
+  entry$flags[[match_at[1]]]$note        <- if (is.null(note)) NA_character_ else note
+  entry$flags[[match_at[1]]]$resolved_by <- .eri_analyst_id(data_con)
+  entry$flags[[match_at[1]]]$resolved_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+
+  yaml::write_yaml(entry, tmp)
+  .eri_blob_write(data_con, tmp, log_path)
+  unlink(tmp)
+
+  cli::cli_alert_success("Flag {index} in {.path {basename(log_path)}} marked {.val {status}}.")
   invisible(TRUE)
 }

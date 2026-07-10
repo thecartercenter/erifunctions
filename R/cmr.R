@@ -79,9 +79,11 @@ load_cmr_schema <- function(country) {
 #'   When supplied, the country code is prepended as a `country` column and slug
 #'   aliases are resolved. Default `NULL`.
 #'
-#' @returns A tibble with field-code column names and data from row 6 onward.
-#'   All-NA spacer rows are dropped. If `country` is supplied it is prepended
-#'   as a `country` column.
+#' @returns A tibble with field-code column names and data from row 6 onward,
+#'   plus an `excel_row` column recording each row's real position in the
+#'   workbook (survives all-NA spacer-row dropping, so it stays accurate even
+#'   after rows are removed). If `country` is supplied it is prepended as a
+#'   `country` column.
 #' @examples
 #' \dontrun{
 #' # English template — sheet name directly
@@ -148,8 +150,16 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   df <- raw[, field_pos, drop = FALSE]
   names(df) <- field_cols
 
-  all_na <- apply(df, 1, function(r) all(is.na(r)))
-  df <- tibble::as_tibble(df[!all_na, , drop = FALSE])
+  # The template's row 6 is the first data row (row 5 is the field-code
+  # header, consumed by skip = 4 + col_names = TRUE); track each row's real
+  # Excel row so a flagged issue can point a DA at the actual cell to fix,
+  # not a post-filtering index into the parsed tibble.
+  excel_row <- seq_len(nrow(df)) + 5L
+
+  all_na    <- apply(df, 1, function(r) all(is.na(r)))
+  df        <- tibble::as_tibble(df[!all_na, , drop = FALSE])
+  excel_row <- excel_row[!all_na]
+  df        <- tibble::add_column(df, excel_row = excel_row, .before = 1)
 
   if (!is.null(country)) {
     df <- tibble::add_column(df, country = country, .before = 1)
@@ -207,6 +217,16 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' `eri_split_cmr(..., mirror_pipeline = ...)` then [eri_stage_cmr()] (or the
 #' reverse order; neither depends on the other having run first).
 #'
+#' ## Re-splitting the same period from a corrected file
+#'
+#' If you fix an issue upstream and re-run this on a different local file (e.g.
+#' the `_fixed.xlsx` copy convention) for a period already split, the prior
+#' staged file(s) for each sheet's destination folder are removed first (when
+#' `period` is known) -- otherwise both the broken original and the corrected
+#' file would sit in `staged/` together, and [eri_approve()]'s period-substring
+#' match would promote both. Each removal is logged as a `supersede_staged`
+#' step.
+#'
 #' @param path `str` Local path to the CMR Excel file.
 #' @param country `str` Three-letter country code (e.g. `"uga"`); resolves the
 #'   CMR schema via [load_cmr_schema()].
@@ -229,6 +249,17 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   when `mirror_pipeline` is set.
 #' @param projects_con Azure container for the `projects` blob; used only when
 #'   `mirror_pipeline` is set. If `NULL`, connects automatically.
+#' @param supersede_staged `logical` Re-splitting the same period from a
+#'   DIFFERENT local file (e.g. a `_fixed.xlsx` correction) can leave a prior
+#'   staged file behind in each destination folder -- `eri_approve()`'s period
+#'   match would then promote both to `processed/`. When `period` is known,
+#'   candidate stale files (their name starts with `period`, not just contains
+#'   it anywhere -- the real filename convention, so this doesn't collide with
+#'   an unrelated file that merely mentions those six digits) are always
+#'   detected and reported. Default `FALSE` only warns about them -- **this
+#'   package's first destructive Azure operation is opt-in, not automatic**;
+#'   set `TRUE` to actually delete them. Ignored (nothing detected or deleted)
+#'   when `period` couldn't be resolved.
 #' @returns Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
 #'   `data_type`, `dest`, `n_rows`.
 #' @examples
@@ -240,12 +271,15 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
 #' # One step: also mirror the raw file to the legacy contractor pipeline
 #' eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
+#' # Re-splitting a corrected file for a period already staged: opt in to
+#' # actually removing the superseded original (default only warns)
+#' eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 #' }
 #' @export
 eri_split_cmr <- function(path, country, data_con = NULL,
                           overwrite = FALSE, dry_run = FALSE,
                           mirror_pipeline = NULL, period = NULL,
-                          projects_con = NULL) {
+                          projects_con = NULL, supersede_staged = FALSE) {
   if (!dry_run) .eri_log_session()
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
@@ -465,6 +499,53 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   err_msg   <- NULL
 
   tryCatch({
+    # Re-splitting the same period from a DIFFERENT local file (e.g. a
+    # "_fixed.xlsx" correction) can leave a prior staged file sitting
+    # alongside the new one -- eri_approve()'s period match would then
+    # promote both to processed/. Detect candidates whose name STARTS with
+    # `period` (the real filename convention: "202605_..."), not merely
+    # contains it anywhere -- an unanchored substring match would also catch
+    # an unrelated file that happens to mention those six digits for some
+    # other reason (a date, a facility code, ...) sharing this same
+    # programmatic/{data_type}/staged/ folder from a different source.
+    if (!is.null(period)) {
+      # period is normally an auto-detected 6-digit string, but it's also a
+      # caller-supplied argument with no enforced format -- escape it before
+      # splicing into a PCRE pattern so a stray "." or "(" in a hand-typed
+      # period can't widen the match or fail to compile.
+      period_escaped <- gsub("([^A-Za-z0-9_])", "\\\\\\1", period, perl = TRUE)
+      period_prefix  <- paste0("^", period_escaped, "(?!\\d)")  # period, not a longer number containing it
+      seen_dirs <- character(0)
+      for (p in plan) {
+        if (p$dest_dir %in% seen_dirs) next
+        seen_dirs <- c(seen_dirs, p$dest_dir)
+        existing <- tryCatch(
+          AzureStor::list_storage_files(data_con, p$dest_dir),
+          error = function(e) NULL
+        )
+        if (is.null(existing) || nrow(existing) == 0L) next
+        existing <- existing[!existing$isdir, , drop = FALSE]
+        stale <- existing$name[
+          grepl(period_prefix, basename(existing$name), perl = TRUE) &
+          !startsWith(basename(existing$name), fbase)
+        ]
+        if (length(stale) == 0L) next
+
+        if (isTRUE(supersede_staged)) {
+          for (s in stale) {
+            AzureStor::delete_storage_file(data_con, s, confirm = FALSE)
+            op_log$steps <- .eri_log_step(op_log$steps, "supersede_staged", path = s)
+            cli::cli_alert_info("Superseded a prior staged file for this period: {.path {basename(s)}}")
+          }
+        } else {
+          cli::cli_warn(c(
+            "{length(stale)} prior staged file{?s} for period {.val {period}} in {.path {p$dest_dir}} look{?s/} superseded by this run: {.val {basename(stale)}}.",
+            "i" = "Not deleted -- pass {.code supersede_staged = TRUE} to remove {length(stale)} file{?s}, or they'll also be promoted by {.fn eri_approve}'s period match."
+          ))
+        }
+      }
+    }
+
     for (p in plan) {
       if (!AzureStor::storage_dir_exists(data_con, p$dest_dir)) {
         .eri_create_azure_dir(data_con, p$dest_dir)
@@ -660,7 +741,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
 
   measures <- unique(plan[, c("disease", "data_type")])
 
-  outstanding <- list()
+  outstanding  <- list()
+  dq_reviewed  <- character(0)  # log_paths that backed a clean measure -- for the approval's own audit trail
   for (i in seq_len(nrow(measures))) {
     m <- measures[i, ]
     dq_logs <- eri_logs(country, m$disease, "programmatic", m$data_type,
@@ -682,6 +764,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
         log_path = open_flags$log_path[[1]],
         issue = paste0(open_flags$n_issues[[1]], " unresolved DQ flag(s)")
       )
+    } else {
+      dq_reviewed <- c(dq_reviewed, dq_logs$log_path)
     }
   }
 
@@ -703,8 +787,157 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
     approved[[i]] <- tibble::tibble(disease = m$disease, data_type = m$data_type)
   }
   approved_tbl <- dplyr::bind_rows(approved)
+
+  # One combined record cross-referencing exactly which DQ reviews backed this
+  # approval -- eri_approve() itself writes one op-log per measure, but none
+  # of those reference the dq_flags entries that justified them. This is the
+  # traceable link from "approved/processed" back to "here's what was
+  # reviewed and decided, and by whom" (each dq_flags log_path carries its own
+  # per-flag notes via eri_dq_flag_resolve() and its whole-entry note via
+  # eri_logs_resolve()).
+  trail_path <- .eri_write_log(
+    list(
+      operation  = "eri_approve_cmr",
+      analyst    = .eri_analyst_id(data_con),
+      timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      parameters = list(country = country, period = period),
+      status     = "success",
+      measures   = as.list(paste(approved_tbl$disease, approved_tbl$data_type, sep = "/")),
+      dq_reviewed = as.list(dq_reviewed)
+    ),
+    data_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+  )
+
   cli::cli_alert_success("Approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}.")
+  if (is.null(trail_path)) {
+    cli::cli_alert_danger(c(
+      "The measures above ARE approved, but the {.val dq_reviewed} audit-trail record could not be written",
+      "i" = "(see the Azure write warning above). The per-measure {.fn eri_approve} logs still exist; only this combined cross-reference is missing."
+    ))
+  }
   invisible(approved_tbl)
+}
+
+#' Run and log DQ checks for a whole CMR workbook, one combined report
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' [eri_split_cmr()] fans one CMR workbook out into many disease/measure
+#' datasets; checking each with [run_dq_checks()] one at a time means reading
+#' twelve separate `dq_report()` printouts. This runs DQ checks for every
+#' measure in `plan` (looked up via [eri_cmr_last_plan()] if not supplied),
+#' logs each measure's flags with [eri_dq_log()] as usual, and returns **one**
+#' tibble spanning every flag from every measure -- sortable/filterable in
+#' one place instead of twelve.
+#'
+#' Each row's `flag_id` is what you pass to [eri_dq_flag_resolve()] to triage
+#' that specific issue (`"not_important"`, `"fixed"`, or `"noted"`) before
+#' closing out the whole measure with [eri_logs_resolve()].
+#'
+#' @param country `str` Country code (e.g. `"sdn"`).
+#' @param period `str` Reporting period (e.g. `"202605"`).
+#' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] /
+#'   [eri_cmr_last_plan()]. `NULL` (default) looks it up via [eri_cmr_last_plan()].
+#' @param supersede `logical` The normal review loop is run, fix, re-run --
+#'   each run logs a fresh entry, and [eri_approve_cmr()] blocks on *every*
+#'   unresolved historical entry for a period, not just the newest. Default
+#'   `TRUE` auto-resolves prior open entries for the same measure/period with
+#'   a "superseded by a newer run" note when this run logs a new one, so
+#'   re-running doesn't pile up entries you have to close by hand. Set `FALSE`
+#'   to keep every run's entry open until you resolve it yourself.
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns A tibble with one row per flag across every measure: `sheet`,
+#'   `disease`, `data_type`, `log_path`, `flag_id`, `row` (the flag's index
+#'   into the checked data, not the workbook), `excel_row` (the real row in
+#'   the original Excel sheet -- use this one when telling a DA what to go
+#'   fix), `column`, `value`, `issue`, `status` (all `"open"` on a fresh run).
+#'   Zero rows if every measure is clean.
+#' @examples
+#' \dontrun{
+#' flags <- eri_cmr_dq_report("sdn", "202605")
+#' flags[flags$status == "open", ]
+#' eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected upstream")
+#' }
+#' @export
+eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, data_con = NULL) {
+  data_con <- .eri_logs_con(data_con)
+
+  if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
+
+  rows <- list()
+  for (i in seq_len(nrow(plan))) {
+    p <- plan[i, ]
+    staged <- tryCatch(
+      eri_read(p$dest, azcontainer = data_con),
+      error = function(e) {
+        cli::cli_alert_warning("{.val {p$sheet}}: could not read {.path {p$dest}}: {conditionMessage(e)}")
+        NULL
+      }
+    )
+    if (is.null(staged)) next
+
+    schema <- tryCatch(
+      load_dq_schema(country, p$disease, "programmatic", p$data_type, azcontainer = data_con),
+      error = function(e) {
+        cli::cli_alert_warning("{.val {p$sheet}}: no DQ schema for {p$disease}/{p$data_type}: {conditionMessage(e)}")
+        NULL
+      }
+    )
+    if (is.null(schema)) next
+
+    result  <- run_dq_checks(staged, schema)
+    written <- .eri_dq_log_write(result, country, p$disease, "programmatic", p$data_type, period, data_con)
+
+    if (isTRUE(supersede)) {
+      prior <- tryCatch(
+        eri_logs(country, p$disease, "programmatic", p$data_type,
+                operation = "dq_flags", status = "needs_review",
+                include_handled = FALSE, data_con = data_con),
+        error = function(e) NULL
+      )
+      if (!is.null(prior) && nrow(prior) > 0L) {
+        prior <- prior[!is.na(prior$period) & prior$period == period &
+                       prior$log_path != written$log_path, , drop = FALSE]
+        for (lp in prior$log_path) {
+          eri_logs_resolve(
+            lp, note = paste0("Superseded by a newer eri_cmr_dq_report() run (", written$log_path, ")."),
+            data_con = data_con
+          )
+        }
+      }
+    }
+
+    if (written$n_flags == 0L) next
+    has_excel_row <- "excel_row" %in% names(result$data)
+    for (f in written$flags) {
+      # f$row indexes into result$data (post drop-missing-year etc.), not the
+      # original workbook -- excel_row travels as a column through those row
+      # drops, so this is the DA's real "go fix cell in row N" reference, not
+      # a post-filtering position that may not match the Excel sheet at all.
+      excel_row_val <- if (has_excel_row && !is.na(f$row) && f$row >= 1L && f$row <= nrow(result$data)) {
+        result$data$excel_row[f$row]
+      } else NA_integer_
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        sheet = p$sheet, disease = p$disease, data_type = p$data_type,
+        log_path = written$log_path, flag_id = paste0(written$log_path, "::", f$index),
+        row = f$row, excel_row = excel_row_val, column = f$column, value = f$value,
+        issue = f$issue, status = f$status
+      )
+    }
+  }
+
+  if (length(rows) == 0L) {
+    cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
+    return(tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      excel_row = integer(0), column = character(0), value = character(0),
+      issue = character(0), status = character(0)
+    ))
+  }
+
+  dplyr::bind_rows(rows)
 }
 
 #' Stage CMR monthly report files into the data/ blob

@@ -53,3 +53,5 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0013](0013-odk-submission-backfill.md) | Submission backfill: erifunctions writes records *into* ODK Central | Accepted |
 | [0014](0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob | Accepted |
 | [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
+| [0016](0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes go through the blob endpoint | Accepted |
+| [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted |
