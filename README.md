@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.0 · **Status:** Active development
+**Version:** 0.9.8 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -251,7 +251,7 @@ eri_catalog_verify()
 | Function | What it does |
 |---|---|
 | `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet |
-| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path |
+| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path (opt-in `mirror_pipeline` also uploads the raw file to the legacy contractor pipeline) |
 | `load_cmr_schema(country)` | Load a bundled CMR country schema |
 | `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
 
