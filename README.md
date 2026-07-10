@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.0 · **Status:** Active development
+**Version:** 0.9.10 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -246,14 +246,26 @@ eri_catalog_verify()
 | `add_anomaly_consistency(data, schema)` | Validate cross-field rules |
 | `add_anomaly_spatial(data, schema)` | Validate admin names against reference shapefiles |
 
+### Logs & triage
+
+| Function | What it does |
+|---|---|
+| `eri_dq_log(result, country, disease, data_source, data_type)` | Persist `run_dq_checks()` flags to the durable log backlog |
+| `eri_logs(country, disease, data_source, data_type)` | Read the operation / DQ-flag triage backlog as one tibble |
+| `eri_logs_resolve(log_path, note)` | Close out a whole log entry (auto-summarizes from per-flag decisions if triaged) |
+| `eri_dq_flag_resolve(flag_id, status, note)` | Triage one DQ flag at a time (`not_important`/`fixed`/`noted`) |
+
 ### CMR monthly reports
 
 | Function | What it does |
 |---|---|
-| `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet |
-| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path |
+| `eri_ingest_cmr(path, sheet, country)` | Parse a CMR Excel sheet (each row carries its real `excel_row`) |
+| `eri_split_cmr(path, country)` | Route each CMR sheet to its disease/measure staged path (opt-in `mirror_pipeline` one-step legacy mirror; opt-in `supersede_staged` cleans up a re-split's superseded files) |
 | `load_cmr_schema(country)` | Load a bundled CMR country schema |
 | `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
+| `eri_cmr_last_plan(country, period)` | Recover a past `eri_split_cmr()` run's routing plan from the log, without rerunning |
+| `eri_cmr_dq_report(country, period)` | DQ-check every measure a CMR workbook routed to, one combined flags tibble |
+| `eri_approve_cmr(country, period)` | Approve every measure in one call, but only if none are outstanding |
 
 ### ODK
 
