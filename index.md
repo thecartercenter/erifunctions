@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.12 · **Status:** Active development
+**Version:** 0.9.13 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -290,6 +290,17 @@ eri_catalog_verify()
 | `eri_logs(country, disease, data_source, data_type)` | Read the operation / DQ-flag triage backlog as one tibble |
 | `eri_logs_resolve(log_path, note)` | Close out a whole log entry (auto-summarizes from per-flag decisions if triaged) |
 | `eri_dq_flag_resolve(flag_id, status, note)` | Triage one DQ flag at a time (`not_important`/`fixed`/`noted`) |
+
+### Feedback
+
+| Function | What it does |
+|----|----|
+| `eri_feedback(message, area, context, attachment)` | File a ticket to the shared backlog; optional dataset-scoping `context` and file `attachment` |
+| `eri_feedback_list(area, status)` | Read the feedback backlog as a tibble |
+| `eri_feedback_status(id, status, note)` | Move a ticket through the triage lifecycle |
+| [`eri_feedback_board()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_board.md) | Print a one-line-per-status summary of the backlog |
+| `eri_feedback_report(file, format)` | Render the weekly feedback report (HTML or Markdown) |
+| `eri_dq_schema_submit(country, disease, data_source, data_type)` | Package a local schema override into a `dq`-area ticket, with an auto-drafted diff and the override attached |
 
 ### CMR monthly reports
 

@@ -115,6 +115,9 @@ Schema-driven DQ checks and anomaly detection.
   **\[experimental\]** : List local DQ schema overrides
 - [`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md)
   **\[experimental\]** : Delete a local DQ schema override
+- [`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md)
+  **\[experimental\]** : Submit a local DQ schema override for a
+  maintainer to fold in
 - [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
   : Run data quality checks on surveillance data
 - [`print(`*`<dq_result>`*`)`](https://thecartercenter.github.io/erifunctions/reference/dq_result-methods.md)

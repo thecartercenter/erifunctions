@@ -28,7 +28,8 @@ eri_feedback_list(area = NULL, status = NULL, data_con = NULL)
 ## Value
 
 A tibble with columns `id`, `submitted_at`, `submitted_by`, `area`,
-`status`, `message`.
+`status`, `message`, `context` (a list-column: `NULL` or a named list
+per ticket), `attachment` (blob path, or `NA` if none).
 
 ## See also
 

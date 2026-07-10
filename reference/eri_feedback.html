@@ -13,7 +13,7 @@ rough edge, a wish, or a general comment, either about the system as a whole
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,7 @@ rough edge, a wish, or a general comment, either about the system as a whole
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Log a piece of feedback to the shared ticket log</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.12/R/feedback.R" class="external-link"><code>R/feedback.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/feedback.R" class="external-link"><code>R/feedback.R</code></a></small>
       <div class="d-none name"><code>eri_feedback.Rd</code></div>
     </div>
 
@@ -87,7 +87,13 @@ rough edge, a wish, or a general comment, either about the system as a whole
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_feedback</span><span class="op">(</span><span class="va">message</span>, area <span class="op">=</span> <span class="st">"general"</span>, data_con <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_feedback</span><span class="op">(</span></span>
+<span>  <span class="va">message</span>,</span>
+<span>  area <span class="op">=</span> <span class="st">"general"</span>,</span>
+<span>  context <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  attachment <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -103,6 +109,29 @@ rough edge, a wish, or a general comment, either about the system as a whole
 for system-wide feedback, or a specific section — suggested values:
 ingest, dq, catalog, query, odk, cmr, reporting, research, spatial, auth, docs, other. Free text
 is accepted; the value is lower-cased.</p></dd>
+
+
+<dt id="arg-context">context<a class="anchor" aria-label="anchor" href="#arg-context"></a></dt>
+<dd><p><code>list</code> or <code>NULL</code> Optional named list scoping the ticket to a
+specific dataset or object (e.g.
+<code>list(country = "sdn", disease = "oncho", data_source = "programmatic", data_type = "treatment", period = "202605", schema = "sdn_oncho_programmatic_treatment")</code>).
+Stored as a sub-block on the ticket, not new formal arguments, so any area
+can scope its tickets differently without a signature change. <code>NULL</code>
+(default) omits it entirely — a ticket with no <code>context</code> looks exactly
+like one filed before this feature existed.</p></dd>
+
+
+<dt id="arg-attachment">attachment<a class="anchor" aria-label="anchor" href="#arg-attachment"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> Optional path to a local file to attach —
+e.g. a full schema override for a <code>dq</code> ticket. Uploaded to
+<code>_feedback/attachments/{token}/{basename}</code> in the <code>data/</code> blob <strong>before</strong>
+the ticket is logged, so a failed <em>upload</em> never leaves a ticket
+referencing a file that isn't actually there. The reverse is a known,
+accepted, low-probability gap: if the upload succeeds but the log append
+then fails (e.g. exhausts its concurrency retries), the blob is left
+orphaned with no ticket pointing at it — you'll see the error (nothing
+silently succeeds for you), but there's no automatic cleanup sweep for
+the orphaned attachment. <code>NULL</code> (default): no attachment.</p></dd>
 
 
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
@@ -124,7 +153,8 @@ tracking workflow, not by this function.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="eri_feedback_list.html">eri_feedback_list()</a></code> to read the backlog.</p></div>
+    <div class="dont-index"><p><code><a href="eri_feedback_list.html">eri_feedback_list()</a></code> to read the backlog, <code><a href="eri_dq_schema_submit.html">eri_dq_schema_submit()</a></code>
+for the DQ-schema-specific wrapper.</p></div>
     </div>
 
     <div class="section level2">
@@ -135,6 +165,12 @@ tracking workflow, not by this function.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Feedback about a specific section</span></span></span>
 <span class="r-in"><span><span class="fu">eri_feedback</span><span class="op">(</span><span class="st">"ODK sync timed out on the big LF form."</span>, area <span class="op">=</span> <span class="st">"odk"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Scoped to a dataset, with an attachment (see eri_dq_schema_submit() for</span></span></span>
+<span class="r-in"><span><span class="co"># the DA-facing wrapper that packages this automatically for schema edits)</span></span></span>
+<span class="r-in"><span><span class="fu">eri_feedback</span><span class="op">(</span><span class="st">"District list is missing a valid admin name."</span>, area <span class="op">=</span> <span class="st">"dq"</span>,</span></span>
+<span class="r-in"><span>             context <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"sdn"</span>, disease <span class="op">=</span> <span class="st">"oncho"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>             attachment <span class="op">=</span> <span class="st">"sdn_oncho_programmatic_treatment.yaml"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

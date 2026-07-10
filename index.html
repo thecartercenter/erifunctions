@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,7 +110,7 @@
 <a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
 </h3>
 <p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
-<p><strong>Version:</strong> 0.9.12 · <strong>Status:</strong> Active development</p>
+<p><strong>Version:</strong> 0.9.13 · <strong>Status:</strong> Active development</p>
 <blockquote>
 <p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
@@ -549,6 +549,47 @@ ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
 <tr>
 <td><code>eri_dq_flag_resolve(flag_id, status, note)</code></td>
 <td>Triage one DQ flag at a time (<code>not_important</code>/<code>fixed</code>/<code>noted</code>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
+<h3 id="feedback">Feedback<a class="anchor" aria-label="anchor" href="#feedback"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Function</th>
+<th>What it does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>eri_feedback(message, area, context, attachment)</code></td>
+<td>File a ticket to the shared backlog; optional dataset-scoping <code>context</code> and file <code>attachment</code>
+</td>
+</tr>
+<tr>
+<td><code>eri_feedback_list(area, status)</code></td>
+<td>Read the feedback backlog as a tibble</td>
+</tr>
+<tr>
+<td><code>eri_feedback_status(id, status, note)</code></td>
+<td>Move a ticket through the triage lifecycle</td>
+</tr>
+<tr>
+<td><code><a href="reference/eri_feedback_board.html">eri_feedback_board()</a></code></td>
+<td>Print a one-line-per-status summary of the backlog</td>
+</tr>
+<tr>
+<td><code>eri_feedback_report(file, format)</code></td>
+<td>Render the weekly feedback report (HTML or Markdown)</td>
+</tr>
+<tr>
+<td><code>eri_dq_schema_submit(country, disease, data_source, data_type)</code></td>
+<td>Package a local schema override into a <code>dq</code>-area ticket, with an auto-drafted diff and the override attached</td>
 </tr>
 </tbody>
 </table>
