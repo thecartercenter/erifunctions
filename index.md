@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.11 · **Status:** Active development
+**Version:** 0.9.12 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -270,7 +270,11 @@ eri_catalog_verify()
 
 | Function | What it does |
 |----|----|
-| `load_dq_schema(country, disease, data_source, data_type)` | Load a bundled YAML DQ schema |
+| `load_dq_schema(country, disease, data_source, data_type)` | Load a DQ schema (local override → Azure → bundled); tags the result with `schema_source`/`schema_hash` |
+| `eri_dq_schema_edit(country, disease, data_source, data_type)` | Fork the active schema into a local, editable override (auto-retired if upstream changes) |
+| `eri_dq_schema_path(country, disease, data_source, data_type)` | Resolve the local file path of the currently active schema |
+| [`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md) | List local schema overrides with age and active/stale state |
+| `eri_dq_schema_reset(country, disease, data_source, data_type)` | Delete a local schema override |
 | `run_dq_checks(data, schema)` | Run all schema-driven checks; returns a `dq_result` |
 | `dq_report(result)` | Print a summary of flags and corrections |
 | `add_anomaly_pct_change(data, value_col, period_col)` | Flag period-over-period spikes |

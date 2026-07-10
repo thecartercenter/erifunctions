@@ -105,6 +105,16 @@ Schema-driven DQ checks and anomaly detection.
 
 - [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
   : Load a DQ schema
+- [`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md)
+  **\[experimental\]** : Fork the active DQ schema into a local,
+  editable override
+- [`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md)
+  **\[experimental\]** : Resolve the local file path of the currently
+  active DQ schema
+- [`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md)
+  **\[experimental\]** : List local DQ schema overrides
+- [`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md)
+  **\[experimental\]** : Delete a local DQ schema override
 - [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
   : Run data quality checks on surveillance data
 - [`print(`*`<dq_result>`*`)`](https://thecartercenter.github.io/erifunctions/reference/dq_result-methods.md)

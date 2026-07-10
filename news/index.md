@@ -1,6 +1,61 @@
 # Changelog
 
-## erifunctions 0.9.11
+## erifunctions 0.9.12
+
+### DQ schema local overrides: three-tier resolution, hash-based expiry (Phase 3 of the DQ workflow redesign)
+
+Also confirms Phase 2 (CMR re-run hygiene) was already shipped and
+validates it end-to-end. See
+[ADR-0018](https://thecartercenter.github.io/erifunctions/news/docs/adr/0018-dq-schema-local-overrides.md)
+for the full design rationale.
+
+- **[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+  now resolves in three tiers: local override → Azure blob → bundled.**
+  A DA can fork the active schema locally, fix a bad
+  alias/range/allowed-values entry, and keep using the fix across
+  sessions – surviving R restarts, different RStudio projects, machine
+  reboots – without waiting on a package release or an Azure blob
+  update.
+- **New lifecycle functions**, all offline-testable:
+  [`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md)
+  forks the resolved upstream schema into a per-user override directory
+  (`tools::R_user_dir("erifunctions", "data")`, never the working
+  directory) and writes a sidecar recording what it forked from;
+  [`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md)
+  resolves the active schema’s local file path;
+  [`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md)
+  lists overrides with age and active/stale state (read-only – checking
+  status never itself retires anything);
+  [`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md)
+  deletes a live override.
+- **An override is retired automatically the moment its upstream
+  changes** – never kept forever, never silently discarded. On every
+  load, the override’s recorded `base_hash` is compared against the
+  current Azure/bundled schema; a mismatch renames the override aside
+  (`{stem}.retired-<timestamp>.yaml`) and tells the DA why, so a
+  maintainer’s real fix isn’t shadowed by a DA’s stale local copy, and
+  the DA isn’t left silently reverted with no explanation.
+- **Never silent which schema actually ran.**
+  [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+  tags its return with `schema_source`
+  (`"local_override"`/`"azure"`/`"bundled"`) and a `schema_hash`;
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+  carries both into the `dq_result`; `.eri_dq_log_write()` records both
+  in every `dq_flags` log entry. A DQ result produced under a modified
+  schema is now always distinguishable, in the permanent log, from one
+  produced under the canonical schema – load-bearing groundwork for the
+  planned `eri_audit()` timeline (phase 4).
+- **Phase 2 (CMR re-run hygiene) confirmed shipped and now validated
+  end-to-end**: those three landmine fixes (`supersede_staged` /
+  ADR-0017, `eri_cmr_dq_report(supersede = TRUE)`, `excel_row`
+  provenance) actually landed in v0.9.10, before the design consult was
+  even commissioned. A live run against the `atlantis` training sandbox
+  (split → flag an invalid district → fix → re-split with
+  `supersede_staged` → re-report →
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md))
+  confirmed exactly one file set gets promoted, with no leftover
+  duplicate and no blocking log pileup; all test artifacts were cleaned
+  up afterward. See `docs/roadmap.md`’s “DQ workflow redesign” entry.
 
 ### Raw retention and source hashing generalized to `eri_ingest()` (Phase 1 of the DQ workflow redesign)
 
