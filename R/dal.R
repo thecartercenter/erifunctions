@@ -1754,7 +1754,7 @@ eri_ingest <- function(path, country, disease,
 #' Wraps in its own tryCatch so a logging failure never masks the original error.
 #' @keywords internal
 .eri_write_log <- function(log_list, azcontainer, log_dir) {
-  tryCatch({
+  written_path <- tryCatch({
     if (!AzureStor::storage_dir_exists(azcontainer, log_dir)) {
       AzureStor::create_storage_dir(azcontainer, log_dir)
     }
@@ -1771,10 +1771,12 @@ eri_ingest <- function(path, country, disease,
     .eri_blob_write(azcontainer, log_file, log_path)
     unlink(log_file)
     cli::cli_alert_info("Operation log: {.path {log_path}}")
+    log_path
   }, error = function(e) {
     cli::cli_alert_warning("Could not write operation log to Azure: {conditionMessage(e)}")
+    NULL
   })
-  invisible(NULL)
+  invisible(written_path)
 }
 
 #' Reads an Excel file from Azure to the R environment

@@ -34,9 +34,11 @@ nothing. Default \code{FALSE}.}
 \code{"rb-expansion"}) whose legacy raw-drop location \code{path} should also be
 uploaded to. Default \code{NULL} (no mirror; sandbox-safe).}
 
-\item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}) for the
-mirror upload. \code{NULL} (default) parses a leading \code{YYYYMM_} from
-\code{basename(path)}; required if that can't be parsed.}
+\item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}), used to tag
+the op-log (so \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}} can find this run again) and, if
+\code{mirror_pipeline} is set, the mirror upload. \code{NULL} (default) parses a
+leading \code{YYYYMM_} from \code{basename(path)}; only required to be resolvable
+when \code{mirror_pipeline} is set.}
 
 \item{projects_con}{Azure container for the \code{projects} blob; used only when
 \code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}
