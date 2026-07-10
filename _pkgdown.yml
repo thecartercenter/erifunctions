@@ -168,6 +168,7 @@ reference:
   - eri_dq_schema_path
   - eri_dq_schema_status
   - eri_dq_schema_reset
+  - eri_dq_schema_submit
   - run_dq_checks
   - dq_result-methods
   - dq_report

@@ -1455,6 +1455,191 @@ eri_dq_schema_reset <- function(country, disease, data_source = NULL, data_type 
   invisible(TRUE)
 }
 
+# A fully-named list (every element has a non-empty name) is a YAML mapping
+# (e.g. `columns`, `columns$district`) -- worth recursing into. A YAML
+# sequence (`aliases: [...]`, `range: [0, 100]`) parses to an unnamed list --
+# a leaf to compare directly, not a sub-block to walk.
+#' @keywords internal
+.eri_dq_schema_is_named_list <- function(x) {
+  is.list(x) && length(x) > 0L && !is.null(names(x)) && all(nzchar(names(x)))
+}
+
+#' @keywords internal
+.eri_dq_schema_fmt_value <- function(x) {
+  if (is.null(x)) return("(none)")
+  v <- unlist(x, use.names = FALSE)
+  # A DQ range like [0, 10000000] is exactly the common case here -- plain
+  # as.character() on a round numeric renders scientific notation ("1e+07"),
+  # which would be actively misleading in an auto-drafted ticket message.
+  fmt1 <- function(e) {
+    if (is.character(e)) paste0('"', e, '"')
+    else if (is.numeric(e)) format(e, scientific = FALSE, trim = TRUE)
+    else as.character(e)
+  }
+  if (length(v) == 1L) return(fmt1(v))
+  paste0("[", paste(vapply(v, fmt1, character(1L)), collapse = ", "), "]")
+}
+
+# Human-readable diff between a base and an edited DQ schema (both already
+# parsed YAML), for eri_dq_schema_submit()'s ticket message. Recurses into
+# named sub-blocks; at a leaf, `aliases` and any key ending `_values` (e.g.
+# `allowed_values`) -- the two typed-edit shapes the workflow-redesign vision
+# names explicitly -- are diffed as a set of added/removed entries, since
+# that's the more readable framing for a growing list. Everything else
+# (ranges, flags, scalars) is shown as a before -> after value change. Not
+# exhaustive for arbitrarily creative hand edits, but always shows *something*
+# changed rather than silently omitting a diff it doesn't have a nice phrasing
+# for.
+#' @keywords internal
+.eri_dq_schema_diff <- function(base, override, path = character(0)) {
+  lines <- character(0)
+  keys  <- union(names(base) %||% character(0), names(override) %||% character(0))
+  for (k in keys) {
+    key_path  <- c(path, k)
+    key_label <- paste(key_path, collapse = ".")
+    b <- base[[k]]
+    o <- override[[k]]
+
+    if (identical(b, o)) next
+
+    if (is.null(b)) {
+      lines <- c(lines, paste0(key_label, ": added ", .eri_dq_schema_fmt_value(o)))
+      next
+    }
+    if (is.null(o)) {
+      lines <- c(lines, paste0(key_label, ": removed (was ", .eri_dq_schema_fmt_value(b), ")"))
+      next
+    }
+    if (.eri_dq_schema_is_named_list(b) && .eri_dq_schema_is_named_list(o)) {
+      lines <- c(lines, .eri_dq_schema_diff(b, o, key_path))
+      next
+    }
+    if (grepl("(^aliases$|_values$)", k)) {
+      bv      <- as.character(unlist(b, use.names = FALSE))
+      ov      <- as.character(unlist(o, use.names = FALSE))
+      added   <- setdiff(ov, bv)
+      removed <- setdiff(bv, ov)
+      if (length(added))   lines <- c(lines, paste0(key_label, ": added ",   paste(sprintf('"%s"', added),   collapse = ", ")))
+      if (length(removed)) lines <- c(lines, paste0(key_label, ": removed ", paste(sprintf('"%s"', removed), collapse = ", ")))
+      next
+    }
+    lines <- c(lines, paste0(key_label, ": ", .eri_dq_schema_fmt_value(b), " -> ", .eri_dq_schema_fmt_value(o)))
+  }
+  lines
+}
+
+#' Submit a local DQ schema override for a maintainer to fold in
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Packages a live local schema override (from [eri_dq_schema_edit()]) into a
+#' ticket via [eri_feedback()]: the message is an auto-drafted, human-readable
+#' diff against the schema it was forked from (so a maintainer never has to
+#' retype YAML from a prose description), the full override file is attached,
+#' and the four ADR-0012 axes plus the schema's own stem are recorded as
+#' `context`. Filed under `area = "dq"`.
+#'
+#' Submitting does **not** apply the change anywhere else — it only files the
+#' ticket. Folding it in means a maintainer updates the Azure `schemas/`
+#' `.yaml` blob directly ([load_dq_schema()] already prefers the Azure copy
+#' over the bundled one), which takes effect for every DA within minutes, not
+#' at the next package release. Your own local override keeps working
+#' independently (see [eri_dq_schema_status()]) until it's reset or the
+#' upstream change retires it.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"uga"`).
+#' @param disease `str` Disease (e.g. `"malaria"`, `"lf"`).
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"`.
+#' @param data_type `str` The measure (e.g. `"case"`, `"treatment"`); optional
+#'   for `research`.
+#' @param note `str` or `NULL` An optional one-line note appended after the
+#'   auto-drafted diff (e.g. why the change matters, or which real submission
+#'   surfaced it).
+#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#' @returns Invisibly, the logged ticket from [eri_feedback()] (`NULL` if the
+#'   override is identical to upstream, in which case nothing is filed).
+#' @examples
+#' \dontrun{
+#' eri_dq_schema_edit("sdn", "oncho", "programmatic", "treatment")
+#' # ... edit the file, e.g. widen a range or add a district alias ...
+#' eri_dq_schema_submit("sdn", "oncho", "programmatic", "treatment",
+#'                      note = "Barbar's real submissions use this alias")
+#' }
+#' @seealso [eri_dq_schema_edit()] to create the override being submitted,
+#'   [eri_feedback()] for the general ticket log.
+#' @export
+eri_dq_schema_submit <- function(country, disease, data_source = NULL, data_type = NULL,
+                                  note = NULL,
+                                  azcontainer = suppressMessages(
+                                    get_azure_storage_connection(
+                                      storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+                                    ))) {
+  stem <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+  ov   <- .eri_dq_schema_override_state(stem, azcontainer)
+
+  if (ov$state == "none") {
+    cli::cli_abort(c(
+      "No local schema override for {.val {stem}} to submit.",
+      "i" = "Fork one with {.fn eri_dq_schema_edit} first."
+    ))
+  }
+  if (ov$state == "stale") {
+    cli::cli_abort(c(
+      "Your local override for {.val {stem}} is stale -- the upstream schema changed since you forked it.",
+      "i" = "Re-fork with {.fn eri_dq_schema_edit}, re-apply your change, then submit again."
+    ))
+  }
+  if (ov$state == "unknown") {
+    cli::cli_abort(c(
+      "Could not verify your local override for {.val {stem}} against upstream (unreachable).",
+      "i" = "Try again once connected -- a reliable diff needs to compare against the current upstream."
+    ))
+  }
+
+  base_content <- yaml::read_yaml(ov$upstream$path)
+  edit_content <- yaml::read_yaml(ov$paths$yaml)
+  diff_lines   <- .eri_dq_schema_diff(base_content, edit_content)
+
+  if (length(diff_lines) == 0L) {
+    cli::cli_alert_info("Your local override for {.val {stem}} is identical to upstream -- nothing to submit.")
+    return(invisible(NULL))
+  }
+
+  message_lines <- c(
+    paste0("DQ schema override for `", stem, "`:"),
+    paste0("- ", diff_lines)
+  )
+  if (!is.null(note) && nzchar(trimws(note))) {
+    message_lines <- c(message_lines, "", trimws(note))
+  }
+  message_lines <- c(message_lines, "", paste0(
+    "(Fold in by updating `schemas/", stem, ".yaml` in the Azure `data` blob -- ",
+    "load_dq_schema() prefers it over the bundled copy, so this takes effect for every DA ",
+    "within minutes, not at the next package release.)"
+  ))
+
+  # list()'s constructor keeps a NULL-valued element (unlike assigning NULL
+  # into an existing list, which removes it) -- filter explicitly so a
+  # research-lane submission with no data_type doesn't carry a literal `~` in
+  # the logged context.
+  context <- Filter(Negate(is.null), list(
+    country = country, disease = disease, data_source = data_source,
+    data_type = data_type, schema = stem
+  ))
+
+  ticket <- eri_feedback(
+    message    = paste(message_lines, collapse = "\n"),
+    area       = "dq",
+    context    = context,
+    attachment = ov$paths$yaml,
+    data_con   = azcontainer
+  )
+  cli::cli_alert_success("Submitted schema override for {.val {stem}} as ticket #{ticket$id}.")
+  invisible(ticket)
+}
+
 #' Run data quality checks on surveillance data
 #'
 #' Applies a sequence of automated DQ checks defined by a schema: preprocessing

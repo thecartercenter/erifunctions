@@ -4,7 +4,13 @@
 \alias{eri_feedback}
 \title{Log a piece of feedback to the shared ticket log}
 \usage{
-eri_feedback(message, area = "general", data_con = NULL)
+eri_feedback(
+  message,
+  area = "general",
+  context = NULL,
+  attachment = NULL,
+  data_con = NULL
+)
 }
 \arguments{
 \item{message}{\code{chr} The feedback itself. A single non-empty string.}
@@ -13,6 +19,20 @@ eri_feedback(message, area = "general", data_con = NULL)
 for system-wide feedback, or a specific section — suggested values:
 ingest, dq, catalog, query, odk, cmr, reporting, research, spatial, auth, docs, other. Free text
 is accepted; the value is lower-cased.}
+
+\item{context}{\code{list} or \code{NULL} Optional named list scoping the ticket to a
+specific dataset or object (e.g.
+\code{list(country = "sdn", disease = "oncho", data_source = "programmatic", data_type = "treatment", period = "202605", schema = "sdn_oncho_programmatic_treatment")}).
+Stored as a sub-block on the ticket, not new formal arguments, so any area
+can scope its tickets differently without a signature change. \code{NULL}
+(default) omits it entirely — a ticket with no \code{context} looks exactly
+like one filed before this feature existed.}
+
+\item{attachment}{\code{chr} or \code{NULL} Optional path to a local file to attach —
+e.g. a full schema override for a \code{dq} ticket. Uploaded to
+\verb{_feedback/attachments/\{token\}/\{basename\}} in the \verb{data/} blob \strong{before}
+the ticket is logged, so a failed upload never leaves a ticket referencing
+a file that isn't actually there. \code{NULL} (default): no attachment.}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
@@ -40,8 +60,15 @@ eri_feedback("The onboarding guide's Week 1 felt too fast.")
 
 # Feedback about a specific section
 eri_feedback("ODK sync timed out on the big LF form.", area = "odk")
+
+# Scoped to a dataset, with an attachment (see eri_dq_schema_submit() for
+# the DA-facing wrapper that packages this automatically for schema edits)
+eri_feedback("District list is missing a valid admin name.", area = "dq",
+             context = list(country = "sdn", disease = "oncho"),
+             attachment = "sdn_oncho_programmatic_treatment.yaml")
 }
 }
 \seealso{
-\code{\link[=eri_feedback_list]{eri_feedback_list()}} to read the backlog.
+\code{\link[=eri_feedback_list]{eri_feedback_list()}} to read the backlog, \code{\link[=eri_dq_schema_submit]{eri_dq_schema_submit()}}
+for the DQ-schema-specific wrapper.
 }
