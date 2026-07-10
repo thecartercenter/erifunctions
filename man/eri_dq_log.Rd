@@ -11,7 +11,8 @@ eri_dq_log(
   data_source,
   data_type = NULL,
   period = NULL,
-  data_con = NULL
+  data_con = NULL,
+  source_hash = NULL
 )
 }
 \arguments{
@@ -30,6 +31,11 @@ eri_dq_log(
 \item{period}{\code{chr} or \code{NULL} Reporting period the data covers (e.g. \code{"2024-01"}).}
 
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{source_hash}{\code{chr} or \code{NULL} MD5 hash of the source file this check ran
+against (identity, not security), if you have one -- lets a later audit
+trail confirm exactly which bytes were reviewed. \code{NULL} (default) when
+there's no local file to hash (e.g. checking data already staged in Azure).}
 }
 \value{
 Invisibly, the number of flags logged.

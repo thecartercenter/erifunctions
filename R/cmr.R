@@ -285,6 +285,12 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     cli::cli_abort("File not found: {.path {path}}")
   }
 
+  # Identity for the workbook this run splits, not security -- carried into
+  # every measure's dq_flags entry (via the plan) so an audit trail can
+  # confirm exactly which submission a flag/approval traces back to. Computed
+  # once, up front, so it's identical whether this call is a dry run or real.
+  source_hash <- unname(tools::md5sum(path))
+
   # Resolve period generally (not just for the mirror): a leading YYYYMM_ in
   # the filename, same convention observed in real submissions. Used to tag
   # the op-log so eri_cmr_last_plan() can find this run again later. Failing
@@ -400,11 +406,12 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   }
 
   plan_tbl <- tibble::tibble(
-    sheet     = vapply(plan, function(p) p$sheet,     character(1L)),
-    disease   = vapply(plan, function(p) p$disease,   character(1L)),
-    data_type = vapply(plan, function(p) p$data_type, character(1L)),
-    dest      = vapply(plan, function(p) p$dest,      character(1L)),
-    n_rows    = vapply(plan, function(p) p$n_rows,    integer(1L))
+    sheet       = vapply(plan, function(p) p$sheet,     character(1L)),
+    disease     = vapply(plan, function(p) p$disease,   character(1L)),
+    data_type   = vapply(plan, function(p) p$data_type, character(1L)),
+    dest        = vapply(plan, function(p) p$dest,      character(1L)),
+    n_rows      = vapply(plan, function(p) p$n_rows,    integer(1L)),
+    source_hash = source_hash
   )
 
   if (dry_run) {
@@ -483,14 +490,17 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     analyst    = .eri_analyst_id(data_con),
     started_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     parameters = list(country = country, path = path, period = period),
+    source_file = basename(path),
+    source_hash = source_hash,
     status     = "in_progress", steps = list(), error = NULL, files = NULL,
     # Structured routing table (sheet/disease/data_type/dest/n_rows), not just
     # the flat `files` path list -- lets eri_cmr_last_plan() reconstruct the
     # plan tibble later without rerunning eri_split_cmr() or keeping the R
-    # object alive in-session.
+    # object alive in-session. source_hash travels with each row so
+    # eri_cmr_dq_report() can attribute a DQ check back to the exact workbook.
     plan = lapply(plan, function(p) {
       list(sheet = p$sheet, disease = p$disease, data_type = p$data_type,
-           dest = p$dest, n_rows = p$n_rows)
+           dest = p$dest, n_rows = p$n_rows, source_hash = source_hash)
     })
   )
 
@@ -683,11 +693,14 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
   }
 
   tibble::tibble(
-    sheet     = vapply(entry$plan, function(p) p$sheet,     character(1L)),
-    disease   = vapply(entry$plan, function(p) p$disease,   character(1L)),
-    data_type = vapply(entry$plan, function(p) p$data_type, character(1L)),
-    dest      = vapply(entry$plan, function(p) p$dest,      character(1L)),
-    n_rows    = vapply(entry$plan, function(p) p$n_rows,    integer(1L))
+    sheet       = vapply(entry$plan, function(p) p$sheet,     character(1L)),
+    disease     = vapply(entry$plan, function(p) p$disease,   character(1L)),
+    data_type   = vapply(entry$plan, function(p) p$data_type, character(1L)),
+    dest        = vapply(entry$plan, function(p) p$dest,      character(1L)),
+    n_rows      = vapply(entry$plan, function(p) p$n_rows,    integer(1L)),
+    # NA for a plan logged before source_hash was added -- older entries
+    # still reconstruct, just without that provenance field.
+    source_hash = vapply(entry$plan, function(p) p$source_hash %||% NA_character_, character(1L))
   )
 }
 
@@ -886,8 +899,10 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
     )
     if (is.null(schema)) next
 
-    result  <- run_dq_checks(staged, schema)
-    written <- .eri_dq_log_write(result, country, p$disease, "programmatic", p$data_type, period, data_con)
+    result       <- run_dq_checks(staged, schema)
+    p_source_hash <- if ("source_hash" %in% names(plan)) p$source_hash else NULL
+    written <- .eri_dq_log_write(result, country, p$disease, "programmatic", p$data_type, period, data_con,
+                                 source_hash = p_source_hash)
 
     if (isTRUE(supersede)) {
       prior <- tryCatch(
@@ -1082,11 +1097,12 @@ eri_stage_cmr <- function(country,
 
       tmp <- tempfile()
       .eri_blob_read(projects_con, src_path, tmp)
+      file_hash <- unname(tools::md5sum(tmp))  # identity, not security -- same convention as eri_ingest()
       .eri_blob_write(data_con, tmp, dest_path)
       unlink(tmp)
       staged       <- c(staged, dest_path)
       op_log$steps <- .eri_log_step(op_log$steps, "stage_file",
-                                     src = src_path, dest = dest_path)
+                                     src = src_path, dest = dest_path, source_hash = file_hash)
       .eri_say_done("Staged: {.path {fname}}")
     }
 
