@@ -23,6 +23,11 @@ Records a triage note on a single log YAML (by its \code{log_path} from
 \code{triage} block (\code{handled}, \code{handled_by}, \code{handled_at}, \code{note}) to the file in
 place; the original operation record is preserved.
 }
+\details{
+Same single-editor caveat as \code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}}: this is a read-modify-write
+with no optimistic-concurrency protection, so two people resolving the \emph{same}
+log entry around the same time can silently clobber one another.
+}
 \examples{
 \dontrun{
 backlog <- eri_logs(status = "error")

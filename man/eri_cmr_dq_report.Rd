@@ -4,7 +4,13 @@
 \alias{eri_cmr_dq_report}
 \title{Run and log DQ checks for a whole CMR workbook, one combined report}
 \usage{
-eri_cmr_dq_report(country, period, plan = NULL, data_con = NULL)
+eri_cmr_dq_report(
+  country,
+  period,
+  plan = NULL,
+  supersede = TRUE,
+  data_con = NULL
+)
 }
 \arguments{
 \item{country}{\code{str} Country code (e.g. \code{"sdn"}).}
@@ -14,13 +20,23 @@ eri_cmr_dq_report(country, period, plan = NULL, data_con = NULL)
 \item{plan}{\code{tibble} or \code{NULL} The plan from \code{\link[=eri_split_cmr]{eri_split_cmr()}} /
 \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}}. \code{NULL} (default) looks it up via \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}}.}
 
+\item{supersede}{\code{logical} The normal review loop is run, fix, re-run --
+each run logs a fresh entry, and \code{\link[=eri_approve_cmr]{eri_approve_cmr()}} blocks on \emph{every}
+unresolved historical entry for a period, not just the newest. Default
+\code{TRUE} auto-resolves prior open entries for the same measure/period with
+a "superseded by a newer run" note when this run logs a new one, so
+re-running doesn't pile up entries you have to close by hand. Set \code{FALSE}
+to keep every run's entry open until you resolve it yourself.}
+
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
 A tibble with one row per flag across every measure: \code{sheet},
-\code{disease}, \code{data_type}, \code{log_path}, \code{flag_id}, \code{row}, \code{column}, \code{value},
-\code{issue}, \code{status} (all \code{"open"} on a fresh run). Zero rows if every
-measure is clean.
+\code{disease}, \code{data_type}, \code{log_path}, \code{flag_id}, \code{row} (the flag's index
+into the checked data, not the workbook), \code{excel_row} (the real row in
+the original Excel sheet -- use this one when telling a DA what to go
+fix), \code{column}, \code{value}, \code{issue}, \code{status} (all \code{"open"} on a fresh run).
+Zero rows if every measure is clean.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

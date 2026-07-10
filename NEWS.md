@@ -20,6 +20,31 @@
   stop at a bare approval stamp.
 - `da-cmr-guide.Rmd` updated for this workflow.
 
+## Three real bugs found and fixed during design review of the workflow above
+
+A design consult on the next phase of this DQ workflow surfaced three real defects in the
+shipped-this-week CMR pipeline (not hypothetical future issues) -- fixed here rather than shipping
+known-broken and patching later:
+
+- **Fix: re-splitting a corrected file duplicated staged data.** `eri_split_cmr()` names each staged
+  parquet from the workbook's filename, so re-splitting a "`_fixed.xlsx`" copy for a period already
+  split left the broken original's staged file sitting alongside the corrected one --
+  `eri_approve()`'s period-substring match then promoted **both** to `processed/`. `eri_split_cmr()`
+  now supersedes (deletes) prior staged files for the same period in each destination folder before
+  writing this run's own, logged as `supersede_staged` steps.
+- **Fix: re-running the DQ report piled up blocking log entries.** The normal loop is run → fix →
+  re-run, and `eri_approve_cmr()` correctly blocks on *every* unresolved historical entry for a
+  period, not just the newest -- so N re-runs meant N entries to close by hand.
+  `eri_cmr_dq_report()` gains `supersede = TRUE` (default): a fresh run auto-resolves prior open
+  entries for the same measure/period with a "superseded by a newer run" note. Set `FALSE` to keep
+  the strict one-entry-per-run behavior.
+- **Fix: flagged row numbers didn't match the Excel sheet.** A flag's `row` is an index into the
+  post-processing data (after spacer-row/missing-year drops), not the original workbook -- "row 2"
+  in a flag could be row 8 in the actual Excel file. `eri_ingest_cmr()` now records each row's real
+  `excel_row` (data starts at row 6; survives all row-dropping since it's a column, not a position),
+  and `eri_cmr_dq_report()`'s combined tibble surfaces it alongside `row` -- use `excel_row` when
+  telling a DA what to go fix.
+
 # erifunctions 0.9.9
 
 ## CMR pilot follow-up: fixed a mirror-upload bug, one-call approval, and DQ-flag triage wired in

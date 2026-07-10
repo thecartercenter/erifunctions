@@ -471,6 +471,50 @@ test_that("eri_dq_flag_resolve rejects a malformed flag_id and an unknown index"
   expect_error(eri_dq_flag_resolve(paste0(path, "::99"), "fixed"), "No flag with index")
 })
 
+test_that("eri_dq_flag_resolve gives a clear error against a pre-per-flag-triage log entry", {
+  path  <- "uga/oncho/surveillance/logs/old.yaml"
+  # An entry written before this feature: flags exist but carry none of the
+  # new index/status/note/resolved_by/resolved_at fields.
+  entry <- list(
+    operation = "dq_flags", status = "needs_review",
+    flags = list(list(row = 1L, column = "Age", value = "250", issue = "out of range"))
+  )
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  expect_error(eri_dq_flag_resolve(paste0(path, "::1"), "fixed"), "predates per-flag triage")
+})
+
+test_that("eri_logs_resolve degrades gracefully against a pre-per-flag-triage / flag-less log entry", {
+  path  <- "uga/oncho/surveillance/logs/old.yaml"
+  entry <- make_op_log()   # no $flags field at all, matches a plain op-log (e.g. eri_approve's own)
+  captured <- NULL
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  res <- eri_logs_resolve(path)   # no note, no per-flag statuses to summarize from
+  expect_true(res)
+  expect_true(is.na(captured$triage$note))   # blank, exactly like before this feature existed
+})
+
 test_that("eri_logs_resolve auto-summarizes from per-flag statuses when no note is given", {
   path  <- "uga/oncho/surveillance/logs/x.yaml"
   entry <- list(

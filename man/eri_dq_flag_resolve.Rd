@@ -38,6 +38,14 @@ it \code{handled}, dropping it from the open backlog / unblocking
 itself mark the entry handled; call \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} afterward for
 that (it will auto-summarize from the per-flag decisions if you don't pass
 your own note).
+
+\strong{Known limitation: single-editor assumption.} This does a read-modify-write
+of the whole log YAML with no optimistic-concurrency check (no ETag/retry,
+unlike the metadata-store writes in \code{catalog.R}/\code{odk_registry.R}/\code{artifacts.R}).
+If two people resolve different flags in the \emph{same} log entry around the same time, the second
+write can silently overwrite the first. Fine for the current one-DA-per-
+country-workbook CMR pilot; revisit before assuming it's safe for two people
+triaging the same measure's flags concurrently.
 }
 \examples{
 \dontrun{

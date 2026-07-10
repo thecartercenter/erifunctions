@@ -35,13 +35,35 @@ make_cmr_xlsx <- function(path,
 
 #### Tests for eri_ingest_cmr ####
 
-test_that("eri_ingest_cmr returns tibble with field code columns", {
+test_that("eri_ingest_cmr returns tibble with field code columns plus excel_row", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp)
   out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
   expect_s3_class(out, "tbl_df")
-  expect_true(all(startsWith(names(out), "#")))
-  expect_equal(ncol(out), 3L)
+  expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
+  expect_equal(ncol(out), 4L)  # 3 field codes + excel_row
+})
+
+test_that("eri_ingest_cmr's excel_row points at the real workbook row (data starts at row 6)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1"),
+    data_rows   = list(c("2024", "North"), c("2025", "South"))
+  )
+  out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  expect_equal(out$excel_row, c(6L, 7L))
+})
+
+test_that("eri_ingest_cmr's excel_row survives dropped all-NA spacer rows correctly", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1"),
+    data_rows   = list(c("2024", "North"), c(NA, NA), c("2025", "South"))
+  )
+  out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  # the NA spacer row (would-be excel_row 7) is dropped, so row 2's real
+  # position (excel_row 8) is preserved rather than being renumbered to 7
+  expect_equal(out$excel_row, c(6L, 8L))
 })
 
 test_that("eri_ingest_cmr reads correct data values", {
@@ -119,7 +141,7 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   )
   out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
   expect_false(any(c("GroupHeader", "AnotherHeader") %in% names(out)))
-  expect_true(all(startsWith(names(out), "#")))
+  expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
 })
 
 test_that("eri_ingest_cmr survives a real-world duplicate field code in row 5 without dropping data", {
@@ -529,6 +551,66 @@ test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", 
   expect_true(any(grepl("^uga/lf/programmatic/mmdp/staged/", written)))
 })
 
+test_that("eri_split_cmr supersedes a prior staged file for the same period from a different filename", {
+  tmp <- withr::local_tempfile(pattern = "202406_fixed", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  deleted <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
+      # The "broken original" this fixed file supersedes, plus one file that
+      # happens to share the period substring but is NOT this run's own file.
+      tibble::tibble(
+        name  = paste0(dir, c("/202406_report_rb_treatment.parquet", "/other_202406_thing.parquet")),
+        isdir = FALSE
+      )
+    },
+    delete_storage_file = function(container, path, ...) { deleted <<- c(deleted, path); invisible(NULL) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"), period = "202406")
+  )
+
+  expect_true(any(grepl("202406_report_rb_treatment.parquet", deleted)))
+  expect_true(any(grepl("other_202406_thing.parquet", deleted)))
+  # this run's OWN file (same fbase as `tmp`) must never be in the delete list
+  expect_false(any(grepl(tools::file_path_sans_ext(basename(tmp)), deleted, fixed = TRUE)))
+})
+
+test_that("eri_split_cmr does not delete anything when period can't be resolved", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")   # no YYYYMM_ prefix, no period passed
+  make_uga_cmr(tmp)
+
+  list_called <- FALSE
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(...) { list_called <<- TRUE; tibble::tibble(name = character(0), isdir = logical(0)) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"))
+  )
+  expect_false(list_called)
+})
+
 test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-drop location", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_uga_cmr(tmp)
@@ -865,4 +947,101 @@ test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is cle
 
   flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
   expect_equal(nrow(flags), 0L)
+})
+
+test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries for the same measure/period", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
+    n_rows = 1L
+  )
+  clean_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                 flags = tibble::tibble(row = integer(), column = character(),
+                                                         value = character(), issue = character())),
+                            class = "dq_result")
+  resolved <- character(0)
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) clean_result,
+    .eri_dq_log_write = function(...) list(n_flags = 0L, status = "clean",
+                                           log_path = "sdn/oncho/programmatic/treatment/logs/new.yaml",
+                                           flags = list()),
+    eri_logs = function(...) tibble::tibble(
+      log_path = c("sdn/oncho/programmatic/treatment/logs/old1.yaml",
+                  "sdn/oncho/programmatic/treatment/logs/new.yaml"),  # includes the just-written entry itself
+      period = c("202605", "202605")
+    ),
+    eri_logs_resolve = function(log_path, note = NULL, ...) { resolved <<- c(resolved, log_path); invisible(TRUE) },
+    .package = "erifunctions"
+  )
+
+  eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+
+  expect_equal(resolved, "sdn/oncho/programmatic/treatment/logs/old1.yaml")  # not the entry just written
+})
+
+test_that("eri_cmr_dq_report(supersede = FALSE) leaves prior entries alone", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
+    n_rows = 1L
+  )
+  clean_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                 flags = tibble::tibble(row = integer(), column = character(),
+                                                         value = character(), issue = character())),
+                            class = "dq_result")
+  resolve_called <- FALSE
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) clean_result,
+    .eri_dq_log_write = function(...) list(n_flags = 0L, status = "clean",
+                                           log_path = "sdn/oncho/programmatic/treatment/logs/new.yaml",
+                                           flags = list()),
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/oncho/programmatic/treatment/logs/old1.yaml", period = "202605"
+    ),
+    eri_logs_resolve = function(...) { resolve_called <<- TRUE; invisible(TRUE) },
+    .package = "erifunctions"
+  )
+
+  eri_cmr_dq_report("sdn", "202605", plan = plan, supersede = FALSE, data_con = structure(list(), class = "mock"))
+
+  expect_false(resolve_called)
+})
+
+test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropping (integration, not mocked)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    # row 2 (would-be excel_row 7) is an all-NA spacer, dropped by eri_ingest_cmr;
+    # row 3 (excel_row 8) has the out-of-range value that should get flagged.
+    data_rows = list(c("2024", "North", "50"), c(NA, NA, NA), c("2024", "South", "999"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  expect_equal(staged$excel_row, c(6L, 8L))  # sanity-check the ingest side first
+
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 2L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated", range = c(0, 100))
+  ))
+
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+
+  expect_equal(nrow(flags), 1L)
+  expect_equal(flags$excel_row, 8L)   # NOT 2 (the post-drop row index) or 7 (pre-drop, wrong row)
 })

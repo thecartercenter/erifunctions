@@ -92,6 +92,17 @@ DA doing a fresh-period pilot run may still want both:
 \code{eri_split_cmr(..., mirror_pipeline = ...)} then \code{\link[=eri_stage_cmr]{eri_stage_cmr()}} (or the
 reverse order; neither depends on the other having run first).
 }
+
+\subsection{Re-splitting the same period from a corrected file}{
+
+If you fix an issue upstream and re-run this on a different local file (e.g.
+the \verb{_fixed.xlsx} copy convention) for a period already split, the prior
+staged file(s) for each sheet's destination folder are removed first (when
+\code{period} is known) -- otherwise both the broken original and the corrected
+file would sit in \verb{staged/} together, and \code{\link[=eri_approve]{eri_approve()}}'s period-substring
+match would promote both. Each removal is logged as a \code{supersede_staged}
+step.
+}
 }
 \examples{
 \dontrun{
