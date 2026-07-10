@@ -540,7 +540,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
         } else {
           cli::cli_warn(c(
             "{length(stale)} prior staged file{?s} for period {.val {period}} in {.path {p$dest_dir}} look{?s/} superseded by this run: {.val {basename(stale)}}.",
-            "i" = "Not deleted -- pass {.code supersede_staged = TRUE} to remove {?it/them}, or they'll also be promoted by {.fn eri_approve}'s period match."
+            "i" = "Not deleted -- pass {.code supersede_staged = TRUE} to remove {length(stale)} file{?s}, or they'll also be promoted by {.fn eri_approve}'s period match."
           ))
         }
       }
