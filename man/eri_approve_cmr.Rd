@@ -39,6 +39,15 @@ a task list: one row per measure still needing attention. Review each,
 close it out with \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} (passing what you did/decided via
 its \code{note} argument), and re-run this function -- it re-checks from
 scratch each time.
+
+\strong{A stale flag keeps blocking until it's explicitly resolved.} This checks
+every \code{dq_flags} log entry for the period, not just the most recent one: if
+an earlier \code{\link[=eri_dq_log]{eri_dq_log()}} run had unresolved flags and a later rerun for the
+same period came back \code{"clean"}, the earlier entry still blocks approval
+until you \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} it. This is deliberate (an unreviewed flag
+shouldn't be silently superseded by a fresh "clean" run), but it does mean a
+truly stale/superseded flag needs an explicit note to clear, not just a
+clean recheck.
 }
 \examples{
 \dontrun{

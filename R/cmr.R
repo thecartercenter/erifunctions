@@ -214,8 +214,11 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   `ERIFUNCTIONS_DATA_STORAGE_NAME`.
 #' @param overwrite `logical` If `FALSE` (default), warns before overwriting an
 #'   existing staged file.
-#' @param dry_run `logical` If `TRUE`, returns the routing plan and writes
-#'   nothing. Default `FALSE`.
+#' @param dry_run `logical` If `TRUE`, returns the routing plan and writes no
+#'   *data*. Default `FALSE`. One exception: if the dry run finds a skipped
+#'   sheet or a warning, that fact **is** logged (a lightweight triage entry,
+#'   not staged data) so there's a stable `log_path` to attach an
+#'   [eri_logs_resolve()] note to later -- see step 3 of the CMR guide.
 #' @param mirror_pipeline `str` or `NULL` Registered pipeline name (e.g.
 #'   `"rb-expansion"`) whose legacy raw-drop location `path` should also be
 #'   uploaded to. Default `NULL` (no mirror; sandbox-safe).
@@ -371,7 +374,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   )
 
   if (dry_run) {
-    cli::cli_inform(c("i" = "Dry run -- nothing written. Routing plan:"))
+    cli::cli_inform(c("i" = "Dry run -- no data written. Routing plan:"))
     for (p in plan) {
       cli::cli_inform("  {.val {p$sheet}} -> {.path {p$dest}} ({p$n_rows} row{?s})")
     }
@@ -421,6 +424,14 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     }
 
     return(invisible(plan_tbl))
+  }
+
+  if (is.null(period)) {
+    cli::cli_warn(c(
+      "Could not resolve a period for this run (no {.val YYYYMM_} prefix in {.path {basename(path)}}).",
+      "i" = "This run's op-log will have no period, so {.fn eri_cmr_last_plan} won't be able to find it later.",
+      "i" = "Pass {.arg period} explicitly if you'll want to recover this plan without keeping the R object."
+    ))
   }
 
   data_con <- if (is.null(data_con)) {
@@ -540,6 +551,15 @@ eri_split_cmr <- function(path, country, data_con = NULL,
 #' session. [eri_split_cmr()] records the full plan in its op-log on every
 #' successful run; this reads the most recent one back.
 #'
+#' "Most recent" assumes a re-split for the same country/period supersedes the
+#' one before it with an equal-or-larger set of measures (the normal case: a
+#' corrected workbook re-uploaded whole). If a later run split a workbook with
+#' *fewer* routable sheets than an earlier one for the same period, only the
+#' narrower, newer set is returned -- the earlier run's other measures won't
+#' appear here (or in [eri_approve_cmr()]'s task list) even though they were
+#' routed. Not expected in normal use; worth knowing if periods get re-split
+#' from partial/corrective files rather than a full re-upload.
+#'
 #' @param country `str` Country code (e.g. `"sdn"`).
 #' @param period `str` Reporting period matching the run you want (e.g. `"202605"`).
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
@@ -609,6 +629,15 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #' close it out with [eri_logs_resolve()] (passing what you did/decided via
 #' its `note` argument), and re-run this function -- it re-checks from
 #' scratch each time.
+#'
+#' **A stale flag keeps blocking until it's explicitly resolved.** This checks
+#' every `dq_flags` log entry for the period, not just the most recent one: if
+#' an earlier [eri_dq_log()] run had unresolved flags and a later rerun for the
+#' same period came back `"clean"`, the earlier entry still blocks approval
+#' until you [eri_logs_resolve()] it. This is deliberate (an unreviewed flag
+#' shouldn't be silently superseded by a fresh "clean" run), but it does mean a
+#' truly stale/superseded flag needs an explicit note to clear, not just a
+#' clean recheck.
 #'
 #' @param country `str` Country code (e.g. `"sdn"`).
 #' @param period `str` Reporting period (e.g. `"202605"`).

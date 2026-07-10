@@ -25,6 +25,15 @@ for a country/period from the persisted operation log, without rerunning
 \code{\link[=eri_split_cmr]{eri_split_cmr()}} or needing to have kept its return value in your R
 session. \code{\link[=eri_split_cmr]{eri_split_cmr()}} records the full plan in its op-log on every
 successful run; this reads the most recent one back.
+
+"Most recent" assumes a re-split for the same country/period supersedes the
+one before it with an equal-or-larger set of measures (the normal case: a
+corrected workbook re-uploaded whole). If a later run split a workbook with
+\emph{fewer} routable sheets than an earlier one for the same period, only the
+narrower, newer set is returned -- the earlier run's other measures won't
+appear here (or in \code{\link[=eri_approve_cmr]{eri_approve_cmr()}}'s task list) even though they were
+routed. Not expected in normal use; worth knowing if periods get re-split
+from partial/corrective files rather than a full re-upload.
 }
 \examples{
 \dontrun{

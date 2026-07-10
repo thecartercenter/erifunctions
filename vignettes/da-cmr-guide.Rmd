@@ -211,7 +211,7 @@ Preview the routing first with `dry_run`:
 eri_split_cmr(report, "uga", dry_run = TRUE)
 #> ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.
 #> ✔ CMR sheet "SCH Treatment": 2 data rows, 6 field codes.
-#> ℹ Dry run -- nothing written. Routing plan:
+#> ℹ Dry run -- no data written. Routing plan:
 #>   "RB Treatment"  -> uga/oncho/programmatic/treatment/staged/cmr-example_rb_treatment.parquet (3 rows)
 #>   "SCH Treatment" -> uga/sch/programmatic/treatment/staged/cmr-example_sch_treatment.parquet (2 rows)
 #> Warning: Sheet "LF MMDP" not found in cmr-example.xlsx; skipping.   # ...and the

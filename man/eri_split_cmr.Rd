@@ -27,8 +27,11 @@ CMR schema via \code{\link[=load_cmr_schema]{load_cmr_schema()}}.}
 \item{overwrite}{\code{logical} If \code{FALSE} (default), warns before overwriting an
 existing staged file.}
 
-\item{dry_run}{\code{logical} If \code{TRUE}, returns the routing plan and writes
-nothing. Default \code{FALSE}.}
+\item{dry_run}{\code{logical} If \code{TRUE}, returns the routing plan and writes no
+\emph{data}. Default \code{FALSE}. One exception: if the dry run finds a skipped
+sheet or a warning, that fact \strong{is} logged (a lightweight triage entry,
+not staged data) so there's a stable \code{log_path} to attach an
+\code{\link[=eri_logs_resolve]{eri_logs_resolve()}} note to later -- see step 3 of the CMR guide.}
 
 \item{mirror_pipeline}{\code{str} or \code{NULL} Registered pipeline name (e.g.
 \code{"rb-expansion"}) whose legacy raw-drop location \code{path} should also be
