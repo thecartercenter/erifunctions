@@ -551,7 +551,7 @@ test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", 
   expect_true(any(grepl("^uga/lf/programmatic/mmdp/staged/", written)))
 })
 
-test_that("eri_split_cmr supersedes a prior staged file for the same period from a different filename", {
+test_that("eri_split_cmr defaults to warning about superseded files, not deleting them", {
   tmp <- withr::local_tempfile(pattern = "202406_fixed", fileext = ".xlsx")
   make_uga_cmr(tmp)
 
@@ -560,10 +560,40 @@ test_that("eri_split_cmr supersedes a prior staged file for the same period from
     storage_dir_exists  = function(...) TRUE,
     storage_file_exists = function(...) FALSE,
     list_storage_files  = function(container, dir, ...) {
-      # The "broken original" this fixed file supersedes, plus one file that
-      # happens to share the period substring but is NOT this run's own file.
+      tibble::tibble(name = paste0(dir, "/202406_report_rb_treatment.parquet"), isdir = FALSE)
+    },
+    delete_storage_file = function(container, path, ...) { deleted <<- c(deleted, path); invisible(NULL) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"), period = "202406"),
+    "look.*superseded"
+  )
+  expect_length(deleted, 0L)   # nothing removed without opting in
+})
+
+test_that("eri_split_cmr(supersede_staged = TRUE) deletes an anchored match but not an unrelated file that merely mentions the period", {
+  tmp <- withr::local_tempfile(pattern = "202406_fixed", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  deleted <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
       tibble::tibble(
-        name  = paste0(dir, c("/202406_report_rb_treatment.parquet", "/other_202406_thing.parquet")),
+        name = paste0(dir, c(
+          "/202406_report_rb_treatment.parquet",     # real prior version of THIS period -- should go
+          "/other_202406_thing.parquet",             # mentions the digits, but not at the start -- must survive
+          "/20240600_unrelated_report.parquet"       # a DIFFERENT, longer period that starts the same way -- must survive
+        )),
         isdir = FALSE
       )
     },
@@ -578,11 +608,13 @@ test_that("eri_split_cmr supersedes a prior staged file for the same period from
   )
 
   suppressWarnings(
-    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"), period = "202406")
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                 period = "202406", supersede_staged = TRUE)
   )
 
-  expect_true(any(grepl("202406_report_rb_treatment.parquet", deleted)))
-  expect_true(any(grepl("other_202406_thing.parquet", deleted)))
+  expect_true(any(grepl("202406_report_rb_treatment.parquet", deleted, fixed = TRUE)))
+  expect_false(any(grepl("other_202406_thing.parquet", deleted, fixed = TRUE)))
+  expect_false(any(grepl("20240600_unrelated_report.parquet", deleted, fixed = TRUE)))
   # this run's OWN file (same fbase as `tmp`) must never be in the delete list
   expect_false(any(grepl(tools::file_path_sans_ext(basename(tmp)), deleted, fixed = TRUE)))
 })

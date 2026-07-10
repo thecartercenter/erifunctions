@@ -29,9 +29,12 @@ known-broken and patching later:
 - **Fix: re-splitting a corrected file duplicated staged data.** `eri_split_cmr()` names each staged
   parquet from the workbook's filename, so re-splitting a "`_fixed.xlsx`" copy for a period already
   split left the broken original's staged file sitting alongside the corrected one --
-  `eri_approve()`'s period-substring match then promoted **both** to `processed/`. `eri_split_cmr()`
-  now supersedes (deletes) prior staged files for the same period in each destination folder before
-  writing this run's own, logged as `supersede_staged` steps.
+  `eri_approve()`'s period match then promoted **both** to `processed/`. `eri_split_cmr()` now
+  detects prior staged files for the same period in each destination folder (matched by the real
+  filename convention -- name *starts with* the period, not merely mentions it, so it can't collide
+  with an unrelated file that happens to share those six digits) and reports them. New
+  `supersede_staged` parameter (default `FALSE`, this package's first destructive Azure operation is
+  opt-in, not automatic) actually removes them when set `TRUE`, logged as `supersede_staged` steps.
 - **Fix: re-running the DQ report piled up blocking log entries.** The normal loop is run → fix →
   re-run, and `eri_approve_cmr()` correctly blocks on *every* unresolved historical entry for a
   period, not just the newest -- so N re-runs meant N entries to close by hand.

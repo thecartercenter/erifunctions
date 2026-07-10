@@ -12,7 +12,8 @@ eri_split_cmr(
   dry_run = FALSE,
   mirror_pipeline = NULL,
   period = NULL,
-  projects_con = NULL
+  projects_con = NULL,
+  supersede_staged = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,18 @@ when \code{mirror_pipeline} is set.}
 
 \item{projects_con}{Azure container for the \code{projects} blob; used only when
 \code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}
+
+\item{supersede_staged}{\code{logical} Re-splitting the same period from a
+DIFFERENT local file (e.g. a \verb{_fixed.xlsx} correction) can leave a prior
+staged file behind in each destination folder -- \code{eri_approve()}'s period
+match would then promote both to \verb{processed/}. When \code{period} is known,
+candidate stale files (their name starts with \code{period}, not just contains
+it anywhere -- the real filename convention, so this doesn't collide with
+an unrelated file that merely mentions those six digits) are always
+detected and reported. Default \code{FALSE} only warns about them -- \strong{this
+package's first destructive Azure operation is opt-in, not automatic};
+set \code{TRUE} to actually delete them. Ignored (nothing detected or deleted)
+when \code{period} couldn't be resolved.}
 }
 \value{
 Invisibly, a tibble with one row per routed sheet: \code{sheet}, \code{disease},
@@ -113,5 +126,8 @@ eri_split_cmr("uga_2024_06.xlsx", "uga")
 eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
 # One step: also mirror the raw file to the legacy contractor pipeline
 eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
+# Re-splitting a corrected file for a period already staged: opt in to
+# actually removing the superseded original (default only warns)
+eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 }
 }

@@ -249,6 +249,17 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   when `mirror_pipeline` is set.
 #' @param projects_con Azure container for the `projects` blob; used only when
 #'   `mirror_pipeline` is set. If `NULL`, connects automatically.
+#' @param supersede_staged `logical` Re-splitting the same period from a
+#'   DIFFERENT local file (e.g. a `_fixed.xlsx` correction) can leave a prior
+#'   staged file behind in each destination folder -- `eri_approve()`'s period
+#'   match would then promote both to `processed/`. When `period` is known,
+#'   candidate stale files (their name starts with `period`, not just contains
+#'   it anywhere -- the real filename convention, so this doesn't collide with
+#'   an unrelated file that merely mentions those six digits) are always
+#'   detected and reported. Default `FALSE` only warns about them -- **this
+#'   package's first destructive Azure operation is opt-in, not automatic**;
+#'   set `TRUE` to actually delete them. Ignored (nothing detected or deleted)
+#'   when `period` couldn't be resolved.
 #' @returns Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
 #'   `data_type`, `dest`, `n_rows`.
 #' @examples
@@ -260,12 +271,15 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
 #' # One step: also mirror the raw file to the legacy contractor pipeline
 #' eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
+#' # Re-splitting a corrected file for a period already staged: opt in to
+#' # actually removing the superseded original (default only warns)
+#' eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 #' }
 #' @export
 eri_split_cmr <- function(path, country, data_con = NULL,
                           overwrite = FALSE, dry_run = FALSE,
                           mirror_pipeline = NULL, period = NULL,
-                          projects_con = NULL) {
+                          projects_con = NULL, supersede_staged = FALSE) {
   if (!dry_run) .eri_log_session()
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
@@ -486,11 +500,16 @@ eri_split_cmr <- function(path, country, data_con = NULL,
 
   tryCatch({
     # Re-splitting the same period from a DIFFERENT local file (e.g. a
-    # "_fixed.xlsx" correction) previously left the old staged file(s)
-    # sitting alongside the new ones -- eri_approve()'s period substring
-    # match then promoted BOTH to processed/. Superseding here keeps each
-    # dest_dir holding only this run's files for this period.
+    # "_fixed.xlsx" correction) can leave a prior staged file sitting
+    # alongside the new one -- eri_approve()'s period match would then
+    # promote both to processed/. Detect candidates whose name STARTS with
+    # `period` (the real filename convention: "202605_..."), not merely
+    # contains it anywhere -- an unanchored substring match would also catch
+    # an unrelated file that happens to mention those six digits for some
+    # other reason (a date, a facility code, ...) sharing this same
+    # programmatic/{data_type}/staged/ folder from a different source.
     if (!is.null(period)) {
+      period_prefix <- paste0("^", period, "(?!\\d)")  # period, not a longer number containing it
       seen_dirs <- character(0)
       for (p in plan) {
         if (p$dest_dir %in% seen_dirs) next
@@ -502,13 +521,22 @@ eri_split_cmr <- function(path, country, data_con = NULL,
         if (is.null(existing) || nrow(existing) == 0L) next
         existing <- existing[!existing$isdir, , drop = FALSE]
         stale <- existing$name[
-          grepl(period, basename(existing$name), fixed = TRUE) &
+          grepl(period_prefix, basename(existing$name), perl = TRUE) &
           !startsWith(basename(existing$name), fbase)
         ]
-        for (s in stale) {
-          AzureStor::delete_storage_file(data_con, s, confirm = FALSE)
-          op_log$steps <- .eri_log_step(op_log$steps, "supersede_staged", path = s)
-          cli::cli_alert_info("Superseded a prior staged file for this period: {.path {basename(s)}}")
+        if (length(stale) == 0L) next
+
+        if (isTRUE(supersede_staged)) {
+          for (s in stale) {
+            AzureStor::delete_storage_file(data_con, s, confirm = FALSE)
+            op_log$steps <- .eri_log_step(op_log$steps, "supersede_staged", path = s)
+            cli::cli_alert_info("Superseded a prior staged file for this period: {.path {basename(s)}}")
+          }
+        } else {
+          cli::cli_warn(c(
+            "{length(stale)} prior staged file{?s} for period {.val {period}} in {.path {p$dest_dir}} look{?s/} superseded by this run: {.val {basename(stale)}}.",
+            "i" = "Not deleted -- pass {.code supersede_staged = TRUE} to remove {?it/them}, or they'll also be promoted by {.fn eri_approve}'s period match."
+          ))
         }
       }
     }

@@ -262,6 +262,19 @@ without rerunning anything (the routing table is persisted in the op-log every r
 plan <- eri_cmr_last_plan("uga", "202406")
 ```
 
+**Re-splitting a corrected file.** Fixed something upstream and re-splitting a `_fixed.xlsx` copy for
+a period you already split? By default `eri_split_cmr()` only *warns* about the now-superseded prior
+staged file(s) -- it never deletes anything without you opting in, since this is the one place in the
+package that can remove previously-staged data:
+
+```{r split-supersede, eval=FALSE}
+eri_split_cmr(fixed_report, "uga", supersede_staged = TRUE)
+#> ✔ Superseded a prior staged file for this period: cmr-example_rb_treatment.parquet
+```
+
+Leave it `FALSE` (the default) if you'd rather review the warning and remove the old file by hand.
+```
+
 ## 5. Check data quality before approving {#dq-check}
 
 CMR routing does **not** auto-run DQ checks -- CMR review is manual, on purpose.
