@@ -87,8 +87,11 @@
 <li>
 <strong>Phase 2 (CMR re-run hygiene) confirmed shipped and now validated end-to-end</strong>: those three landmine fixes (<code>supersede_staged</code> / ADR-0017, <code>eri_cmr_dq_report(supersede = TRUE)</code>, <code>excel_row</code> provenance) actually landed in v0.9.10, before the design consult was even commissioned. A live run against the <code>atlantis</code> training sandbox (split → flag an invalid district → fix → re-split with <code>supersede_staged</code> → re-report → <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>) confirmed exactly one file set gets promoted, with no leftover duplicate and no blocking log pileup; all test artifacts were cleaned up afterward. See <code>docs/roadmap.md</code>’s “DQ workflow redesign” entry.</li>
 </ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.11" id="erifunctions-0911">erifunctions 0.9.11<a class="anchor" aria-label="anchor" href="#erifunctions-0911"></a></h2>
 <div class="section level3">
-<h3 id="raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-12">Raw retention and source hashing generalized to <code>eri_ingest()</code> (Phase 1 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-12"></a></h3>
+<h3 id="raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-11">Raw retention and source hashing generalized to <code>eri_ingest()</code> (Phase 1 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#raw-retention-and-source-hashing-generalized-to-eri_ingest-phase-of-the-dq-workflow-redesign-0-9-11"></a></h3>
 <p>The first phase of the pilot-feedback-driven DQ workflow redesign (design consult with Fable; see the “DQ workflow redesign” entry under Phase 3 of <code>docs/roadmap.md</code> for the full 8-phase plan): every ingest now keeps the exact bytes it was given, and every downstream copy can be traced back to them.</p>
 <ul><li>
 <strong><code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> now archives the source file to <code>raw/</code> before doing anything else</strong>, under a timestamp-suffixed filename so repeat ingests never collide, then runs DQ and stages as before. This was previously a manual step DAs did themselves (as in the <code>da-ingest-guide.Rmd</code> sandbox walkthrough); it is now automatic on the fast path.</li>
@@ -98,8 +101,11 @@
 <li>
 <code>da-ingest-guide.Rmd</code> updated to describe the new automatic raw-archival step.</li>
 </ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.10" id="erifunctions-0910">erifunctions 0.9.10<a class="anchor" aria-label="anchor" href="#erifunctions-0910"></a></h2>
 <div class="section level3">
-<h3 id="per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-12">Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval<a class="anchor" aria-label="anchor" href="#per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-12"></a></h3>
+<h3 id="per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-10">Per-flag DQ triage for CMR: one combined report, issue-by-issue resolution, traceable to approval<a class="anchor" aria-label="anchor" href="#per-flag-dq-triage-for-cmr-one-combined-report-issue-by-issue-resolution-traceable-to-approval-0-9-10"></a></h3>
 <ul><li>
 <strong>New <code>eri_cmr_dq_report(country, period)</code></strong>: runs and logs DQ checks for every measure a CMR workbook routed to, in one call, returning <strong>one tibble</strong> spanning every flag from every measure (<code>sheet</code>, <code>disease</code>, <code>data_type</code>, <code>log_path</code>, <code>flag_id</code>, <code>row</code>, <code>column</code>, <code>value</code>, <code>issue</code>, <code>status</code>) instead of twelve separate <code><a href="../reference/dq_report.html">dq_report()</a></code> printouts.</li>
 <li>
@@ -112,7 +118,7 @@
 <code>da-cmr-guide.Rmd</code> updated for this workflow.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-12">Three real bugs found and fixed during design review of the workflow above<a class="anchor" aria-label="anchor" href="#three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-12"></a></h3>
+<h3 id="three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-10">Three real bugs found and fixed during design review of the workflow above<a class="anchor" aria-label="anchor" href="#three-real-bugs-found-and-fixed-during-design-review-of-the-workflow-above-0-9-10"></a></h3>
 <p>A design consult on the next phase of this DQ workflow surfaced three real defects in the shipped-this-week CMR pipeline (not hypothetical future issues) – fixed here rather than shipping known-broken and patching later:</p>
 <ul><li>
 <strong>Fix: re-splitting a corrected file duplicated staged data.</strong> <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> names each staged parquet from the workbook’s filename, so re-splitting a “<code>_fixed.xlsx</code>” copy for a period already split left the broken original’s staged file sitting alongside the corrected one – <code><a href="../reference/eri_approve.html">eri_approve()</a></code>’s period match then promoted <strong>both</strong> to <code>processed/</code>. <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> now detects prior staged files for the same period in each destination folder (matched by the real filename convention – name <em>starts with</em> the period, not merely mentions it, so it can’t collide with an unrelated file that happens to share those six digits) and reports them. New <code>supersede_staged</code> parameter (default <code>FALSE</code>, this package’s first destructive Azure operation is opt-in, not automatic) actually removes them when set <code>TRUE</code>, logged as <code>supersede_staged</code> steps.</li>
