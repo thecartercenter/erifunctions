@@ -138,9 +138,9 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   dup <- duplicated(field_cols) | duplicated(field_cols, fromLast = TRUE)
   if (any(dup)) {
     cli::cli_warn(c(
-      "Sheet {.val {actual_sheet}} has duplicate field code{?s} in row 5 (a template defect): ",
-      "{.val {unique(field_cols[dup])}}. Kept both columns; the later one is suffixed. ",
-      "Flag this to whoever maintains the CMR template."
+      "Sheet {.val {actual_sheet}} has duplicate field code{?s} in row 5 (a template defect): {.val {unique(field_cols[dup])}}.",
+      "i" = "Kept both columns; the later one is suffixed ({.code __1}, {.code __2}, ...).",
+      "i" = "Flag this to whoever maintains the CMR template."
     ))
     field_cols <- make.unique(field_cols, sep = "__")
   }
@@ -198,6 +198,14 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' defaults to a `YYYYMM` prefix parsed from `basename(path)` (the real
 #' convention observed in submitted filenames); pass it explicitly if the
 #' filename doesn't start that way.
+#'
+#' This does **not** replace [eri_stage_cmr()]: that function reads the *same*
+#' raw-drop location and copies the workbook into `data/{country}/rblf/cmr/staged/`
+#' as the governed raw archive `eri_approve()` promotes. `mirror_pipeline` here
+#' only *writes* to the raw-drop location for the legacy pipeline's benefit — a
+#' DA doing a fresh-period pilot run may still want both:
+#' `eri_split_cmr(..., mirror_pipeline = ...)` then [eri_stage_cmr()] (or the
+#' reverse order; neither depends on the other having run first).
 #'
 #' @param path `str` Local path to the CMR Excel file.
 #' @param country `str` Three-letter country code (e.g. `"uga"`); resolves the
@@ -506,7 +514,7 @@ eri_stage_cmr <- function(country,
     )
   }
 
-  src_base <- paste0(reg$project_folder, "/raw/filled_templates/", country)
+  src_base <- paste(c(reg$project_folder, reg$raw_dir, country), collapse = "/")
 
   if (is.null(period)) {
     period_listing <- AzureStor::list_storage_files(projects_con, src_base) |>

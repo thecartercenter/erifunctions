@@ -78,6 +78,14 @@ separately dropping the file for the legacy pipeline to pick up. \code{period}
 defaults to a \code{YYYYMM} prefix parsed from \code{basename(path)} (the real
 convention observed in submitted filenames); pass it explicitly if the
 filename doesn't start that way.
+
+This does \strong{not} replace \code{\link[=eri_stage_cmr]{eri_stage_cmr()}}: that function reads the \emph{same}
+raw-drop location and copies the workbook into \verb{data/\{country\}/rblf/cmr/staged/}
+as the governed raw archive \code{eri_approve()} promotes. \code{mirror_pipeline} here
+only \emph{writes} to the raw-drop location for the legacy pipeline's benefit — a
+DA doing a fresh-period pilot run may still want both:
+\code{eri_split_cmr(..., mirror_pipeline = ...)} then \code{\link[=eri_stage_cmr]{eri_stage_cmr()}} (or the
+reverse order; neither depends on the other having run first).
 }
 }
 \examples{
