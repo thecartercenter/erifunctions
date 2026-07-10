@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,6 +71,31 @@
       <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.8" id="erifunctions-098">erifunctions 0.9.8<a class="anchor" aria-label="anchor" href="#erifunctions-098"></a></h2>
+<div class="section level3">
+<h3 id="sudan--south-sudan-cmr-pilot-lf--survey--training-dq-schemas-a-real-ingest-bug-fix-and-a-one-step-legacy-mirror-0-9-8">Sudan / South Sudan CMR pilot: LF + survey + training DQ schemas, a real ingest bug fix, and a one-step legacy mirror<a class="anchor" aria-label="anchor" href="#sudan--south-sudan-cmr-pilot-lf--survey--training-dq-schemas-a-real-ingest-bug-fix-and-a-one-step-legacy-mirror-0-9-8"></a></h3>
+<p>Prep for today’s Sudan (<code>sdn</code>) / South Sudan (<code>ssd</code>) CMR pilot, built and verified via read-only recon (structure/aggregate counts only, no records persisted or shared) against each country’s real May 2026 (202605) submission in the <code>projects</code> blob.</p>
+<ul><li>
+<strong>12 new DQ schemas</strong>, closing the gap where only oncho treatment had one: <code>{ssd,sdn}_lf_programmatic_{treatment,mmdp,tas}.yaml</code>, <code>{ssd,sdn}_oncho_programmatic_{prevalence,entomology}.yaml</code>, and one combined <code>{ssd,sdn}_rblf_programmatic_training.yaml</code> per country covering all 6 real training sheet types (CDD, CS, MMDP surgery/patient, Field Ento, Health Workers — one schema because they all route to the same <code>rblf/training</code> combo; each ingested sheet only ever has one of the six field-code prefixes present, so <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code>’s first-match alias resolution handles it). All 12 verified end-to-end against the real submissions: zero missing-required-column flags, real target=0 anomalies still caught. The treatment/mmdp/training schemas validate the annual roll-up columns (same scoping precedent as the oncho schemas); the survey-type sheets (LF Surveys, RB Epi/Ento Surveys) have no annual roll-up in the real template at all — monthly only — so those three are deliberately scoped to the identifier spine (year/district) rather than guessing at a validation shape for sparse, month-specific survey results.</li>
+<li>
+<strong>Fix: <code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> no longer crashes on a real template defect.</strong> The RB-expansion CMR template’s “RB Ento Surveys” sheet has two copy-paste duplicate field codes in row 5 (<code>#rb_ento_surv_otz</code> twice; a February <code>notes</code> column mislabeled <code>_notes_jan</code>), confirmed present in both Sudan’s and South Sudan’s real files — this previously hard-errored <code><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">tibble::as_tibble()</a></code> and aborted the <em>entire</em> <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> run for that country/period, including the 10+ other, otherwise-valid sheets. Columns are now selected by position (not name) and duplicate names are uniquified (<code>__1</code>, <code>__2</code>, …) with a warning, so the sheet parses and nothing is silently dropped. Not a data problem to auto-correct — the underlying template defect still needs a human to fix at the source.</li>
+<li>
+<strong><code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> gains <code>mirror_pipeline</code>/<code>period</code></strong>: uploads the raw workbook to the legacy contractor pipeline’s raw-drop location (<code>{project_folder}/raw/filled_templates/{country}/{period}/</code>) in the same call, so a DA doing the new-pilot split doesn’t also need a separate manual upload for the still-running legacy process. <code>period</code> auto-parses from a leading <code>YYYYMM_</code> in the filename (the real observed convention) or can be passed explicitly. Registry gains a <code>raw_dir</code> field (set for <code>rb-expansion</code>, unset for <code>hsp-mal</code>) so this only activates for pipelines that define the convention.</li>
+<li>
+<strong>Known real anomaly, not yet auto-corrected</strong>: Sudan’s LF Treatment sheet has a present-but-zero <code>target_pop</code> for many districts this period, the same anomaly class already caught for RB Treatment (PR <a href="https://github.com/thecartercenter/erifunctions/issues/267" class="external-link">#267</a>) — the schema’s <code>range: [1, ...]</code> floor catches it the same way.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.7" id="erifunctions-097">erifunctions 0.9.7<a class="anchor" aria-label="anchor" href="#erifunctions-097"></a></h2>
+<div class="section level3">
+<h3 id="fix--add-eri_split_cmr-scaffolds-a-starter-schema-on-a-missing-country-failure-0-9-7">Fix / add: <code>eri_split_cmr()</code> scaffolds a starter schema on a missing-country failure<a class="anchor" aria-label="anchor" href="#fix--add-eri_split_cmr-scaffolds-a-starter-schema-on-a-missing-country-failure-0-9-7"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> no longer leaves a Data Analyst piloting a new country at a dead end.</strong> If <code><a href="../reference/load_cmr_schema.html">load_cmr_schema()</a></code> can’t find a schema for the country, it now also writes a starter CMR schema template (the same one [eri_onboard_cmr()] produces) to the working directory before aborting, and points the error message at it. A pre-existing scaffold (e.g. one an analyst is already mid-edit on) is never overwritten.</li>
+<li>
+<strong><code><a href="../reference/eri_stage.html">eri_stage()</a></code>’s roxygen doc table was stale</strong>: it only listed the <code>hsp-mal</code> pipeline, but <code>.eri_pipeline_registry</code> has carried a second pipeline, <code>rb-expansion</code> (<code>eth</code>, <code>nga</code>, <code>sdn</code>, <code>ssd</code>, <code>uga</code>, <code>mad</code>, <code>tcd</code>), since the CMR routing/DQ schema work landed. Doc-only fix; no behavior change (<code><a href="../reference/eri_stage.html">eri_stage()</a></code> already worked for <code>rb-expansion</code> — it only needs <code>project_folder</code> and <code>country_map</code>, both of which that entry has).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.6" id="erifunctions-096">erifunctions 0.9.6<a class="anchor" aria-label="anchor" href="#erifunctions-096"></a></h2>
 <div class="section level3">

@@ -13,10 +13,11 @@ for each collision and the file is overwritten.
 
 ### Registered pipelines
 
-|           |                        |                |
-|-----------|------------------------|----------------|
-| Name      | Project folder         | Countries      |
+|  |  |  |
+|----|----|----|
+| Name | Project folder | Countries |
 | `hsp-mal` | health-hsp-malaria-dev | `"dr"`, `"ht"` |
+| `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"` |
 
 ## Usage
 
@@ -36,7 +37,7 @@ eri_stage(
 
 - pipeline:
 
-  `str` Registered pipeline name. Currently `"hsp-mal"`.
+  `str` Registered pipeline name: `"hsp-mal"` or `"rb-expansion"`.
 
 - country:
 

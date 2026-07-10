@@ -17,6 +17,37 @@ no reshape, no automated DQ — CMR review is manual).
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
 then promotes each `{disease}/programmatic/{data_type}` to `processed/`.
 
+If `country` has no bundled CMR schema, this does not just abort: it
+also writes a starter schema template for that country to the working
+directory (the same template
+[`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md)
+produces) so the failure leaves you with something to edit and submit,
+not just a dead end.
+
+### Mirroring to the legacy contractor pipeline
+
+During the Phase-3 parallel run, some countries' CMR still also feeds a
+legacy contractor process that reads the raw workbook from a fixed Azure
+location (`{project_folder}/{raw_dir}/{country}/{period}/`, e.g.
+`health-rb-country-expansion-dev/raw/filled_templates/ssd/202605/`).
+Passing `mirror_pipeline` uploads `path` there too, so a DA does **one
+step** (`eri_split_cmr(..., mirror_pipeline = "rb-expansion")`) instead
+of also separately dropping the file for the legacy pipeline to pick up.
+`period` defaults to a `YYYYMM` prefix parsed from `basename(path)` (the
+real convention observed in submitted filenames); pass it explicitly if
+the filename doesn't start that way.
+
+This does **not** replace
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md):
+that function reads the *same* raw-drop location and copies the workbook
+into `data/{country}/rblf/cmr/staged/` as the governed raw archive
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+promotes. `mirror_pipeline` here only *writes* to the raw-drop location
+for the legacy pipeline's benefit — a DA doing a fresh-period pilot run
+may still want both: `eri_split_cmr(..., mirror_pipeline = ...)` then
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+(or the reverse order; neither depends on the other having run first).
+
 ## Usage
 
 ``` r
@@ -25,7 +56,10 @@ eri_split_cmr(
   country,
   data_con = NULL,
   overwrite = FALSE,
-  dry_run = FALSE
+  dry_run = FALSE,
+  mirror_pipeline = NULL,
+  period = NULL,
+  projects_con = NULL
 )
 ```
 
@@ -56,6 +90,23 @@ eri_split_cmr(
   `logical` If `TRUE`, returns the routing plan and writes nothing.
   Default `FALSE`.
 
+- mirror_pipeline:
+
+  `str` or `NULL` Registered pipeline name (e.g. `"rb-expansion"`) whose
+  legacy raw-drop location `path` should also be uploaded to. Default
+  `NULL` (no mirror; sandbox-safe).
+
+- period:
+
+  `str` or `NULL` Reporting period (e.g. `"202605"`) for the mirror
+  upload. `NULL` (default) parses a leading `YYYYMM_` from
+  `basename(path)`; required if that can't be parsed.
+
+- projects_con:
+
+  Azure container for the `projects` blob; used only when
+  `mirror_pipeline` is set. If `NULL`, connects automatically.
+
 ## Value
 
 Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
@@ -70,5 +121,7 @@ eri_split_cmr("uga_2024_06.xlsx", "uga", dry_run = TRUE)
 # Stage for real, then approve each disease/measure
 eri_split_cmr("uga_2024_06.xlsx", "uga")
 eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
+# One step: also mirror the raw file to the legacy contractor pipeline
+eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
 } # }
 ```

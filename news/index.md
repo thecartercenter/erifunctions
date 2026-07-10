@@ -1,5 +1,87 @@
 # Changelog
 
+## erifunctions 0.9.8
+
+### Sudan / South Sudan CMR pilot: LF + survey + training DQ schemas, a real ingest bug fix, and a one-step legacy mirror
+
+Prep for today’s Sudan (`sdn`) / South Sudan (`ssd`) CMR pilot, built
+and verified via read-only recon (structure/aggregate counts only, no
+records persisted or shared) against each country’s real May 2026
+(202605) submission in the `projects` blob.
+
+- **12 new DQ schemas**, closing the gap where only oncho treatment had
+  one: `{ssd,sdn}_lf_programmatic_{treatment,mmdp,tas}.yaml`,
+  `{ssd,sdn}_oncho_programmatic_{prevalence,entomology}.yaml`, and one
+  combined `{ssd,sdn}_rblf_programmatic_training.yaml` per country
+  covering all 6 real training sheet types (CDD, CS, MMDP
+  surgery/patient, Field Ento, Health Workers — one schema because they
+  all route to the same `rblf/training` combo; each ingested sheet only
+  ever has one of the six field-code prefixes present, so
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)’s
+  first-match alias resolution handles it). All 12 verified end-to-end
+  against the real submissions: zero missing-required-column flags, real
+  target=0 anomalies still caught. The treatment/mmdp/training schemas
+  validate the annual roll-up columns (same scoping precedent as the
+  oncho schemas); the survey-type sheets (LF Surveys, RB Epi/Ento
+  Surveys) have no annual roll-up in the real template at all — monthly
+  only — so those three are deliberately scoped to the identifier spine
+  (year/district) rather than guessing at a validation shape for sparse,
+  month-specific survey results.
+- **Fix:
+  [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
+  no longer crashes on a real template defect.** The RB-expansion CMR
+  template’s “RB Ento Surveys” sheet has two copy-paste duplicate field
+  codes in row 5 (`#rb_ento_surv_otz` twice; a February `notes` column
+  mislabeled `_notes_jan`), confirmed present in both Sudan’s and South
+  Sudan’s real files — this previously hard-errored
+  [`tibble::as_tibble()`](https://tibble.tidyverse.org/reference/as_tibble.html)
+  and aborted the *entire*
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  run for that country/period, including the 10+ other, otherwise-valid
+  sheets. Columns are now selected by position (not name) and duplicate
+  names are uniquified (`__1`, `__2`, …) with a warning, so the sheet
+  parses and nothing is silently dropped. Not a data problem to
+  auto-correct — the underlying template defect still needs a human to
+  fix at the source.
+- **[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  gains `mirror_pipeline`/`period`**: uploads the raw workbook to the
+  legacy contractor pipeline’s raw-drop location
+  (`{project_folder}/raw/filled_templates/{country}/{period}/`) in the
+  same call, so a DA doing the new-pilot split doesn’t also need a
+  separate manual upload for the still-running legacy process. `period`
+  auto-parses from a leading `YYYYMM_` in the filename (the real
+  observed convention) or can be passed explicitly. Registry gains a
+  `raw_dir` field (set for `rb-expansion`, unset for `hsp-mal`) so this
+  only activates for pipelines that define the convention.
+- **Known real anomaly, not yet auto-corrected**: Sudan’s LF Treatment
+  sheet has a present-but-zero `target_pop` for many districts this
+  period, the same anomaly class already caught for RB Treatment (PR
+  [\#267](https://github.com/thecartercenter/erifunctions/issues/267)) —
+  the schema’s `range: [1, ...]` floor catches it the same way.
+
+## erifunctions 0.9.7
+
+### Fix / add: `eri_split_cmr()` scaffolds a starter schema on a missing-country failure
+
+- **[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  no longer leaves a Data Analyst piloting a new country at a dead
+  end.** If
+  [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
+  can’t find a schema for the country, it now also writes a starter CMR
+  schema template (the same one \[eri_onboard_cmr()\] produces) to the
+  working directory before aborting, and points the error message at it.
+  A pre-existing scaffold (e.g. one an analyst is already mid-edit on)
+  is never overwritten.
+- **[`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md)’s
+  roxygen doc table was stale**: it only listed the `hsp-mal` pipeline,
+  but `.eri_pipeline_registry` has carried a second pipeline,
+  `rb-expansion` (`eth`, `nga`, `sdn`, `ssd`, `uga`, `mad`, `tcd`),
+  since the CMR routing/DQ schema work landed. Doc-only fix; no behavior
+  change
+  ([`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md)
+  already worked for `rb-expansion` — it only needs `project_folder` and
+  `country_map`, both of which that entry has).
+
 ## erifunctions 0.9.6
 
 ### Docs: explain why Uganda’s CMR routing has no CDD/CS/STH sheets
