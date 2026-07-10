@@ -1,0 +1,127 @@
+country: ssd
+disease: lf
+data_source: programmatic
+data_type: treatment
+version: "1.0"
+description: "South Sudan lymphatic filariasis (LF) MDA coverage, LF Treatment sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (eri_ingest_cmr() output,
+# #lftrt_* prefix), via read-only recon (structure/aggregate counts only, no
+# records persisted or shared) against the real May 2026 (202605) submission in
+# the projects blob. Same process and structure as
+# ssd_oncho_programmatic_treatment.yaml (PR #267); see PR #269 for this file.
+#
+# The coverage field here is a PROPORTION (observed range 0-1.11 in the real
+# May 2026 file), unlike RB Treatment's percentage-scale coverage_pct (0-150) --
+# do not copy that range across measures despite the matching column name.
+#
+# LF MDA covers a smaller district set than the combined RB+LF district roster
+# (27 of the country's districts had an LF Treatment row in the sampled period,
+# vs. 35 in the Training/MMDP sheets) -- this is real program scope, not a bug.
+#
+# KNOWN DATA ISSUE, not auto-corrected: same near-duplicate/non-geographic district
+# entries noted in ssd_oncho_programmatic_treatment.yaml ("Maban" / "Maban Refugees").
+
+temporal:
+  year_col: year
+  period_col: treatment_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#lftrt_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#lftrt_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#lftrt_adm2"]
+    allowed_values: [Aweil Center, Aweil West, Ezo, Gogrial East, Gogrial West, Ibba,
+      Juba, Jur River, Maban, "Maban Refugees", Magwi, Maridi, Mundri East, Mundri West,
+      Mvolo, Nagero, Nzara, Pibor, Pochalla, Rumbek North, Tambura, Terekeka, Tonj South,
+      Torit, Twic Mayerdit, Wulu, Yambio]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#lftrt_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#lftrt_disease"]
+
+  population:
+    required: false
+    type: numeric
+    aliases: [Population, "#lftrt_pop"]
+    range: [0, 5000000]
+
+  treatment_round:
+    required: false
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round, "#lftrt_trtrd"]
+    range: [0, 10]
+
+  target_pop:
+    required: false
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop, "#lftrt_trttarget"]
+    # Present-but-zero targets are a confirmed real anomaly class for this
+    # country's RB Treatment sheet (PR #267); the same floor is applied here.
+    range: [1, 2000000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_villagetarget"]
+    range: [0, 5000]
+
+  male_treated:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_male_tot"]
+    range: [0, 2000000]
+
+  female_treated:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_fem_tot"]
+    range: [0, 2000000]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, "#lftrt_tot"]
+    range: [0, 2000000]
+
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases: [CoveragePct, coverage, "#lftrt_coverage"]
+    # Proportion scale (0-1-ish), not percentage -- see header note.
+    range: [0, 2]
+
+# NOTE: consistency rules require explicit chaining, see uga_oncho's header note.
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (over 100% raw coverage)"
+  treated_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"

@@ -1,0 +1,70 @@
+country: sdn
+disease: lf
+data_source: programmatic
+data_type: tas
+version: "1.0"
+description: "Sudan LF transmission assessment surveys (TAS), LF Surveys sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (#lfsurv_* prefix), via
+# read-only recon against the real May 2026 (202605) submission. See PR #269.
+#
+# UNLIKE the treatment/MMDP/training sheets, this sheet has no annual roll-up
+# column -- rdt_valid/rdt_pos/mf_done/mf_pos/type/passfail are all monthly-only
+# (#lfsurv_rdt_valid_jan ... _dec, etc.), because a TAS survey happens in
+# whichever specific month it was fielded, not continuously. There is no single
+# canonical "the" value column to alias the way treated/tot works elsewhere, and
+# the sampled period had no survey activity (all monthly fields blank), so no
+# real value range has been confirmed yet either.
+#
+# Scoped deliberately narrow: validates the identifier spine (year/district) so
+# a DQ pass at least catches a malformed join key or an unrecognized district;
+# does not attempt to validate the 12 monthly survey-result blocks. Revisit if
+# TAS results need real DQ coverage -- that likely wants a per-month or
+# long-format schema shape rather than this wide one.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#lfsurv_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#lfsurv_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#lfsurv_adm2"]
+    allowed_values: ["Abu-Hojar", "Abu Gebeiha", "Abu Jabrah", "Ad-Douiem", "Ad Du'ayn",
+      "Al-Fashaga", "Al-Faw", "Al-Gadarif", "Al-Geinaina", "Al-Jabalain", "Al-Malha",
+      "Al-Nehood", "Al-Rahad", "Al-Soki", "Al Khiwai", "Al Radom", Alrashad, Alsonta,
+      "Altwaisha Alliaid", "Ar Rusayris", "At Tadamon - BN", "Atbara River", Azum, Bada,
+      "Bahr Al Arab", Baw, Bendasi, Delami, Dilling, Dordaib, "East Gabel Marah",
+      "Ed Alfursan", "Ed Damazine", "For Baringa", "Gabit Amadin", Gadeir, Gaibaish,
+      Geisan, "Gharb Jabal Marrah", Habila, Kadogli, Kas, Kassala, Katiala, Kirineic,
+      Kubum, Lagawa, Mukjar, "North Dalta", "North Nyala", "Nyala South", Refugees,
+      Sennar, "Shamal Jabal Marrah", "Shia'ria", Talodi, Telcok, Tendalti, "Um Dukhun",
+      Umrawaba, "W Kassala", "Wad Banda", "Wad El Mahi", "Wad Elheiliew", "Wadi Salih",
+      Zalingi]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#lfsurv_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#lfsurv_disease"]

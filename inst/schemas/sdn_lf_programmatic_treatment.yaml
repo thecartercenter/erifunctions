@@ -1,0 +1,134 @@
+country: sdn
+disease: lf
+data_source: programmatic
+data_type: treatment
+version: "1.0"
+description: "Sudan lymphatic filariasis (LF) MDA coverage, LF Treatment sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (eri_ingest_cmr() output,
+# #lftrt_* prefix), via read-only recon (structure/aggregate counts only, no
+# records persisted or shared) against the real May 2026 (202605) submission in
+# the projects blob. Same process and structure as
+# sdn_oncho_programmatic_treatment.yaml (PR #267); see PR #269 for this file.
+#
+# The coverage field here is a PROPORTION, unlike RB Treatment's percentage-scale
+# coverage_pct (0-150) -- do not copy that range across measures despite the
+# matching column name.
+#
+# LF MDA covers a smaller district set than the combined RB+LF district roster
+# (66 of the country's districts had an LF Treatment row in the sampled period,
+# vs. 73 in the Training/MMDP sheets) -- this is real program scope, not a bug.
+# The sampled period (May 2026) had zero treated/coverage across every district;
+# that could be a real off-cycle month (LF MDA rounds are typically annual) or a
+# real reporting gap -- not enough signal from one period to call it either way.
+
+temporal:
+  year_col: year
+  period_col: treatment_round
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#lftrt_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#lftrt_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#lftrt_adm2"]
+    allowed_values: ["Abu-Hojar", "Abu Gebeiha", "Abu Jabrah", "Ad-Douiem", "Ad Du'ayn",
+      "Al-Fashaga", "Al-Faw", "Al-Gadarif", "Al-Geinaina", "Al-Jabalain", "Al-Malha",
+      "Al-Nehood", "Al-Rahad", "Al-Soki", "Al Khiwai", "Al Radom", Alrashad, Alsonta,
+      "Altwaisha Alliaid", "Ar Rusayris", "At Tadamon - BN", "Atbara River", Azum, Bada,
+      "Bahr Al Arab", Baw, Bendasi, Delami, Dilling, Dordaib, "East Gabel Marah",
+      "Ed Alfursan", "Ed Damazine", "For Baringa", "Gabit Amadin", Gadeir, Gaibaish,
+      Geisan, "Gharb Jabal Marrah", Habila, Kadogli, Kas, Kassala, Katiala, Kirineic,
+      Kubum, Lagawa, Mukjar, "North Dalta", "North Nyala", "Nyala South", Refugees,
+      Sennar, "Shamal Jabal Marrah", "Shia'ria", Talodi, Telcok, Tendalti, "Um Dukhun",
+      Umrawaba, "W Kassala", "Wad Banda", "Wad El Mahi", "Wad Elheiliew", "Wadi Salih",
+      Zalingi]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#lftrt_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#lftrt_disease"]
+
+  population:
+    required: false
+    type: numeric
+    aliases: [Population, "#lftrt_pop"]
+    range: [0, 5000000]
+
+  treatment_round:
+    required: false
+    type: numeric
+    aliases: [Round, MDA_round, treatment_round, "#lftrt_trtrd"]
+    range: [0, 10]
+
+  target_pop:
+    required: false
+    type: numeric
+    aliases: [TargetPop, target_population, eligible_pop, "#lftrt_trttarget"]
+    # Present-but-zero targets are a confirmed real anomaly class for this
+    # country's RB Treatment sheet (PR #267); the same floor is applied here.
+    range: [1, 2000000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_villagetarget"]
+    range: [0, 5000]
+
+  male_treated:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_male_tot"]
+    range: [0, 2000000]
+
+  female_treated:
+    required: false
+    type: numeric
+    aliases: ["#lftrt_fem_tot"]
+    range: [0, 2000000]
+
+  treated:
+    required: true
+    type: numeric
+    aliases: [Treated, people_treated, "#lftrt_tot"]
+    range: [0, 2000000]
+
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases: [CoveragePct, coverage, "#lftrt_coverage"]
+    # Proportion scale (0-1-ish), not percentage -- see header note.
+    range: [0, 2]
+
+# NOTE: consistency rules require explicit chaining, see uga_oncho's header note.
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    message: "treated exceeds target_pop (over 100% raw coverage)"
+  treated_nonneg:
+    lhs: treated
+    op: ">="
+    rhs_value: 0
+    message: "Negative treated count"

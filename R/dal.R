@@ -1212,8 +1212,9 @@ eri_trigger <- function(pipeline, country, disease,
 #' | Name | Project folder | Countries |
 #' |------|---------------|-----------|
 #' | `hsp-mal` | health-hsp-malaria-dev | `"dr"`, `"ht"` |
+#' | `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"` |
 #'
-#' @param pipeline `str` Registered pipeline name. Currently `"hsp-mal"`.
+#' @param pipeline `str` Registered pipeline name: `"hsp-mal"` or `"rb-expansion"`.
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
 #' @param disease `str` Disease name (e.g. `"malaria"`).
 #' @param pattern `str` or `NULL` Optional substring filter applied to filenames
@@ -1570,6 +1571,11 @@ eri_ingest <- function(path, country, disease,
   ),
   "rb-expansion" = list(
     project_folder = "health-rb-country-expansion-dev",
+    # Where the legacy contractor process picks up a monthly CMR workbook
+    # (raw/filled_templates/{country}/{period}/{filename}); used by
+    # eri_split_cmr()'s mirror_pipeline to feed both the new data/ blob pilot
+    # and the still-running legacy pipeline from a single DA step.
+    raw_dir        = "raw/filled_templates",
     country_map    = list(
       "eth" = "eth",
       "nga" = "nga",

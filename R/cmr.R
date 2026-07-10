@@ -119,7 +119,8 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   raw <- readxl::read_excel(path, sheet = actual_sheet, skip = 4,
                              col_names = TRUE, .name_repair = "minimal")
 
-  field_cols <- names(raw)[startsWith(names(raw), "#")]
+  field_pos  <- which(startsWith(names(raw), "#"))
+  field_cols <- names(raw)[field_pos]
 
   if (length(field_cols) == 0) {
     cli::cli_abort(c(
@@ -129,7 +130,23 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
     ))
   }
 
-  df <- raw[, field_cols, drop = FALSE]
+  # A real template can have the same field code typed twice in row 5 (a
+  # copy-paste slip when a monthly block was duplicated, not a data problem).
+  # Selecting by position (not by name) keeps both columns' data distinct;
+  # de-duplicating the names lets the rest of the pipeline proceed instead of
+  # hard-erroring on every row of an otherwise-valid submission.
+  dup <- duplicated(field_cols) | duplicated(field_cols, fromLast = TRUE)
+  if (any(dup)) {
+    cli::cli_warn(c(
+      "Sheet {.val {actual_sheet}} has duplicate field code{?s} in row 5 (a template defect): {.val {unique(field_cols[dup])}}.",
+      "i" = "Kept both columns; the later one is suffixed ({.code __1}, {.code __2}, ...).",
+      "i" = "Flag this to whoever maintains the CMR template."
+    ))
+    field_cols <- make.unique(field_cols, sep = "__")
+  }
+
+  df <- raw[, field_pos, drop = FALSE]
+  names(df) <- field_cols
 
   all_na <- apply(df, 1, function(r) all(is.na(r)))
   df <- tibble::as_tibble(df[!all_na, , drop = FALSE])
@@ -164,6 +181,32 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' reshape, no automated DQ — CMR review is manual). [eri_approve()] then promotes
 #' each `{disease}/programmatic/{data_type}` to `processed/`.
 #'
+#' If `country` has no bundled CMR schema, this does not just abort: it also
+#' writes a starter schema template for that country to the working directory
+#' (the same template [eri_onboard_cmr()] produces) so the failure leaves you
+#' with something to edit and submit, not just a dead end.
+#'
+#' ## Mirroring to the legacy contractor pipeline
+#'
+#' During the Phase-3 parallel run, some countries' CMR still also feeds a
+#' legacy contractor process that reads the raw workbook from a fixed Azure
+#' location (`{project_folder}/{raw_dir}/{country}/{period}/`, e.g.
+#' `health-rb-country-expansion-dev/raw/filled_templates/ssd/202605/`). Passing
+#' `mirror_pipeline` uploads `path` there too, so a DA does **one step**
+#' (`eri_split_cmr(..., mirror_pipeline = "rb-expansion")`) instead of also
+#' separately dropping the file for the legacy pipeline to pick up. `period`
+#' defaults to a `YYYYMM` prefix parsed from `basename(path)` (the real
+#' convention observed in submitted filenames); pass it explicitly if the
+#' filename doesn't start that way.
+#'
+#' This does **not** replace [eri_stage_cmr()]: that function reads the *same*
+#' raw-drop location and copies the workbook into `data/{country}/rblf/cmr/staged/`
+#' as the governed raw archive `eri_approve()` promotes. `mirror_pipeline` here
+#' only *writes* to the raw-drop location for the legacy pipeline's benefit — a
+#' DA doing a fresh-period pilot run may still want both:
+#' `eri_split_cmr(..., mirror_pipeline = ...)` then [eri_stage_cmr()] (or the
+#' reverse order; neither depends on the other having run first).
+#'
 #' @param path `str` Local path to the CMR Excel file.
 #' @param country `str` Three-letter country code (e.g. `"uga"`); resolves the
 #'   CMR schema via [load_cmr_schema()].
@@ -173,6 +216,14 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   existing staged file.
 #' @param dry_run `logical` If `TRUE`, returns the routing plan and writes
 #'   nothing. Default `FALSE`.
+#' @param mirror_pipeline `str` or `NULL` Registered pipeline name (e.g.
+#'   `"rb-expansion"`) whose legacy raw-drop location `path` should also be
+#'   uploaded to. Default `NULL` (no mirror; sandbox-safe).
+#' @param period `str` or `NULL` Reporting period (e.g. `"202605"`) for the
+#'   mirror upload. `NULL` (default) parses a leading `YYYYMM_` from
+#'   `basename(path)`; required if that can't be parsed.
+#' @param projects_con Azure container for the `projects` blob; used only when
+#'   `mirror_pipeline` is set. If `NULL`, connects automatically.
 #' @returns Invisibly, a tibble with one row per routed sheet: `sheet`, `disease`,
 #'   `data_type`, `dest`, `n_rows`.
 #' @examples
@@ -182,15 +233,70 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' # Stage for real, then approve each disease/measure
 #' eri_split_cmr("uga_2024_06.xlsx", "uga")
 #' eri_approve("uga", "oncho", "programmatic", "2024-06", data_type = "treatment")
+#' # One step: also mirror the raw file to the legacy contractor pipeline
+#' eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
 #' }
 #' @export
 eri_split_cmr <- function(path, country, data_con = NULL,
-                          overwrite = FALSE, dry_run = FALSE) {
+                          overwrite = FALSE, dry_run = FALSE,
+                          mirror_pipeline = NULL, period = NULL,
+                          projects_con = NULL) {
   if (!dry_run) .eri_log_session()
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
   }
-  schema   <- load_cmr_schema(country)
+
+  # Validate the optional legacy mirror up front (fail fast, no I/O), same
+  # spirit as eri_ingest()'s mirror_pipeline.
+  mirror <- NULL
+  if (!is.null(mirror_pipeline)) {
+    reg <- .eri_pipeline_registry[[mirror_pipeline]]
+    if (is.null(reg)) {
+      cli::cli_abort(c(
+        "Unknown pipeline {.val {mirror_pipeline}}.",
+        "i" = "Registered pipelines: {paste(names(.eri_pipeline_registry), collapse = ', ')}."
+      ))
+    }
+    if (is.null(reg$raw_dir)) {
+      cli::cli_abort(c(
+        "Pipeline {.val {mirror_pipeline}} has no legacy raw-drop location registered.",
+        "i" = "Only pipelines with a {.field raw_dir} entry support mirroring from {.fn eri_split_cmr}."
+      ))
+    }
+    subfolder <- reg$country_map[[country]]
+    if (is.null(subfolder)) {
+      cli::cli_abort(c(
+        "Country {.val {country}} is not registered for pipeline {.val {mirror_pipeline}}.",
+        "i" = "Registered countries: {paste(names(reg$country_map), collapse = ', ')}."
+      ))
+    }
+    if (is.null(period)) {
+      detected <- regmatches(basename(path), regexpr("^\\d{6}(?=_)", basename(path), perl = TRUE))
+      if (length(detected) == 0L) {
+        cli::cli_abort(c(
+          "Could not parse a {.val YYYYMM} period from {.path {basename(path)}}.",
+          "i" = "Pass {.arg period} explicitly (e.g. {.code period = \"202605\"})."
+        ))
+      }
+      period <- detected
+    }
+    mirror <- list(reg = reg, subfolder = subfolder, period = period)
+  }
+
+  schema <- tryCatch(load_cmr_schema(country), error = function(e) e)
+  if (inherits(schema, "error")) {
+    scaffold_path <- file.path(getwd(), paste0(country, "_cmr_schema.yaml"))
+    if (!file.exists(scaffold_path)) {
+      writeLines(.cmr_schema_template(country, paste0("TODO: full name for ", country), "en"),
+                 scaffold_path)
+      cli::cli_alert_info("Wrote a starter CMR schema template: {.path {scaffold_path}}")
+    }
+    cli::cli_abort(c(
+      conditionMessage(schema),
+      "i" = "A starter template is waiting at {.path {scaffold_path}} -- fill in {.field country}, uncomment the sheets this country's real CMR uses, and re-run.",
+      "i" = "Or scaffold fresh (and optionally create the Azure dirs) with {.fn eri_onboard_cmr}."
+    ))
+  }
   routable <- Filter(
     function(s) !is.null(s$disease) && !is.null(s$data_type),
     schema$sheets
@@ -253,6 +359,11 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     for (p in plan) {
       cli::cli_inform("  {.val {p$sheet}} -> {.path {p$dest}} ({p$n_rows} row{?s})")
     }
+    if (!is.null(mirror)) {
+      mirror_dest <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
+                              mirror$subfolder, mirror$period, basename(path)), collapse = "/")
+      cli::cli_inform("  Would also mirror raw file -> {.path {mirror_dest}}")
+    }
     return(invisible(plan_tbl))
   }
 
@@ -297,8 +408,30 @@ eri_split_cmr <- function(path, country, data_con = NULL,
                                      data_type = p$data_type, dest = p$dest)
       .eri_say_done("{.val {p$sheet}} -> {.path {p$dest}}")
     }
+
+    if (!is.null(mirror)) {
+      if (is.null(projects_con)) {
+        projects_con <- suppressMessages(get_azure_storage_connection())
+      }
+      mirror_dir  <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
+                              mirror$subfolder, mirror$period), collapse = "/")
+      mirror_dest <- paste0(mirror_dir, "/", basename(path))
+      if (!AzureStor::storage_dir_exists(projects_con, mirror_dir)) {
+        .eri_create_azure_dir(projects_con, mirror_dir)
+        op_log$steps <- .eri_log_step(op_log$steps, "create_mirror_dir", path = mirror_dir)
+      }
+      if (AzureStor::storage_file_exists(projects_con, mirror_dest) && !overwrite) {
+        cli::cli_warn("Overwriting existing legacy raw file: {.path {basename(mirror_dest)}}")
+      }
+      .eri_blob_write(projects_con, path, mirror_dest)
+      written      <- c(written, mirror_dest)
+      op_log$steps <- .eri_log_step(op_log$steps, "mirror_legacy_raw",
+                                     pipeline = mirror_pipeline, dest = mirror_dest)
+      .eri_say_done("Mirrored raw file to legacy pipeline: {.path {mirror_dest}}")
+    }
+
     .eri_summary("Split CMR by disease/measure", c(
-      Sheets   = sprintf("%d routed", length(written)),
+      Sheets   = sprintf("%d routed", length(written) - as.integer(!is.null(mirror))),
       Diseases = paste(sort(unique(plan_tbl$disease)), collapse = ", ")
     ))
     op_log$status <- "success"
@@ -381,7 +514,7 @@ eri_stage_cmr <- function(country,
     )
   }
 
-  src_base <- paste0(reg$project_folder, "/raw/filled_templates/", country)
+  src_base <- paste(c(reg$project_folder, reg$raw_dir, country), collapse = "/")
 
   if (is.null(period)) {
     period_listing <- AzureStor::list_storage_files(projects_con, src_base) |>

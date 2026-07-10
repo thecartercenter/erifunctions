@@ -1,0 +1,68 @@
+country: sdn
+disease: oncho
+data_source: programmatic
+data_type: entomology
+version: "1.0"
+description: "Sudan onchocerciasis entomological (blackfly) surveys, RB Ento Surveys sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (#rb_ento_surv_* prefix), via
+# read-only recon against the real May 2026 (202605) submission. See PR #269.
+#
+# KNOWN REAL TEMPLATE DEFECT (not an erifunctions bug, and not fixable here):
+# this sheet's row-5 field codes have two copy-paste duplicates -- "#rb_ento_surv_otz"
+# appears twice (cols 10-11) and "#rb_ento_surv_notes_jan" appears twice where the
+# February block's notes column should read "..._notes_feb" (cols 19 and 24). This
+# is the same template used by South Sudan, so the defect is confirmed present in
+# both countries' real files. eri_ingest_cmr() (fixed alongside this schema) no
+# longer crashes on this: it keeps both columns and suffixes the second with "__1"
+# (e.g. "#rb_ento_surv_otz__1"). This schema intentionally does NOT alias the
+# "__1" columns -- which real field either one was meant to be is not something
+# to guess at from outside the source template. Flag to whoever maintains the
+# master CMR template; only the unambiguous "otz" (first occurrence) is mapped.
+#
+# Same shape issue as sdn_oncho_programmatic_prevalence.yaml otherwise:
+# rp_sites/fly_sites/fly_count/type/notes are monthly-only with no annual
+# roll-up. Scoped to the identifier spine only.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rb_ento_surv_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rb_ento_surv_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rb_ento_surv_adm2"]
+    allowed_values: ["Abu Hamad", "Al Buhaira", "Al Qureisha", "Al Radom", Barbar,
+      Basundah, "Galabat Ash-Shargiah", Geisan, Merwoe, "Wad El Mahi"]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#rb_ento_surv_adm3"]
+
+  otz:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_otz"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_disease"]

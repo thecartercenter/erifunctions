@@ -1,0 +1,117 @@
+country: sdn
+disease: rblf
+data_source: programmatic
+data_type: training
+version: "1.0"
+description: "Sudan RB+LF programme trainings (CDD, CS, MMDP surgery/patient, Field Ento, Health Workers), combined training sheets of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes, via read-only recon against
+# the real May 2026 (202605) submission. See PR #269.
+#
+# ONE schema covers all 6 training sheets (CDD Training #cddtrn_, CS Training
+# #cstrn_, MMDP surgery Training #dmditrnsx_, MMDP patient Training #dmditrnpt_,
+# Field Ento Training #entotrn_, Health Workers Training #hwtrn_) because
+# eri_split_cmr() routes all of them to the same disease/data_type combo
+# (rblf/training, per ADR-0012's combined training code) -- load_dq_schema() can
+# only resolve one file per (country, disease, data_source, data_type). Each
+# ingested sheet only ever has ONE of the six prefixes present, so aliasing all
+# six under one canonical column set works: run_dq_checks() resolves whichever
+# alias matches the data actually present (see .dq_resolve_aliases()).
+#
+# As with the other survey/training measures, the annual roll-up columns
+# (goal/tot_male/tot_fem/tot/achieved) are validated; the 12 monthly
+# refresh/new/tot blocks are left unvalidated (same scoping as the treatment
+# schemas' precedent).
+#
+# UNVERIFIED CEILING: goal/tot ranges below are set from the observed spread
+# across all 6 training types this period; not confirmed against a full year
+# of data.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#cddtrn_year", "#cstrn_year", "#dmditrnsx_year",
+      "#dmditrnpt_year", "#entotrn_year", "#hwtrn_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#cddtrn_adm1", "#cstrn_adm1", "#dmditrnsx_adm1",
+      "#dmditrnpt_adm1", "#entotrn_adm1", "#hwtrn_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#cddtrn_adm2", "#cstrn_adm2",
+      "#dmditrnsx_adm2", "#dmditrnpt_adm2", "#entotrn_adm2", "#hwtrn_adm2"]
+    allowed_values: ["Abu-Hojar", "Abu Gebeiha", "Abu Hamad", "Abu Jabrah", "Ad-Douiem",
+      "Ad Du'ayn", "Al-Fashaga", "Al-Faw", "Al-Gadarif", "Al-Geinaina", "Al-Jabalain",
+      "Al-Malha", "Al-Nehood", "Al-Rahad", "Al-Soki", "Al Buhaira", "Al Khiwai",
+      "Al Qureisha", "Al Radom", Alrashad, Alsonta, "Altwaisha Alliaid", "Ar Rusayris",
+      "At Tadamon - BN", "Atbara River", Azum, Bada, "Bahr Al Arab", Barbar, Basundah,
+      Baw, Bendasi, Delami, Dilling, Dordaib, "East Gabel Marah", "Ed Alfursan",
+      "Ed Damazine", "For Baringa", "Gabit Amadin", Gadeir, Gaibaish,
+      "Galabat Ash-Shargiah", Geisan, "Gharb Jabal Marrah", Habila, Kadogli, Kas,
+      Kassala, Katiala, Kirineic, Kubum, Lagawa, Merwoe, Mukjar, "North Dalta",
+      "North Nyala", "Nyala South", Refugees, Sennar, "Shamal Jabal Marrah",
+      "Shia'ria", Talodi, Telcok, Tendalti, "Um Dukhun", Umrawaba, "W Kassala",
+      "Wad Banda", "Wad El Mahi", "Wad Elheiliew", "Wadi Salih", Zalingi]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#cddtrn_adm3", "#cstrn_adm3",
+      "#dmditrnsx_adm3", "#dmditrnpt_adm3", "#entotrn_adm3", "#hwtrn_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#cddtrn_disease", "#cstrn_disease", "#dmditrnsx_disease",
+      "#dmditrnpt_disease", "#entotrn_disease", "#hwtrn_disease"]
+
+  goal:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_goal", "#cstrn_goal", "#dmditrnsx_goal", "#dmditrnpt_goal",
+      "#entotrn_goal", "#hwtrn_goal"]
+    range: [0, 5000]
+
+  male_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_male", "#cstrn_tot_male", "#dmditrnsx_tot_male",
+      "#dmditrnpt_tot_male", "#entotrn_tot_male", "#hwtrn_tot_male"]
+    range: [0, 5000]
+
+  female_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_fem", "#cstrn_tot_fem", "#dmditrnsx_tot_fem",
+      "#dmditrnpt_tot_fem", "#entotrn_tot_fem", "#hwtrn_tot_fem"]
+    range: [0, 5000]
+
+  tot:
+    required: true
+    type: numeric
+    aliases: [Trained, "#cddtrn_tot", "#cstrn_tot", "#dmditrnsx_tot",
+      "#dmditrnpt_tot", "#entotrn_tot", "#hwtrn_tot"]
+    range: [0, 5000]
+
+  achieved_pct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_achieved", "#cstrn_achieved", "#dmditrnsx_achieved",
+      "#dmditrnpt_achieved", "#entotrn_achieved", "#hwtrn_achieved"]
+    # Proportion scale, not percentage.
+    range: [0, 2]

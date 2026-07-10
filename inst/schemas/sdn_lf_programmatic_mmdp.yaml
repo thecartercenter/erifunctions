@@ -1,0 +1,122 @@
+country: sdn
+disease: lf
+data_source: programmatic
+data_type: mmdp
+version: "1.0"
+description: "Sudan LF morbidity management and disability prevention (MMDP), LF MMDP sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-10 against the REAL CMR field codes (#lfdmdi_* prefix), via
+# read-only recon (structure/aggregate counts only, no records persisted or
+# shared) against the real May 2026 (202605) submission. See PR #269.
+#
+# UNVERIFIED RANGES: the sampled period had zero MMDP activity (no surgery
+# round that month), so surgeytarget/villagetarget/tot/hh/sx were all blank or
+# zero -- there is no real non-zero value yet to anchor a tighter ceiling.
+# Ranges below are generous defaults matching the scale of the equivalent
+# treatment-sheet fields, not confirmed thresholds. Tighten once a populated
+# period is available.
+#
+# MMDP's district roster (73 districts) is the fuller RB+LF program set, not
+# the narrower LF-Treatment-only subset (66 districts) -- real program scope,
+# not a bug.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#lfdmdi_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#lfdmdi_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#lfdmdi_adm2"]
+    allowed_values: ["Abu-Hojar", "Abu Gebeiha", "Abu Hamad", "Abu Jabrah", "Ad-Douiem",
+      "Ad Du'ayn", "Al-Fashaga", "Al-Faw", "Al-Gadarif", "Al-Geinaina", "Al-Jabalain",
+      "Al-Malha", "Al-Nehood", "Al-Rahad", "Al-Soki", "Al Buhaira", "Al Khiwai",
+      "Al Qureisha", "Al Radom", Alrashad, Alsonta, "Altwaisha Alliaid", "Ar Rusayris",
+      "At Tadamon - BN", "Atbara River", Azum, Bada, "Bahr Al Arab", Barbar, Basundah,
+      Baw, Bendasi, Delami, Dilling, Dordaib, "East Gabel Marah", "Ed Alfursan",
+      "Ed Damazine", "For Baringa", "Gabit Amadin", Gadeir, Gaibaish,
+      "Galabat Ash-Shargiah", Geisan, "Gharb Jabal Marrah", Habila, Kadogli, Kas,
+      Kassala, Katiala, Kirineic, Kubum, Lagawa, Merwoe, Mukjar, "North Dalta",
+      "North Nyala", "Nyala South", Refugees, Sennar, "Shamal Jabal Marrah",
+      "Shia'ria", Talodi, Telcok, Tendalti, "Um Dukhun", Umrawaba, "W Kassala",
+      "Wad Banda", "Wad El Mahi", "Wad Elheiliew", "Wadi Salih", Zalingi]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#lfdmdi_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#lfdmdi_disease"]
+
+  health_facility:
+    required: false
+    type: character
+    aliases: ["#lfdmdi_healthfac"]
+
+  surgery_target:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_surgeytarget"]
+    range: [0, 50000]
+
+  village_target:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_villagetarget"]
+    range: [0, 5000]
+
+  male_managed:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_male_tot"]
+    range: [0, 500000]
+
+  female_managed:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_fem_tot"]
+    range: [0, 500000]
+
+  tot:
+    required: true
+    type: numeric
+    aliases: [Treated, people_managed, "#lfdmdi_tot"]
+    range: [0, 500000]
+
+  households_managed:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_hh_tot"]
+    range: [0, 500000]
+
+  surgeries_done:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_sx_tot"]
+    range: [0, 50000]
+
+  surgeries_achieved_pct:
+    required: false
+    type: numeric
+    aliases: ["#lfdmdi_sx_achieved"]
+    range: [0, 2]

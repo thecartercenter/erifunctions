@@ -15,7 +15,7 @@ eri_stage(
 )
 }
 \arguments{
-\item{pipeline}{\code{str} Registered pipeline name. Currently \code{"hsp-mal"}.}
+\item{pipeline}{\code{str} Registered pipeline name: \code{"hsp-mal"} or \code{"rb-expansion"}.}
 
 \item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}).}
 
@@ -50,6 +50,7 @@ each collision and the file is overwritten.
 \subsection{Registered pipelines}{\tabular{lll}{
    Name \tab Project folder \tab Countries \cr
    \code{hsp-mal} \tab health-hsp-malaria-dev \tab \code{"dr"}, \code{"ht"} \cr
+   \code{rb-expansion} \tab health-rb-country-expansion-dev \tab \code{"eth"}, \code{"nga"}, \code{"sdn"}, \code{"ssd"}, \code{"uga"}, \code{"mad"}, \code{"tcd"} \cr
 }
 
 }
