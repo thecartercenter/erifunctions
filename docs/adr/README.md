@@ -55,3 +55,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
 | [0016](0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes go through the blob endpoint | Accepted |
 | [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted |
+| [0018](0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution, hash-based expiry | Accepted |

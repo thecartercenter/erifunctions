@@ -75,6 +75,9 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0013](adr/0013-odk-submission-backfill.md) | Write records *into* ODK Central (submission backfill): deterministic instanceID idempotency, columns map by field name, repeats reuse ADR-0010 | `eri_odk_upload()` (Phase 4, #211) |
 | [0014](adr/0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob (capture now via `eri_feedback()`, reusing ADR-0002/0003); triage is a later feature | Tight adoption feedback loop (#237) |
 | [0015](adr/0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover gate: per-stream value/row parity (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger; human-triggered | Objective Phase-3 cutover criteria (#245) |
+| [0016](adr/0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes (ETag optimistic concurrency) go through the blob endpoint, not the Data Lake Gen2 endpoint | ADR-0002 concurrency implementation detail |
+| [0017](adr/0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match; detect-and-report by default | CMR re-run hygiene (DQ workflow redesign, phase 2) |
+| [0018](adr/0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution (local → Azure → bundled), hash-based expiry, never-silent envelope markers | DQ schema override lifecycle (DQ workflow redesign, phase 3) |
 
 ---
 
@@ -218,12 +221,24 @@ offline. It needs real uploads, not more code.
 recurring pain point — a DA fixing DQ flags had no structured way to note *what* they fixed or *why*,
 and no way to trace a `processed/` figure back to the exact source bytes it came from. A design consult
 scoped an 8-phase plan to close this: (1) raw retention + source hashing on every ingest path — **shipped**
-(this doc's entry, NEWS 0.9.11); (2) DQ schema override lifecycle; (3) `eri_audit()` — walk a canonical
-value back through `processed → staged → raw` and the DQ review that approved it; (4) `eri_feedback()` +
-`eri_dq_schema_submit()` for DA-authored schema-edit tickets; (5) `eri_approve_cmr()` force-approve path;
-(6) an interactive `eri_dq_review()` wrapper over the existing scriptable per-flag triage
-(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (7) `eri_dq_export()` (PDF flag report); (8) guide
-convergence. Phases 2–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
+(this doc's entry, NEWS 0.9.11); (2) CMR re-run hygiene (staged-file supersession, DQ-log supersession,
+`excel_row` provenance) — **shipped and validated**: these three landmine fixes actually landed in
+PR #272 the same week, *before* the design consult was even commissioned (`supersede_staged` /
+ADR-0017, `eri_cmr_dq_report(supersede = TRUE)`, `excel_row` in `eri_ingest_cmr()`); the consult's own
+review confirmed nothing else was missing, and a live end-to-end run against the `atlantis` sandbox
+(2026-07-10: split → flag an invalid district → fix → re-split with `supersede_staged` → re-report →
+`eri_approve_cmr()`) confirmed exactly one file set gets promoted, with all test artifacts cleaned up
+afterward; (3) DQ schema override lifecycle — **shipped** ([ADR-0018](adr/0018-dq-schema-local-overrides.md)):
+three-tier resolution (local override → Azure → bundled) inside `load_dq_schema()`,
+`eri_dq_schema_path/edit/status/reset()`, sidecar metadata, hash-based retire-on-upstream-change (an
+override is retired, never kept forever or silently discarded, once the Azure/bundled copy it forked
+from changes), `schema_source`+`schema_hash` carried from the schema through `run_dq_checks()` into
+every `dq_flags` log entry; (4) `eri_audit()` — walk a canonical value back through
+`processed → staged → raw` and the DQ review that approved it; (5) `eri_feedback()` +
+`eri_dq_schema_submit()` for DA-authored schema-edit tickets; (6) `eri_approve_cmr()` force-approve path;
+(7) an interactive `eri_dq_review()` wrapper over the existing scriptable per-flag triage
+(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8) `eri_dq_export()` (PDF flag report) + guide
+convergence. Phases 4–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
 
 ---
 

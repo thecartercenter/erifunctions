@@ -164,6 +164,10 @@ reference:
   desc: Schema-driven DQ checks and anomaly detection.
   contents:
   - load_dq_schema
+  - eri_dq_schema_edit
+  - eri_dq_schema_path
+  - eri_dq_schema_status
+  - eri_dq_schema_reset
   - run_dq_checks
   - dq_result-methods
   - dq_report
