@@ -53,11 +53,19 @@ Invisibly, the \code{dq_result} object (\verb{$data}, \verb{$log}, \verb{$flags}
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
-The general analyst ingest entry point. Reads a raw local file, runs all DQ
-checks via \code{\link[=run_dq_checks]{run_dq_checks()}}, prints the flags, and writes the cleaned parquet
-to \verb{data/\{country\}/\{disease\}/\{data_source\}/\{data_type\}/staged/} — feeding
+The general analyst ingest entry point. Reads a raw local file, archives the
+original file as-is to \verb{data/\{country\}/\{disease\}/\{data_source\}/\{data_type\}/raw/}
+(timestamp-suffixed, so re-ingesting the same filename never collides with an
+earlier archive of it), runs all DQ checks via \code{\link[=run_dq_checks]{run_dq_checks()}}, prints the
+flags, and writes the cleaned parquet to
+\verb{data/\{country\}/\{disease\}/\{data_source\}/\{data_type\}/staged/} — feeding
 \code{\link[=eri_approve]{eri_approve()}} with the matching measure. It runs on \strong{any} data, including a
 throwaway sandbox: there is no pipeline-registry or country gate by default.
+
+The raw archive and the logged DQ flags both carry an MD5 hash of the source
+file (identity, not security) — reproducing an old submission, or answering
+"which exact bytes did this review look at", doesn't depend on whoever still
+has a copy of the original email/upload.
 
 The legacy \code{projects}-blob dual-write (the hsp-mal cutover comparison) is an
 \strong{opt-in} mirror: pass \code{mirror_pipeline = "hsp-mal"} to additionally mirror the

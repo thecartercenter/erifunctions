@@ -1370,11 +1370,19 @@ eri_stage <- function(pipeline, country, disease,
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
-#' The general analyst ingest entry point. Reads a raw local file, runs all DQ
-#' checks via [run_dq_checks()], prints the flags, and writes the cleaned parquet
-#' to `data/{country}/{disease}/{data_source}/{data_type}/staged/` — feeding
+#' The general analyst ingest entry point. Reads a raw local file, archives the
+#' original file as-is to `data/{country}/{disease}/{data_source}/{data_type}/raw/`
+#' (timestamp-suffixed, so re-ingesting the same filename never collides with an
+#' earlier archive of it), runs all DQ checks via [run_dq_checks()], prints the
+#' flags, and writes the cleaned parquet to
+#' `data/{country}/{disease}/{data_source}/{data_type}/staged/` — feeding
 #' [eri_approve()] with the matching measure. It runs on **any** data, including a
 #' throwaway sandbox: there is no pipeline-registry or country gate by default.
+#'
+#' The raw archive and the logged DQ flags both carry an MD5 hash of the source
+#' file (identity, not security) — reproducing an old submission, or answering
+#' "which exact bytes did this review look at", doesn't depend on whoever still
+#' has a copy of the original email/upload.
 #'
 #' The legacy `projects`-blob dual-write (the hsp-mal cutover comparison) is an
 #' **opt-in** mirror: pass `mirror_pipeline = "hsp-mal"` to additionally mirror the
@@ -1455,25 +1463,23 @@ eri_ingest <- function(path, country, disease,
     )
   }
 
-  if (is.null(schema)) {
-    schema <- load_dq_schema(country, disease, data_source, data_type, azcontainer = data_con)
-  }
-
-  raw_data <- eri_read(path, azure = FALSE)
-  if (is.list(raw_data) && !is.data.frame(raw_data)) {
-    raw_data <- raw_data[[1]]
-    cli::cli_alert_info("Multi-sheet Excel detected: using first sheet for DQ.")
-  }
-
-  result <- run_dq_checks(raw_data, schema)
-  dq_report(result)
-
-  fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
   # Five-axis staging (ADR-0012): the measure lands in the path, so a later
   # eri_approve(country, disease, data_source, period, data_type) promotes it.
   # c() drops a NULL data_type, so a measure-less ingest stays four-axis.
   staged_dir    <- eri_data_path(country, disease, data_source, data_type, "staged")
+  raw_dir       <- eri_data_path(country, disease, data_source, data_type, "raw")
   log_dir       <- paste(c(country, disease, data_source, data_type, "logs"), collapse = "/")
+
+  # Identity for the source file, not security -- lets a later audit trail
+  # answer "which exact bytes were reviewed/approved" even across a rename.
+  source_hash <- unname(tools::md5sum(path))
+  # Timestamp-suffixed so re-ingesting the same filename (a corrected re-send,
+  # a different period) never collides with an earlier raw archive of it.
+  raw_ts    <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+  raw_ext   <- tools::file_ext(path)
+  raw_fname <- paste0(tools::file_path_sans_ext(basename(path)), "_", raw_ts,
+                      if (nzchar(raw_ext)) paste0(".", raw_ext) else "")
+  raw_dest  <- paste0(raw_dir, "/", raw_fname)
 
   op_log <- list(
     operation  = "eri_ingest",
@@ -1482,6 +1488,8 @@ eri_ingest <- function(path, country, disease,
     parameters = list(path = path, country = country, disease = disease,
                       data_source = data_source, data_type = data_type,
                       mirror_pipeline = mirror_pipeline),
+    source_file = basename(path),
+    source_hash = source_hash,
     status     = "in_progress",
     steps      = list(),
     error      = NULL,
@@ -1491,8 +1499,40 @@ eri_ingest <- function(path, country, disease,
   written   <- character(0)
   had_error <- FALSE
   err_msg   <- NULL
+  result    <- NULL
 
   tryCatch({
+    # Archive the original source file to the raw/ layer before anything else
+    # touches it -- including before the file is even read or DQ-checked --
+    # ADR-0012's five-axis model already has this layer; this generalizes what
+    # eri_stage_cmr() already does for CMR into the general ingest path, so
+    # reproducing a submission later, or debugging why a malformed file was
+    # rejected, doesn't depend on whoever still has a copy of the original
+    # email/upload.
+    if (!AzureStor::storage_dir_exists(data_con, raw_dir)) {
+      AzureStor::create_storage_dir(data_con, raw_dir)
+      op_log$steps <- .eri_log_step(op_log$steps, "create_raw_dir", path = raw_dir)
+    }
+    .eri_blob_write(data_con, path, raw_dest)
+    written      <- c(written, raw_dest)
+    op_log$steps <- .eri_log_step(op_log$steps, "archive_raw", dest = raw_dest, source_hash = source_hash)
+    .eri_say_done("Archived raw source: {.path {raw_dest}}")
+
+    if (is.null(schema)) {
+      schema <- load_dq_schema(country, disease, data_source, data_type, azcontainer = data_con)
+    }
+
+    raw_data <- eri_read(path, azure = FALSE)
+    if (is.list(raw_data) && !is.data.frame(raw_data)) {
+      raw_data <- raw_data[[1]]
+      cli::cli_alert_info("Multi-sheet Excel detected: using first sheet for DQ.")
+    }
+
+    result <- run_dq_checks(raw_data, schema)
+    dq_report(result)
+
+    fname_parquet <- paste0(tools::file_path_sans_ext(basename(path)), ".parquet")
+
     if (!AzureStor::storage_dir_exists(data_con, staged_dir)) {
       AzureStor::create_storage_dir(data_con, staged_dir)
       op_log$steps <- .eri_log_step(op_log$steps, "create_staged_dir", path = staged_dir)
@@ -1531,7 +1571,8 @@ eri_ingest <- function(path, country, disease,
     # Persist the DQ flags to the log backlog so they are durable and triageable
     # via eri_logs() / eri_logs_resolve(). Never let a logging hiccup break ingest.
     tryCatch(
-      eri_dq_log(result, country, disease, data_source, data_type, data_con = data_con),
+      eri_dq_log(result, country, disease, data_source, data_type, data_con = data_con,
+                source_hash = source_hash),
       error = function(e) cli::cli_alert_warning("Could not log DQ flags: {conditionMessage(e)}")
     )
 

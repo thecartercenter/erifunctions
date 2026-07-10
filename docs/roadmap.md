@@ -214,6 +214,17 @@ periods as they arrive; `eri_cutover_check()` each one; watch `eri_cutover_statu
 streak; only then retire the adapters for that stream. The toolchain is ready and end-to-end tested
 offline. It needs real uploads, not more code.
 
+**DQ workflow redesign (in progress, pilot-feedback-driven):** the SDN/SSD CMR pilot surfaced a
+recurring pain point — a DA fixing DQ flags had no structured way to note *what* they fixed or *why*,
+and no way to trace a `processed/` figure back to the exact source bytes it came from. A design consult
+scoped an 8-phase plan to close this: (1) raw retention + source hashing on every ingest path — **shipped**
+(this doc's entry, NEWS 0.9.11); (2) DQ schema override lifecycle; (3) `eri_audit()` — walk a canonical
+value back through `processed → staged → raw` and the DQ review that approved it; (4) `eri_feedback()` +
+`eri_dq_schema_submit()` for DA-authored schema-edit tickets; (5) `eri_approve_cmr()` force-approve path;
+(6) an interactive `eri_dq_review()` wrapper over the existing scriptable per-flag triage
+(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (7) `eri_dq_export()` (PDF flag report); (8) guide
+convergence. Phases 2–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)

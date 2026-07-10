@@ -206,6 +206,10 @@
 #'   `NULL` (default) writes to the four-axis channel-level `logs/` directory.
 #' @param period `chr` or `NULL` Reporting period the data covers (e.g. `"2024-01"`).
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @param source_hash `chr` or `NULL` MD5 hash of the source file this check ran
+#'   against (identity, not security), if you have one -- lets a later audit
+#'   trail confirm exactly which bytes were reviewed. `NULL` (default) when
+#'   there's no local file to hash (e.g. checking data already staged in Azure).
 #' @returns Invisibly, the number of flags logged.
 #' @examples
 #' \dontrun{
@@ -214,15 +218,17 @@
 #' }
 #' @export
 eri_dq_log <- function(result, country, disease, data_source,
-                       data_type = NULL, period = NULL, data_con = NULL) {
+                       data_type = NULL, period = NULL, data_con = NULL,
+                       source_hash = NULL) {
   written <- .eri_dq_log_write(result, country, disease, data_source,
-                               data_type, period, data_con)
+                               data_type, period, data_con, source_hash)
   invisible(written$n_flags)
 }
 
 #' @keywords internal
 .eri_dq_log_write <- function(result, country, disease, data_source,
-                              data_type = NULL, period = NULL, data_con = NULL) {
+                              data_type = NULL, period = NULL, data_con = NULL,
+                              source_hash = NULL) {
   if (!inherits(result, "dq_result")) {
     cli::cli_abort("{.arg result} must be a {.cls dq_result} from {.fn run_dq_checks}.")
   }
@@ -255,6 +261,11 @@ eri_dq_log <- function(result, country, disease, data_source,
     parameters    = list(country = country, disease = disease,
                          data_source = data_source, data_type = data_type,
                          period = period),
+    # Identity for the file this check actually ran against -- lets an audit
+    # trail answer "which exact bytes were reviewed here", not just "some
+    # file was". NULL (default) when the caller has no local file to hash
+    # (e.g. checking data already staged in Azure).
+    source_hash   = if (is.null(source_hash)) NA_character_ else source_hash,
     status        = status,
     n_flags       = n_flags,
     n_corrections = nrow(result$log),

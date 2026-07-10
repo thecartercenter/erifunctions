@@ -504,9 +504,12 @@ unlink("atlantis_malaria_surveillance_case.yaml")   # the local schema file
 You have now done the full DA ingest loop: store raw, quality-check against a schema, fix what only a
 human can, stage, and **approve** into the canonical layer, twice, including a messy extract.
 
-One call, [`eri_ingest()`](../reference/eri_ingest.html), does the read-and-DQ-and-stage steps
+One call, [`eri_ingest()`](../reference/eri_ingest.html), does the archive-DQ-and-stage steps
 (§2, §4, §5) in a single shot, on **any** data including the sandbox you just built (it takes the same
-`country` / `disease` / `data_source` / `data_type` you have been using). We did each step by hand here
+`country` / `disease` / `data_source` / `data_type` you have been using). It archives the file you hand
+it to `raw/` under a timestamped name before doing anything else, records an MD5 hash of that source
+file in the operation log (so any later `staged`/`processed` copy can be traced back to the exact bytes
+that were reviewed), then runs the DQ checks and stages the result. We did each step by hand here
 so you could *see* every layer; once you are comfortable, `eri_ingest()` is the fast path, and
 `eri_approve()`: your sign-off, is always the same human gate at the end. *(For the legacy `hsp-mal`
 cutover, passing `mirror_pipeline = "hsp-mal"` also mirrors the output to the old `projects` blob, off

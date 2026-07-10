@@ -524,6 +524,36 @@ test_that("eri_stage_cmr(period = NULL) auto-selects the most recent period", {
   expect_match(read_src, "202406")   # staged from the 202406 source dir
 })
 
+test_that("eri_stage_cmr records a source_hash on each staged file's op-log step", {
+  mock_con <- structure(list(), class = "mock")
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
+      tibble::tibble(name = paste0(dir, "/uga_cmr_202406.xlsx"), isdir = FALSE)
+    },
+    .package = "AzureStor"
+  )
+  logged_op <- NULL
+  local_mocked_bindings(
+    .eri_blob_read   = function(con, src, dest, ...) { writeLines("fixed content", dest); invisible(dest) },
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(op_log, ...) { logged_op <<- op_log; invisible(NULL) },
+    .eri_log_session = function(...) invisible(NULL),
+    .eri_analyst_id  = function(...) "tester",
+    get_azure_storage_connection = function(...) mock_con,
+    .package = "erifunctions"
+  )
+
+  eri_stage_cmr("uga", "202406", data_con = mock_con)
+
+  stage_steps <- Filter(function(s) identical(s$step, "stage_file"), logged_op$steps)
+  expect_length(stage_steps, 1L)
+  expect_false(is.null(stage_steps[[1]]$source_hash))
+  expect_true(nzchar(stage_steps[[1]]$source_hash))
+})
+
 test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_uga_cmr(tmp)
@@ -851,6 +881,60 @@ test_that("eri_cmr_last_plan reconstructs a plan from the persisted op-log", {
   expect_s3_class(plan, "tbl_df")
   expect_equal(nrow(plan), 2L)
   expect_setequal(plan$disease, c("oncho", "lf"))
+  # fake_entry predates source_hash -- should default to NA, not error
+  expect_true(all(is.na(plan$source_hash)))
+})
+
+test_that("eri_cmr_last_plan carries source_hash through when the logged plan has it", {
+  fake_entry <- list(
+    operation = "eri_split_cmr", status = "success",
+    plan = list(
+      list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+          dest = "sdn/oncho/programmatic/treatment/staged/x.parquet", n_rows = 10L,
+          source_hash = "abc123")
+    )
+  )
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/rblf/cmr/logs/fake.yaml", period = "202605",
+      operation = "eri_split_cmr", status = "success"
+    ),
+    .eri_blob_read = function(con, src, dest, ...) {
+      yaml::write_yaml(fake_entry, dest); invisible(dest)
+    },
+    .package = "erifunctions"
+  )
+
+  plan <- eri_cmr_last_plan("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_equal(plan$source_hash, "abc123")
+})
+
+test_that("eri_split_cmr's real op-log and returned plan both carry source_hash", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  logged <- NULL
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(op_log, ...) { logged <<- op_log; invisible(NULL) },
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  plan <- suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"))
+  )
+
+  expected_hash <- unname(tools::md5sum(tmp))
+  expect_true(all(plan$source_hash == expected_hash))
+  expect_equal(logged$source_hash, expected_hash)
+  expect_equal(logged$source_file, basename(tmp))
+  expect_true(all(vapply(logged$plan, function(p) p$source_hash, character(1L)) == expected_hash))
 })
 
 test_that("eri_cmr_last_plan errors clearly when nothing is logged for that period", {
@@ -974,7 +1058,7 @@ test_that("eri_cmr_dq_report combines every measure's flags into one tibble with
     eri_read = function(...) tibble::tibble(x = 1),
     load_dq_schema = function(...) list(columns = list()),
     run_dq_checks = function(...) fake_result,
-    .eri_dq_log_write = function(result, country, disease, data_source, data_type, period, data_con) {
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, period, data_con, ...) {
       list(n_flags = 1L, status = "needs_review",
           log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
           flags = list(list(index = 1, row = 1L, column = "district", value = "Bad",
