@@ -26,23 +26,34 @@ two-argument form this slot held a combined schema key.}
 optional for \code{research}.}
 
 \item{azcontainer}{Azure container object from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.
-Pass \code{NULL} to use only the locally bundled schema files.}
+Pass \code{NULL} to use only the locally bundled schema files (local overrides
+are still consulted).}
 }
 \value{
-A named list representing the parsed YAML schema.
+A named list representing the parsed YAML schema, plus
+\verb{$schema_source} and \verb{$schema_hash}.
 }
 \description{
 Loads a data quality schema for a \verb{(country, disease, data_source, data_type)}
-identity (ADR-0012) from Azure blob storage, falling back to the bundled copy.
-Schema files live at
-\verb{schemas/\{country\}_\{disease\}_\{data_source\}_\{data_type\}.yaml}; for \code{research} the
-\code{data_type} (measure) is optional. When a schema is not found the error lists
-every available bundled schema.
+identity (ADR-0012). Resolution order is \strong{local override -> Azure blob ->
+bundled}: a DA's own \code{\link[=eri_dq_schema_edit]{eri_dq_schema_edit()}} fork wins if one exists and
+still matches what it was forked from; otherwise the Azure \verb{schemas/} blob;
+otherwise the copy bundled with the package. For \code{research} the \code{data_type}
+(measure) is optional. When a schema is not found the error lists every
+available bundled schema.
 }
 \details{
 The legacy two-argument form \code{load_dq_schema(country, key)} — where \code{key} was a
 combined \verb{\{disease\}_\{measure\}} string like \code{"malaria_case"} or \code{"lf_tas"} — still
-resolves during the migration via an alias to the new name.
+resolves during the migration via an alias to the new name; local overrides
+are not consulted for the legacy form.
+
+The returned schema carries \verb{$schema_source} (\code{"local_override"}, \code{"azure"},
+or \code{"bundled"}) and \verb{$schema_hash} (an MD5 identity hash of whichever file was
+actually read), which flow through \code{\link[=run_dq_checks]{run_dq_checks()}} into every \code{dq_flags}
+log entry -- so a DQ result produced under a modified schema is always
+distinguishable, in the permanent log, from one produced under the canonical
+schema.
 }
 \examples{
 \dontrun{

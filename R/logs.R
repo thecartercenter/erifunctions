@@ -266,6 +266,12 @@ eri_dq_log <- function(result, country, disease, data_source,
     # file was". NULL (default) when the caller has no local file to hash
     # (e.g. checking data already staged in Azure).
     source_hash   = if (is.null(source_hash)) NA_character_ else source_hash,
+    # Which schema actually ran ("local_override"/"azure"/"bundled") and its
+    # own identity hash -- set by load_dq_schema()'s resolver and carried here
+    # via run_dq_checks()'s dq_result, not a new caller-supplied argument.
+    # NA for a dq_result predating this field (schema()$schema_source unset).
+    schema_source = result$schema_source %||% NA_character_,
+    schema_hash   = result$schema_hash %||% NA_character_,
     status        = status,
     n_flags       = n_flags,
     n_corrections = nrow(result$log),

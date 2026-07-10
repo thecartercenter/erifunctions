@@ -491,3 +491,226 @@ test_that("sdn_oncho_programmatic_treatment schema loads and flags a zero target
   res <- run_dq_checks(df, schema)
   expect_true(any(res$flags$column == "target_pop"))
 })
+
+#### Tests for run_dq_checks()/schema carrying schema_source/schema_hash ####
+
+test_that("load_dq_schema tags a bundled load with schema_source and a hash", {
+  schema <- load_dq_schema("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  expect_equal(schema$schema_source, "bundled")
+  expect_true(nzchar(schema$schema_hash))
+})
+
+test_that("run_dq_checks carries schema_source/schema_hash from the schema into the dq_result", {
+  schema <- list(schema_source = "local_override", schema_hash = "abc123",
+                 columns = list(x = list(required = FALSE, type = "numeric")))
+  res <- run_dq_checks(tibble::tibble(x = 1), schema)
+  expect_equal(res$schema_source, "local_override")
+  expect_equal(res$schema_hash, "abc123")
+})
+
+test_that("run_dq_checks defaults schema_source/schema_hash to NA when the schema has none", {
+  schema <- list(columns = list(x = list(required = FALSE, type = "numeric")))
+  res <- run_dq_checks(tibble::tibble(x = 1), schema)
+  expect_true(is.na(res$schema_source))
+  expect_true(is.na(res$schema_hash))
+})
+
+test_that(".eri_dq_log_write records schema_source/schema_hash in the envelope", {
+  schema <- list(schema_source = "local_override", schema_hash = "abc123",
+                 columns = list(x = list(required = FALSE, type = "numeric")))
+  res <- run_dq_checks(tibble::tibble(x = 1), schema)
+
+  logged <- NULL
+  local_mocked_bindings(
+    .eri_write_log = function(op_log, con, dir, ...) { logged <<- op_log; "fake/log/path.yaml" },
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    .eri_dq_log_write(res, "atlantis", "oncho", "programmatic", "treatment", data_con = structure(list(), class = "mock"))
+  )
+  expect_equal(logged$schema_source, "local_override")
+  expect_equal(logged$schema_hash, "abc123")
+})
+
+#### Tests for the DQ schema local override lifecycle ####
+
+test_that("eri_dq_schema_edit forks the bundled schema and records a sidecar", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_true(file.exists(path))
+  expect_true(file.exists(file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml")))
+
+  meta <- yaml::read_yaml(file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml"))
+  expect_equal(meta$base_source, "bundled")
+  expect_true(nzchar(meta$base_hash))
+})
+
+test_that("load_dq_schema prefers a live local override over the bundled schema", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  # A typed edit a DA might make: widen the target_pop range
+  override <- yaml::read_yaml(path)
+  override$columns$target_pop$range <- list(0, 99999999)
+  yaml::write_yaml(override, path)
+
+  schema <- suppressWarnings(
+    load_dq_schema("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(schema$schema_source, "local_override")
+  expect_equal(schema$columns$target_pop$range[[2]], 99999999)
+})
+
+test_that("eri_dq_schema_path returns the override path when one is live", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  found <- suppressWarnings(
+    eri_dq_schema_path("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(found, path)
+})
+
+test_that("load_dq_schema retires a stale override (base_hash no longer matches upstream)", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  meta_path <- file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml")
+  meta <- yaml::read_yaml(meta_path)
+  meta$base_hash <- "not-the-real-hash"   # simulate the upstream having changed since the fork
+  yaml::write_yaml(meta, meta_path)
+
+  schema <- suppressWarnings(
+    load_dq_schema("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(schema$schema_source, "bundled")   # fell back to upstream
+  expect_false(file.exists(path))                 # override renamed away, not left in place
+  expect_false(file.exists(meta_path))
+  retired <- list.files(override_dir, pattern = "\\.retired-.*\\.yaml$")
+  expect_length(retired, 2L)   # the .yaml and the .meta.yaml
+})
+
+test_that("eri_dq_schema_status reports a stale override without retiring it", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  meta_path <- file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml")
+  meta <- yaml::read_yaml(meta_path)
+  meta$base_hash <- "not-the-real-hash"
+  yaml::write_yaml(meta, meta_path)
+
+  status <- suppressWarnings(eri_dq_schema_status(azcontainer = NULL))
+  expect_equal(status$status[status$stem == "atlantis_oncho_programmatic_treatment"],
+               "stale (will be retired on next load)")
+  # read-only: the override must still be exactly where it was
+  expect_true(file.exists(path))
+  expect_true(file.exists(meta_path))
+})
+
+test_that("eri_dq_schema_status reports no overrides when there are none", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  status <- eri_dq_schema_status(azcontainer = NULL)
+  expect_equal(nrow(status), 0L)
+})
+
+test_that("eri_dq_schema_reset deletes an override and leaves retired ones alone", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  meta_path <- file.path(override_dir, "atlantis_oncho_programmatic_treatment.meta.yaml")
+
+  # non-interactive test session -> confirm prompt is skipped, deletes directly
+  ok <- eri_dq_schema_reset("atlantis", "oncho", "programmatic", "treatment")
+  expect_true(ok)
+  expect_false(file.exists(path))
+  expect_false(file.exists(meta_path))
+})
+
+test_that("eri_dq_schema_reset is a no-op when there is nothing to reset", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  ok <- eri_dq_schema_reset("atlantis", "oncho", "programmatic", "treatment")
+  expect_false(ok)
+})
+
+test_that("eri_dq_schema_edit is idempotent when the existing override is still fresh", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path1 <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  # A DA's edit -- must survive a second eri_dq_schema_edit() call, not be
+  # silently clobbered by a fresh fork.
+  override <- yaml::read_yaml(path1)
+  override$columns$target_pop$range <- list(0, 42)
+  yaml::write_yaml(override, path1)
+
+  path2 <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(path1, path2)
+  expect_equal(yaml::read_yaml(path2)$columns$target_pop$range[[2]], 42)
+})
+
+test_that("load_dq_schema legacy two-argument form never resolves a local override", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("dr", "malaria", "surveillance", "case", azcontainer = NULL)
+  )
+  # Modify the override so a leak would be detectable
+  override_path <- file.path(override_dir, "dr_malaria_surveillance_case.yaml")
+  override <- yaml::read_yaml(override_path)
+  override$columns$year$range <- list(1, 2)  # absurd, would be obviously wrong if it leaked in
+  yaml::write_yaml(override, override_path)
+
+  schema <- load_dq_schema("dr", "malaria_case", azcontainer = NULL)  # legacy form
+  expect_equal(schema$schema_source, "bundled")
+  expect_false(identical(schema$columns$year$range, list(1, 2)))
+})

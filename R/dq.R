@@ -954,18 +954,161 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
   if (stem %in% names(.eri_schema_aliases)) .eri_schema_aliases[[stem]] else stem
 }
 
+#### 4a) DQ schema local override lifecycle ####
+#
+# One resolver for the whole system (CLAUDE.md guardrail): local override ->
+# Azure blob -> bundled. See ADR "DQ schema local overrides" for the full
+# rationale; in short, a DA's local edit (via eri_dq_schema_edit()) is the
+# active schema for load_dq_schema() until either eri_dq_schema_reset() or an
+# upstream change retires it -- never silently discarded, never silently
+# winning forever over a maintainer's fix.
+
+#' @keywords internal
+.eri_dq_schema_stem <- function(country, disease, data_source = NULL, data_type = NULL) {
+  parts <- c(country, disease, data_source, data_type)
+  paste(parts[nzchar(parts)], collapse = "_")
+}
+
+#' @keywords internal
+.eri_dq_schema_not_found_abort <- function(stem) {
+  schema_path <- paste0("schemas/", stem, ".yaml")
+  schema_dir  <- system.file("schemas", package = "erifunctions")
+  available   <- if (nzchar(schema_dir)) {
+    sort(sub("\\.ya?ml$", "", list.files(schema_dir, pattern = "\\.ya?ml$")))
+  } else {
+    character()
+  }
+  msg <- c(
+    "No schema found for {.file {basename(schema_path)}}.",
+    "i" = "Identity: country/disease/data_source/data_type (ADR-0012)."
+  )
+  if (length(available)) {
+    msg <- c(msg, "i" = paste(
+      "Available bundled schemas: {.val {available}}.",
+      "Call e.g. {.code load_dq_schema(\"dr\", \"malaria\", \"surveillance\", \"case\")}."
+    ))
+  }
+  cli::cli_abort(msg)
+}
+
+# Per-user cache for schemas downloaded from Azure: refreshed on every call (so
+# it always reflects the current blob), but a real file on disk rather than a
+# with_tempfile() that vanishes the instant the caller returns -- callers like
+# eri_dq_schema_path()/eri_dq_schema_edit() need a path that's still there
+# after load_dq_schema() (or they) returns.
+#' @keywords internal
+.eri_dq_schema_cache_dir <- function() {
+  dir <- file.path(tools::R_user_dir("erifunctions", "cache"), "schemas")
+  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+  dir
+}
+
+# Resolves the CANONICAL upstream for a stem -- Azure blob if reachable, else
+# the bundled copy -- never the local override. Returns list(path, source) or
+# NULL if the schema doesn't exist anywhere.
+#' @keywords internal
+.eri_dq_schema_upstream <- function(stem, azcontainer) {
+  schema_path <- paste0("schemas/", stem, ".yaml")
+  if (!is.null(azcontainer)) {
+    cache_path <- file.path(.eri_dq_schema_cache_dir(), paste0(stem, ".yaml"))
+    ok <- tryCatch({
+      AzureStor::download_blob(azcontainer, schema_path, cache_path, overwrite = TRUE)
+      TRUE
+    }, error = function(e) {
+      cli::cli_alert_warning(
+        "Could not load schema from Azure ({e$message}). Falling back to local."
+      )
+      FALSE
+    })
+    if (ok) return(list(path = cache_path, source = "azure"))
+  }
+  local_path <- system.file(schema_path, package = "erifunctions")
+  if (nzchar(local_path)) return(list(path = local_path, source = "bundled"))
+  NULL
+}
+
+# Per-user directory for DA-authored schema overrides (Q7 of the DQ workflow
+# redesign consult): deliberately NOT the working directory, so an override
+# survives switching RStudio projects and never leaks into a git repo or a
+# synced folder.
+#' @keywords internal
+.eri_schema_override_dir <- function() {
+  dir <- file.path(tools::R_user_dir("erifunctions", "data"), "schema_overrides")
+  if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
+  dir
+}
+
+#' @keywords internal
+.eri_schema_override_paths <- function(stem) {
+  dir <- .eri_schema_override_dir()
+  list(yaml = file.path(dir, paste0(stem, ".yaml")),
+       meta = file.path(dir, paste0(stem, ".meta.yaml")))
+}
+
+# Three-tier resolution: local override -> Azure -> bundled. Never silent
+# (rule 1): a live override always announces itself. Never silently wins
+# forever, never silently discarded (rule 2): if the override's recorded
+# base_hash no longer matches the current upstream, it is retired (renamed
+# aside) rather than either keeping precedence or vanishing.
+#' @keywords internal
+.eri_dq_schema_resolve <- function(stem, azcontainer, allow_override = TRUE) {
+  if (allow_override) {
+    paths <- .eri_schema_override_paths(stem)
+    if (file.exists(paths$yaml) && file.exists(paths$meta)) {
+      meta         <- yaml::read_yaml(paths$meta)
+      upstream     <- .eri_dq_schema_upstream(stem, azcontainer)
+      current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
+
+      if (!is.null(upstream) && !identical(meta$base_hash, current_hash)) {
+        stamp        <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+        retired_yaml <- file.path(dirname(paths$yaml), paste0(stem, ".retired-", stamp, ".yaml"))
+        retired_meta <- file.path(dirname(paths$meta), paste0(stem, ".retired-", stamp, ".meta.yaml"))
+        file.rename(paths$yaml, retired_yaml)
+        file.rename(paths$meta, retired_meta)
+        cli::cli_alert_warning(c(
+          "Your local schema override for {.val {stem}} (forked {meta$forked_at}) is stale -- the upstream schema changed since you forked it.",
+          "i" = "Retired to {.path {basename(retired_yaml)}}; using the current upstream instead.",
+          "i" = "If issues re-flag that you thought you'd fixed, your changes weren't folded into the update -- re-review, or re-fork with {.fn eri_dq_schema_edit}."
+        ))
+        # fall through to the upstream resolution below
+      } else if (!is.null(upstream)) {
+        cli::cli_alert_info(c(
+          "i" = "Using your local schema override for {.val {stem}} (created {meta$forked_at}).",
+          " " = "Reset with {.fn eri_dq_schema_reset}."
+        ))
+        return(list(path = paths$yaml, source = "local_override",
+                    hash = unname(tools::md5sum(paths$yaml))))
+      }
+    }
+  }
+
+  upstream <- .eri_dq_schema_upstream(stem, azcontainer)
+  if (is.null(upstream)) .eri_dq_schema_not_found_abort(stem)
+  list(path = upstream$path, source = upstream$source,
+       hash = unname(tools::md5sum(upstream$path)))
+}
+
 #' Load a DQ schema
 #'
 #' Loads a data quality schema for a `(country, disease, data_source, data_type)`
-#' identity (ADR-0012) from Azure blob storage, falling back to the bundled copy.
-#' Schema files live at
-#' `schemas/{country}_{disease}_{data_source}_{data_type}.yaml`; for `research` the
-#' `data_type` (measure) is optional. When a schema is not found the error lists
-#' every available bundled schema.
+#' identity (ADR-0012). Resolution order is **local override -> Azure blob ->
+#' bundled**: a DA's own [eri_dq_schema_edit()] fork wins if one exists and
+#' still matches what it was forked from; otherwise the Azure `schemas/` blob;
+#' otherwise the copy bundled with the package. For `research` the `data_type`
+#' (measure) is optional. When a schema is not found the error lists every
+#' available bundled schema.
 #'
 #' The legacy two-argument form `load_dq_schema(country, key)` — where `key` was a
 #' combined `{disease}_{measure}` string like `"malaria_case"` or `"lf_tas"` — still
-#' resolves during the migration via an alias to the new name.
+#' resolves during the migration via an alias to the new name; local overrides
+#' are not consulted for the legacy form.
+#'
+#' The returned schema carries `$schema_source` (`"local_override"`, `"azure"`,
+#' or `"bundled"`) and `$schema_hash` (an MD5 identity hash of whichever file was
+#' actually read), which flow through [run_dq_checks()] into every `dq_flags`
+#' log entry -- so a DQ result produced under a modified schema is always
+#' distinguishable, in the permanent log, from one produced under the canonical
+#' schema.
 #'
 #' @param country `str` Country code (e.g. `"dr"`, `"uga"`).
 #' @param disease `str` Disease (e.g. `"malaria"`, `"lf"`). In the legacy
@@ -975,8 +1118,10 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 #' @param data_type `str` The measure (e.g. `"case"`, `"treatment"`, `"tas"`);
 #'   optional for `research`.
 #' @param azcontainer Azure container object from [get_azure_storage_connection()].
-#'   Pass `NULL` to use only the locally bundled schema files.
-#' @returns A named list representing the parsed YAML schema.
+#'   Pass `NULL` to use only the locally bundled schema files (local overrides
+#'   are still consulted).
+#' @returns A named list representing the parsed YAML schema, plus
+#'   `$schema_source` and `$schema_hash`.
 #' @examples
 #' \dontrun{
 #' schema <- load_dq_schema("dr", "malaria", "surveillance", "case")
@@ -995,50 +1140,240 @@ load_dq_schema <- function(
     )) {
   if (is.null(data_source)) {
     # Legacy form: `disease` holds a combined {disease}_{measure} key; alias the
-    # old stem to its new canonical name.
-    stem <- .eri_schema_alias(paste0(country, "_", disease))
+    # old stem to its new canonical name. Overrides are keyed by the modern
+    # stem only, so the legacy form never resolves one -- fine, since every
+    # real caller of the legacy form predates the override feature.
+    stem     <- .eri_schema_alias(paste0(country, "_", disease))
+    resolved <- .eri_dq_schema_resolve(stem, azcontainer, allow_override = FALSE)
   } else {
-    parts <- c(country, disease, data_source, data_type)
-    stem  <- paste(parts[nzchar(parts)], collapse = "_")
-  }
-  schema_path <- paste0("schemas/", stem, ".yaml")
-
-  if (!is.null(azcontainer)) {
-    result <- tryCatch({
-      withr::with_tempfile("tmp", fileext = ".yaml", code = {
-        AzureStor::download_blob(azcontainer, schema_path, tmp, overwrite = TRUE)
-        yaml::read_yaml(tmp)
-      })
-    }, error = function(e) {
-      cli::cli_alert_warning(
-        "Could not load schema from Azure ({e$message}). Falling back to local."
-      )
-      NULL
-    })
-    if (!is.null(result)) return(result)
+    stem     <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+    resolved <- .eri_dq_schema_resolve(stem, azcontainer, allow_override = TRUE)
   }
 
-  local_path <- system.file(schema_path, package = "erifunctions")
-  if (!nzchar(local_path)) {
-    schema_dir <- system.file("schemas", package = "erifunctions")
-    available  <- if (nzchar(schema_dir)) {
-      sort(sub("\\.ya?ml$", "", list.files(schema_dir, pattern = "\\.ya?ml$")))
-    } else {
-      character()
-    }
-    msg <- c(
-      "No schema found for {.file {basename(schema_path)}}.",
-      "i" = "Identity: country/disease/data_source/data_type (ADR-0012)."
-    )
-    if (length(available)) {
-      msg <- c(msg, "i" = paste(
-        "Available bundled schemas: {.val {available}}.",
-        "Call e.g. {.code load_dq_schema(\"dr\", \"malaria\", \"surveillance\", \"case\")}."
+  schema               <- yaml::read_yaml(resolved$path)
+  schema$schema_source <- resolved$source
+  schema$schema_hash   <- resolved$hash
+  schema
+}
+
+#' Resolve the local file path of the currently active DQ schema
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Runs the same three-tier resolution as [load_dq_schema()] (local override ->
+#' Azure -> bundled) but returns the resolved file's local path instead of its
+#' parsed content -- for opening the schema in an editor, or for a script that
+#' wants to know exactly which file will be used without downloading/parsing
+#' it twice.
+#'
+#' @inheritParams eri_dq_schema_edit
+#' @returns `str` Local path to the resolved schema file: the override file
+#'   itself when a live override exists, a per-user cache copy when the source
+#'   is Azure, or the bundled package path when that's the fallback.
+#' @examples
+#' \dontrun{
+#' path <- eri_dq_schema_path("atlantis", "oncho", "programmatic", "treatment")
+#' file.edit(path)  # or rstudioapi::navigateToFile(path)
+#' }
+#' @export
+eri_dq_schema_path <- function(country, disease, data_source = NULL, data_type = NULL,
+                                azcontainer = suppressMessages(
+                                  get_azure_storage_connection(
+                                    storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+                                  ))) {
+  stem     <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+  resolved <- .eri_dq_schema_resolve(stem, azcontainer)
+  resolved$path
+}
+
+#' Fork the active DQ schema into a local, editable override
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Copies the currently resolved upstream schema (Azure, or bundled if Azure has
+#' none) into a per-user override directory and records a sidecar with what it
+#' was forked from. The override then becomes the active schema for
+#' [load_dq_schema()] until you [eri_dq_schema_reset()] it, or until the
+#' upstream schema changes -- at which point it is retired automatically (see
+#' [eri_dq_schema_status()]) rather than either winning forever or vanishing
+#' silently.
+#'
+#' This is a **local working copy**, not a submission: nothing here reaches
+#' other DAs or the canonical Azure schema until a maintainer folds it in.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"uga"`).
+#' @param disease `str` Disease (e.g. `"malaria"`, `"lf"`).
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"`.
+#' @param data_type `str` The measure (e.g. `"case"`, `"treatment"`); optional
+#'   for `research`.
+#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#'   Pass `NULL` to fork only from the bundled copy.
+#' @returns Invisibly, the local path to the override file.
+#' @examples
+#' \dontrun{
+#' path <- eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment")
+#' file.edit(path)  # or rstudioapi::navigateToFile(path)
+#' # ... load_dq_schema() now returns this override until eri_dq_schema_reset() ...
+#' }
+#' @export
+eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type = NULL,
+                                azcontainer = suppressMessages(
+                                  get_azure_storage_connection(
+                                    storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+                                  ))) {
+  stem  <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+  paths <- .eri_schema_override_paths(stem)
+
+  if (file.exists(paths$yaml) && file.exists(paths$meta)) {
+    meta         <- yaml::read_yaml(paths$meta)
+    upstream     <- .eri_dq_schema_upstream(stem, azcontainer)
+    current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
+
+    if (!is.null(upstream) && identical(meta$base_hash, current_hash)) {
+      cli::cli_alert_info(c(
+        "You already have a live local override for {.val {stem}} (forked {meta$forked_at}).",
+        "i" = "Returning it as-is. Start over with {.fn eri_dq_schema_reset}."
       ))
+      return(invisible(paths$yaml))
     }
-    cli::cli_abort(msg)
+    # Stale (or upstream unreachable): retire it now via the shared resolver so
+    # eri_dq_schema_status() doesn't show a live-looking sidecar in the
+    # meantime, then fork fresh below.
+    if (!is.null(upstream)) .eri_dq_schema_resolve(stem, azcontainer)
   }
-  yaml::read_yaml(local_path)
+
+  upstream <- .eri_dq_schema_upstream(stem, azcontainer)
+  if (is.null(upstream)) .eri_dq_schema_not_found_abort(stem)
+
+  file.copy(upstream$path, paths$yaml, overwrite = TRUE)
+  meta <- list(
+    forked_at   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    forked_by   = .eri_analyst_id(azcontainer),
+    base_source = upstream$source,
+    base_hash   = unname(tools::md5sum(upstream$path)),
+    edits       = list()
+  )
+  yaml::write_yaml(meta, paths$meta)
+  cli::cli_alert_success("Forked {.val {stem}} into a local override: {.path {paths$yaml}}")
+  cli::cli_alert_info(c(
+    "i" = "This is now your active schema for {.val {stem}} until you {.fn eri_dq_schema_reset} it.",
+    " " = "If the upstream schema changes, it is retired automatically -- never silently overridden or discarded."
+  ))
+  invisible(paths$yaml)
+}
+
+#' List local DQ schema overrides
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Lists every local override created by [eri_dq_schema_edit()], with its age
+#' and whether it is still active or has gone stale (the upstream schema
+#' changed since it was forked -- it will be retired automatically the next
+#' time [load_dq_schema()] resolves it). Read-only: unlike a real schema load,
+#' checking status never itself retires a stale override.
+#'
+#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#'   Pass `NULL` to check staleness against only the bundled copies.
+#' @returns A tibble with columns `stem`, `forked_at`, `forked_by`,
+#'   `base_source`, `status` (`"active"`, `"stale (will be retired on next load)"`,
+#'   or `"unknown (upstream unreachable)"`). Zero rows if there are no overrides.
+#' @examples
+#' \dontrun{
+#' eri_dq_schema_status()
+#' }
+#' @export
+eri_dq_schema_status <- function(azcontainer = suppressMessages(
+                                    get_azure_storage_connection(
+                                      storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
+                                    ))) {
+  dir   <- .eri_schema_override_dir()
+  metas <- list.files(dir, pattern = "\\.meta\\.yaml$")
+  # Retired sidecars carry ".retired-<timestamp>" in the name -- historical
+  # record, not a candidate override, so excluded from this listing.
+  metas <- sort(metas[!grepl("\\.retired-", metas)])
+
+  empty <- tibble::tibble(stem = character(0), forked_at = character(0),
+                           forked_by = character(0), base_source = character(0),
+                           status = character(0))
+  if (length(metas) == 0L) {
+    cli::cli_alert_info("No local schema overrides.")
+    return(invisible(empty))
+  }
+
+  rows <- lapply(metas, function(mf) {
+    stem         <- sub("\\.meta\\.yaml$", "", mf)
+    meta         <- yaml::read_yaml(file.path(dir, mf))
+    upstream     <- tryCatch(.eri_dq_schema_upstream(stem, azcontainer), error = function(e) NULL)
+    current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
+    status <- if (is.null(upstream)) {
+      "unknown (upstream unreachable)"
+    } else if (identical(meta$base_hash, current_hash)) {
+      "active"
+    } else {
+      "stale (will be retired on next load)"
+    }
+    tibble::tibble(stem = stem, forked_at = meta$forked_at %||% NA_character_,
+                   forked_by = meta$forked_by %||% NA_character_,
+                   base_source = meta$base_source %||% NA_character_, status = status)
+  })
+  out <- dplyr::bind_rows(rows)
+  print(out)
+  invisible(out)
+}
+
+#' Delete a local DQ schema override
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' Removes the local override created by [eri_dq_schema_edit()] (and its
+#' sidecar), so [load_dq_schema()] goes back to resolving Azure/bundled
+#' directly. Does not touch retired overrides (`.retired-*` files) -- those
+#' stay on disk as a record of what a DA's local changes used to be.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"uga"`).
+#' @param disease `str` Disease (e.g. `"malaria"`, `"lf"`).
+#' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
+#'   `"research"`.
+#' @param data_type `str` The measure (e.g. `"case"`, `"treatment"`); optional
+#'   for `research`.
+#' @param confirm `logical` Ask for confirmation in an interactive session
+#'   before deleting. Default `TRUE`; non-interactive sessions (scripts/CI)
+#'   proceed without asking regardless.
+#' @returns Invisibly, `TRUE` if an override was deleted, `FALSE` otherwise.
+#' @examples
+#' \dontrun{
+#' eri_dq_schema_reset("atlantis", "oncho", "programmatic", "treatment")
+#' }
+#' @export
+eri_dq_schema_reset <- function(country, disease, data_source = NULL, data_type = NULL,
+                                 confirm = TRUE) {
+  stem  <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+  paths <- .eri_schema_override_paths(stem)
+
+  if (!file.exists(paths$yaml) && !file.exists(paths$meta)) {
+    cli::cli_alert_info("No local override for {.val {stem}} to reset.")
+    return(invisible(FALSE))
+  }
+
+  if (isTRUE(confirm) && rlang::is_interactive()) {
+    ans <- utils::menu(c("Yes, delete it", "No, cancel"),
+                        title = paste0("Delete local schema override for '", stem, "'?"))
+    if (ans != 1L) {
+      cli::cli_alert_info("Cancelled -- override kept.")
+      return(invisible(FALSE))
+    }
+  }
+
+  unlink(c(paths$yaml, paths$meta))
+  cli::cli_alert_success(
+    "Deleted local override for {.val {stem}}. {.fn load_dq_schema} will use Azure/bundled again."
+  )
+  invisible(TRUE)
 }
 
 #' Run data quality checks on surveillance data
@@ -1101,7 +1436,13 @@ run_dq_checks <- function(data, schema, custom_checks = list()) {
   )
 
   structure(
-    list(data = state$data, log = state$log, flags = state$flags),
+    list(data = state$data, log = state$log, flags = state$flags,
+         # Carried straight from the schema this check actually ran against
+         # (set by load_dq_schema()'s resolver) so .eri_dq_log_write() can
+         # record, in the permanent log, whether this result came from a DA's
+         # local schema override -- without a signature change of its own.
+         schema_source = schema$schema_source %||% NA_character_,
+         schema_hash   = schema$schema_hash %||% NA_character_),
     class = "dq_result"
   )
 }
