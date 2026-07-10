@@ -31,8 +31,13 @@ like one filed before this feature existed.}
 \item{attachment}{\code{chr} or \code{NULL} Optional path to a local file to attach —
 e.g. a full schema override for a \code{dq} ticket. Uploaded to
 \verb{_feedback/attachments/\{token\}/\{basename\}} in the \verb{data/} blob \strong{before}
-the ticket is logged, so a failed upload never leaves a ticket referencing
-a file that isn't actually there. \code{NULL} (default): no attachment.}
+the ticket is logged, so a failed \emph{upload} never leaves a ticket
+referencing a file that isn't actually there. The reverse is a known,
+accepted, low-probability gap: if the upload succeeds but the log append
+then fails (e.g. exhausts its concurrency retries), the blob is left
+orphaned with no ticket pointing at it — you'll see the error (nothing
+silently succeeds for you), but there's no automatic cleanup sweep for
+the orphaned attachment. \code{NULL} (default): no attachment.}
 
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }

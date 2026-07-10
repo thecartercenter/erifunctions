@@ -926,3 +926,49 @@ test_that("eri_dq_schema_submit files a ticket with the diff, axes context, and 
   expect_equal(uploaded$src, path)
   expect_equal(ticket$attachment, uploaded$dest)
 })
+
+test_that("eri_dq_schema_submit errors clearly when upstream is unreachable", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  local_mocked_bindings(
+    .eri_dq_schema_upstream = function(stem, azcontainer) NULL,
+    .package = "erifunctions"
+  )
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL),
+    "unreachable"
+  )
+})
+
+test_that("eri_dq_schema_submit rejects a non-scalar note before doing any work", {
+  expect_error(
+    eri_dq_schema_submit("atlantis", "oncho", "programmatic", "treatment",
+                         note = c("a", "b"), azcontainer = NULL),
+    "single string"
+  )
+})
+
+test_that(".eri_dq_schema_diff returns nothing for two empty/NULL schemas", {
+  expect_length(.eri_dq_schema_diff(list(), list()), 0L)
+  expect_length(.eri_dq_schema_diff(NULL, NULL), 0L)
+})
+
+test_that(".eri_dq_schema_diff is insensitive to key order (semantically identical, reordered)", {
+  base    <- list(columns = list(a = list(required = TRUE), b = list(required = FALSE)))
+  reorder <- list(columns = list(b = list(required = FALSE), a = list(required = TRUE)))
+  expect_length(.eri_dq_schema_diff(base, reorder), 0L)
+})
+
+test_that(".eri_dq_schema_diff reports a wholly new sub-block as added, not a crash", {
+  base <- list(columns = list(a = list(required = TRUE)))
+  edit <- list(columns = list(a = list(required = TRUE),
+                              b = list(required = FALSE, type = "numeric")))
+  out <- .eri_dq_schema_diff(base, edit)
+  expect_true(any(grepl("^columns.b: added", out)))
+})

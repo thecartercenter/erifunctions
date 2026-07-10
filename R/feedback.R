@@ -65,8 +65,13 @@
 #' @param attachment `chr` or `NULL` Optional path to a local file to attach —
 #'   e.g. a full schema override for a `dq` ticket. Uploaded to
 #'   `_feedback/attachments/{token}/{basename}` in the `data/` blob **before**
-#'   the ticket is logged, so a failed upload never leaves a ticket referencing
-#'   a file that isn't actually there. `NULL` (default): no attachment.
+#'   the ticket is logged, so a failed *upload* never leaves a ticket
+#'   referencing a file that isn't actually there. The reverse is a known,
+#'   accepted, low-probability gap: if the upload succeeds but the log append
+#'   then fails (e.g. exhausts its concurrency retries), the blob is left
+#'   orphaned with no ticket pointing at it — you'll see the error (nothing
+#'   silently succeeds for you), but there's no automatic cleanup sweep for
+#'   the orphaned attachment. `NULL` (default): no attachment.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects automatically.
 #' @returns The logged ticket (invisibly), as a named list.
 #' @examples
@@ -107,6 +112,15 @@ eri_feedback <- function(message, area = "general", context = NULL, attachment =
   }
   if (!is.null(context) && !is.list(context)) {
     cli::cli_abort("{.arg context} must be a named list, or {.code NULL}.")
+  }
+  if (!is.null(context)) {
+    # list()'s constructor keeps a NULL-valued element (unlike assigning NULL
+    # into an existing list, which removes it), and yaml::write_yaml() renders
+    # that as a literal `~`. Scrub centrally, here, rather than leaving every
+    # caller to rediscover this -- context is meant to be a general mechanism
+    # other areas reuse (e.g. eri_dq_schema_submit()'s research-lane calls,
+    # which have no data_type), not a one-off worked around by one caller.
+    context <- Filter(Negate(is.null), context)
   }
   if (!is.null(attachment)) {
     if (!is.character(attachment) || length(attachment) != 1L || is.na(attachment)) {

@@ -1576,6 +1576,10 @@ eri_dq_schema_submit <- function(country, disease, data_source = NULL, data_type
                                     get_azure_storage_connection(
                                       storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
                                     ))) {
+  if (!is.null(note) && (length(note) != 1L || !is.character(note) || is.na(note))) {
+    cli::cli_abort("{.arg note} must be a single string, or {.code NULL}.")
+  }
+
   stem <- .eri_dq_schema_stem(country, disease, data_source, data_type)
   ov   <- .eri_dq_schema_override_state(stem, azcontainer)
 
@@ -1620,19 +1624,15 @@ eri_dq_schema_submit <- function(country, disease, data_source = NULL, data_type
     "within minutes, not at the next package release.)"
   ))
 
-  # list()'s constructor keeps a NULL-valued element (unlike assigning NULL
-  # into an existing list, which removes it) -- filter explicitly so a
-  # research-lane submission with no data_type doesn't carry a literal `~` in
-  # the logged context.
-  context <- Filter(Negate(is.null), list(
-    country = country, disease = disease, data_source = data_source,
-    data_type = data_type, schema = stem
-  ))
-
+  # A research-lane submission has no data_type -- eri_feedback() itself
+  # scrubs a NULL-valued context element (list()'s constructor keeps it,
+  # unlike assigning NULL into an existing list, which removes it), so no
+  # NULL-filtering is needed here.
   ticket <- eri_feedback(
     message    = paste(message_lines, collapse = "\n"),
     area       = "dq",
-    context    = context,
+    context    = list(country = country, disease = disease, data_source = data_source,
+                      data_type = data_type, schema = stem),
     attachment = ov$paths$yaml,
     data_con   = azcontainer
   )
