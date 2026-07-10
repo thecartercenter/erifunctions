@@ -509,7 +509,12 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     # other reason (a date, a facility code, ...) sharing this same
     # programmatic/{data_type}/staged/ folder from a different source.
     if (!is.null(period)) {
-      period_prefix <- paste0("^", period, "(?!\\d)")  # period, not a longer number containing it
+      # period is normally an auto-detected 6-digit string, but it's also a
+      # caller-supplied argument with no enforced format -- escape it before
+      # splicing into a PCRE pattern so a stray "." or "(" in a hand-typed
+      # period can't widen the match or fail to compile.
+      period_escaped <- gsub("([^A-Za-z0-9_])", "\\\\\\1", period, perl = TRUE)
+      period_prefix  <- paste0("^", period_escaped, "(?!\\d)")  # period, not a longer number containing it
       seen_dirs <- character(0)
       for (p in plan) {
         if (p$dest_dir %in% seen_dirs) next

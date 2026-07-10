@@ -273,7 +273,6 @@ eri_split_cmr(fixed_report, "uga", supersede_staged = TRUE)
 ```
 
 Leave it `FALSE` (the default) if you'd rather review the warning and remove the old file by hand.
-```
 
 ## 5. Check data quality before approving {#dq-check}
 

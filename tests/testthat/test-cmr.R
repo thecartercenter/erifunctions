@@ -619,6 +619,38 @@ test_that("eri_split_cmr(supersede_staged = TRUE) deletes an anchored match but 
   expect_false(any(grepl(tools::file_path_sans_ext(basename(tmp)), deleted, fixed = TRUE)))
 })
 
+test_that("eri_split_cmr(supersede_staged = TRUE) safely handles a period containing regex metacharacters", {
+  tmp <- withr::local_tempfile(pattern = "202406_fixed", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  deleted <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
+      # If "." in the period were spliced unescaped into the regex, it would
+      # match ANY character there and wrongly catch "202X06_other.parquet".
+      tibble::tibble(name = paste0(dir, "/202X06_other.parquet"), isdir = FALSE)
+    },
+    delete_storage_file = function(container, path, ...) { deleted <<- c(deleted, path); invisible(NULL) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  # A malformed period a caller might hand-type; must not crash and must not
+  # treat "." as "match anything".
+  expect_no_error(suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                 period = "2024.6", supersede_staged = TRUE)
+  ))
+  expect_length(deleted, 0L)
+})
+
 test_that("eri_split_cmr does not delete anything when period can't be resolved", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")   # no YYYYMM_ prefix, no period passed
   make_uga_cmr(tmp)
