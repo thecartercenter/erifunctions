@@ -75,6 +75,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0013](adr/0013-odk-submission-backfill.md) | Write records *into* ODK Central (submission backfill): deterministic instanceID idempotency, columns map by field name, repeats reuse ADR-0010 | `eri_odk_upload()` (Phase 4, #211) |
 | [0014](adr/0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob (capture now via `eri_feedback()`, reusing ADR-0002/0003); triage is a later feature | Tight adoption feedback loop (#237) |
 | [0015](adr/0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover gate: per-stream value/row parity (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger; human-triggered | Objective Phase-3 cutover criteria (#245) |
+| [0016](adr/0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes (ETag optimistic concurrency) go through the blob endpoint, not the Data Lake Gen2 endpoint | ADR-0002 concurrency implementation detail |
 | [0017](adr/0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match; detect-and-report by default | CMR re-run hygiene (DQ workflow redesign, phase 2) |
 | [0018](adr/0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution (local → Azure → bundled), hash-based expiry, never-silent envelope markers | DQ schema override lifecycle (DQ workflow redesign, phase 3) |
 

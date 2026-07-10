@@ -1045,41 +1045,109 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
        meta = file.path(dir, paste0(stem, ".meta.yaml")))
 }
 
+# One place that determines whether a local override for `stem` exists and,
+# if so, whether it's still valid against the current upstream. Used by every
+# caller that needs this judgment (the resolver, eri_dq_schema_edit(),
+# eri_dq_schema_status()) so they can't independently drift on the edge cases
+# -- in particular "upstream unreachable" (Azure down AND no bundled copy for
+# this stem, e.g. a newly-onboarded country/disease that only lives in Azure
+# so far): that must never be treated the same as "stale", because retiring a
+# DA's only local copy of a schema when nothing better is available would
+# destroy the fix, not protect against a stale one.
+#' @keywords internal
+.eri_dq_schema_override_state <- function(stem, azcontainer) {
+  paths <- .eri_schema_override_paths(stem)
+  if (!file.exists(paths$yaml) || !file.exists(paths$meta)) {
+    return(list(state = "none", meta = NULL, upstream = NULL, paths = paths))
+  }
+  meta         <- yaml::read_yaml(paths$meta)
+  upstream     <- .eri_dq_schema_upstream(stem, azcontainer)
+  current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
+
+  state <- if (is.null(upstream)) {
+    "unknown"
+  } else if (identical(meta$base_hash, current_hash)) {
+    "active"
+  } else {
+    "stale"
+  }
+  list(state = state, meta = meta, upstream = upstream, paths = paths)
+}
+
+# Renames a stale override (+ sidecar) aside so it survives as a record but
+# stops taking precedence. Returns TRUE only if BOTH files were confirmed
+# renamed: file.rename() FAILS (returns FALSE) rather than overwriting when
+# the destination already exists (notably on Windows) -- a numeric suffix
+# guards against two retirements of the same stem landing in the same UTC
+# second (e.g. scripted reruns), so a silent rename failure never leaves the
+# "stale" override live on disk under its original name while the caller
+# believes it was retired.
+#' @keywords internal
+.eri_dq_schema_retire <- function(stem, paths) {
+  stamp <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+  candidate <- function(n) {
+    suffix <- if (n == 0L) stamp else paste0(stamp, "-", n)
+    list(yaml = file.path(dirname(paths$yaml), paste0(stem, ".retired-", suffix, ".yaml")),
+         meta = file.path(dirname(paths$meta), paste0(stem, ".retired-", suffix, ".meta.yaml")))
+  }
+  n    <- 0L
+  dest <- candidate(n)
+  while (file.exists(dest$yaml) || file.exists(dest$meta)) {
+    n    <- n + 1L
+    dest <- candidate(n)
+  }
+  ok_yaml <- file.rename(paths$yaml, dest$yaml)
+  ok_meta <- file.rename(paths$meta, dest$meta)
+  isTRUE(ok_yaml) && isTRUE(ok_meta)
+}
+
 # Three-tier resolution: local override -> Azure -> bundled. Never silent
-# (rule 1): a live override always announces itself. Never silently wins
-# forever, never silently discarded (rule 2): if the override's recorded
-# base_hash no longer matches the current upstream, it is retired (renamed
-# aside) rather than either keeping precedence or vanishing.
+# (rule 1): a live override always announces itself, including the degraded
+# "can't verify freshness" case. Never silently wins forever, never silently
+# discarded (rule 2): a stale override is retired (renamed aside), and if the
+# retirement itself can't be completed, the override is used as-is rather than
+# claiming (and acting on) a retirement that didn't really happen.
 #' @keywords internal
 .eri_dq_schema_resolve <- function(stem, azcontainer, allow_override = TRUE) {
   if (allow_override) {
-    paths <- .eri_schema_override_paths(stem)
-    if (file.exists(paths$yaml) && file.exists(paths$meta)) {
-      meta         <- yaml::read_yaml(paths$meta)
-      upstream     <- .eri_dq_schema_upstream(stem, azcontainer)
-      current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
+    ov <- .eri_dq_schema_override_state(stem, azcontainer)
 
-      if (!is.null(upstream) && !identical(meta$base_hash, current_hash)) {
-        stamp        <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
-        retired_yaml <- file.path(dirname(paths$yaml), paste0(stem, ".retired-", stamp, ".yaml"))
-        retired_meta <- file.path(dirname(paths$meta), paste0(stem, ".retired-", stamp, ".meta.yaml"))
-        file.rename(paths$yaml, retired_yaml)
-        file.rename(paths$meta, retired_meta)
+    if (ov$state == "active") {
+      cli::cli_alert_info(c(
+        "i" = "Using your local schema override for {.val {stem}} (created {ov$meta$forked_at}).",
+        " " = "Reset with {.fn eri_dq_schema_reset}."
+      ))
+      return(list(path = ov$paths$yaml, source = "local_override",
+                  hash = unname(tools::md5sum(ov$paths$yaml))))
+    }
+
+    if (ov$state == "unknown") {
+      cli::cli_alert_warning(c(
+        "!" = "Could not verify your local schema override for {.val {stem}} against upstream (Azure unreachable and no bundled copy found) -- using it as-is.",
+        "i" = "Its freshness relative to the canonical schema could not be confirmed this time."
+      ))
+      return(list(path = ov$paths$yaml, source = "local_override",
+                  hash = unname(tools::md5sum(ov$paths$yaml))))
+    }
+
+    if (ov$state == "stale") {
+      if (.eri_dq_schema_retire(stem, ov$paths)) {
         cli::cli_alert_warning(c(
-          "Your local schema override for {.val {stem}} (forked {meta$forked_at}) is stale -- the upstream schema changed since you forked it.",
-          "i" = "Retired to {.path {basename(retired_yaml)}}; using the current upstream instead.",
+          "Your local schema override for {.val {stem}} (forked {ov$meta$forked_at}) is stale -- the upstream schema changed since you forked it.",
+          "i" = "Retired; using the current upstream instead.",
           "i" = "If issues re-flag that you thought you'd fixed, your changes weren't folded into the update -- re-review, or re-fork with {.fn eri_dq_schema_edit}."
         ))
-        # fall through to the upstream resolution below
-      } else if (!is.null(upstream)) {
-        cli::cli_alert_info(c(
-          "i" = "Using your local schema override for {.val {stem}} (created {meta$forked_at}).",
-          " " = "Reset with {.fn eri_dq_schema_reset}."
-        ))
-        return(list(path = paths$yaml, source = "local_override",
-                    hash = unname(tools::md5sum(paths$yaml))))
+        return(list(path = ov$upstream$path, source = ov$upstream$source,
+                    hash = unname(tools::md5sum(ov$upstream$path))))
       }
+      cli::cli_alert_danger(c(
+        "Could not fully retire the stale local override for {.val {stem}} -- using it as-is.",
+        "i" = "Check {.path {.eri_schema_override_dir()}} manually, or run {.fn eri_dq_schema_reset}."
+      ))
+      return(list(path = ov$paths$yaml, source = "local_override",
+                  hash = unname(tools::md5sum(ov$paths$yaml))))
     }
+    # ov$state == "none": no override at all -- fall through to upstream.
   }
 
   upstream <- .eri_dq_schema_upstream(stem, azcontainer)
@@ -1224,31 +1292,38 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
                                   get_azure_storage_connection(
                                     storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")
                                   ))) {
-  stem  <- .eri_dq_schema_stem(country, disease, data_source, data_type)
-  paths <- .eri_schema_override_paths(stem)
+  stem <- .eri_dq_schema_stem(country, disease, data_source, data_type)
+  ov   <- .eri_dq_schema_override_state(stem, azcontainer)
 
-  if (file.exists(paths$yaml) && file.exists(paths$meta)) {
-    meta         <- yaml::read_yaml(paths$meta)
-    upstream     <- .eri_dq_schema_upstream(stem, azcontainer)
-    current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
-
-    if (!is.null(upstream) && identical(meta$base_hash, current_hash)) {
-      cli::cli_alert_info(c(
-        "You already have a live local override for {.val {stem}} (forked {meta$forked_at}).",
-        "i" = "Returning it as-is. Start over with {.fn eri_dq_schema_reset}."
-      ))
-      return(invisible(paths$yaml))
-    }
-    # Stale (or upstream unreachable): retire it now via the shared resolver so
-    # eri_dq_schema_status() doesn't show a live-looking sidecar in the
-    # meantime, then fork fresh below.
-    if (!is.null(upstream)) .eri_dq_schema_resolve(stem, azcontainer)
+  if (ov$state %in% c("active", "unknown")) {
+    cli::cli_alert_info(c(
+      "You already have a local override for {.val {stem}} (forked {ov$meta$forked_at}).",
+      "i" = if (ov$state == "unknown") {
+        "Could not verify it against upstream right now (unreachable) -- returning it as-is."
+      } else {
+        "Returning it as-is. Start over with {.fn eri_dq_schema_reset}."
+      }
+    ))
+    return(invisible(ov$paths$yaml))
   }
 
-  upstream <- .eri_dq_schema_upstream(stem, azcontainer)
+  if (ov$state == "stale") {
+    if (!.eri_dq_schema_retire(stem, ov$paths)) {
+      cli::cli_alert_danger(c(
+        "Could not fully retire the stale local override for {.val {stem}} -- leaving it in place.",
+        "i" = "Resolve manually in {.path {.eri_schema_override_dir()}}, or run {.fn eri_dq_schema_reset} then try again."
+      ))
+      return(invisible(ov$paths$yaml))
+    }
+  }
+
+  # ov$state is "none" (no prior override) or "stale" (just retired above) --
+  # either way, fork fresh. Reuse the upstream already resolved by
+  # .eri_dq_schema_override_state() when we have it, instead of a third fetch.
+  upstream <- if (!is.null(ov$upstream)) ov$upstream else .eri_dq_schema_upstream(stem, azcontainer)
   if (is.null(upstream)) .eri_dq_schema_not_found_abort(stem)
 
-  file.copy(upstream$path, paths$yaml, overwrite = TRUE)
+  file.copy(upstream$path, ov$paths$yaml, overwrite = TRUE)
   meta <- list(
     forked_at   = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     forked_by   = .eri_analyst_id(azcontainer),
@@ -1256,13 +1331,13 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
     base_hash   = unname(tools::md5sum(upstream$path)),
     edits       = list()
   )
-  yaml::write_yaml(meta, paths$meta)
-  cli::cli_alert_success("Forked {.val {stem}} into a local override: {.path {paths$yaml}}")
+  yaml::write_yaml(meta, ov$paths$meta)
+  cli::cli_alert_success("Forked {.val {stem}} into a local override: {.path {ov$paths$yaml}}")
   cli::cli_alert_info(c(
     "i" = "This is now your active schema for {.val {stem}} until you {.fn eri_dq_schema_reset} it.",
     " " = "If the upstream schema changes, it is retired automatically -- never silently overridden or discarded."
   ))
-  invisible(paths$yaml)
+  invisible(ov$paths$yaml)
 }
 
 #' List local DQ schema overrides
@@ -1280,7 +1355,9 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
 #'   Pass `NULL` to check staleness against only the bundled copies.
 #' @returns A tibble with columns `stem`, `forked_at`, `forked_by`,
 #'   `base_source`, `status` (`"active"`, `"stale (will be retired on next load)"`,
-#'   or `"unknown (upstream unreachable)"`). Zero rows if there are no overrides.
+#'   `"unknown (upstream unreachable)"`, or `"incomplete (missing override file)"`
+#'   for a sidecar whose paired schema file is missing, e.g. from an interrupted
+#'   retire). Zero rows if there are no overrides.
 #' @examples
 #' \dontrun{
 #' eri_dq_schema_status()
@@ -1305,17 +1382,19 @@ eri_dq_schema_status <- function(azcontainer = suppressMessages(
   }
 
   rows <- lapply(metas, function(mf) {
-    stem         <- sub("\\.meta\\.yaml$", "", mf)
-    meta         <- yaml::read_yaml(file.path(dir, mf))
-    upstream     <- tryCatch(.eri_dq_schema_upstream(stem, azcontainer), error = function(e) NULL)
-    current_hash <- if (!is.null(upstream)) unname(tools::md5sum(upstream$path)) else NA_character_
-    status <- if (is.null(upstream)) {
-      "unknown (upstream unreachable)"
-    } else if (identical(meta$base_hash, current_hash)) {
-      "active"
-    } else {
-      "stale (will be retired on next load)"
-    }
+    stem <- sub("\\.meta\\.yaml$", "", mf)
+    ov   <- tryCatch(.eri_dq_schema_override_state(stem, azcontainer),
+                      error = function(e) list(state = "unknown", meta = NULL))
+    status <- switch(ov$state,
+      none    = "incomplete (missing override file)",
+      active  = "active",
+      stale   = "stale (will be retired on next load)",
+      unknown = "unknown (upstream unreachable)"
+    )
+    # ov$meta is NULL in the "none" case (the shared helper only reads the
+    # sidecar once it's confirmed the paired schema file also exists) -- read
+    # it directly here so an incomplete entry still shows who/when forked it.
+    meta <- ov$meta %||% yaml::read_yaml(file.path(dir, mf))
     tibble::tibble(stem = stem, forked_at = meta$forked_at %||% NA_character_,
                    forked_by = meta$forked_by %||% NA_character_,
                    base_source = meta$base_source %||% NA_character_, status = status)

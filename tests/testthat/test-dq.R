@@ -695,6 +695,95 @@ test_that("eri_dq_schema_edit is idempotent when the existing override is still 
   expect_equal(yaml::read_yaml(path2)$columns$target_pop$range[[2]], 42)
 })
 
+test_that("load_dq_schema falls back to a live override, not an abort, when upstream is unreachable", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+
+  # Now simulate "upstream unreachable" (Azure down AND no bundled copy for
+  # this stem) -- a live override must still be usable, not treated the same
+  # as a network outage meaning "abort" or "this fix is stale."
+  local_mocked_bindings(
+    .eri_dq_schema_upstream = function(stem, azcontainer) NULL,
+    .package = "erifunctions"
+  )
+
+  schema <- suppressWarnings(
+    load_dq_schema("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(schema$schema_source, "local_override")
+  expect_true(file.exists(path))   # not retired -- staleness couldn't be checked, so it's left alone
+})
+
+test_that("eri_dq_schema_edit returns the existing override, not an abort, when upstream is unreachable", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  path <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+
+  local_mocked_bindings(
+    .eri_dq_schema_upstream = function(stem, azcontainer) NULL,
+    .package = "erifunctions"
+  )
+
+  path2 <- suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  expect_equal(path, path2)
+  expect_true(file.exists(path2))
+})
+
+test_that("eri_dq_schema_status reports 'unknown' (not an error) when upstream is unreachable", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+  local_mocked_bindings(
+    .eri_dq_schema_upstream = function(stem, azcontainer) NULL,
+    .package = "erifunctions"
+  )
+  status <- eri_dq_schema_status(azcontainer = NULL)
+  expect_equal(status$status[status$stem == "atlantis_oncho_programmatic_treatment"],
+               "unknown (upstream unreachable)")
+})
+
+test_that(".eri_dq_schema_retire numbers a second same-second retirement instead of colliding", {
+  override_dir <- withr::local_tempdir()
+  stem  <- "atlantis_oncho_programmatic_treatment"
+  paths <- list(yaml = file.path(override_dir, paste0(stem, ".yaml")),
+               meta = file.path(override_dir, paste0(stem, ".meta.yaml")))
+  writeLines("a: 1", paths$yaml); writeLines("b: 2", paths$meta)
+
+  # Pre-seed a retirement for "right now" so a second one in the same second
+  # would collide if not guarded.
+  stamp <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+  writeLines("x", file.path(override_dir, paste0(stem, ".retired-", stamp, ".yaml")))
+  writeLines("x", file.path(override_dir, paste0(stem, ".retired-", stamp, ".meta.yaml")))
+
+  ok <- .eri_dq_schema_retire(stem, paths)
+  expect_true(ok)
+  expect_false(file.exists(paths$yaml))
+  expect_false(file.exists(paths$meta))
+  # 2 pre-seeded (.yaml + .meta.yaml) + 2 newly retired with a numeric suffix
+  # to avoid colliding with them
+  retired <- list.files(override_dir, pattern = "\\.retired-.*\\.yaml$")
+  expect_length(retired, 4L)
+  expect_true(any(grepl(paste0(stem, "\\.retired-", stamp, "-1\\.yaml$"), retired)))
+})
+
 test_that("load_dq_schema legacy two-argument form never resolves a local override", {
   override_dir <- withr::local_tempdir()
   local_mocked_bindings(

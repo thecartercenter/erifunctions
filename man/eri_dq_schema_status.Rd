@@ -16,7 +16,9 @@ Pass \code{NULL} to check staleness against only the bundled copies.}
 \value{
 A tibble with columns \code{stem}, \code{forked_at}, \code{forked_by},
 \code{base_source}, \code{status} (\code{"active"}, \code{"stale (will be retired on next load)"},
-or \code{"unknown (upstream unreachable)"}). Zero rows if there are no overrides.
+\code{"unknown (upstream unreachable)"}, or \code{"incomplete (missing override file)"}
+for a sidecar whose paired schema file is missing, e.g. from an interrupted
+retire). Zero rows if there are no overrides.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
