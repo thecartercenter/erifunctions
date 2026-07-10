@@ -79,8 +79,9 @@ local fixes for global problems. Before adding a function or pattern:
 - `devtools::test()` — unit tests run offline; live integration tests in
   `tests/testthat/test-smoke.R` run only when
   `Sys.setenv(ERI_SMOKE_TESTS = "true")`.
-- Update `NEWS.md` under the current phase heading and bump
-  `DESCRIPTION` `Version` if shipping.
+- Update `NEWS.md` and bump `DESCRIPTION` `Version` if shipping — and
+  the `**Version:**` line near the top of `README.md`, which does not
+  track `DESCRIPTION` automatically and has drifted before (twice).
 - Note: the cloud dev container has **no local R/quarto** —
   `R CMD check` and
   [`pkgdown::build_site()`](https://pkgdown.r-lib.org/reference/build_site.html)

@@ -110,7 +110,7 @@
 <a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
 </h3>
 <p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
-<p><strong>Version:</strong> 0.9.0 · <strong>Status:</strong> Active development</p>
+<p><strong>Version:</strong> 0.9.10 · <strong>Status:</strong> Active development</p>
 <blockquote>
 <p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
@@ -505,6 +505,38 @@ ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
 </table>
 </div>
 <div class="section level3">
+<h3 id="logs--triage">Logs &amp; triage<a class="anchor" aria-label="anchor" href="#logs--triage"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Function</th>
+<th>What it does</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>eri_dq_log(result, country, disease, data_source, data_type)</code></td>
+<td>Persist <code><a href="reference/run_dq_checks.html">run_dq_checks()</a></code> flags to the durable log backlog</td>
+</tr>
+<tr>
+<td><code>eri_logs(country, disease, data_source, data_type)</code></td>
+<td>Read the operation / DQ-flag triage backlog as one tibble</td>
+</tr>
+<tr>
+<td><code>eri_logs_resolve(log_path, note)</code></td>
+<td>Close out a whole log entry (auto-summarizes from per-flag decisions if triaged)</td>
+</tr>
+<tr>
+<td><code>eri_dq_flag_resolve(flag_id, status, note)</code></td>
+<td>Triage one DQ flag at a time (<code>not_important</code>/<code>fixed</code>/<code>noted</code>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level3">
 <h3 id="cmr-monthly-reports">CMR monthly reports<a class="anchor" aria-label="anchor" href="#cmr-monthly-reports"></a>
 </h3>
 <table class="table">
@@ -519,11 +551,11 @@ ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
 <tbody>
 <tr>
 <td><code>eri_ingest_cmr(path, sheet, country)</code></td>
-<td>Parse a CMR Excel sheet</td>
+<td>Parse a CMR Excel sheet (each row carries its real <code>excel_row</code>)</td>
 </tr>
 <tr>
 <td><code>eri_split_cmr(path, country)</code></td>
-<td>Route each CMR sheet to its disease/measure staged path</td>
+<td>Route each CMR sheet to its disease/measure staged path (opt-in <code>mirror_pipeline</code> one-step legacy mirror; opt-in <code>supersede_staged</code> cleans up a re-split’s superseded files)</td>
 </tr>
 <tr>
 <td><code>load_cmr_schema(country)</code></td>
@@ -532,6 +564,18 @@ ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
 <tr>
 <td><code>eri_stage_cmr(country, period)</code></td>
 <td>Stage CMR files from the projects blob</td>
+</tr>
+<tr>
+<td><code>eri_cmr_last_plan(country, period)</code></td>
+<td>Recover a past <code><a href="reference/eri_split_cmr.html">eri_split_cmr()</a></code> run’s routing plan from the log, without rerunning</td>
+</tr>
+<tr>
+<td><code>eri_cmr_dq_report(country, period)</code></td>
+<td>DQ-check every measure a CMR workbook routed to, one combined flags tibble</td>
+</tr>
+<tr>
+<td><code>eri_approve_cmr(country, period)</code></td>
+<td>Approve every measure in one call, but only if none are outstanding</td>
 </tr>
 </tbody>
 </table>
