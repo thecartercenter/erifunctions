@@ -1,3 +1,37 @@
+# erifunctions 0.9.16
+
+## `eri_dq_review()`: the interactive front door over the scriptable DQ core (Phase 7 of the DQ workflow redesign)
+
+- **New `eri_dq_review(country, period, plan, data_con)`**: a menu-driven, interactive session that
+  walks the whole check → fix → re-check → approve loop for a CMR workbook. Clean -> offers to
+  approve; flagged -> work through each flag one at a time (fix the value in the source workbook,
+  adjust the schema, or mark not-important/noted), re-run the DQ check, force-approve (with a typed
+  period-confirmation gate on top of the scriptable core's mandatory justification), print a
+  report, or exit -- all from one prompt.
+- **Pure orchestration, no new mutations of its own**: every effect goes through a function already
+  shipped in Phases 2-6 (`eri_cmr_dq_report()`, `eri_dq_flag_resolve()`, `eri_logs_resolve()`,
+  `eri_dq_schema_edit()`/`eri_dq_schema_submit()`, `eri_split_cmr()`, `eri_approve_cmr()`). The
+  wrapper holds no state of its own beyond one in-memory, per-call path cache (which local workbook
+  you're fixing this session) -- close it mid-review and run it again later, and it picks up
+  exactly where the log YAMLs say things are.
+- **Interactive only**: refuses to run non-interactively (checked via `rlang::is_interactive()`,
+  the seam `options(rlang_interactive = TRUE)` gives tests), with a clear pointer to the scriptable
+  core for scripts/CI.
+- **`rstudioapi` added to `Suggests` only** (never `Imports`), guarded behind an internal
+  `.eri_open_file()` -- opens a file in the RStudio editor when available, otherwise prints a path
+  most terminals already render as a clickable link.
+- **A live (semi-scripted) validation run against the `atlantis` sandbox caught a real design bug
+  before this shipped**: the loop originally re-ran the DQ check at the top of every iteration, so
+  marking a flag not-important -- which doesn't touch the underlying staged data -- would get
+  re-flagged as a brand-new "open" issue on the very next iteration, forever. Fixed by tracking the
+  flags tibble in-memory between iterations, applying triage decisions locally, and only
+  re-fetching from Azure on an explicit "Re-run the DQ check" action.
+- Also fixes a related gap found in the same pass: `eri_dq_flag_resolve()` only updates a flag's own
+  per-flag status, never the DQ log entry's own `status`/`handled` fields that `eri_approve_cmr()`
+  actually checks -- so marking every flag not-important/noted wouldn't by itself unblock approval.
+  The wrapper now closes out each such entry via `eri_logs_resolve()` (auto-summarizing from the
+  per-flag decisions) before offering to approve.
+
 # erifunctions 0.9.15
 
 ## `eri_approve_cmr()` force-approve path (Phase 6 of the DQ workflow redesign)

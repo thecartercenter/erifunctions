@@ -262,10 +262,20 @@ resolved, never left rotting the open backlog forever) with a note pointing back
 own log, and records `forced`/`justification`/`bypassed` on that log; `eri_audit()` renders both the
 forced approval and the bypass annotation in red with a `[FORCED]` prefix rather than folding them in
 as ordinary events — sequenced deliberately after Phase 5 so the override is born fully auditable,
-never before. Live-validated against a real atlantis force-approval end-to-end; (7) an interactive
-`eri_dq_review()` wrapper over the existing scriptable per-flag triage
-(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8) `eri_dq_export()` (PDF flag report) + guide
-convergence. Phases 7–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
+never before. Live-validated against a real atlantis force-approval end-to-end; (7)
+`eri_dq_review()`, an interactive wrapper over the existing scriptable core — **shipped**: pure
+orchestration in new `R/dq_review.R` (no new mutations of its own) over `eri_cmr_dq_report()`,
+`eri_dq_flag_resolve()`/`eri_logs_resolve()`, `eri_dq_schema_edit()`/`eri_dq_schema_submit()`,
+`eri_split_cmr()`, and `eri_approve_cmr()` (including its force path, with a typed
+period-confirmation gate this interactive layer adds on top of the scriptable core's mandatory
+justification); refuses to run non-interactively (`rlang::is_interactive()`); `rstudioapi` added
+to `Suggests` only, guarded behind `.eri_open_file()`. A semi-live validation run (real Azure core
+calls, only the prompt helpers scripted) caught a real design bug before it shipped: the loop
+originally re-ran the DQ check at the top of every iteration, so marking a flag not-important
+(which doesn't touch the underlying data) would get re-flagged as a brand-new "open" issue
+forever — fixed by tracking the flags tibble in-memory between loop iterations and only
+re-fetching on an explicit "Re-run" action; (8) `eri_dq_export()` (PDF flag report) + guide
+convergence. Phase 8 is not yet started.
 
 ---
 
