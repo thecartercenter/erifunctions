@@ -208,6 +208,7 @@ reference:
   - eri_logs
   - eri_logs_resolve
   - eri_audit
+  - print.eri_audit_trail
 
 - title: Feedback
   desc: File, read, triage, and summarise the team's internal feedback / ticket log.
