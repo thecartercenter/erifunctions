@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,9 +68,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.13/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.14" id="erifunctions-0914">erifunctions 0.9.14<a class="anchor" aria-label="anchor" href="#erifunctions-0914"></a></h2>
+<div class="section level3">
+<h3 id="eri_audit-a-chronological-event-level-audit-trail-phase-of-the-dq-workflow-redesign-0-9-14">
+<code>eri_audit()</code>: a chronological, event-level audit trail (Phase 5 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#eri_audit-a-chronological-event-level-audit-trail-phase-of-the-dq-workflow-redesign-0-9-14"></a></h3>
+<ul><li>
+<strong>New <code>eri_audit(country, disease, data_source, data_type, period)</code></strong>: reconstructs a single chronological timeline for a dataset, one row per <strong>event</strong> rather than one row per log file (the shape <a href="R/logs.R"><code>eri_logs()</code></a> is right for – “what needs my attention,” newest first). Events include a file staged, a CMR workbook split (with its routing plan), a DQ check run, each individual flag resolved (<code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code>), a whole log entry closed out (<code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>), and an approval – returned <strong>oldest first</strong> (a timeline reads forward), as a tibble with its own <code>cli</code>-rendered print method. <code>log_path</code> stays on every row so a power user can still drill into the raw YAML, but nobody has to follow paths by hand to answer “what happened to this dataset, and who signed off on it.”</li>
+<li>
+<strong>Cashes in <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>’s <code>dq_reviewed</code> cross-reference</strong>: an approval event’s detail shows exactly which DQ log(s) backed it, joining the two halves of the story that were previously only linked by a field a human had to go read.</li>
+<li>
+<strong>Every row also carries <code>source_hash</code></strong> (the MD5 identity hash recorded since Phase 1’s raw retention), when the entry has one – so <code><a href="../reference/eri_audit.html">eri_audit()</a></code> answers not just “what operation ran” but “which exact bytes were behind it,” without opening the raw YAML.</li>
+<li>
+<strong>No CMR-specific entry point needed.</strong> Leaving <code>disease</code>/<code>data_source</code>/<code>data_type</code> unscoped already enumerates every disease/channel/measure under <code>country</code> – for a CMR workbook that naturally includes the <code>rblf/cmr</code> split/approve logs <em>and</em> every fanned-out measure’s own logs in one call. Validated live against a real <code>atlantis</code> split → DQ-check → approve trail.</li>
+<li>New internal <code>.eri_log_axes()</code> factors the (country/disease/data_source/data_type/period) path-parsing logic that <code><a href="../reference/eri_logs.html">eri_logs()</a></code>’s row-flattener already had, so both readers of the same log files resolve the axes identically rather than risking independent drift.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.13" id="erifunctions-0913">erifunctions 0.9.13<a class="anchor" aria-label="anchor" href="#erifunctions-0913"></a></h2>
 <div class="section level3">
@@ -95,7 +111,7 @@
 <li>
 <strong>An override is retired automatically the moment its upstream changes</strong> – never kept forever, never silently discarded. On every load, the override’s recorded <code>base_hash</code> is compared against the current Azure/bundled schema; a mismatch renames the override aside (<code>{stem}.retired-&lt;timestamp&gt;.yaml</code>) and tells the DA why, so a maintainer’s real fix isn’t shadowed by a DA’s stale local copy, and the DA isn’t left silently reverted with no explanation.</li>
 <li>
-<strong>Never silent which schema actually ran.</strong> <code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> tags its return with <code>schema_source</code> (<code>"local_override"</code>/<code>"azure"</code>/<code>"bundled"</code>) and a <code>schema_hash</code>; <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> carries both into the <code>dq_result</code>; <code>.eri_dq_log_write()</code> records both in every <code>dq_flags</code> log entry. A DQ result produced under a modified schema is now always distinguishable, in the permanent log, from one produced under the canonical schema – load-bearing groundwork for the planned <code>eri_audit()</code> timeline (phase 5).</li>
+<strong>Never silent which schema actually ran.</strong> <code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> tags its return with <code>schema_source</code> (<code>"local_override"</code>/<code>"azure"</code>/<code>"bundled"</code>) and a <code>schema_hash</code>; <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> carries both into the <code>dq_result</code>; <code>.eri_dq_log_write()</code> records both in every <code>dq_flags</code> log entry. A DQ result produced under a modified schema is now always distinguishable, in the permanent log, from one produced under the canonical schema – load-bearing groundwork for the planned <code><a href="../reference/eri_audit.html">eri_audit()</a></code> timeline (phase 5).</li>
 <li>
 <strong>Phase 2 (CMR re-run hygiene) confirmed shipped and now validated end-to-end</strong>: those three landmine fixes (<code>supersede_staged</code> / ADR-0017, <code>eri_cmr_dq_report(supersede = TRUE)</code>, <code>excel_row</code> provenance) actually landed in v0.9.10, before the design consult was even commissioned. A live run against the <code>atlantis</code> training sandbox (split → flag an invalid district → fix → re-split with <code>supersede_staged</code> → re-report → <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>) confirmed exactly one file set gets promoted, with no leftover duplicate and no blocking log pileup; all test artifacts were cleaned up afterward. See <code>docs/roadmap.md</code>’s “DQ workflow redesign” entry.</li>
 </ul></div>
@@ -109,7 +125,7 @@
 <strong><code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> now archives the source file to <code>raw/</code> before doing anything else</strong>, under a timestamp-suffixed filename so repeat ingests never collide, then runs DQ and stages as before. This was previously a manual step DAs did themselves (as in the <code>da-ingest-guide.Rmd</code> sandbox walkthrough); it is now automatic on the fast path.</li>
 <li>
 <strong>Every op-log along the ingest/CMR path now carries a <code>source_hash</code></strong> (MD5 of the source file, used for identity, not security): <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>, <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code>, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>, and the <code>dq_flags</code> entries written by <code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code>/<code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>. <code><a href="../reference/eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code> surfaces it (falling back to <code>NA</code> for log entries written before this change).</li>
-<li>This is the traceability groundwork for the planned <code>eri_audit()</code> timeline function (phase 5 of the DQ workflow redesign, not to be confused with the V2 roadmap’s own “Phase 3”): being able to walk from a figure in a final table back through <code>processed</code> -&gt; <code>staged</code> -&gt; the exact <code>raw/</code> bytes and DQ review that approved them.</li>
+<li>This is the traceability groundwork for the planned <code><a href="../reference/eri_audit.html">eri_audit()</a></code> timeline function (phase 5 of the DQ workflow redesign, not to be confused with the V2 roadmap’s own “Phase 3”): being able to walk from a figure in a final table back through <code>processed</code> -&gt; <code>staged</code> -&gt; the exact <code>raw/</code> bytes and DQ review that approved them.</li>
 <li>
 <code>da-ingest-guide.Rmd</code> updated to describe the new automatic raw-archival step.</li>
 </ul></div>

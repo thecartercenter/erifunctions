@@ -1,5 +1,46 @@
 # Changelog
 
+## erifunctions 0.9.14
+
+### `eri_audit()`: a chronological, event-level audit trail (Phase 5 of the DQ workflow redesign)
+
+- **New `eri_audit(country, disease, data_source, data_type, period)`**:
+  reconstructs a single chronological timeline for a dataset, one row
+  per **event** rather than one row per log file (the shape
+  [`eri_logs()`](https://thecartercenter.github.io/erifunctions/news/R/logs.R)
+  is right for – “what needs my attention,” newest first). Events
+  include a file staged, a CMR workbook split (with its routing plan), a
+  DQ check run, each individual flag resolved
+  ([`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)),
+  a whole log entry closed out
+  ([`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)),
+  and an approval – returned **oldest first** (a timeline reads
+  forward), as a tibble with its own `cli`-rendered print method.
+  `log_path` stays on every row so a power user can still drill into the
+  raw YAML, but nobody has to follow paths by hand to answer “what
+  happened to this dataset, and who signed off on it.”
+- **Cashes in
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)’s
+  `dq_reviewed` cross-reference**: an approval event’s detail shows
+  exactly which DQ log(s) backed it, joining the two halves of the story
+  that were previously only linked by a field a human had to go read.
+- **Every row also carries `source_hash`** (the MD5 identity hash
+  recorded since Phase 1’s raw retention), when the entry has one – so
+  [`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+  answers not just “what operation ran” but “which exact bytes were
+  behind it,” without opening the raw YAML.
+- **No CMR-specific entry point needed.** Leaving
+  `disease`/`data_source`/`data_type` unscoped already enumerates every
+  disease/channel/measure under `country` – for a CMR workbook that
+  naturally includes the `rblf/cmr` split/approve logs *and* every
+  fanned-out measure’s own logs in one call. Validated live against a
+  real `atlantis` split → DQ-check → approve trail.
+- New internal `.eri_log_axes()` factors the
+  (country/disease/data_source/data_type/period) path-parsing logic that
+  [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)’s
+  row-flattener already had, so both readers of the same log files
+  resolve the axes identically rather than risking independent drift.
+
 ## erifunctions 0.9.13
 
 ### Feedback tickets gain context/attachments; `eri_dq_schema_submit()` packages a schema fix for a maintainer (Phase 4 of the DQ workflow redesign)
@@ -82,7 +123,9 @@ for the full design rationale.
   in every `dq_flags` log entry. A DQ result produced under a modified
   schema is now always distinguishable, in the permanent log, from one
   produced under the canonical schema – load-bearing groundwork for the
-  planned `eri_audit()` timeline (phase 5).
+  planned
+  [`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+  timeline (phase 5).
 - **Phase 2 (CMR re-run hygiene) confirmed shipped and now validated
   end-to-end**: those three landmine fixes (`supersede_staged` /
   ADR-0017, `eri_cmr_dq_report(supersede = TRUE)`, `excel_row`
@@ -121,7 +164,8 @@ traced back to them.
   [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md)
   surfaces it (falling back to `NA` for log entries written before this
   change).
-- This is the traceability groundwork for the planned `eri_audit()`
+- This is the traceability groundwork for the planned
+  [`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
   timeline function (phase 5 of the DQ workflow redesign, not to be
   confused with the V2 roadmap’s own “Phase 3”): being able to walk from
   a figure in a final table back through `processed` -\> `staged` -\>

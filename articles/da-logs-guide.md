@@ -204,7 +204,64 @@ They see the same failures, the same error messages, and, for anything
 already handled, *who* dealt with it and the note they left. No “what
 was going on with the DR upload last week?” guesswork.
 
-## 5. Clean up
+## 5. Reconstruct the full trail with `eri_audit()`
+
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+gives you one row **per log file**, newest first, the right shape for
+“what needs my attention.” A different question, “what actually happened
+to this dataset, in order, and who signed off on it,” needs one row
+**per event** instead — a flag’s own resolution is an event with its own
+actor and timestamp, nested inside the DQ log, and a triage close-out is
+a separate event again. That is what
+[`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+reconstructs.
+
+The `2024-01` data-quality flags from §1 are still just sitting there,
+unresolved — let’s actually finish that one so the trail below has
+something worth showing: fix one flag, note the other, and approve:
+
+``` r
+
+eri_dq_flag_resolve("atlantis/malaria/surveillance/case/logs/20260626_093000_dq_flags_2024-01.yaml::1",
+                     "fixed", note = "corrected typo in source")
+eri_dq_flag_resolve("atlantis/malaria/surveillance/case/logs/20260626_093000_dq_flags_2024-01.yaml::2",
+                     "not_important", note = "known template quirk")
+eri_approve("atlantis", "malaria", "surveillance", "2024-01", data_type = "case")
+#> ✔ Approved: 2024-01_atlantis_malaria.parquet
+```
+
+Now the full trail:
+
+``` r
+
+eri_audit("atlantis", "malaria", "surveillance", data_type = "case", period = "2024-01")
+#> 4 events across 2 logs.
+#> ── Audit trail ──────────────────────────────────────────
+#> atlantis / malaria / surveillance / case / period 2024-01
+#>
+#> • 2026-06-26T09:30:00Z -- dq_flags (da.one): 2 flags (schema: bundled)
+#> • 2026-06-26T09:45:00Z -- flag_resolved (da.one): flag #1 -> fixed (corrected typo in source)
+#> • 2026-06-26T09:46:00Z -- flag_resolved (da.one): flag #2 -> not_important (known template quirk)
+#> • 2026-06-26T11:00:00Z -- eri_approve (da.one): 2024-01_atlantis_malaria.parquet
+```
+
+Oldest first, deliberately the opposite order of
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+— a timeline reads forward. The result is still a tibble (`log_path`
+stays on every row if you need to drill into the raw YAML), so you can
+filter or join it like any other data; the `cli` rendering above is just
+how it prints.
+
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+records exactly which DQ reviews backed each CMR approval (its
+`dq_reviewed` field);
+[`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+is what cashes that in — leave `disease`/`data_source`/`data_type`
+unscoped for a CMR workbook and the trail spans the split/approve
+coordinate *and* every fanned-out measure automatically, no CMR-specific
+audit function needed.
+
+## 6. Clean up
 
 If you ran this in the sandbox, remove the `atlantis` namespace (this
 deletes its logs too):

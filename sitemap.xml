@@ -72,6 +72,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_artifact_list.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_artifact_pull.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_artifact_upload.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_audit.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_bbox_expand.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_brand_colors.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/eri_brand_ggplot_theme.html</loc></url>
@@ -203,6 +204,7 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/list_odk_projects.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/print.eri_audit_trail.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/print.survey_status.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/read_excel_from_azure.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.html</loc></url>

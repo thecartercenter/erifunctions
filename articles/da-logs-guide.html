@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging the error &amp; data-quality log backlog (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.13/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-logs-guide.Rmd</code></div>
     </div>
 
@@ -279,11 +279,57 @@ left. No “what was going on with the DR upload last week?”
 guesswork.</p>
 </div>
 <div class="section level2">
-<h2 id="clean-up">5. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
+<h2 id="audit">5. Reconstruct the full trail with <code>eri_audit()</code><a class="anchor" aria-label="anchor" href="#audit"></a>
+</h2>
+<p><code><a href="../reference/eri_logs.html">eri_logs()</a></code> gives you one row <strong>per log
+file</strong>, newest first, the right shape for “what needs my
+attention.” A different question, “what actually happened to this
+dataset, in order, and who signed off on it,” needs one row <strong>per
+event</strong> instead — a flag’s own resolution is an event with its
+own actor and timestamp, nested inside the DQ log, and a triage
+close-out is a separate event again. That is what <a href="../reference/eri_audit.html"><code>eri_audit()</code></a>
+reconstructs.</p>
+<p>The <code>2024-01</code> data-quality flags from §1 are still just
+sitting there, unresolved — let’s actually finish that one so the trail
+below has something worth showing: fix one flag, note the other, and
+approve:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/case/logs/20260626_093000_dq_flags_2024-01.yaml::1"</span>,</span>
+<span>                     <span class="st">"fixed"</span>, note <span class="op">=</span> <span class="st">"corrected typo in source"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve</a></span><span class="op">(</span><span class="st">"atlantis/malaria/surveillance/case/logs/20260626_093000_dq_flags_2024-01.yaml::2"</span>,</span>
+<span>                     <span class="st">"not_important"</span>, note <span class="op">=</span> <span class="st">"known template quirk"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/eri_approve.html">eri_approve</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, <span class="st">"2024-01"</span>, data_type <span class="op">=</span> <span class="st">"case"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ Approved: 2024-01_atlantis_malaria.parquet</span></span></code></pre></div>
+<p>Now the full trail:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_audit.html">eri_audit</a></span><span class="op">(</span><span class="st">"atlantis"</span>, <span class="st">"malaria"</span>, <span class="st">"surveillance"</span>, data_type <span class="op">=</span> <span class="st">"case"</span>, period <span class="op">=</span> <span class="st">"2024-01"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 4 events across 2 logs.</span></span>
+<span><span class="co">#&gt; ── Audit trail ──────────────────────────────────────────</span></span>
+<span><span class="co">#&gt; atlantis / malaria / surveillance / case / period 2024-01</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt; • 2026-06-26T09:30:00Z -- dq_flags (da.one): 2 flags (schema: bundled)</span></span>
+<span><span class="co">#&gt; • 2026-06-26T09:45:00Z -- flag_resolved (da.one): flag #1 -&gt; fixed (corrected typo in source)</span></span>
+<span><span class="co">#&gt; • 2026-06-26T09:46:00Z -- flag_resolved (da.one): flag #2 -&gt; not_important (known template quirk)</span></span>
+<span><span class="co">#&gt; • 2026-06-26T11:00:00Z -- eri_approve (da.one): 2024-01_atlantis_malaria.parquet</span></span></code></pre></div>
+<p>Oldest first, deliberately the opposite order of
+<code><a href="../reference/eri_logs.html">eri_logs()</a></code> — a timeline reads forward. The result is still
+a tibble (<code>log_path</code> stays on every row if you need to drill
+into the raw YAML), so you can filter or join it like any other data;
+the <code>cli</code> rendering above is just how it prints.</p>
+<p><code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> records exactly which DQ reviews
+backed each CMR approval (its <code>dq_reviewed</code> field);
+<code><a href="../reference/eri_audit.html">eri_audit()</a></code> is what cashes that in — leave
+<code>disease</code>/<code>data_source</code>/<code>data_type</code>
+unscoped for a CMR workbook and the trail spans the split/approve
+coordinate <em>and</em> every fanned-out measure automatically, no
+CMR-specific audit function needed.</p>
+</div>
+<div class="section level2">
+<h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
 </h2>
 <p>If you ran this in the sandbox, remove the <code>atlantis</code>
 namespace (this deletes its logs too):</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="co"># eri_dir_delete() removes the namespace (logs and all) recursively, in-package.</span></span>
 <span><span class="fu"><a href="../reference/eri_dir_delete.html">eri_dir_delete</a></span><span class="op">(</span><span class="st">"atlantis"</span>, azcontainer <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span></code></pre></div>

@@ -195,6 +195,15 @@ Persist data-quality flags and triage the error / DQ log backlog.
 - [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
   : Mark a log entry as handled
 
+- [`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+  **\[experimental\]** : Reconstruct a chronological audit trail for a
+  dataset
+
+- [`print(`*`<eri_audit_trail>`*`)`](https://thecartercenter.github.io/erifunctions/reference/print.eri_audit_trail.md)
+  :
+
+  Print method for an `eri_audit_trail`
+
 ## Feedback
 
 File, read, triage, and summarise the team’s internal feedback / ticket

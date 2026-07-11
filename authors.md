@@ -8,15 +8,15 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/thecartercenter/erifunctions/blob/v0.9.13/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/thecartercenter/erifunctions/blob/main/DESCRIPTION)
 
 Kishore N (2026). *erifunctions: ERI team functions*. R package version
-0.9.13, <https://github.com/thecartercenter/erifunctions>.
+0.9.14, <https://github.com/thecartercenter/erifunctions>.
 
     @Manual{,
       title = {erifunctions: ERI team functions},
       author = {Nishant Kishore},
       year = {2026},
-      note = {R package version 0.9.13},
+      note = {R package version 0.9.14},
       url = {https://github.com/thecartercenter/erifunctions},
     }
