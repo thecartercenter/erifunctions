@@ -40,6 +40,13 @@
   already-correct order, masking the bug). Fixed the format string and
   rewrote the test to insert events out of order, so it can actually
   tell a working sort from one that silently does nothing.
+- Also fixes a print crash found in review:
+  [`print.eri_audit_trail()`](https://thecartercenter.github.io/erifunctions/reference/print.eri_audit_trail.md)’s
+  red `[FORCED]` row built its message as a plain string, then passed
+  that finished string to `cli` as the glue *template* itself rather
+  than interpolating it as a variable – a literal `{` in a DA-typed
+  `justification` (exactly the kind of free text this phase’s design
+  relies on) crashed the entire print, not just that row.
 
 ## erifunctions 0.9.14
 
