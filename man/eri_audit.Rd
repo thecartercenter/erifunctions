@@ -21,16 +21,24 @@ isn't the job this function is scoped for.}
 \item{disease, data_source, data_type}{\code{chr} or \code{NULL} Narrow further; any
 left \code{NULL} is enumerated from the blob (same scoping as \code{\link[=eri_logs]{eri_logs()}}).}
 
-\item{period}{\code{chr} or \code{NULL} Restrict to one reporting period.}
+\item{period}{\code{chr} or \code{NULL} Restrict to one reporting period. Matched as
+an exact string against the value recorded on each entry (the codebase
+has no single canonical period format across sources — CMR periods look
+like \code{"202605"}, surveillance periods like \code{"2024-01"}); if nothing
+matches but the scope did contain events, the message lists which
+periods were actually found, so a format mismatch is diagnosable.}
 
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
 A tibble, \strong{oldest first}, with columns \code{timestamp}, \code{event},
 \code{actor}, \code{detail}, \code{log_path}, \code{country}, \code{disease}, \code{data_source},
-\code{data_type}, \code{period}. Class \code{eri_audit_trail}; printing it renders a
-\code{cli}-formatted timeline — the tibble itself is still the API (filter,
-join, whatever you need).
+\code{data_type}, \code{period}, \code{source_hash} (an MD5 identity hash of the source
+file the entry's operation ran against, when one was recorded — lets you
+trace which exact bytes are behind a given step without opening the raw
+YAML). Class \code{eri_audit_trail}; printing it renders a \code{cli}-formatted
+timeline — the tibble itself is still the API (filter, join, whatever
+you need).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

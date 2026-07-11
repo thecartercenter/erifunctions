@@ -14,6 +14,9 @@
 - **Cashes in `eri_approve_cmr()`'s `dq_reviewed` cross-reference**: an approval event's detail shows
   exactly which DQ log(s) backed it, joining the two halves of the story that were previously only
   linked by a field a human had to go read.
+- **Every row also carries `source_hash`** (the MD5 identity hash recorded since Phase 1's raw
+  retention), when the entry has one -- so `eri_audit()` answers not just "what operation ran" but
+  "which exact bytes were behind it," without opening the raw YAML.
 - **No CMR-specific entry point needed.** Leaving `disease`/`data_source`/`data_type` unscoped already
   enumerates every disease/channel/measure under `country` -- for a CMR workbook that naturally
   includes the `rblf/cmr` split/approve logs *and* every fanned-out measure's own logs in one call.

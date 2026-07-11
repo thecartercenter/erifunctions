@@ -127,6 +127,34 @@ test_that(".eri_audit_events ignores an untriaged (handled = FALSE) entry's tria
   expect_false(any(vapply(out, function(e) e$event, character(1L)) == "log_resolved"))
 })
 
+test_that(".eri_audit_events produces zero events for an unrecognized envelope shape (no operation/parameters/steps/flags)", {
+  # A malformed/future-shaped entry -- must NOT fall through to a garbage
+  # all-NA event row (the bug this test guards against: coalescing a missing
+  # `operation` to NA_character_ before the not-null check made the generic
+  # branch's condition always true).
+  entry <- list(status = "weird_future_shape")
+  out <- .eri_audit_events(entry, "atlantis/x/y/logs/f.yaml")
+  expect_length(out, 0L)
+})
+
+test_that(".eri_audit_events produces dq_flags + every flag_resolved + log_resolved together for one fully-triaged entry", {
+  entry <- list(
+    operation = "dq_flags", analyst = "u", timestamp = "2026-06-01T09:30:00Z",
+    parameters = list(country = "atlantis", disease = "oncho", data_source = "programmatic",
+                      data_type = "treatment", period = "202607"),
+    status = "needs_review", n_flags = 2L,
+    flags = list(
+      list(index = 1, status = "fixed", resolved_by = "dana", resolved_at = "2026-06-02T08:00:00Z", note = NA_character_),
+      list(index = 2, status = "not_important", resolved_by = "dana", resolved_at = "2026-06-02T08:01:00Z", note = NA_character_)
+    ),
+    triage = list(handled = TRUE, handled_by = "maintainer", handled_at = "2026-06-03T10:00:00Z",
+                 note = "2 fixed, 1 not important")
+  )
+  out <- .eri_audit_events(entry, "atlantis/oncho/programmatic/treatment/logs/f.yaml")
+  events <- vapply(out, function(e) e$event, character(1L))
+  expect_equal(events, c("dq_flags", "flag_resolved", "flag_resolved", "log_resolved"))
+})
+
 # --- eri_audit(): end-to-end against a mocked backlog -----------------------
 
 local_audit_store <- function(store) {
@@ -230,4 +258,55 @@ test_that("print.eri_audit_trail renders without error for both empty and popula
 
   empty <- .eri_audit_empty()
   expect_no_error(cli::cli_fmt(print(empty)))
+})
+
+test_that("eri_audit carries source_hash from the entry onto every event row", {
+  store <- list()
+  store[["atlantis/oncho/programmatic/treatment/logs/a.yaml"]] <- list(
+    operation = "dq_flags", analyst = "u", timestamp = "2026-06-01T09:30:00Z",
+    parameters = list(country = "atlantis", disease = "oncho", data_source = "programmatic",
+                      data_type = "treatment", period = "202607"),
+    source_hash = "abc123", status = "needs_review", n_flags = 1L,
+    flags = list(list(index = 1, status = "fixed", resolved_by = "dana",
+                      resolved_at = "2026-06-02T08:00:00Z", note = NA_character_))
+  )
+  local_audit_store(store)
+
+  out <- eri_audit("atlantis", "oncho", "programmatic", "treatment")
+  expect_true(all(out$source_hash == "abc123"))
+})
+
+test_that("eri_audit sorts a fractional-second timestamp correctly relative to whole-second ones", {
+  # A raw string sort would put "...12:00:01.500Z" BEFORE "...12:00:01Z",
+  # even though it is chronologically AFTER -- "." sorts before "Z" in ASCII.
+  store <- list()
+  store[["atlantis/oncho/programmatic/treatment/logs/a.yaml"]] <- list(
+    operation = "eri_split_cmr", analyst = "u", started_at = "2026-06-01T12:00:01Z",
+    parameters = list(country = "atlantis", period = "202607"), status = "success"
+  )
+  store[["atlantis/oncho/programmatic/treatment/logs/b.yaml"]] <- list(
+    operation = "eri_approve", analyst = "u", completed_at = "2026-06-01T12:00:01.500Z",
+    parameters = list(country = "atlantis", disease = "oncho", data_source = "programmatic",
+                      data_type = "treatment", period = "202607"), status = "success"
+  )
+  local_audit_store(store)
+
+  out <- eri_audit("atlantis", "oncho", "programmatic", "treatment")
+  expect_equal(out$event, c("eri_split_cmr", "eri_approve"))
+})
+
+test_that("eri_audit informs which periods were actually found when the period filter matches nothing", {
+  store <- list()
+  store[["atlantis/oncho/programmatic/treatment/logs/a.yaml"]] <- list(
+    operation = "eri_approve", analyst = "u", completed_at = "2026-06-01T10:00:00Z",
+    parameters = list(country = "atlantis", disease = "oncho", data_source = "programmatic",
+                      data_type = "treatment", period = "202607"), status = "success"
+  )
+  local_audit_store(store)
+
+  expect_message(
+    out <- eri_audit("atlantis", "oncho", "programmatic", "treatment", period = "2024-06"),
+    "202607"
+  )
+  expect_equal(nrow(out), 0L)
 })

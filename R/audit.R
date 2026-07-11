@@ -18,12 +18,19 @@
 #' @keywords internal
 .eri_audit_events <- function(entry, log_path) {
   axes <- .eri_log_axes(entry, log_path)
+  # Identity for the file this entry's operation actually ran against (Phase 1)
+  # -- one hash per entry, not per event, since it describes the run/file the
+  # whole entry is about. Carried onto every event row so a power user can
+  # trace which exact bytes backed a given step without opening the raw YAML
+  # via log_path -- the "walk a value back to its source bytes" half of the
+  # audit story that source_hash was built for.
+  source_hash <- entry$source_hash %||% NA_character_
   mk <- function(timestamp, event, actor, detail) {
     list(timestamp = .eri_na_chr(timestamp), event = event, actor = .eri_na_chr(actor),
          detail = if (is.null(detail)) NA_character_ else detail, log_path = log_path,
          country = axes$country, disease = axes$disease,
          data_source = axes$data_source, data_type = axes$data_type,
-         period = axes$period)
+         period = axes$period, source_hash = source_hash)
   }
 
   events <- list()
@@ -48,11 +55,15 @@
         )
       }
     }
-  } else if (!is.null(entry$parameters) || !is.null(entry$steps) || !is.null(op)) {
+  } else if (!is.null(entry$operation) || !is.null(entry$parameters) || !is.null(entry$steps)) {
     # Generic op-log envelope: eri_ingest, eri_stage_cmr, eri_split_cmr,
     # eri_approve, eri_approve_cmr, eri_split_cmr_dryrun, ... -- one event for
     # the whole entry (not one per internal `step`, which would fragment the
-    # timeline into noise the vision doesn't ask for).
+    # timeline into noise the vision doesn't ask for). Gated on the RAW
+    # `entry$operation` here, not the `op` local (which %||%-coalesces a
+    # missing operation to NA_character_, a non-NULL value) -- an entry with
+    # none of these three fields at all (an unrecognized/malformed envelope)
+    # falls through and produces no event, rather than a garbage all-NA row.
     ts <- entry$completed_at %||% entry$timestamp %||% entry$started_at
     detail <- NULL
     if (!is.null(entry$error)) {
@@ -94,10 +105,23 @@
     timestamp = character(), event = character(), actor = character(),
     detail = character(), log_path = character(), country = character(),
     disease = character(), data_source = character(), data_type = character(),
-    period = character()
+    period = character(), source_hash = character()
   )
   class(out) <- c("eri_audit_trail", class(out))
   out
+}
+
+# Parses the ISO-8601 UTC timestamps this package's own writers emit
+# ("%Y-%m-%dT%H:%M:%SZ", format(Sys.time(), ...)) to POSIXct for a genuine
+# chronological sort. A raw string sort is only reliable while every
+# timestamp shares identical precision: "." sorts before "Z" in ASCII, so a
+# fractional-second stamp (a few other writers in this package already use
+# one, e.g. feedback.R's %OS3Z) would otherwise sort BEFORE a whole-second
+# stamp that is actually later. %OS accepts an optional fractional part, so
+# this handles both forms; unparseable strings become NA and sort last.
+#' @keywords internal
+.eri_audit_parse_ts <- function(x) {
+  suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%OSZ", tz = "UTC"))
 }
 
 #' Reconstruct a chronological audit trail for a dataset
@@ -129,13 +153,21 @@
 #'   isn't the job this function is scoped for.
 #' @param disease,data_source,data_type `chr` or `NULL` Narrow further; any
 #'   left `NULL` is enumerated from the blob (same scoping as [eri_logs()]).
-#' @param period `chr` or `NULL` Restrict to one reporting period.
+#' @param period `chr` or `NULL` Restrict to one reporting period. Matched as
+#'   an exact string against the value recorded on each entry (the codebase
+#'   has no single canonical period format across sources — CMR periods look
+#'   like `"202605"`, surveillance periods like `"2024-01"`); if nothing
+#'   matches but the scope did contain events, the message lists which
+#'   periods were actually found, so a format mismatch is diagnosable.
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @returns A tibble, **oldest first**, with columns `timestamp`, `event`,
 #'   `actor`, `detail`, `log_path`, `country`, `disease`, `data_source`,
-#'   `data_type`, `period`. Class `eri_audit_trail`; printing it renders a
-#'   `cli`-formatted timeline — the tibble itself is still the API (filter,
-#'   join, whatever you need).
+#'   `data_type`, `period`, `source_hash` (an MD5 identity hash of the source
+#'   file the entry's operation ran against, when one was recorded — lets you
+#'   trace which exact bytes are behind a given step without opening the raw
+#'   YAML). Class `eri_audit_trail`; printing it renders a `cli`-formatted
+#'   timeline — the tibble itself is still the API (filter, join, whatever
+#'   you need).
 #' @examples
 #' \dontrun{
 #' eri_audit("sdn", period = "202605")                      # a whole CMR period
@@ -191,12 +223,29 @@ eri_audit <- function(country, disease = NULL, data_source = NULL, data_type = N
     disease     = vapply(rows, function(r) .eri_na_chr(r$disease),     character(1L)),
     data_source = vapply(rows, function(r) .eri_na_chr(r$data_source), character(1L)),
     data_type   = vapply(rows, function(r) .eri_na_chr(r$data_type),   character(1L)),
-    period      = vapply(rows, function(r) .eri_na_chr(r$period),      character(1L))
+    period      = vapply(rows, function(r) .eri_na_chr(r$period),      character(1L)),
+    source_hash = vapply(rows, function(r) .eri_na_chr(r$source_hash), character(1L))
   )
 
-  if (!is.null(period)) out <- out[!is.na(out$period) & out$period == period, , drop = FALSE]
+  if (!is.null(period)) {
+    # period is an exact string match with no cross-format normalization (the
+    # codebase has no single canonical period format -- CMR periods look like
+    # "202605", surveillance periods like "2024-01"). A silent zero-row result
+    # would read identically to "genuinely nothing happened"; when candidate
+    # events exist but none match, say what periods actually ARE present, so
+    # a format mismatch is diagnosable rather than mistaken for an empty trail.
+    available <- unique(stats::na.omit(out$period))
+    out <- out[!is.na(out$period) & out$period == period, , drop = FALSE]
+    if (nrow(out) == 0L && length(available) > 0L) {
+      cli::cli_inform(c(
+        "No events match period {.val {period}}.",
+        "i" = "Periods found in this scope: {.val {available}}."
+      ))
+      return(.eri_audit_empty())
+    }
+  }
 
-  out <- out[order(out$timestamp), , drop = FALSE]  # oldest first -- a timeline reads forward
+  out <- out[order(.eri_audit_parse_ts(out$timestamp)), , drop = FALSE]  # oldest first -- a timeline reads forward
 
   if (nrow(out) == 0L) {
     cli::cli_inform("No audit events match the specified filters.")

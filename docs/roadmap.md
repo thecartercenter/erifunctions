@@ -242,10 +242,15 @@ a `dq`-area ticket with an auto-drafted human-readable diff against the schema i
 alias/allowed-values edits shown as set diffs, everything else as before → after), the full override
 file attached, and the four ADR-0012 axes as `context` — a maintainer folds it in by updating the
 Azure `schemas/` blob directly (`load_dq_schema()` already prefers it), not by cutting a release; (5)
-`eri_audit()` — **shipped**: a new `R/audit.R` explodes every log entry across the given axes into
-one row per event (a file staged, a workbook split with its routing plan, a DQ check run, each
-individual flag resolved, a whole log entry closed out, an approval — cashing in
-`eri_approve_cmr()`'s `dq_reviewed` cross-reference), returned as a single chronological
+`eri_audit()` — **shipped**, as an event-level operation timeline (this note originally described it
+as walking a value's byte-level lineage `processed → staged → raw`; the actual Q5 design settled on
+reconstructing the sequence of *operations*, not literally re-deriving lineage from raw bytes — the
+gap is closed by also carrying `source_hash`, below, rather than by a separate lineage walker): a new
+`R/audit.R` explodes every log entry across the given axes into one row per event (a file staged, a
+workbook split with its routing plan, a DQ check run, each individual flag resolved, a whole log
+entry closed out, an approval — cashing in `eri_approve_cmr()`'s `dq_reviewed` cross-reference), each
+row also carrying the entry's `source_hash` when one was recorded (Phase 1) so a power user CAN trace
+which exact bytes backed a step, not only which operation ran; returned as a single chronological
 (oldest-first) tibble with its own `cli`-rendered print method; no CMR-specific entry point needed
 (leaving the axes unscoped already enumerates the `rblf/cmr` split/approve coordinate alongside
 every fanned-out measure — validated live against a real atlantis split → dq → approve trail);
