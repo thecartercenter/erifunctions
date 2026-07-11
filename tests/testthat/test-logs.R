@@ -594,4 +594,31 @@ test_that("eri_logs_resolve adds a triage block and preserves the record", {
   expect_equal(captured$triage$note, "Re-ran after the source fixed the file.")
   expect_equal(captured$operation, "eri_approve")   # original record preserved
   expect_equal(captured$status, "error")
+  expect_false(captured$triage$forced)   # default: a genuine resolution, not a bypass
+})
+
+test_that("eri_logs_resolve(forced = TRUE) marks the triage block as a bypass, not a genuine resolution", {
+  path  <- paste0(scoped_dir, "/20260604_120000_eri_approve_2024-01.yaml")
+  entry <- make_op_log()
+  captured <- NULL
+
+  local_mocked_bindings(
+    storage_download = function(container, src, dest, ...) {
+      yaml::write_yaml(entry, dest); invisible(dest)
+    },
+    storage_upload = function(container, src, dest, ...) {
+      captured <<- yaml::read_yaml(src); invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  res <- eri_logs_resolve(path, note = "Bypassed by a forced approval.", forced = TRUE)
+  expect_true(res)
+  expect_true(captured$triage$handled)  # still drops out of the open backlog
+  expect_true(captured$triage$forced)
+  expect_equal(captured$triage$note, "Bypassed by a forced approval.")
 })

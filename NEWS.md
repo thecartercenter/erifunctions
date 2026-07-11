@@ -1,3 +1,32 @@
+# erifunctions 0.9.15
+
+## `eri_approve_cmr()` force-approve path (Phase 6 of the DQ workflow redesign)
+
+- **New `eri_approve_cmr(..., force = FALSE, justification = NULL)`**: for the rare case an
+  outstanding measure must be promoted anyway (e.g. a known template quirk confirmed with the
+  country, under a deadline). `force = TRUE` requires a non-empty `justification` -- no interactive
+  confirmation prompt here, since this scriptable core has to keep working unattended in scripts/CI;
+  that extra human friction belongs in the planned interactive `eri_dq_review()` wrapper (Phase 7),
+  not this function.
+- **Bypassed measures are annotated, never silently resolved.** Each bypassed `dq_flags` entry (when
+  one exists -- a "never DQ-checked" bypass has nothing to annotate) is marked `handled` via
+  `eri_logs_resolve(..., forced = TRUE)`, which now records `forced` in the triage block alongside a
+  note pointing back at the approval's own log. The open backlog stays clean without ever pretending
+  the flag was genuinely reviewed.
+- **The approval's own log records `forced`, `justification`, and exactly what it bypassed.**
+- **`eri_audit()` renders a forced approval and its bypass annotations in red with a `[FORCED]`
+  prefix**, rather than folding them in as ordinary events -- the one part of a trail that was *not*
+  a genuine review. New `forced` column on every event row.
+- Sequenced deliberately after Phase 5 (`eri_audit()`): the override is born fully auditable, never
+  before. Live-validated against a real `atlantis` forced approval end-to-end.
+- Also fixes a real bug found during this phase's validation: `eri_audit()`'s chronological sort used
+  a malformed date format string (missing `%M`) that silently failed to parse *every* timestamp,
+  degrading the sort to a no-op (original file-read order, not chronological order) with no error or
+  warning -- caught by re-running the live validation, not by the unit test written for it (which
+  happened to insert events in already-correct order, masking the bug). Fixed the format string and
+  rewrote the test to insert events out of order, so it can actually tell a working sort from one that
+  silently does nothing.
+
 # erifunctions 0.9.14
 
 ## `eri_audit()`: a chronological, event-level audit trail (Phase 5 of the DQ workflow redesign)

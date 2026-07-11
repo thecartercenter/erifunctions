@@ -36,9 +36,10 @@ A tibble, \strong{oldest first}, with columns \code{timestamp}, \code{event},
 \code{data_type}, \code{period}, \code{source_hash} (an MD5 identity hash of the source
 file the entry's operation ran against, when one was recorded — lets you
 trace which exact bytes are behind a given step without opening the raw
-YAML). Class \code{eri_audit_trail}; printing it renders a \code{cli}-formatted
-timeline — the tibble itself is still the API (filter, join, whatever
-you need).
+YAML), \code{forced} (\code{lgl}; \code{TRUE} for a forced \code{eri_approve_cmr()} approval
+or a bypass annotation it left behind). Class \code{eri_audit_trail}; printing
+it renders a \code{cli}-formatted timeline — the tibble itself is still the
+API (filter, join, whatever you need).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -56,6 +57,11 @@ approval (its \code{dq_reviewed} field); this is the function that cashes that
 in — \code{log_path} stays on every row so a power user can still drill into the
 raw YAML, but nobody should \emph{have} to follow paths by hand to answer "what
 happened to this dataset, and who signed off on it."
+
+A forced approval (\code{\link[=eri_approve_cmr]{eri_approve_cmr()}}'s \code{force = TRUE}) and the bypass
+annotations it leaves on the measures it overrode both render prominently
+here (\code{forced = TRUE}, printed in red) rather than folding in as an
+ordinary event — the one thing in a trail that was \emph{not} a genuine review.
 
 No CMR-specific entry point is needed: leaving \code{disease}/\code{data_source}/
 \code{data_type} \code{NULL} (the default) already enumerates every disease/channel/
