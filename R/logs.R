@@ -107,15 +107,19 @@
   unique(dirs)
 }
 
-# Flatten one parsed log YAML into a single backlog row (tolerant of the rich
-# pipeline envelope, the flat ODK envelope, and the dq_flags envelope).
+# Derive the (country, disease, data_source, data_type, period) axes for one
+# log entry -- shared by .eri_log_flatten() (eri_logs()'s backlog row) and
+# .eri_audit_events() (eri_audit()'s timeline rows, in audit.R), so the two
+# readers of the same log files can't independently drift on how the axes
+# are resolved. The blob path
+# `{country}/{disease}/{data_source}[/{data_type}]/logs/{file}.yaml` is
+# authoritative for country/disease/data_source/data_type -- legacy envelopes
+# overloaded `parameters$data_type` with the channel value, so the path wins
+# there; `parameters` is the fallback for operations (eri_odk_sync,
+# eri_stage_cmr) that don't record every scoping field, and the only source
+# for `period`, which isn't part of the path.
 #' @keywords internal
-.eri_log_flatten <- function(entry, log_path) {
-  # Some operations (eri_odk_sync, eri_stage_cmr) don't record every scoping
-  # field in `parameters`; the values are unambiguous in the blob path
-  # `{country}/{disease}/{data_source}[/{data_type}]/logs/{file}.yaml`, so fall
-  # back to that. The path is authoritative for the channel/measure axes, since
-  # legacy envelopes overloaded `parameters$data_type` with the channel value.
+.eri_log_axes <- function(entry, log_path) {
   parts   <- strsplit(log_path, "/", fixed = TRUE)[[1]]
   logs_at <- which(parts == "logs")
   logs_at <- if (length(logs_at)) logs_at[length(logs_at)] else NA_integer_
@@ -130,6 +134,22 @@
     x <- .eri_na_chr(x)
     if (is.na(x)) fallback else x
   }
+
+  list(
+    country     = coalesce_chr(entry$parameters$country, path_country),
+    disease     = coalesce_chr(entry$parameters$disease, path_disease),
+    # Channel/measure: trust the path (legacy envelopes overloaded data_type).
+    data_source = coalesce_chr(path_source,  entry$parameters$data_source),
+    data_type   = coalesce_chr(path_measure, NA_character_),
+    period      = .eri_na_chr(entry$parameters$period)
+  )
+}
+
+# Flatten one parsed log YAML into a single backlog row (tolerant of the rich
+# pipeline envelope, the flat ODK envelope, and the dq_flags envelope).
+#' @keywords internal
+.eri_log_flatten <- function(entry, log_path) {
+  axes <- .eri_log_axes(entry, log_path)
 
   ts <- entry$completed_at %||% entry$timestamp %||% entry$started_at
   summary <- if (!is.null(entry$error)) {
@@ -147,17 +167,16 @@
     0L
   }
   list(
-    log_path   = log_path,
-    timestamp  = .eri_na_chr(ts),
-    operation  = .eri_na_chr(entry$operation),
-    status     = .eri_na_chr(entry$status),
-    analyst    = .eri_na_chr(entry$analyst),
-    country     = coalesce_chr(entry$parameters$country, path_country),
-    disease     = coalesce_chr(entry$parameters$disease, path_disease),
-    # Channel/measure: trust the path (legacy envelopes overloaded data_type).
-    data_source = coalesce_chr(path_source,  entry$parameters$data_source),
-    data_type   = coalesce_chr(path_measure, NA_character_),
-    period      = .eri_na_chr(entry$parameters$period),
+    log_path    = log_path,
+    timestamp   = .eri_na_chr(ts),
+    operation   = .eri_na_chr(entry$operation),
+    status      = .eri_na_chr(entry$status),
+    analyst     = .eri_na_chr(entry$analyst),
+    country     = axes$country,
+    disease     = axes$disease,
+    data_source = axes$data_source,
+    data_type   = axes$data_type,
+    period      = axes$period,
     summary    = .eri_na_chr(summary),
     n_issues   = .eri_na_int(n_issues),
     handled    = isTRUE(entry$triage$handled),

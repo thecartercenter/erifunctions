@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.13 · **Status:** Active development
+**Version:** 0.9.14 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -258,6 +258,7 @@ eri_catalog_verify()
 | `eri_logs(country, disease, data_source, data_type)` | Read the operation / DQ-flag triage backlog as one tibble |
 | `eri_logs_resolve(log_path, note)` | Close out a whole log entry (auto-summarizes from per-flag decisions if triaged) |
 | `eri_dq_flag_resolve(flag_id, status, note)` | Triage one DQ flag at a time (`not_important`/`fixed`/`noted`) |
+| `eri_audit(country, disease, data_source, data_type, period)` | Reconstruct a chronological, event-level audit trail (staged/split/DQ-run/flag-resolved/approved) |
 
 ### Feedback
 

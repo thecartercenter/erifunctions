@@ -207,6 +207,7 @@ reference:
   - eri_dq_flag_resolve
   - eri_logs
   - eri_logs_resolve
+  - eri_audit
 
 - title: Feedback
   desc: File, read, triage, and summarise the team's internal feedback / ticket log.

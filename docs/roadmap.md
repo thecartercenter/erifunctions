@@ -242,10 +242,16 @@ a `dq`-area ticket with an auto-drafted human-readable diff against the schema i
 alias/allowed-values edits shown as set diffs, everything else as before → after), the full override
 file attached, and the four ADR-0012 axes as `context` — a maintainer folds it in by updating the
 Azure `schemas/` blob directly (`load_dq_schema()` already prefers it), not by cutting a release; (5)
-`eri_audit()` — walk a canonical value back through `processed → staged → raw` and the DQ review that
-approved it; (6) `eri_approve_cmr()` force-approve path; (7) an interactive `eri_dq_review()` wrapper
-over the existing scriptable per-flag triage (`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8)
-`eri_dq_export()` (PDF flag report) + guide convergence. Phases 5–8 are not yet started; each ships as
+`eri_audit()` — **shipped**: a new `R/audit.R` explodes every log entry across the given axes into
+one row per event (a file staged, a workbook split with its routing plan, a DQ check run, each
+individual flag resolved, a whole log entry closed out, an approval — cashing in
+`eri_approve_cmr()`'s `dq_reviewed` cross-reference), returned as a single chronological
+(oldest-first) tibble with its own `cli`-rendered print method; no CMR-specific entry point needed
+(leaving the axes unscoped already enumerates the `rblf/cmr` split/approve coordinate alongside
+every fanned-out measure — validated live against a real atlantis split → dq → approve trail);
+(6) `eri_approve_cmr()` force-approve path; (7) an interactive `eri_dq_review()` wrapper over the
+existing scriptable per-flag triage (`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8)
+`eri_dq_export()` (PDF flag report) + guide convergence. Phases 6–8 are not yet started; each ships as
 its own PR against this plan, not a rewrite.
 
 ---

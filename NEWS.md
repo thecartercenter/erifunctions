@@ -1,3 +1,27 @@
+# erifunctions 0.9.14
+
+## `eri_audit()`: a chronological, event-level audit trail (Phase 5 of the DQ workflow redesign)
+
+- **New `eri_audit(country, disease, data_source, data_type, period)`**: reconstructs a single
+  chronological timeline for a dataset, one row per **event** rather than one row per log file (the
+  shape [`eri_logs()`](R/logs.R) is right for -- "what needs my attention," newest first). Events
+  include a file staged, a CMR workbook split (with its routing plan), a DQ check run, each individual
+  flag resolved (`eri_dq_flag_resolve()`), a whole log entry closed out (`eri_logs_resolve()`), and an
+  approval -- returned **oldest first** (a timeline reads forward), as a tibble with its own
+  `cli`-rendered print method. `log_path` stays on every row so a power user can still drill into the
+  raw YAML, but nobody has to follow paths by hand to answer "what happened to this dataset, and who
+  signed off on it."
+- **Cashes in `eri_approve_cmr()`'s `dq_reviewed` cross-reference**: an approval event's detail shows
+  exactly which DQ log(s) backed it, joining the two halves of the story that were previously only
+  linked by a field a human had to go read.
+- **No CMR-specific entry point needed.** Leaving `disease`/`data_source`/`data_type` unscoped already
+  enumerates every disease/channel/measure under `country` -- for a CMR workbook that naturally
+  includes the `rblf/cmr` split/approve logs *and* every fanned-out measure's own logs in one call.
+  Validated live against a real `atlantis` split → DQ-check → approve trail.
+- New internal `.eri_log_axes()` factors the (country/disease/data_source/data_type/period)
+  path-parsing logic that `eri_logs()`'s row-flattener already had, so both readers of the same log
+  files resolve the axes identically rather than risking independent drift.
+
 # erifunctions 0.9.13
 
 ## Feedback tickets gain context/attachments; `eri_dq_schema_submit()` packages a schema fix for a maintainer (Phase 4 of the DQ workflow redesign)
