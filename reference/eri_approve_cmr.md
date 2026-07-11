@@ -34,10 +34,33 @@ superseded by a fresh "clean" run), but it does mean a truly
 stale/superseded flag needs an explicit note to clear, not just a clean
 recheck.
 
+**`force = TRUE` approves anyway**, for the rare case a DA needs to
+promote data despite an outstanding measure (e.g. a genuine template
+quirk that will never resolve cleanly, under a deadline). It requires a
+non-empty `justification` – no confirmation prompt here, since this
+scriptable core has to work unattended in scripts/CI; an interactive
+wrapper is the right place for extra human friction (e.g. "type the
+period to confirm"), not this function. Every bypassed measure's
+`dq_flags` entry (when one exists) is annotated `handled` via
+[`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+with `forced = TRUE` and a note pointing back at this approval's own log
+– so the open backlog stays clean without pretending the flag was ever
+actually reviewed, and
+[`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+renders the whole thing prominently rather than folding it in as an
+ordinary approval.
+
 ## Usage
 
 ``` r
-eri_approve_cmr(country, period, plan = NULL, data_con = NULL)
+eri_approve_cmr(
+  country,
+  period,
+  plan = NULL,
+  data_con = NULL,
+  force = FALSE,
+  justification = NULL
+)
 ```
 
 ## Arguments
@@ -64,17 +87,33 @@ eri_approve_cmr(country, period, plan = NULL, data_con = NULL)
   Azure container for the `data/` blob. If `NULL`, connects
   automatically.
 
+- force:
+
+  `lgl` Approve even if some measures are outstanding. Default `FALSE`.
+  Requires `justification`.
+
+- justification:
+
+  `chr` or `NULL` Required (non-empty) when `force = TRUE`: why this
+  approval is going through despite what's outstanding. Recorded on the
+  approval's own log and ignored when `force = FALSE`.
+
 ## Value
 
-Invisibly, a tibble: if everything was clean, one row per
-`(disease, data_type)` that got approved; if anything was outstanding,
-one row per `(disease, data_type)` still needing attention (with
-`log_path`/`issue`) and **nothing was approved**.
+Invisibly, a tibble: if everything was clean (or `force = TRUE`), one
+row per `(disease, data_type)` that got approved; if anything was
+outstanding and `force = FALSE`, one row per `(disease, data_type)`
+still needing attention (with `log_path`/`issue`) and **nothing was
+approved**.
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
 eri_approve_cmr("sdn", "202605")
+
+# Only if you genuinely mean to promote past an outstanding measure:
+eri_approve_cmr("sdn", "202605", force = TRUE,
+                 justification = "Known template quirk in RB Treatment; confirmed with country lead.")
 } # }
 ```

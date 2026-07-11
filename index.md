@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.14 · **Status:** Active development
+**Version:** 0.9.15 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -288,7 +288,7 @@ eri_catalog_verify()
 |----|----|
 | `eri_dq_log(result, country, disease, data_source, data_type)` | Persist [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md) flags to the durable log backlog |
 | `eri_logs(country, disease, data_source, data_type)` | Read the operation / DQ-flag triage backlog as one tibble |
-| `eri_logs_resolve(log_path, note)` | Close out a whole log entry (auto-summarizes from per-flag decisions if triaged) |
+| `eri_logs_resolve(log_path, note, forced)` | Close out a whole log entry (auto-summarizes from per-flag decisions if triaged); `forced` marks a bypass, not a genuine resolution |
 | `eri_dq_flag_resolve(flag_id, status, note)` | Triage one DQ flag at a time (`not_important`/`fixed`/`noted`) |
 | `eri_audit(country, disease, data_source, data_type, period)` | Reconstruct a chronological, event-level audit trail (staged/split/DQ-run/flag-resolved/approved) |
 
@@ -313,7 +313,7 @@ eri_catalog_verify()
 | `eri_stage_cmr(country, period)` | Stage CMR files from the projects blob |
 | `eri_cmr_last_plan(country, period)` | Recover a past [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md) run’s routing plan from the log, without rerunning |
 | `eri_cmr_dq_report(country, period)` | DQ-check every measure a CMR workbook routed to, one combined flags tibble |
-| `eri_approve_cmr(country, period)` | Approve every measure in one call, but only if none are outstanding |
+| `eri_approve_cmr(country, period, force, justification)` | Approve every measure in one call, but only if none are outstanding (opt-in `force = TRUE` + `justification` to approve anyway) |
 
 ### ODK
 

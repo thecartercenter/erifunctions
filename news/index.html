@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,9 +68,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.14/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.15" id="erifunctions-0915">erifunctions 0.9.15<a class="anchor" aria-label="anchor" href="#erifunctions-0915"></a></h2>
+<div class="section level3">
+<h3 id="eri_approve_cmr-force-approve-path-phase-of-the-dq-workflow-redesign-0-9-15">
+<code>eri_approve_cmr()</code> force-approve path (Phase 6 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#eri_approve_cmr-force-approve-path-phase-of-the-dq-workflow-redesign-0-9-15"></a></h3>
+<ul><li>
+<strong>New <code>eri_approve_cmr(..., force = FALSE, justification = NULL)</code></strong>: for the rare case an outstanding measure must be promoted anyway (e.g. a known template quirk confirmed with the country, under a deadline). <code>force = TRUE</code> requires a non-empty <code>justification</code> – no interactive confirmation prompt here, since this scriptable core has to keep working unattended in scripts/CI; that extra human friction belongs in the planned interactive <code>eri_dq_review()</code> wrapper (Phase 7), not this function.</li>
+<li>
+<strong>Bypassed measures are annotated, never silently resolved.</strong> Each bypassed <code>dq_flags</code> entry (when one exists – a “never DQ-checked” bypass has nothing to annotate) is marked <code>handled</code> via <code>eri_logs_resolve(..., forced = TRUE)</code>, which now records <code>forced</code> in the triage block alongside a note pointing back at the approval’s own log. The open backlog stays clean without ever pretending the flag was genuinely reviewed.</li>
+<li><strong>The approval’s own log records <code>forced</code>, <code>justification</code>, and exactly what it bypassed.</strong></li>
+<li>
+<strong><code><a href="../reference/eri_audit.html">eri_audit()</a></code> renders a forced approval and its bypass annotations in red with a <code>[FORCED]</code> prefix</strong>, rather than folding them in as ordinary events – the one part of a trail that was <em>not</em> a genuine review. New <code>forced</code> column on every event row.</li>
+<li>Sequenced deliberately after Phase 5 (<code><a href="../reference/eri_audit.html">eri_audit()</a></code>): the override is born fully auditable, never before. Live-validated against a real <code>atlantis</code> forced approval end-to-end.</li>
+<li>Also fixes a real bug found during this phase’s validation: <code><a href="../reference/eri_audit.html">eri_audit()</a></code>’s chronological sort used a malformed date format string (missing <code>%M</code>) that silently failed to parse <em>every</em> timestamp, degrading the sort to a no-op (original file-read order, not chronological order) with no error or warning – caught by re-running the live validation, not by the unit test written for it (which happened to insert events in already-correct order, masking the bug). Fixed the format string and rewrote the test to insert events out of order, so it can actually tell a working sort from one that silently does nothing.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.14" id="erifunctions-0914">erifunctions 0.9.14<a class="anchor" aria-label="anchor" href="#erifunctions-0914"></a></h2>
 <div class="section level3">

@@ -12,6 +12,10 @@ approval (its dq_reviewed field); this is the function that cashes that
 in — log_path stays on every row so a power user can still drill into the
 raw YAML, but nobody should have to follow paths by hand to answer &quot;what
 happened to this dataset, and who signed off on it.&quot;
+A forced approval (eri_approve_cmr()'s force = TRUE) and the bypass
+annotations it leaves on the measures it overrode both render prominently
+here (forced = TRUE, printed in red) rather than folding in as an
+ordinary event — the one thing in a trail that was not a genuine review.
 No CMR-specific entry point is needed: leaving disease/data_source/
 data_type NULL (the default) already enumerates every disease/channel/
 measure under country — for a CMR workbook that naturally includes the
@@ -28,6 +32,10 @@ approval (its dq_reviewed field); this is the function that cashes that
 in — log_path stays on every row so a power user can still drill into the
 raw YAML, but nobody should have to follow paths by hand to answer &quot;what
 happened to this dataset, and who signed off on it.&quot;
+A forced approval (eri_approve_cmr()'s force = TRUE) and the bypass
+annotations it leaves on the measures it overrode both render prominently
+here (forced = TRUE, printed in red) rather than folding in as an
+ordinary event — the one thing in a trail that was not a genuine review.
 No CMR-specific entry point is needed: leaving disease/data_source/
 data_type NULL (the default) already enumerates every disease/channel/
 measure under country — for a CMR workbook that naturally includes the
@@ -39,7 +47,7 @@ rblf/cmr split/approve logs and every fanned-out measure's own logs."><meta prop
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,7 +108,7 @@ rblf/cmr split/approve logs and every fanned-out measure's own logs."><meta prop
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Reconstruct a chronological audit trail for a dataset</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.14/R/audit.R" class="external-link"><code>R/audit.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/audit.R" class="external-link"><code>R/audit.R</code></a></small>
       <div class="d-none name"><code>eri_audit.Rd</code></div>
     </div>
 
@@ -118,6 +126,10 @@ approval (its <code>dq_reviewed</code> field); this is the function that cashes 
 in — <code>log_path</code> stays on every row so a power user can still drill into the
 raw YAML, but nobody should <em>have</em> to follow paths by hand to answer "what
 happened to this dataset, and who signed off on it."</p>
+<p>A forced approval (<code><a href="eri_approve_cmr.html">eri_approve_cmr()</a></code>'s <code>force = TRUE</code>) and the bypass
+annotations it leaves on the measures it overrode both render prominently
+here (<code>forced = TRUE</code>, printed in red) rather than folding in as an
+ordinary event — the one thing in a trail that was <em>not</em> a genuine review.</p>
 <p>No CMR-specific entry point is needed: leaving <code>disease</code>/<code>data_source</code>/
 <code>data_type</code> <code>NULL</code> (the default) already enumerates every disease/channel/
 measure under <code>country</code> — for a CMR workbook that naturally includes the
@@ -171,9 +183,10 @@ periods were actually found, so a format mismatch is diagnosable.</p></dd>
 <code>data_type</code>, <code>period</code>, <code>source_hash</code> (an MD5 identity hash of the source
 file the entry's operation ran against, when one was recorded — lets you
 trace which exact bytes are behind a given step without opening the raw
-YAML). Class <code>eri_audit_trail</code>; printing it renders a <code>cli</code>-formatted
-timeline — the tibble itself is still the API (filter, join, whatever
-you need).</p>
+YAML), <code>forced</code> (<code>lgl</code>; <code>TRUE</code> for a forced <code><a href="eri_approve_cmr.html">eri_approve_cmr()</a></code> approval
+or a bypass annotation it left behind). Class <code>eri_audit_trail</code>; printing
+it renders a <code>cli</code>-formatted timeline — the tibble itself is still the
+API (filter, join, whatever you need).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

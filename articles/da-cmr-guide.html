@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.14/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -493,7 +493,33 @@ for this approval (<code>dq_reviewed</code>) – so the audit trail from
 “this data is now processed” back to “here’s every flag that was raised,
 and what was decided about each one” is traceable via
 <code><a href="../reference/eri_logs.html">eri_logs()</a></code>, not just a bare approval stamp.</p>
+<div class="section level3">
+<h3 id="the-rare-escape-hatch-force-approving-anyway">The rare escape hatch: force-approving anyway<a class="anchor" aria-label="anchor" href="#the-rare-escape-hatch-force-approving-anyway"></a>
+</h3>
+<p>Every so often something is outstanding for a reason that will never
+resolve cleanly – a known template quirk confirmed with the country, say
+– and the data genuinely needs to go through. Pass
+<code>force = TRUE</code> and a <code>justification</code> explaining
+why:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_approve_cmr.html">eri_approve_cmr</a></span><span class="op">(</span><span class="st">"uga"</span>, <span class="st">"202406"</span>, force <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>                justification <span class="op">=</span> <span class="st">"Known template quirk in RB Treatment; confirmed with country lead."</span><span class="op">)</span></span>
+<span><span class="co">#&gt; x FORCE-APPROVING "uga" / "202406" despite 1 outstanding measure.</span></span>
+<span><span class="co">#&gt; i Justification: Known template quirk in RB Treatment; confirmed with country lead.</span></span>
+<span><span class="co">#&gt; # A tibble: 1 × 4</span></span>
+<span><span class="co">#&gt;   disease data_type log_path                                     issue</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;                                        &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 oncho   treatment uga/oncho/programmatic/treatment/logs/x.yaml 1 unresolved DQ flag(s)</span></span>
+<span><span class="co">#&gt; ✔ Marked 'x.yaml' handled (bypassed by a forced approval).</span></span>
+<span><span class="co">#&gt; ✔ Force-approved 2 measures for "uga" / "202406".</span></span></code></pre></div>
+<p>This does <strong>not</strong> silently resolve the bypassed flag –
+it’s annotated (<code>handled</code>, but marked <code>forced</code>) so
+the open backlog stays clean without pretending it was ever actually
+reviewed, and the approval’s own log records the justification and
+exactly what it bypassed. Reach for <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>
+first; force-approving is for when the flag itself will never close, not
+a shortcut around reviewing it.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_catalog_query.html">eri_catalog_query</a></span><span class="op">(</span>country <span class="op">=</span> <span class="st">"uga"</span>, data_source <span class="op">=</span> <span class="st">"programmatic"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 2 × 13</span></span>
 <span><span class="co">#&gt;   path                              country disease data_source  data_type layer …</span></span>
@@ -502,6 +528,7 @@ and what was decided about each one” is traceable via
 <span><span class="co">#&gt; 2 uga/sch/programmatic/treatment/…  uga     sch     programmatic treatment proce…</span></span></code></pre></div>
 <p>That’s the monthly loop: <strong>upload → stage → split → DQ-check →
 approve.</strong></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>

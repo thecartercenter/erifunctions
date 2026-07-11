@@ -20,7 +20,19 @@ same period came back &quot;clean&quot;, the earlier entry still blocks approval
 until you eri_logs_resolve() it. This is deliberate (an unreviewed flag
 shouldn't be silently superseded by a fresh &quot;clean&quot; run), but it does mean a
 truly stale/superseded flag needs an explicit note to clear, not just a
-clean recheck."><meta property="og:description" content="
+clean recheck.
+force = TRUE approves anyway, for the rare case a DA needs to promote
+data despite an outstanding measure (e.g. a genuine template quirk that
+will never resolve cleanly, under a deadline). It requires a non-empty
+justification – no confirmation prompt here, since this scriptable core
+has to work unattended in scripts/CI; an interactive wrapper is the right
+place for extra human friction (e.g. &quot;type the period to confirm&quot;), not
+this function. Every bypassed measure's dq_flags entry (when one exists)
+is annotated handled via eri_logs_resolve() with forced = TRUE and a
+note pointing back at this approval's own log – so the open backlog stays
+clean without pretending the flag was ever actually reviewed, and
+eri_audit() renders the whole thing prominently rather than folding it in
+as an ordinary approval."><meta property="og:description" content="
 eri_approve() promotes one (disease, data_type) at a time, but one CMR
 workbook fans out into many of them via eri_split_cmr(). This looks up
 what got routed for country/period (via eri_cmr_last_plan() if plan
@@ -41,7 +53,19 @@ same period came back &quot;clean&quot;, the earlier entry still blocks approval
 until you eri_logs_resolve() it. This is deliberate (an unreviewed flag
 shouldn't be silently superseded by a fresh &quot;clean&quot; run), but it does mean a
 truly stale/superseded flag needs an explicit note to clear, not just a
-clean recheck."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
+clean recheck.
+force = TRUE approves anyway, for the rare case a DA needs to promote
+data despite an outstanding measure (e.g. a genuine template quirk that
+will never resolve cleanly, under a deadline). It requires a non-empty
+justification – no confirmation prompt here, since this scriptable core
+has to work unattended in scripts/CI; an interactive wrapper is the right
+place for extra human friction (e.g. &quot;type the period to confirm&quot;), not
+this function. Every bypassed measure's dq_flags entry (when one exists)
+is annotated handled via eri_logs_resolve() with forced = TRUE and a
+note pointing back at this approval's own log – so the open backlog stays
+clean without pretending the flag was ever actually reviewed, and
+eri_audit() renders the whole thing prominently rather than folding it in
+as an ordinary approval."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -49,7 +73,7 @@ clean recheck."><meta property="og:image" content="https://thecartercenter.githu
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,7 +134,7 @@ clean recheck."><meta property="og:image" content="https://thecartercenter.githu
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Approve every disease/measure one CMR workbook routed to, in one call</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.14/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_approve_cmr.Rd</code></div>
     </div>
 
@@ -137,11 +161,30 @@ until you <code><a href="eri_logs_resolve.html">eri_logs_resolve()</a></code> it
 shouldn't be silently superseded by a fresh "clean" run), but it does mean a
 truly stale/superseded flag needs an explicit note to clear, not just a
 clean recheck.</p>
+<p><strong><code>force = TRUE</code> approves anyway</strong>, for the rare case a DA needs to promote
+data despite an outstanding measure (e.g. a genuine template quirk that
+will never resolve cleanly, under a deadline). It requires a non-empty
+<code>justification</code> – no confirmation prompt here, since this scriptable core
+has to work unattended in scripts/CI; an interactive wrapper is the right
+place for extra human friction (e.g. "type the period to confirm"), not
+this function. Every bypassed measure's <code>dq_flags</code> entry (when one exists)
+is annotated <code>handled</code> via <code><a href="eri_logs_resolve.html">eri_logs_resolve()</a></code> with <code>forced = TRUE</code> and a
+note pointing back at this approval's own log – so the open backlog stays
+clean without pretending the flag was ever actually reviewed, and
+<code><a href="eri_audit.html">eri_audit()</a></code> renders the whole thing prominently rather than folding it in
+as an ordinary approval.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_approve_cmr</span><span class="op">(</span><span class="va">country</span>, <span class="va">period</span>, plan <span class="op">=</span> <span class="cn">NULL</span>, data_con <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_approve_cmr</span><span class="op">(</span></span>
+<span>  <span class="va">country</span>,</span>
+<span>  <span class="va">period</span>,</span>
+<span>  plan <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  data_con <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  force <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  justification <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -164,19 +207,34 @@ clean recheck.</p>
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container for the <code>data/</code> blob. If <code>NULL</code>, connects automatically.</p></dd>
 
+
+<dt id="arg-force">force<a class="anchor" aria-label="anchor" href="#arg-force"></a></dt>
+<dd><p><code>lgl</code> Approve even if some measures are outstanding. Default
+<code>FALSE</code>. Requires <code>justification</code>.</p></dd>
+
+
+<dt id="arg-justification">justification<a class="anchor" aria-label="anchor" href="#arg-justification"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> Required (non-empty) when <code>force = TRUE</code>:
+why this approval is going through despite what's outstanding. Recorded
+on the approval's own log and ignored when <code>force = FALSE</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Invisibly, a tibble: if everything was clean, one row per
-<code>(disease, data_type)</code> that got approved; if anything was outstanding,
-one row per <code>(disease, data_type)</code> still needing attention (with
-<code>log_path</code>/<code>issue</code>) and <strong>nothing was approved</strong>.</p>
+    <p>Invisibly, a tibble: if everything was clean (or <code>force = TRUE</code>),
+one row per <code>(disease, data_type)</code> that got approved; if anything was
+outstanding and <code>force = FALSE</code>, one row per <code>(disease, data_type)</code> still
+needing attention (with <code>log_path</code>/<code>issue</code>) and <strong>nothing was approved</strong>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">eri_approve_cmr</span><span class="op">(</span><span class="st">"sdn"</span>, <span class="st">"202605"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Only if you genuinely mean to promote past an outstanding measure:</span></span></span>
+<span class="r-in"><span><span class="fu">eri_approve_cmr</span><span class="op">(</span><span class="st">"sdn"</span>, <span class="st">"202605"</span>, force <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>                 justification <span class="op">=</span> <span class="st">"Known template quirk in RB Treatment; confirmed with country lead."</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

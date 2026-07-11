@@ -21,6 +21,13 @@ already records which `dq_flags` entries backed each approval (its
 raw YAML, but nobody should *have* to follow paths by hand to answer
 "what happened to this dataset, and who signed off on it."
 
+A forced approval
+([`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)'s
+`force = TRUE`) and the bypass annotations it leaves on the measures it
+overrode both render prominently here (`forced = TRUE`, printed in red)
+rather than folding in as an ordinary event — the one thing in a trail
+that was *not* a genuine review.
+
 No CMR-specific entry point is needed: leaving `disease`/`data_source`/
 `data_type` `NULL` (the default) already enumerates every
 disease/channel/ measure under `country` — for a CMR workbook that
@@ -74,9 +81,12 @@ A tibble, **oldest first**, with columns `timestamp`, `event`, `actor`,
 `detail`, `log_path`, `country`, `disease`, `data_source`, `data_type`,
 `period`, `source_hash` (an MD5 identity hash of the source file the
 entry's operation ran against, when one was recorded — lets you trace
-which exact bytes are behind a given step without opening the raw YAML).
-Class `eri_audit_trail`; printing it renders a `cli`-formatted timeline
-— the tibble itself is still the API (filter, join, whatever you need).
+which exact bytes are behind a given step without opening the raw YAML),
+`forced` (`lgl`; `TRUE` for a forced
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+approval or a bypass annotation it left behind). Class
+`eri_audit_trail`; printing it renders a `cli`-formatted timeline — the
+tibble itself is still the API (filter, join, whatever you need).
 
 ## See also
 

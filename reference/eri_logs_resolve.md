@@ -3,13 +3,13 @@
 Records a triage note on a single log YAML (by its `log_path` from
 [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)),
 flagging it handled so it drops out of the open backlog. Adds a `triage`
-block (`handled`, `handled_by`, `handled_at`, `note`) to the file in
-place; the original operation record is preserved.
+block (`handled`, `handled_by`, `handled_at`, `note`, `forced`) to the
+file in place; the original operation record is preserved.
 
 ## Usage
 
 ``` r
-eri_logs_resolve(log_path, note = NULL, data_con = NULL)
+eri_logs_resolve(log_path, note = NULL, data_con = NULL, forced = FALSE)
 ```
 
 ## Arguments
@@ -27,6 +27,17 @@ eri_logs_resolve(log_path, note = NULL, data_con = NULL)
 
   Azure container for the `data/` blob. If `NULL`, connects
   automatically.
+
+- forced:
+
+  `lgl` Mark the entry `handled` because something else bypassed it
+  (e.g.
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)'s
+  `force = TRUE` path), not because it was actually reviewed and
+  resolved. Default `FALSE`. Distinguishes an annotated bypass from a
+  genuine resolution in the record –
+  [`eri_audit()`](https://thecartercenter.github.io/erifunctions/reference/eri_audit.md)
+  renders the two differently.
 
 ## Value
 

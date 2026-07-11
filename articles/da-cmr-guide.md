@@ -426,6 +426,35 @@ raised, and what was decided about each one” is traceable via
 [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md),
 not just a bare approval stamp.
 
+### The rare escape hatch: force-approving anyway
+
+Every so often something is outstanding for a reason that will never
+resolve cleanly – a known template quirk confirmed with the country, say
+– and the data genuinely needs to go through. Pass `force = TRUE` and a
+`justification` explaining why:
+
+``` r
+
+eri_approve_cmr("uga", "202406", force = TRUE,
+                justification = "Known template quirk in RB Treatment; confirmed with country lead.")
+#> x FORCE-APPROVING "uga" / "202406" despite 1 outstanding measure.
+#> i Justification: Known template quirk in RB Treatment; confirmed with country lead.
+#> # A tibble: 1 × 4
+#>   disease data_type log_path                                     issue
+#>   <chr>   <chr>     <chr>                                        <chr>
+#> 1 oncho   treatment uga/oncho/programmatic/treatment/logs/x.yaml 1 unresolved DQ flag(s)
+#> ✔ Marked 'x.yaml' handled (bypassed by a forced approval).
+#> ✔ Force-approved 2 measures for "uga" / "202406".
+```
+
+This does **not** silently resolve the bypassed flag – it’s annotated
+(`handled`, but marked `forced`) so the open backlog stays clean without
+pretending it was ever actually reviewed, and the approval’s own log
+records the justification and exactly what it bypassed. Reach for
+[`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+first; force-approving is for when the flag itself will never close, not
+a shortcut around reviewing it.
+
 ``` r
 
 eri_catalog_query(country = "uga", data_source = "programmatic")

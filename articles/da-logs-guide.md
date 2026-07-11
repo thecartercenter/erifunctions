@@ -261,6 +261,14 @@ unscoped for a CMR workbook and the trail spans the split/approve
 coordinate *and* every fanned-out measure automatically, no CMR-specific
 audit function needed.
 
+A forced approval (`eri_approve_cmr(..., force = TRUE)`, for the rare
+case something outstanding must be promoted anyway — see the [CMR
+guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html#approve))
+and the bypass annotation it leaves on the measure it overrode both
+render in red with a `[FORCED]` prefix here, rather than folding in as
+an ordinary approval — the one part of a trail that was *not* a genuine
+review.
+
 ## 6. Clean up
 
 If you ran this in the sandbox, remove the `atlantis` namespace (this

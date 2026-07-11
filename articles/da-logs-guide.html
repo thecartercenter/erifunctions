@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging the error &amp; data-quality log backlog (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.14/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-logs-guide.Rmd</code></div>
     </div>
 
@@ -323,6 +323,13 @@ backed each CMR approval (its <code>dq_reviewed</code> field);
 unscoped for a CMR workbook and the trail spans the split/approve
 coordinate <em>and</em> every fanned-out measure automatically, no
 CMR-specific audit function needed.</p>
+<p>A forced approval (<code>eri_approve_cmr(..., force = TRUE)</code>,
+for the rare case something outstanding must be promoted anyway — see
+the <a href="da-cmr-guide.html#approve">CMR guide</a>) and the bypass
+annotation it leaves on the measure it overrode both render in red with
+a <code>[FORCED]</code> prefix here, rather than folding in as an
+ordinary approval — the one part of a trail that was <em>not</em> a
+genuine review.</p>
 </div>
 <div class="section level2">
 <h2 id="clean-up">6. Clean up<a class="anchor" aria-label="anchor" href="#clean-up"></a>
