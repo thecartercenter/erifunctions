@@ -4,13 +4,19 @@
 \alias{eri_logs_resolve}
 \title{Mark a log entry as handled}
 \usage{
-eri_logs_resolve(log_path, note = NULL, data_con = NULL)
+eri_logs_resolve(log_path, note = NULL, forced = FALSE, data_con = NULL)
 }
 \arguments{
 \item{log_path}{\code{chr} Blob path of the log to resolve (the \code{log_path} column
 from \code{\link[=eri_logs]{eri_logs()}}).}
 
 \item{note}{\code{chr} or \code{NULL} An optional note describing how it was handled.}
+
+\item{forced}{\code{lgl} Mark the entry \code{handled} because something else bypassed
+it (e.g. \code{\link[=eri_approve_cmr]{eri_approve_cmr()}}'s \code{force = TRUE} path), not because it was
+actually reviewed and resolved. Default \code{FALSE}. Distinguishes an
+annotated bypass from a genuine resolution in the record --
+\code{\link[=eri_audit]{eri_audit()}} renders the two differently.}
 
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
@@ -20,8 +26,8 @@ Invisibly, \code{TRUE}.
 \description{
 Records a triage note on a single log YAML (by its \code{log_path} from
 \code{\link[=eri_logs]{eri_logs()}}), flagging it handled so it drops out of the open backlog. Adds a
-\code{triage} block (\code{handled}, \code{handled_by}, \code{handled_at}, \code{note}) to the file in
-place; the original operation record is preserved.
+\code{triage} block (\code{handled}, \code{handled_by}, \code{handled_at}, \code{note}, \code{forced}) to
+the file in place; the original operation record is preserved.
 }
 \details{
 Same single-editor caveat as \code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}}: this is a read-modify-write

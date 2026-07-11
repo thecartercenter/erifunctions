@@ -733,21 +733,53 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #' truly stale/superseded flag needs an explicit note to clear, not just a
 #' clean recheck.
 #'
+#' **`force = TRUE` approves anyway**, for the rare case a DA needs to promote
+#' data despite an outstanding measure (e.g. a genuine template quirk that
+#' will never resolve cleanly, under a deadline). It requires a non-empty
+#' `justification` -- no confirmation prompt here, since this scriptable core
+#' has to work unattended in scripts/CI; an interactive wrapper is the right
+#' place for extra human friction (e.g. "type the period to confirm"), not
+#' this function. Every bypassed measure's `dq_flags` entry (when one exists)
+#' is annotated `handled` via [eri_logs_resolve()] with `forced = TRUE` and a
+#' note pointing back at this approval's own log -- so the open backlog stays
+#' clean without pretending the flag was ever actually reviewed, and
+#' [eri_audit()] renders the whole thing prominently rather than folding it in
+#' as an ordinary approval.
+#'
 #' @param country `str` Country code (e.g. `"sdn"`).
 #' @param period `str` Reporting period (e.g. `"202605"`).
 #' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] /
 #'   [eri_cmr_last_plan()]. `NULL` (default) looks it up via [eri_cmr_last_plan()].
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
-#' @returns Invisibly, a tibble: if everything was clean, one row per
-#'   `(disease, data_type)` that got approved; if anything was outstanding,
-#'   one row per `(disease, data_type)` still needing attention (with
-#'   `log_path`/`issue`) and **nothing was approved**.
+#' @param force `lgl` Approve even if some measures are outstanding. Default
+#'   `FALSE`. Requires `justification`.
+#' @param justification `chr` or `NULL` Required (non-empty) when `force = TRUE`:
+#'   why this approval is going through despite what's outstanding. Recorded
+#'   on the approval's own log and ignored when `force = FALSE`.
+#' @returns Invisibly, a tibble: if everything was clean (or `force = TRUE`),
+#'   one row per `(disease, data_type)` that got approved; if anything was
+#'   outstanding and `force = FALSE`, one row per `(disease, data_type)` still
+#'   needing attention (with `log_path`/`issue`) and **nothing was approved**.
 #' @examples
 #' \dontrun{
 #' eri_approve_cmr("sdn", "202605")
+#'
+#' # Only if you genuinely mean to promote past an outstanding measure:
+#' eri_approve_cmr("sdn", "202605", force = TRUE,
+#'                  justification = "Known template quirk in RB Treatment; confirmed with country lead.")
 #' }
 #' @export
-eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
+eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
+                            force = FALSE, justification = NULL) {
+  if (isTRUE(force) &&
+      (is.null(justification) || length(justification) != 1L ||
+       is.na(justification) || !nzchar(trimws(justification)))) {
+    cli::cli_abort(c(
+      "{.arg justification} must be a single non-empty string when {.code force = TRUE}.",
+      "i" = "Explain why this approval should go through despite what's outstanding."
+    ))
+  }
+
   data_con <- .eri_logs_con(data_con)
 
   if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
@@ -781,15 +813,24 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
       dq_reviewed <- c(dq_reviewed, dq_logs$log_path)
     }
   }
+  outstanding_tbl <- if (length(outstanding) > 0L) dplyr::bind_rows(outstanding) else NULL
 
-  if (length(outstanding) > 0L) {
-    outstanding_tbl <- dplyr::bind_rows(outstanding)
+  if (!is.null(outstanding_tbl) && !isTRUE(force)) {
     cli::cli_alert_danger(c(
       "{nrow(outstanding_tbl)} measure{?s} still need{?s/} attention -- approving nothing.",
-      "i" = "Review each below, close it out with {.fn eri_logs_resolve} (pass a {.arg note}), then re-run this."
+      "i" = "Review each below, close it out with {.fn eri_logs_resolve} (pass a {.arg note}), then re-run this.",
+      "i" = "Or pass {.code force = TRUE} and a {.arg justification} to approve anyway."
     ))
     print(outstanding_tbl)
     return(invisible(outstanding_tbl))
+  }
+
+  if (!is.null(outstanding_tbl)) {
+    cli::cli_alert_danger(c(
+      "!" = "FORCE-APPROVING {.val {country}} / {.val {period}} despite {nrow(outstanding_tbl)} outstanding measure{?s}.",
+      "i" = "Justification: {justification}"
+    ))
+    print(outstanding_tbl)
   }
 
   approved <- vector("list", nrow(measures))
@@ -808,20 +849,57 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL) {
   # reviewed and decided, and by whom" (each dq_flags log_path carries its own
   # per-flag notes via eri_dq_flag_resolve() and its whole-entry note via
   # eri_logs_resolve()).
+  trail_log <- list(
+    operation  = "eri_approve_cmr",
+    analyst    = .eri_analyst_id(data_con),
+    timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(country = country, period = period),
+    status     = "success",
+    measures   = as.list(paste(approved_tbl$disease, approved_tbl$data_type, sep = "/")),
+    dq_reviewed = as.list(dq_reviewed)
+  )
+  if (!is.null(outstanding_tbl)) {
+    trail_log$forced        <- TRUE
+    trail_log$justification <- justification
+    trail_log$bypassed <- lapply(seq_len(nrow(outstanding_tbl)), function(i) {
+      b <- outstanding_tbl[i, ]
+      list(disease = b$disease, data_type = b$data_type, issue = b$issue,
+           log_path = if (is.na(b$log_path)) NA_character_ else b$log_path)
+    })
+  }
   trail_path <- .eri_write_log(
-    list(
-      operation  = "eri_approve_cmr",
-      analyst    = .eri_analyst_id(data_con),
-      timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-      parameters = list(country = country, period = period),
-      status     = "success",
-      measures   = as.list(paste(approved_tbl$disease, approved_tbl$data_type, sep = "/")),
-      dq_reviewed = as.list(dq_reviewed)
-    ),
-    data_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+    trail_log, data_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
   )
 
-  cli::cli_alert_success("Approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}.")
+  # Annotate (never silently resolve) each bypassed dq_flags entry that
+  # actually exists, pointing back at this approval's own log -- the open
+  # backlog stays clean, but the record says exactly what happened and why,
+  # never that the flag was genuinely reviewed. A "never DQ-checked" bypass
+  # (no log_path) has nothing to annotate -- it's already captured in
+  # trail_log$bypassed above.
+  if (!is.null(outstanding_tbl)) {
+    bypass_note <- paste0(
+      "Bypassed by a forced eri_approve_cmr() approval",
+      if (!is.null(trail_path)) paste0(" (", basename(trail_path), ")") else "",
+      ": ", justification
+    )
+    for (lp in outstanding_tbl$log_path[!is.na(outstanding_tbl$log_path)]) {
+      tryCatch(
+        eri_logs_resolve(lp, note = bypass_note, forced = TRUE, data_con = data_con),
+        error = function(e) cli::cli_alert_warning(
+          "Could not annotate bypassed log {.path {lp}}: {conditionMessage(e)}"
+        )
+      )
+    }
+  }
+
+  cli::cli_alert_success(
+    if (!is.null(outstanding_tbl)) {
+      "Force-approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}."
+    } else {
+      "Approved {nrow(approved_tbl)} measure{?s} for {.val {country}} / {.val {period}}."
+    }
+  )
   if (is.null(trail_path)) {
     cli::cli_alert_danger(c(
       "The measures above ARE approved, but the {.val dq_reviewed} audit-trail record could not be written",

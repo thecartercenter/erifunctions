@@ -430,8 +430,8 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #'
 #' Records a triage note on a single log YAML (by its `log_path` from
 #' [eri_logs()]), flagging it handled so it drops out of the open backlog. Adds a
-#' `triage` block (`handled`, `handled_by`, `handled_at`, `note`) to the file in
-#' place; the original operation record is preserved.
+#' `triage` block (`handled`, `handled_by`, `handled_at`, `note`, `forced`) to
+#' the file in place; the original operation record is preserved.
 #'
 #' Same single-editor caveat as [eri_dq_flag_resolve()]: this is a read-modify-write
 #' with no optimistic-concurrency protection, so two people resolving the *same*
@@ -440,6 +440,11 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #' @param log_path `chr` Blob path of the log to resolve (the `log_path` column
 #'   from [eri_logs()]).
 #' @param note `chr` or `NULL` An optional note describing how it was handled.
+#' @param forced `lgl` Mark the entry `handled` because something else bypassed
+#'   it (e.g. [eri_approve_cmr()]'s `force = TRUE` path), not because it was
+#'   actually reviewed and resolved. Default `FALSE`. Distinguishes an
+#'   annotated bypass from a genuine resolution in the record --
+#'   [eri_audit()] renders the two differently.
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @returns Invisibly, `TRUE`.
 #' @examples
@@ -448,7 +453,7 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #' eri_logs_resolve(backlog$log_path[1], note = "Re-ran after the source fixed the file.")
 #' }
 #' @export
-eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL) {
+eri_logs_resolve <- function(log_path, note = NULL, forced = FALSE, data_con = NULL) {
   data_con <- .eri_logs_con(data_con)
 
   tmp <- tempfile(fileext = ".yaml")
@@ -468,14 +473,21 @@ eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL) {
     handled    = TRUE,
     handled_by = .eri_analyst_id(data_con),
     handled_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-    note       = if (is.null(note)) NA_character_ else note
+    note       = if (is.null(note)) NA_character_ else note,
+    forced     = isTRUE(forced)
   )
 
   yaml::write_yaml(entry, tmp)
   .eri_blob_write(data_con, tmp, log_path)
   unlink(tmp)
 
-  cli::cli_alert_success("Marked {.path {basename(log_path)}} handled.")
+  cli::cli_alert_success(
+    if (isTRUE(forced)) {
+      "Marked {.path {basename(log_path)}} handled (bypassed by a forced approval)."
+    } else {
+      "Marked {.path {basename(log_path)}} handled."
+    }
+  )
   invisible(TRUE)
 }
 

@@ -254,10 +254,18 @@ which exact bytes backed a step, not only which operation ran; returned as a sin
 (oldest-first) tibble with its own `cli`-rendered print method; no CMR-specific entry point needed
 (leaving the axes unscoped already enumerates the `rblf/cmr` split/approve coordinate alongside
 every fanned-out measure — validated live against a real atlantis split → dq → approve trail);
-(6) `eri_approve_cmr()` force-approve path; (7) an interactive `eri_dq_review()` wrapper over the
-existing scriptable per-flag triage (`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8)
-`eri_dq_export()` (PDF flag report) + guide convergence. Phases 6–8 are not yet started; each ships as
-its own PR against this plan, not a rewrite.
+(6) `eri_approve_cmr()` force-approve path — **shipped**: `force = TRUE` requires a non-empty
+`justification` (no interactive confirmation gate here — that's Phase 7's job, since this scriptable
+core has to work unattended in scripts/CI), approves despite an outstanding measure, annotates each
+bypassed `dq_flags` entry `handled` via `eri_logs_resolve(..., forced = TRUE)` (never silently
+resolved, never left rotting the open backlog forever) with a note pointing back at the approval's
+own log, and records `forced`/`justification`/`bypassed` on that log; `eri_audit()` renders both the
+forced approval and the bypass annotation in red with a `[FORCED]` prefix rather than folding them in
+as ordinary events — sequenced deliberately after Phase 5 so the override is born fully auditable,
+never before. Live-validated against a real atlantis force-approval end-to-end; (7) an interactive
+`eri_dq_review()` wrapper over the existing scriptable per-flag triage
+(`eri_dq_flag_resolve()`/`eri_logs_resolve()`); (8) `eri_dq_export()` (PDF flag report) + guide
+convergence. Phases 7–8 are not yet started; each ships as its own PR against this plan, not a rewrite.
 
 ---
 

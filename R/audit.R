@@ -25,12 +25,12 @@
   # via log_path -- the "walk a value back to its source bytes" half of the
   # audit story that source_hash was built for.
   source_hash <- entry$source_hash %||% NA_character_
-  mk <- function(timestamp, event, actor, detail) {
+  mk <- function(timestamp, event, actor, detail, forced = FALSE) {
     list(timestamp = .eri_na_chr(timestamp), event = event, actor = .eri_na_chr(actor),
          detail = if (is.null(detail)) NA_character_ else detail, log_path = log_path,
          country = axes$country, disease = axes$disease,
          data_source = axes$data_source, data_type = axes$data_type,
-         period = axes$period, source_hash = source_hash)
+         period = axes$period, source_hash = source_hash, forced = isTRUE(forced))
   }
 
   events <- list()
@@ -80,19 +80,41 @@
       dq_bit <- if (!is.null(entry$dq_reviewed) && length(entry$dq_reviewed) > 0L) {
         paste0("dq_reviewed: ", paste(basename(unlist(entry$dq_reviewed)), collapse = ", "))
       } else NULL
-      detail <- paste(Filter(Negate(is.null), list(measures_bit, dq_bit)), collapse = " -- ")
+      # A forced approval bypassed one or more outstanding measures -- surface
+      # exactly what and why, since this is the event eri_audit() renders
+      # prominently (see print.eri_audit_trail()).
+      forced_bit <- if (isTRUE(entry$forced)) {
+        bypassed_bit <- if (!is.null(entry$bypassed) && length(entry$bypassed) > 0L) {
+          paste0("bypassed: ", paste(
+            vapply(entry$bypassed, function(b) paste0(b$disease %||% "?", "/", b$data_type %||% "?",
+                                                       " (", b$issue %||% "?", ")"),
+                   character(1L)),
+            collapse = ", "
+          ))
+        } else NULL
+        paste(Filter(Negate(is.null), list(
+          paste0("justification: ", entry$justification %||% "?"), bypassed_bit
+        )), collapse = " -- ")
+      } else NULL
+      detail <- paste(Filter(Negate(is.null), list(measures_bit, dq_bit, forced_bit)), collapse = " -- ")
       if (!nzchar(detail)) detail <- NULL
     } else if (!is.null(entry$files) && length(entry$files) > 0L) {
       detail <- paste(basename(unlist(entry$files)), collapse = ", ")
     }
-    events[[length(events) + 1L]] <- mk(ts, op %||% "operation", entry$analyst, detail)
+    events[[length(events) + 1L]] <- mk(ts, op %||% "operation", entry$analyst, detail,
+                                        forced = isTRUE(entry$forced))
   }
 
   # A triage close-out (eri_logs_resolve()) can sit on ANY entry type above --
-  # one more event, regardless of what the entry itself was.
+  # one more event, regardless of what the entry itself was. A forced bypass
+  # (eri_logs_resolve(..., forced = TRUE), from eri_approve_cmr()'s force
+  # path) gets its own event name and the `forced` marker -- it closed the
+  # entry, but it was never actually reviewed, and that distinction matters.
   if (!is.null(entry$triage) && isTRUE(entry$triage$handled)) {
+    is_forced <- isTRUE(entry$triage$forced)
     events[[length(events) + 1L]] <- mk(
-      entry$triage$handled_at, "log_resolved", entry$triage$handled_by, entry$triage$note
+      entry$triage$handled_at, if (is_forced) "log_resolved (forced bypass)" else "log_resolved",
+      entry$triage$handled_by, entry$triage$note, forced = is_forced
     )
   }
 
@@ -105,7 +127,7 @@
     timestamp = character(), event = character(), actor = character(),
     detail = character(), log_path = character(), country = character(),
     disease = character(), data_source = character(), data_type = character(),
-    period = character(), source_hash = character()
+    period = character(), source_hash = character(), forced = logical()
   )
   class(out) <- c("eri_audit_trail", class(out))
   out
@@ -121,7 +143,7 @@
 # this handles both forms; unparseable strings become NA and sort last.
 #' @keywords internal
 .eri_audit_parse_ts <- function(x) {
-  suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%OSZ", tz = "UTC"))
+  suppressWarnings(as.POSIXct(x, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
 }
 
 #' Reconstruct a chronological audit trail for a dataset
@@ -142,6 +164,11 @@
 #' in — `log_path` stays on every row so a power user can still drill into the
 #' raw YAML, but nobody should *have* to follow paths by hand to answer "what
 #' happened to this dataset, and who signed off on it."
+#'
+#' A forced approval ([eri_approve_cmr()]'s `force = TRUE`) and the bypass
+#' annotations it leaves on the measures it overrode both render prominently
+#' here (`forced = TRUE`, printed in red) rather than folding in as an
+#' ordinary event — the one thing in a trail that was *not* a genuine review.
 #'
 #' No CMR-specific entry point is needed: leaving `disease`/`data_source`/
 #' `data_type` `NULL` (the default) already enumerates every disease/channel/
@@ -165,9 +192,10 @@
 #'   `data_type`, `period`, `source_hash` (an MD5 identity hash of the source
 #'   file the entry's operation ran against, when one was recorded — lets you
 #'   trace which exact bytes are behind a given step without opening the raw
-#'   YAML). Class `eri_audit_trail`; printing it renders a `cli`-formatted
-#'   timeline — the tibble itself is still the API (filter, join, whatever
-#'   you need).
+#'   YAML), `forced` (`lgl`; `TRUE` for a forced `eri_approve_cmr()` approval
+#'   or a bypass annotation it left behind). Class `eri_audit_trail`; printing
+#'   it renders a `cli`-formatted timeline — the tibble itself is still the
+#'   API (filter, join, whatever you need).
 #' @examples
 #' \dontrun{
 #' eri_audit("sdn", period = "202605")                      # a whole CMR period
@@ -224,7 +252,8 @@ eri_audit <- function(country, disease = NULL, data_source = NULL, data_type = N
     data_source = vapply(rows, function(r) .eri_na_chr(r$data_source), character(1L)),
     data_type   = vapply(rows, function(r) .eri_na_chr(r$data_type),   character(1L)),
     period      = vapply(rows, function(r) .eri_na_chr(r$period),      character(1L)),
-    source_hash = vapply(rows, function(r) .eri_na_chr(r$source_hash), character(1L))
+    source_hash = vapply(rows, function(r) .eri_na_chr(r$source_hash), character(1L)),
+    forced      = vapply(rows, function(r) isTRUE(r$forced),           logical(1L))
   )
 
   if (!is.null(period)) {
@@ -291,7 +320,15 @@ print.eri_audit_trail <- function(x, ...) {
     actor  <- if (!is.na(r$actor)) paste0(" (", r$actor, ")") else ""
     detail <- if (!is.na(r$detail) && nzchar(r$detail)) paste0(": ", r$detail) else ""
     event  <- r$event
-    cli::cli_bullets(c("*" = "{ts} -- {.strong {event}}{actor}{detail}"))
+    if (isTRUE(r$forced)) {
+      # A forced approval or a forced-bypass annotation -- render prominently
+      # (red, a "!" bullet) rather than folding it in as an ordinary event;
+      # this is the one thing in the trail that was NOT a genuine review.
+      line <- cli::col_red(paste0("[FORCED] ", ts, " -- ", event, actor, detail))
+      cli::cli_bullets(c("!" = line))
+    } else {
+      cli::cli_bullets(c("*" = "{ts} -- {.strong {event}}{actor}{detail}"))
+    }
   }
   invisible(x)
 }

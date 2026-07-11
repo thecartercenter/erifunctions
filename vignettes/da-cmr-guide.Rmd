@@ -359,6 +359,25 @@ verified clean for this approval (`dq_reviewed`) -- so the audit trail from "thi
 processed" back to "here's every flag that was raised, and what was decided about each one" is
 traceable via `eri_logs()`, not just a bare approval stamp.
 
+### The rare escape hatch: force-approving anyway
+
+Every so often something is outstanding for a reason that will never resolve cleanly -- a known
+template quirk confirmed with the country, say -- and the data genuinely needs to go through. Pass
+`force = TRUE` and a `justification` explaining why:
+
+```{r approve-forced, eval=FALSE}
+eri_approve_cmr("uga", "202406", force = TRUE,
+                justification = "Known template quirk in RB Treatment; confirmed with country lead.")
+#> x FORCE-APPROVING "uga" / "202406" despite 1 outstanding measure.
+#> ✔ Force-approved 2 measures for "uga" / "202406".
+```
+
+This does **not** silently resolve the bypassed flag -- it's annotated (`handled`, but marked
+`forced`) so the open backlog stays clean without pretending it was ever actually reviewed, and the
+approval's own log records the justification and exactly what it bypassed. Reach for `eri_logs_resolve()`
+first; force-approving is for when the flag itself will never close, not a shortcut around reviewing
+it.
+
 ```{r catalog}
 eri_catalog_query(country = "uga", data_source = "programmatic")
 #> # A tibble: 2 × 13

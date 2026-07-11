@@ -1040,6 +1040,127 @@ test_that("eri_approve_cmr records a dq_reviewed cross-reference in its own op-l
   expect_true("sdn/oncho/programmatic/treatment/logs/dq.yaml" %in% unlist(logged[[1]]$dq_reviewed))
 })
 
+#### Tests for eri_approve_cmr()'s force = TRUE path ####
+
+test_that("eri_approve_cmr errors when force = TRUE without a justification", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  expect_error(
+    eri_approve_cmr("sdn", "202605", plan = plan, force = TRUE,
+                    data_con = structure(list(), class = "mock")),
+    "justification"
+  )
+  expect_error(
+    eri_approve_cmr("sdn", "202605", plan = plan, force = TRUE, justification = "   ",
+                    data_con = structure(list(), class = "mock")),
+    "justification"
+  )
+})
+
+test_that("eri_approve_cmr force = TRUE approves despite unresolved flags, annotates the bypassed entry, and records forced/justification/bypassed", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  approved   <- list()
+  resolved   <- list()
+  logged     <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/oncho/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "needs_review", handled = FALSE, n_issues = 3L
+    ),
+    eri_approve = function(country, disease, data_source, period, data_type = NULL, azcontainer = NULL) {
+      approved[[length(approved) + 1L]] <<- list(disease = disease, data_type = data_type)
+    },
+    eri_logs_resolve = function(log_path, note = NULL, forced = FALSE, data_con = NULL) {
+      resolved[[length(resolved) + 1L]] <<- list(log_path = log_path, note = note, forced = forced)
+      invisible(TRUE)
+    },
+    .eri_write_log = function(log_list, ...) {
+      logged[[length(logged) + 1L]] <<- log_list
+      "sdn/rblf/cmr/logs/fake_force_approve.yaml"
+    },
+    .package = "erifunctions"
+  )
+
+  result <- suppressMessages(eri_approve_cmr(
+    "sdn", "202605", plan = plan, force = TRUE,
+    justification = "Known template quirk, confirmed with country lead.",
+    data_con = structure(list(), class = "mock")
+  ))
+
+  expect_length(approved, 1L)  # still approved, despite the outstanding flag
+  expect_equal(nrow(result), 1L)
+
+  expect_length(logged, 1L)
+  expect_true(logged[[1]]$forced)
+  expect_equal(logged[[1]]$justification, "Known template quirk, confirmed with country lead.")
+  expect_length(logged[[1]]$bypassed, 1L)
+  expect_equal(logged[[1]]$bypassed[[1]]$log_path, "sdn/oncho/programmatic/treatment/logs/x.yaml")
+
+  # the bypassed entry was annotated, forced = TRUE, pointing back at this approval
+  expect_length(resolved, 1L)
+  expect_equal(resolved[[1]]$log_path, "sdn/oncho/programmatic/treatment/logs/x.yaml")
+  expect_true(resolved[[1]]$forced)
+  expect_match(resolved[[1]]$note, "forced", ignore.case = TRUE)
+  expect_match(resolved[[1]]$note, "fake_force_approve.yaml", fixed = TRUE)
+})
+
+test_that("eri_approve_cmr force = TRUE on a never-DQ-checked measure records the bypass but attempts no annotation", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  resolve_called <- FALSE
+  logged <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = character(0), period = character(0),
+      status = character(0), handled = logical(0), n_issues = integer(0)
+    ),
+    eri_approve = function(...) invisible(NULL),
+    eri_logs_resolve = function(...) { resolve_called <<- TRUE },
+    .eri_write_log = function(log_list, ...) {
+      logged[[length(logged) + 1L]] <<- log_list
+      "sdn/rblf/cmr/logs/fake_force_approve2.yaml"
+    },
+    .package = "erifunctions"
+  )
+
+  suppressMessages(eri_approve_cmr(
+    "sdn", "202605", plan = plan, force = TRUE, justification = "Deadline override.",
+    data_con = structure(list(), class = "mock")
+  ))
+
+  expect_false(resolve_called)  # nothing to annotate -- no log_path exists
+  expect_true(logged[[1]]$forced)
+  expect_true(is.na(logged[[1]]$bypassed[[1]]$log_path))
+  expect_match(logged[[1]]$bypassed[[1]]$issue, "never DQ-checked")
+})
+
+test_that("eri_approve_cmr force = TRUE with nothing outstanding behaves like a normal approval (no forced fields)", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  logged <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/x/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "clean", handled = FALSE, n_issues = 0L
+    ),
+    eri_approve = function(...) invisible(NULL),
+    .eri_write_log = function(log_list, ...) {
+      logged[[length(logged) + 1L]] <<- log_list
+      "sdn/rblf/cmr/logs/fake_force_approve3.yaml"
+    },
+    .package = "erifunctions"
+  )
+
+  suppressMessages(eri_approve_cmr(
+    "sdn", "202605", plan = plan, force = TRUE, justification = "Not actually needed here.",
+    data_con = structure(list(), class = "mock")
+  ))
+
+  expect_null(logged[[1]]$forced)
+  expect_null(logged[[1]]$bypassed)
+})
+
 test_that("eri_cmr_dq_report combines every measure's flags into one tibble with usable flag_ids", {
   plan <- tibble::tibble(
     sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),

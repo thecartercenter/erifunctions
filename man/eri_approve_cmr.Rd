@@ -4,7 +4,14 @@
 \alias{eri_approve_cmr}
 \title{Approve every disease/measure one CMR workbook routed to, in one call}
 \usage{
-eri_approve_cmr(country, period, plan = NULL, data_con = NULL)
+eri_approve_cmr(
+  country,
+  period,
+  plan = NULL,
+  data_con = NULL,
+  force = FALSE,
+  justification = NULL
+)
 }
 \arguments{
 \item{country}{\code{str} Country code (e.g. \code{"sdn"}).}
@@ -15,12 +22,19 @@ eri_approve_cmr(country, period, plan = NULL, data_con = NULL)
 \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}}. \code{NULL} (default) looks it up via \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}}.}
 
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
+\item{force}{\code{lgl} Approve even if some measures are outstanding. Default
+\code{FALSE}. Requires \code{justification}.}
+
+\item{justification}{\code{chr} or \code{NULL} Required (non-empty) when \code{force = TRUE}:
+why this approval is going through despite what's outstanding. Recorded
+on the approval's own log and ignored when \code{force = FALSE}.}
 }
 \value{
-Invisibly, a tibble: if everything was clean, one row per
-\verb{(disease, data_type)} that got approved; if anything was outstanding,
-one row per \verb{(disease, data_type)} still needing attention (with
-\code{log_path}/\code{issue}) and \strong{nothing was approved}.
+Invisibly, a tibble: if everything was clean (or \code{force = TRUE}),
+one row per \verb{(disease, data_type)} that got approved; if anything was
+outstanding and \code{force = FALSE}, one row per \verb{(disease, data_type)} still
+needing attention (with \code{log_path}/\code{issue}) and \strong{nothing was approved}.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -48,9 +62,26 @@ until you \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} it. This is delibe
 shouldn't be silently superseded by a fresh "clean" run), but it does mean a
 truly stale/superseded flag needs an explicit note to clear, not just a
 clean recheck.
+
+\strong{\code{force = TRUE} approves anyway}, for the rare case a DA needs to promote
+data despite an outstanding measure (e.g. a genuine template quirk that
+will never resolve cleanly, under a deadline). It requires a non-empty
+\code{justification} -- no confirmation prompt here, since this scriptable core
+has to work unattended in scripts/CI; an interactive wrapper is the right
+place for extra human friction (e.g. "type the period to confirm"), not
+this function. Every bypassed measure's \code{dq_flags} entry (when one exists)
+is annotated \code{handled} via \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} with \code{forced = TRUE} and a
+note pointing back at this approval's own log -- so the open backlog stays
+clean without pretending the flag was ever actually reviewed, and
+\code{\link[=eri_audit]{eri_audit()}} renders the whole thing prominently rather than folding it in
+as an ordinary approval.
 }
 \examples{
 \dontrun{
 eri_approve_cmr("sdn", "202605")
+
+# Only if you genuinely mean to promote past an outstanding measure:
+eri_approve_cmr("sdn", "202605", force = TRUE,
+                 justification = "Known template quirk in RB Treatment; confirmed with country lead.")
 }
 }
