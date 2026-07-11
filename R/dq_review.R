@@ -114,7 +114,13 @@
       cli::cli_alert_danger("File not found: {.path {p}}")
       return(invisible(NULL))
     }
-    if (!grepl("_fixed", basename(p), fixed = TRUE)) {
+    # Anchored to the END of the filename stem (case-insensitive), not an
+    # unanchored substring -- a real submission whose name happens to
+    # contain "_fixed" somewhere (a facility code, a date) must still get
+    # forked, not be mistaken for an already-forked working copy and handed
+    # straight to the editor, which would silently break the "true-as-
+    # submitted file is always preserved" guarantee this flow exists for.
+    if (!grepl("_fixed$", tools::file_path_sans_ext(basename(p)), ignore.case = TRUE)) {
       ext        <- tools::file_ext(p)
       fixed_path <- paste0(tools::file_path_sans_ext(p), "_fixed", if (nzchar(ext)) paste0(".", ext) else "")
       if (file.exists(fixed_path)) {
@@ -201,20 +207,30 @@
 
 # "Re-run the DQ check" menu item: if a local "fix in source" file is known this session, offers
 # to re-split it (supersede_staged = TRUE, so the corrected file replaces the broken one rather
-# than sitting alongside it -- ADR-0017) before the caller's next loop iteration re-runs
-# eri_cmr_dq_report(). Returns the (possibly updated) plan.
+# than sitting alongside it -- ADR-0017). Returns list(plan, rechecked): `plan` is the FULL
+# workbook plan with only the just-resplit measure(s)' routing rows replaced (every other
+# measure's routing is kept, not discarded); `rechecked` is just those resplit rows, or NULL if
+# nothing was resplit. The caller re-runs eri_cmr_dq_report() scoped to `rechecked` ONLY --
+# passing the whole plan here would make eri_cmr_dq_report() write a brand-new "open" dq_flags
+# entry for every measure, silently discarding every OTHER measure's in-session
+# not_important/noted decisions the moment any single measure is re-checked.
 #' @keywords internal
 .eri_dq_review_rerun <- function(country, period, plan, data_con, local_path_env) {
-  if (is.null(local_path_env$path)) return(plan)
-  choice <- .eri_prompt_menu(
-    paste0("Re-split '", basename(local_path_env$path), "' before re-checking?"),
-    c("Yes", "No -- just re-check what's already staged")
-  )
-  if (choice == 1L) {
-    plan <- eri_split_cmr(local_path_env$path, country, data_con = data_con, period = period,
-                          supersede_staged = TRUE)
+  if (is.null(local_path_env$path)) {
+    cli::cli_alert_info("No local fix known yet this session -- nothing to re-split or re-check.")
+    return(list(plan = plan, rechecked = NULL))
   }
-  plan
+  choice <- .eri_prompt_menu(
+    paste0("Re-split '", basename(local_path_env$path), "' and re-check just what it routes to?"),
+    c("Yes", "No -- cancel")
+  )
+  if (choice != 1L) return(list(plan = plan, rechecked = NULL))
+
+  new_plan <- eri_split_cmr(local_path_env$path, country, data_con = data_con, period = period,
+                            supersede_staged = TRUE)
+  key      <- function(p) paste(p$disease, p$data_type)
+  plan     <- dplyr::bind_rows(plan[!(key(plan) %in% key(new_plan)), , drop = FALSE], new_plan)
+  list(plan = plan, rechecked = new_plan)
 }
 
 # Force-approve, with the human friction the scriptable core deliberately doesn't add (batch use
@@ -338,8 +354,14 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
       touched_schemas <- union(touched_schemas, result$touched)
       flags <- .eri_dq_review_apply_local_resolutions(flags, result$resolved)
     } else if (choice == 2L) {
-      plan  <- .eri_dq_review_rerun(country, period, plan, data_con, local_path_env)
-      flags <- eri_cmr_dq_report(country, period, plan = plan, data_con = data_con)
+      rerun <- .eri_dq_review_rerun(country, period, plan, data_con, local_path_env)
+      plan  <- rerun$plan
+      if (!is.null(rerun$rechecked) && nrow(rerun$rechecked) > 0L) {
+        fresh <- eri_cmr_dq_report(country, period, plan = rerun$rechecked, data_con = data_con)
+        key   <- function(p) paste(p$disease, p$data_type)
+        if (nrow(flags) > 0L) flags <- flags[!(key(flags) %in% key(rerun$rechecked)), , drop = FALSE]
+        flags <- dplyr::bind_rows(flags, fresh)
+      }
     } else if (choice == 3L) {
       if (isTRUE(.eri_dq_review_force_approve(country, period, plan, data_con))) break
     } else if (choice == 4L) {
