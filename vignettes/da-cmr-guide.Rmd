@@ -369,6 +369,12 @@ template quirk confirmed with the country, say -- and the data genuinely needs t
 eri_approve_cmr("uga", "202406", force = TRUE,
                 justification = "Known template quirk in RB Treatment; confirmed with country lead.")
 #> x FORCE-APPROVING "uga" / "202406" despite 1 outstanding measure.
+#> i Justification: Known template quirk in RB Treatment; confirmed with country lead.
+#> # A tibble: 1 × 4
+#>   disease data_type log_path                                     issue
+#>   <chr>   <chr>     <chr>                                        <chr>
+#> 1 oncho   treatment uga/oncho/programmatic/treatment/logs/x.yaml 1 unresolved DQ flag(s)
+#> ✔ Marked 'x.yaml' handled (bypassed by a forced approval).
 #> ✔ Force-approved 2 measures for "uga" / "202406".
 ```
 

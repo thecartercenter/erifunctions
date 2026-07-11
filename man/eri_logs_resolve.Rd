@@ -4,7 +4,7 @@
 \alias{eri_logs_resolve}
 \title{Mark a log entry as handled}
 \usage{
-eri_logs_resolve(log_path, note = NULL, forced = FALSE, data_con = NULL)
+eri_logs_resolve(log_path, note = NULL, data_con = NULL, forced = FALSE)
 }
 \arguments{
 \item{log_path}{\code{chr} Blob path of the log to resolve (the \code{log_path} column
@@ -12,13 +12,13 @@ from \code{\link[=eri_logs]{eri_logs()}}).}
 
 \item{note}{\code{chr} or \code{NULL} An optional note describing how it was handled.}
 
+\item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
+
 \item{forced}{\code{lgl} Mark the entry \code{handled} because something else bypassed
 it (e.g. \code{\link[=eri_approve_cmr]{eri_approve_cmr()}}'s \code{force = TRUE} path), not because it was
 actually reviewed and resolved. Default \code{FALSE}. Distinguishes an
 annotated bypass from a genuine resolution in the record --
 \code{\link[=eri_audit]{eri_audit()}} renders the two differently.}
-
-\item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
 Invisibly, \code{TRUE}.

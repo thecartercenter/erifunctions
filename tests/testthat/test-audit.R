@@ -389,3 +389,25 @@ test_that("eri_audit carries the forced column through and print.eri_audit_trail
   expect_match(rendered, "FORCED")
   expect_match(rendered, "Deadline override.", fixed = TRUE)
 })
+
+test_that("print.eri_audit_trail does not crash on a forced justification containing literal braces", {
+  # A justification is free text a DA types -- e.g. quoting a template
+  # placeholder or a formula -- and could easily contain "{"/"}". The forced
+  # row is rendered by building the whole line as a plain string first; it
+  # must be interpolated as a glue VARIABLE, not passed as the glue template
+  # itself, or a stray brace crashes the entire print (not just that row).
+  store <- list()
+  store[["atlantis/oncho/programmatic/treatment/logs/a.yaml"]] <- list(
+    operation = "eri_approve_cmr", analyst = "u", timestamp = "2026-06-01T11:00:00Z",
+    parameters = list(country = "atlantis", period = "202607"), status = "success",
+    measures = list("oncho/treatment"), forced = TRUE,
+    justification = "Matches the {district} placeholder in last month's template.",
+    bypassed = list(list(disease = "oncho", data_type = "treatment", issue = "3 unresolved DQ flag(s)",
+                        log_path = NA_character_))
+  )
+  local_audit_store(store)
+
+  out <- eri_audit("atlantis", "oncho", "programmatic", "treatment")
+  expect_no_error(rendered <- paste(cli::cli_fmt(print(out)), collapse = " "))
+  expect_match(rendered, "district", fixed = TRUE)
+})

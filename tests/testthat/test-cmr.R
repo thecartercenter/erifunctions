@@ -1161,6 +1161,35 @@ test_that("eri_approve_cmr force = TRUE with nothing outstanding behaves like a 
   expect_null(logged[[1]]$bypassed)
 })
 
+test_that("eri_approve_cmr force = TRUE still annotates the bypass (without a back-reference) when its own trail log fails to write", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  resolved <- list()
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/oncho/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "needs_review", handled = FALSE, n_issues = 3L
+    ),
+    eri_approve = function(...) invisible(NULL),
+    eri_logs_resolve = function(log_path, note = NULL, forced = FALSE, data_con = NULL) {
+      resolved[[length(resolved) + 1L]] <<- list(log_path = log_path, note = note, forced = forced)
+      invisible(TRUE)
+    },
+    .eri_write_log = function(...) NULL,  # simulates a failed Azure write (never throws, per .eri_write_log's own contract)
+    .package = "erifunctions"
+  )
+
+  expect_no_error(suppressMessages(eri_approve_cmr(
+    "sdn", "202605", plan = plan, force = TRUE, justification = "Deadline override.",
+    data_con = structure(list(), class = "mock")
+  )))
+
+  expect_length(resolved, 1L)
+  expect_true(resolved[[1]]$forced)
+  expect_match(resolved[[1]]$note, "could not be written", fixed = TRUE)
+  expect_match(resolved[[1]]$note, "Deadline override.", fixed = TRUE)
+})
+
 test_that("eri_cmr_dq_report combines every measure's flags into one tibble with usable flag_ids", {
   plan <- tibble::tibble(
     sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),

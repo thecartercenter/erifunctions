@@ -324,8 +324,12 @@ print.eri_audit_trail <- function(x, ...) {
       # A forced approval or a forced-bypass annotation -- render prominently
       # (red, a "!" bullet) rather than folding it in as an ordinary event;
       # this is the one thing in the trail that was NOT a genuine review.
+      # `detail` can embed free text a DA typed (the force-approve
+      # `justification`) -- interpolate the finished string as a glue
+      # VARIABLE ("{line}"), not as the template itself, or a stray literal
+      # "{" in someone's justification crashes the whole print.
       line <- cli::col_red(paste0("[FORCED] ", ts, " -- ", event, actor, detail))
-      cli::cli_bullets(c("!" = line))
+      cli::cli_bullets(c("!" = "{line}"))
     } else {
       cli::cli_bullets(c("*" = "{ts} -- {.strong {event}}{actor}{detail}"))
     }

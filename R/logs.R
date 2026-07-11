@@ -440,12 +440,12 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #' @param log_path `chr` Blob path of the log to resolve (the `log_path` column
 #'   from [eri_logs()]).
 #' @param note `chr` or `NULL` An optional note describing how it was handled.
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @param forced `lgl` Mark the entry `handled` because something else bypassed
 #'   it (e.g. [eri_approve_cmr()]'s `force = TRUE` path), not because it was
 #'   actually reviewed and resolved. Default `FALSE`. Distinguishes an
 #'   annotated bypass from a genuine resolution in the record --
 #'   [eri_audit()] renders the two differently.
-#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
 #' @returns Invisibly, `TRUE`.
 #' @examples
 #' \dontrun{
@@ -453,7 +453,7 @@ eri_logs <- function(country = NULL, disease = NULL, data_source = NULL,
 #' eri_logs_resolve(backlog$log_path[1], note = "Re-ran after the source fixed the file.")
 #' }
 #' @export
-eri_logs_resolve <- function(log_path, note = NULL, forced = FALSE, data_con = NULL) {
+eri_logs_resolve <- function(log_path, note = NULL, data_con = NULL, forced = FALSE) {
   data_con <- .eri_logs_con(data_con)
 
   tmp <- tempfile(fileext = ".yaml")

@@ -880,7 +880,11 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
   if (!is.null(outstanding_tbl)) {
     bypass_note <- paste0(
       "Bypassed by a forced eri_approve_cmr() approval",
-      if (!is.null(trail_path)) paste0(" (", basename(trail_path), ")") else "",
+      if (!is.null(trail_path)) {
+        paste0(" (", basename(trail_path), ")")
+      } else {
+        " (this approval's own log could not be written -- no back-reference available)"
+      },
       ": ", justification
     )
     for (lp in outstanding_tbl$log_path[!is.na(outstanding_tbl$log_path)]) {
