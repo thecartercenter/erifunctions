@@ -51,6 +51,14 @@
   [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
   (auto-summarizing from the per-flag decisions) before offering to
   approve.
+- Also fixes a real bug found in review: “Re-run the DQ check”
+  originally re-checked the **whole** workbook, and
+  [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+  always writes a brand-new “open” entry for every measure it’s given –
+  so re-checking after fixing just one measure silently discarded every
+  *other* measure’s in-session not-important/noted decisions. Fixed by
+  scoping the re-check to only the measure that was actually resplit,
+  merging just its fresh flags into the in-memory tibble.
 
 ## erifunctions 0.9.15
 
