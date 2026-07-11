@@ -318,6 +318,20 @@ remove the old file by hand.
 
 ## 5. Check data quality before approving
 
+> **Prefer to do this interactively?** Sections 5 and 6 below are the
+> scriptable core –
+> [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+> walks you through the same check → fix → re-check → approve loop as
+> one guided, menu-driven session (fix a value in the workbook, adjust
+> the schema, mark a flag not important/noted, force-approve with a
+> typed confirmation, and submit a schema fix for a maintainer to fold
+> in – all from one prompt): `eri_dq_review("uga", "202406")`. It’s
+> built entirely on the functions below, so everything here still
+> applies – interactive-only (it refuses to run in a script or CI, where
+> these functions are what you use directly), and it holds no state of
+> its own: close it mid-review and running it again picks up exactly
+> where the logs say things are.
+
 CMR routing does **not** auto-run DQ checks – CMR review is manual, on
 purpose.
 [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)

@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.15 · **Status:** Active development
+**Version:** 0.9.16 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -314,6 +314,7 @@ eri_catalog_verify()
 | `eri_cmr_last_plan(country, period)` | Recover a past [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md) run’s routing plan from the log, without rerunning |
 | `eri_cmr_dq_report(country, period)` | DQ-check every measure a CMR workbook routed to, one combined flags tibble |
 | `eri_approve_cmr(country, period, force, justification)` | Approve every measure in one call, but only if none are outstanding (opt-in `force = TRUE` + `justification` to approve anyway) |
+| `eri_dq_review(country, period)` | Interactive, menu-driven check → fix → re-check → approve loop over the functions above |
 
 ### ODK
 
@@ -530,6 +531,10 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
 - [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
   **\[experimental\]** : Run and log DQ checks for a whole CMR workbook,
   one combined report
+
+- [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  **\[experimental\]** : Interactively review and resolve a CMR
+  workbook's DQ flags, then approve
 
 - [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
   **\[experimental\]** : Load a CMR country schema

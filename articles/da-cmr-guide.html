@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.15/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -415,6 +415,20 @@ warning and remove the old file by hand.</p>
 <div class="section level2">
 <h2 id="dq-check">5. Check data quality before approving<a class="anchor" aria-label="anchor" href="#dq-check"></a>
 </h2>
+<blockquote>
+<p><strong>Prefer to do this interactively?</strong> Sections 5 and 6
+below are the scriptable core – <a href="../reference/eri_dq_review.html"><code>eri_dq_review()</code></a>
+walks you through the same check → fix → re-check → approve loop as one
+guided, menu-driven session (fix a value in the workbook, adjust the
+schema, mark a flag not important/noted, force-approve with a typed
+confirmation, and submit a schema fix for a maintainer to fold in – all
+from one prompt): <code>eri_dq_review("uga", "202406")</code>. It’s
+built entirely on the functions below, so everything here still applies
+– interactive-only (it refuses to run in a script or CI, where these
+functions are what you use directly), and it holds no state of its own:
+close it mid-review and running it again picks up exactly where the logs
+say things are.</p>
+</blockquote>
 <p>CMR routing does <strong>not</strong> auto-run DQ checks – CMR review
 is manual, on purpose. <a href="../reference/eri_cmr_dq_report.html"><code>eri_cmr_dq_report()</code></a>
 runs and logs DQ checks for every measure <code>plan</code> routed, in

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,16 +68,34 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.15/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.16" id="erifunctions-0916">erifunctions 0.9.16<a class="anchor" aria-label="anchor" href="#erifunctions-0916"></a></h2>
+<div class="section level3">
+<h3 id="eri_dq_review-the-interactive-front-door-over-the-scriptable-dq-core-phase-of-the-dq-workflow-redesign-0-9-16">
+<code>eri_dq_review()</code>: the interactive front door over the scriptable DQ core (Phase 7 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#eri_dq_review-the-interactive-front-door-over-the-scriptable-dq-core-phase-of-the-dq-workflow-redesign-0-9-16"></a></h3>
+<ul><li>
+<strong>New <code>eri_dq_review(country, period, plan, data_con)</code></strong>: a menu-driven, interactive session that walks the whole check → fix → re-check → approve loop for a CMR workbook. Clean -&gt; offers to approve; flagged -&gt; work through each flag one at a time (fix the value in the source workbook, adjust the schema, or mark not-important/noted), re-run the DQ check, force-approve (with a typed period-confirmation gate on top of the scriptable core’s mandatory justification), print a report, or exit – all from one prompt.</li>
+<li>
+<strong>Pure orchestration, no new mutations of its own</strong>: every effect goes through a function already shipped in Phases 2-6 (<code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>, <code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code>, <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>, <code><a href="../reference/eri_dq_schema_edit.html">eri_dq_schema_edit()</a></code>/<code><a href="../reference/eri_dq_schema_submit.html">eri_dq_schema_submit()</a></code>, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>, <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>). The wrapper holds no state of its own beyond one in-memory, per-call path cache (which local workbook you’re fixing this session) – close it mid-review and run it again later, and it picks up exactly where the log YAMLs say things are.</li>
+<li>
+<strong>Interactive only</strong>: refuses to run non-interactively (checked via <code><a href="https://rlang.r-lib.org/reference/is_interactive.html" class="external-link">rlang::is_interactive()</a></code>, the seam <code>options(rlang_interactive = TRUE)</code> gives tests), with a clear pointer to the scriptable core for scripts/CI.</li>
+<li>
+<strong><code>rstudioapi</code> added to <code>Suggests</code> only</strong> (never <code>Imports</code>), guarded behind an internal <code>.eri_open_file()</code> – opens a file in the RStudio editor when available, otherwise prints a path most terminals already render as a clickable link.</li>
+<li>
+<strong>A live (semi-scripted) validation run against the <code>atlantis</code> sandbox caught a real design bug before this shipped</strong>: the loop originally re-ran the DQ check at the top of every iteration, so marking a flag not-important – which doesn’t touch the underlying staged data – would get re-flagged as a brand-new “open” issue on the very next iteration, forever. Fixed by tracking the flags tibble in-memory between iterations, applying triage decisions locally, and only re-fetching from Azure on an explicit “Re-run the DQ check” action.</li>
+<li>Also fixes a related gap found in the same pass: <code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> only updates a flag’s own per-flag status, never the DQ log entry’s own <code>status</code>/<code>handled</code> fields that <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> actually checks – so marking every flag not-important/noted wouldn’t by itself unblock approval. The wrapper now closes out each such entry via <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code> (auto-summarizing from the per-flag decisions) before offering to approve.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.15" id="erifunctions-0915">erifunctions 0.9.15<a class="anchor" aria-label="anchor" href="#erifunctions-0915"></a></h2>
 <div class="section level3">
 <h3 id="eri_approve_cmr-force-approve-path-phase-of-the-dq-workflow-redesign-0-9-15">
 <code>eri_approve_cmr()</code> force-approve path (Phase 6 of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#eri_approve_cmr-force-approve-path-phase-of-the-dq-workflow-redesign-0-9-15"></a></h3>
 <ul><li>
-<strong>New <code>eri_approve_cmr(..., force = FALSE, justification = NULL)</code></strong>: for the rare case an outstanding measure must be promoted anyway (e.g. a known template quirk confirmed with the country, under a deadline). <code>force = TRUE</code> requires a non-empty <code>justification</code> – no interactive confirmation prompt here, since this scriptable core has to keep working unattended in scripts/CI; that extra human friction belongs in the planned interactive <code>eri_dq_review()</code> wrapper (Phase 7), not this function.</li>
+<strong>New <code>eri_approve_cmr(..., force = FALSE, justification = NULL)</code></strong>: for the rare case an outstanding measure must be promoted anyway (e.g. a known template quirk confirmed with the country, under a deadline). <code>force = TRUE</code> requires a non-empty <code>justification</code> – no interactive confirmation prompt here, since this scriptable core has to keep working unattended in scripts/CI; that extra human friction belongs in the planned interactive <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> wrapper (Phase 7), not this function.</li>
 <li>
 <strong>Bypassed measures are annotated, never silently resolved.</strong> Each bypassed <code>dq_flags</code> entry (when one exists – a “never DQ-checked” bypass has nothing to annotate) is marked <code>handled</code> via <code>eri_logs_resolve(..., forced = TRUE)</code>, which now records <code>forced</code> in the triage block alongside a note pointing back at the approval’s own log. The open backlog stays clean without ever pretending the flag was genuinely reviewed.</li>
 <li><strong>The approval’s own log records <code>forced</code>, <code>justification</code>, and exactly what it bypassed.</strong></li>

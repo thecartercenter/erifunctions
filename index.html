@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,7 +110,7 @@
 <a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
 </h3>
 <p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
-<p><strong>Version:</strong> 0.9.15 · <strong>Status:</strong> Active development</p>
+<p><strong>Version:</strong> 0.9.16 · <strong>Status:</strong> Active development</p>
 <blockquote>
 <p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
@@ -638,6 +638,10 @@ ERIFUNCTIONS_SP_CLIENT_SECRET=&lt;SP client secret&gt;
 <tr>
 <td><code>eri_approve_cmr(country, period, force, justification)</code></td>
 <td>Approve every measure in one call, but only if none are outstanding (opt-in <code>force = TRUE</code> + <code>justification</code> to approve anyway)</td>
+</tr>
+<tr>
+<td><code>eri_dq_review(country, period)</code></td>
+<td>Interactive, menu-driven check → fix → re-check → approve loop over the functions above</td>
 </tr>
 </tbody>
 </table>
