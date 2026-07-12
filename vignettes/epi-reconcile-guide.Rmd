@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: yes (offline string-match; writes nothing to Azure)
+**Walkthrough** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (offline string-match; writes nothing to Azure)
 :::
 
 Surveillance data arrives with **messy, free-text place names**, `"Jínova"`, `"JUAN DE HERRERA"`,

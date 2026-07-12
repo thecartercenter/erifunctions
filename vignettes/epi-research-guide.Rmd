@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~40 min &middot; needs: Azure &middot; sandbox-safe: yes (public `mtcars` under a demo project)
+**Walkthrough** &middot; ~40 min &middot; needs: Azure &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (public `mtcars` under a demo project)
 :::
 
 This is a hands-on, **start-to-finish walkthrough** of running a research study with

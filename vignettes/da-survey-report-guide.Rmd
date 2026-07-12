@@ -12,7 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: yes (offline synthetic data, no Azure)
+**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (offline synthetic data, no Azure)
 :::
 
 Once a survey has been pulled from ODK, cleaned, and **approved**, the last step is the deliverable: a

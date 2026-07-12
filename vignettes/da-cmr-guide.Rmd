@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~25 min &middot; needs: Azure &middot; sandbox-safe: no (stage/approve need a real registered country)
+**Walkthrough** &middot; ~25 min &middot; needs: Azure &middot; sandbox-safe: [no]{.eri-sandbox-no} (stage/approve need a real registered country)
 :::
 
 Every month, country programmes file a **Case Management Report (CMR)**, a filled Excel template of

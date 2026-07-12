@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: yes (fully offline, no Azure, no real data)
+**Walkthrough** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (fully offline, no Azure, no real data)
 :::
 
 A fresh surveillance extract can be **valid cell-by-cell and still wrong epidemiologically**, a week

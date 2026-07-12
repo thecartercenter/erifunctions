@@ -23,6 +23,11 @@
   render correctly in the actual rendered HTML, not just that the source parses.
 - Found but out of scope here: `epi-analytics.Rmd`'s code chunks reference undefined objects and
   aren't actually runnable as shipped — logged as a nice-to-have, not fixed in this PR.
+- A review pass caught one strip that misapplied the sandbox-safe rule
+  (`da-qc-feedback-guide.Rmd`'s "Notify the team" aside illustrates a real country's Teams channel,
+  so it's `no`, not `yes`, even though the rest of the guide is offline) and wired up the
+  `.eri-sandbox-yes`/`.eri-sandbox-no` CSS classes that had been defined but never actually used in
+  any strip — both fixed.
 
 # erifunctions 0.9.20
 

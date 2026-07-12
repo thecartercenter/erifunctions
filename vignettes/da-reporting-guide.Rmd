@@ -12,7 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: yes (no Azure touched)
+**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (no Azure touched)
 :::
 
 Once data is approved, a lot of the job is turning it into **outputs**, a table for a memo, a figure

@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~40 min &middot; needs: Azure + ODK &middot; sandbox-safe: no (uses a real country's ODK project)
+**Walkthrough** &middot; ~40 min &middot; needs: Azure + ODK &middot; sandbox-safe: [no]{.eri-sandbox-no} (uses a real country's ODK project)
 :::
 
 **ODK Central** is where field data is born, survey teams collect submissions on phones, and they

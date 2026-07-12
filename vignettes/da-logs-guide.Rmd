@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: yes (runs on `atlantis`)
+**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (runs on `atlantis`)
 :::
 
 Every operation `erifunctions` runs, an ingest, an approval, an ODK sync, **leaves a log** in

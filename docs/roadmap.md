@@ -320,8 +320,8 @@ originally estimated** — reading the package's own authoritative "in order" te
 QC-feedback/survey-report are explicitly "feeds/tasks you reach for as needed," not forced
 continuations, so they got a metadata strip but not an invented linear "step N of 10." Verified with
 a full local `pkgdown::build_site()` (unlocked via `RSTUDIO_PANDOC` pointing at RStudio's bundled
-Quarto Pandoc — see `docs/roadmap.md`'s Phase 1 note and [[reference_pkgdown_site]]), not just
-`check_pkgdown()`: every reference page and all 25 articles built clean, `extra.css` copied and
+Quarto Pandoc — see this redesign's own Phase 1 note above on the CI-only-catchable `subtitle:`
+bug), not just `check_pkgdown()`: every reference page and all 25 articles built clean, `extra.css` copied and
 linked, both fenced-div classes render correctly in the actual output. Found but out of scope to fix
 here: `epi-analytics.Rmd`'s code chunks reference undefined objects (`result`, `population_data`, …)
 and aren't actually runnable as shipped — logged as a nice-to-have. (3) a bundled task

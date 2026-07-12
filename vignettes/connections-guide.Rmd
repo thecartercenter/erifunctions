@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~20 min &middot; needs: Azure + ODK &middot; sandbox-safe: no (illustrates real Azure/SharePoint/Teams destinations)
+**Walkthrough** &middot; ~20 min &middot; needs: Azure + ODK &middot; sandbox-safe: [no]{.eri-sandbox-no} (illustrates real Azure/SharePoint/Teams destinations)
 :::
 
 `erifunctions` talks to four outside services on your behalf, **Azure** (where the data lives),
@@ -274,7 +274,7 @@ For every connection function grouped together, see the **Connections & authenti
 the [reference](../reference/index.html).
 
 ::: {.eri-path-nav}
-**Step 1, shared by both role paths.** Next: [Onboarding a new program](da-onboard-guide.html)
+**Step 1, shared by both role paths.** Next: [Onboarding a new country, disease, or data type](da-onboard-guide.html)
 (Data Analyst path) &middot; or [A complete research workflow](epi-research-guide.html)
 (Epidemiologist path).
 :::

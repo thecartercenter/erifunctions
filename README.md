@@ -59,8 +59,9 @@ assumes.
   [Reconcile localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) →
   [Catch anomalies](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html).
 
-The full set (**Sandbox** = runs safely on the built-in `atlantis` training country or fully
-offline, with no real country ever touched):
+The full set (**Sandbox** = runs safely with no real country ever touched — on the built-in
+`atlantis` training country, fully offline, or with public/placeholder data under a non-real
+country code):
 
 | Guide | For | Time | Needs | Sandbox |
 |---|---|---|---|---|
@@ -74,7 +75,7 @@ offline, with no real country ever touched):
 | [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) | ~20 min | Azure | Yes |
 | [Answering ad-hoc requests with SQL](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | Data analysts running SQL across approved datasets (roll-ups, joins) with the `eri_query()` DuckDB layer | ~15 min | Azure | No |
 | [Branded tables, figures & decks](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | Data analysts turning approved data into on-brand tables, plots, Excel workbooks, and PowerPoint decks | ~10 min | Nothing | Yes |
-| [QC an extract & give a country feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | Data analysts running DQ checks on a submission and turning the flags into clear country feedback | ~10 min | Nothing | Yes |
+| [QC an extract & give a country feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | Data analysts running DQ checks on a submission and turning the flags into clear country feedback | ~10 min | Nothing | No |
 | [Final summaries & reports from an ODK survey](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.html) | Data analysts summarising an approved survey (e.g. LF TAS) with the disease helpers and packaging the result | ~10 min | Nothing | Yes |
 | [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract | ~15 min | Nothing | n/a |
 | [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers | ~10 min | n/a | n/a |

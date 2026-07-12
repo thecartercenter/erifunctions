@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 ```
 
 ::: {.eri-guide-meta}
-**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: yes (runs on `atlantis`)
+**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (runs on `atlantis`)
 :::
 
 The [CMR guide](da-cmr-guide.html) and the [QC/feedback guide](da-qc-feedback-guide.html) both walk
