@@ -284,7 +284,7 @@ Leave it `FALSE` (the default) if you'd rather review the warning and remove the
 > It's built entirely on the functions below, so everything here still applies -- interactive-only
 > (it refuses to run in a script or CI, where these functions are what you use directly), and it
 > holds no state of its own: close it mid-review and running it again picks up exactly where the
-> logs say things are.
+> logs say things are. See the [DQ review guide](da-dq-review-guide.html) for a full worked session.
 
 CMR routing does **not** auto-run DQ checks -- CMR review is manual, on purpose.
 [`eri_cmr_dq_report()`](../reference/eri_cmr_dq_report.html) runs and logs DQ checks for every
@@ -345,7 +345,8 @@ Handing this back to a country or pasting it into a Teams thread? [`eri_dq_expor
 renders `flags` (with whatever `status`/`note` triage you've done above) to a self-contained
 HTML or markdown file, organised by sheet -- see the [QC/feedback guide](da-qc-feedback-guide.html)
 for the general pattern. [`eri_dq_review()`](../reference/eri_dq_review.html)'s "Print report" menu
-option calls this automatically.
+option calls this automatically -- see the [DQ review guide](da-dq-review-guide.html) for that whole
+session end to end.
 
 ```{r dq-export}
 eri_dq_export(flags, country = "uga", period = "202406")

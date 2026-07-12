@@ -66,6 +66,7 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 | Onboard a new country / disease / data type | [`da-onboard-guide`](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | ✅ Shipped |
 | Ingest → stage → approve a surveillance dataset | [`da-ingest-guide`](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | ✅ Shipped |
 | Upload, split & approve a monthly country report (CMR) | [`da-cmr-guide`](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | ✅ Shipped |
+| Triage and hand back DQ flags interactively (`eri_dq_review` + `eri_dq_export`) | [`da-dq-review-guide`](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html) | ✅ Shipped |
 | Work with ODK Central (connect → monitor → manage → pull) | [`da-odk-guide`](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | ✅ Shipped |
 | Triage the error / DQ log backlog | [`da-logs-guide`](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | ✅ Shipped |
 | Answer ad-hoc data requests with SQL (`eri_query`) | [`da-adhoc-guide`](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | ✅ Shipped |
