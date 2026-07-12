@@ -574,6 +574,32 @@ test_that("load_dq_schema prefers a live local override over the bundled schema"
   expect_equal(schema$columns$target_pop$range[[2]], 99999999)
 })
 
+test_that("load_dq_schema's active-override notice prints as two separate bullets, not jammed", {
+  override_dir <- withr::local_tempdir()
+  local_mocked_bindings(
+    .eri_schema_override_dir = function() override_dir,
+    .package = "erifunctions"
+  )
+  suppressWarnings(
+    eri_dq_schema_edit("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  )
+
+  lines <- capture.output(
+    suppressWarnings(
+      load_dq_schema("atlantis", "oncho", "programmatic", "treatment", azcontainer = NULL)
+    ),
+    type = "message"
+  )
+
+  using_line <- grep("Using your local schema override", lines, value = TRUE)
+  reset_line <- grep("Reset with", lines, value = TRUE)
+  expect_length(using_line, 1L)
+  expect_length(reset_line, 1L)
+  # regression guard: a prior bug (cli_alert_info() instead of cli_bullets() on a
+  # multi-element vector) glued both onto one line with no space between them
+  expect_false(any(grepl("created.*Reset with", lines)))
+})
+
 test_that("eri_dq_schema_path returns the override path when one is live", {
   override_dir <- withr::local_tempdir()
   local_mocked_bindings(

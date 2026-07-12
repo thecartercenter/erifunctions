@@ -1113,7 +1113,7 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
     ov <- .eri_dq_schema_override_state(stem, azcontainer)
 
     if (ov$state == "active") {
-      cli::cli_alert_info(c(
+      cli::cli_bullets(c(
         "i" = "Using your local schema override for {.val {stem}} (created {ov$meta$forked_at}).",
         " " = "Reset with {.fn eri_dq_schema_reset}."
       ))
@@ -1122,7 +1122,7 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
     }
 
     if (ov$state == "unknown") {
-      cli::cli_alert_warning(c(
+      cli::cli_bullets(c(
         "!" = "Could not verify your local schema override for {.val {stem}} against upstream (Azure unreachable and no bundled copy found) -- using it as-is.",
         "i" = "Its freshness relative to the canonical schema could not be confirmed this time."
       ))
@@ -1132,16 +1132,16 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 
     if (ov$state == "stale") {
       if (.eri_dq_schema_retire(stem, ov$paths)) {
-        cli::cli_alert_warning(c(
-          "Your local schema override for {.val {stem}} (forked {ov$meta$forked_at}) is stale -- the upstream schema changed since you forked it.",
+        cli::cli_bullets(c(
+          "!" = "Your local schema override for {.val {stem}} (forked {ov$meta$forked_at}) is stale -- the upstream schema changed since you forked it.",
           "i" = "Retired; using the current upstream instead.",
           "i" = "If issues re-flag that you thought you'd fixed, your changes weren't folded into the update -- re-review, or re-fork with {.fn eri_dq_schema_edit}."
         ))
         return(list(path = ov$upstream$path, source = ov$upstream$source,
                     hash = unname(tools::md5sum(ov$upstream$path))))
       }
-      cli::cli_alert_danger(c(
-        "Could not fully retire the stale local override for {.val {stem}} -- using it as-is.",
+      cli::cli_bullets(c(
+        "x" = "Could not fully retire the stale local override for {.val {stem}} -- using it as-is.",
         "i" = "Check {.path {.eri_schema_override_dir()}} manually, or run {.fn eri_dq_schema_reset}."
       ))
       return(list(path = ov$paths$yaml, source = "local_override",
@@ -1296,9 +1296,9 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
   ov   <- .eri_dq_schema_override_state(stem, azcontainer)
 
   if (ov$state %in% c("active", "unknown")) {
-    cli::cli_alert_info(c(
-      "You already have a local override for {.val {stem}} (forked {ov$meta$forked_at}).",
-      "i" = if (ov$state == "unknown") {
+    cli::cli_bullets(c(
+      "i" = "You already have a local override for {.val {stem}} (forked {ov$meta$forked_at}).",
+      " " = if (ov$state == "unknown") {
         "Could not verify it against upstream right now (unreachable) -- returning it as-is."
       } else {
         "Returning it as-is. Start over with {.fn eri_dq_schema_reset}."
@@ -1309,8 +1309,8 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
 
   if (ov$state == "stale") {
     if (!.eri_dq_schema_retire(stem, ov$paths)) {
-      cli::cli_alert_danger(c(
-        "Could not fully retire the stale local override for {.val {stem}} -- leaving it in place.",
+      cli::cli_bullets(c(
+        "x" = "Could not fully retire the stale local override for {.val {stem}} -- leaving it in place.",
         "i" = "Resolve manually in {.path {.eri_schema_override_dir()}}, or run {.fn eri_dq_schema_reset} then try again."
       ))
       return(invisible(ov$paths$yaml))
@@ -1333,7 +1333,7 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
   )
   yaml::write_yaml(meta, ov$paths$meta)
   cli::cli_alert_success("Forked {.val {stem}} into a local override: {.path {ov$paths$yaml}}")
-  cli::cli_alert_info(c(
+  cli::cli_bullets(c(
     "i" = "This is now your active schema for {.val {stem}} until you {.fn eri_dq_schema_reset} it.",
     " " = "If the upstream schema changes, it is retired automatically -- never silently overridden or discarded."
   ))

@@ -313,6 +313,49 @@ test_that(".eri_dq_review_fix_in_source forks even when the ORIGINAL filename co
   expect_equal(opened, local_path_env$path)
 })
 
+test_that(".eri_dq_review_fix_in_source prints the fix instructions as two separate bullets, not jammed onto one line", {
+  tmp_dir  <- withr::local_tempdir()
+  original <- file.path(tmp_dir, "workbook.xlsx")
+  writeLines("x", original)
+  local_path_env <- new.env(parent = emptyenv())
+  local_path_env$path <- NULL
+  local_mocked_bindings(
+    .eri_prompt_line = function(...) original,
+    .eri_open_file    = function(path, ...) invisible(path),
+    .package = "erifunctions"
+  )
+
+  f <- list(column = "district", excel_row = 8L, sheet = "RB Treatment", issue = "not an allowed value")
+  lines <- capture.output(.eri_dq_review_fix_in_source(f, local_path_env), type = "message")
+
+  fix_line   <- grep("Fix district on Excel row 8", lines, value = TRUE)
+  issue_line <- grep("Issue: not an allowed value$", lines, value = TRUE)
+  expect_length(fix_line, 1L)
+  expect_length(issue_line, 1L)
+  # regression guard: a prior bug (cli_alert_info() instead of cli_bullets() on a
+  # multi-element vector) glued both onto one line with no space between them
+  expect_false(any(grepl("sheet\\.Issue:", lines)))
+})
+
+test_that(".eri_dq_review_print_report() prints a plain table, not a flextable's console diagnostic dump", {
+  flags <- tibble::tibble(
+    sheet = "RB Treatment", excel_row = 8L, column = "district", value = "Atlantis City",
+    issue = "not an allowed value", status = "noted", note = "confirmed with the country lead"
+  )
+  local_mocked_bindings(
+    eri_dq_export = function(...) invisible("x"),
+    .package = "erifunctions"
+  )
+
+  lines <- capture.output(.eri_dq_review_print_report(flags, "atlantis", "202608"))
+
+  # regression guard: a prior bug (print(eri_table(...)), a flextable) dumped
+  # print.flextable()'s diagnostic summary outside a Viewer-capable session
+  expect_false(any(grepl("a flextable object", lines)))
+  expect_false(any(grepl("col_keys:", lines)))
+  expect_true(any(grepl("Atlantis City", lines)))
+})
+
 test_that(".eri_dq_review_apply_local_resolutions writes both status and note into the flags tibble", {
   flags <- tibble::tibble(
     flag_id = c("a::1", "a::2"), status = c("open", "open"),

@@ -79,9 +79,11 @@
   invisible(NULL)
 }
 
-# "Print report" menu item: one branded eri_table() per sheet on the console for a quick
-# eyeball, then eri_dq_export() writes the self-contained HTML handback file (with any in-session
-# status/note triage already folded in via .eri_dq_review_apply_local_resolutions()).
+# "Print report" menu item: one plain-tibble table per sheet on the console for a quick eyeball --
+# not eri_table()'s flextable (that renders to the Viewer pane, nothing over SSH/a plain console;
+# same reasoning .eri_dq_review_report() above already follows) -- then eri_dq_export() writes the
+# self-contained HTML handback file (with any in-session status/note triage already folded in via
+# .eri_dq_review_apply_local_resolutions()).
 #' @keywords internal
 .eri_dq_review_print_report <- function(flags, country, period) {
   if (nrow(flags) == 0L) {
@@ -92,7 +94,7 @@
     cols <- intersect(c("excel_row", "column", "value", "issue", "status", "note"), names(flags))
     sub  <- flags[flags$sheet == sh, cols, drop = FALSE]
     cli::cli_h3(sh)
-    print(eri_table(sub, title = sh))
+    print(as.data.frame(sub), row.names = FALSE)
   }
   # Best-effort: a write failure (read-only cwd, locked file...) shouldn't eject the DA from an
   # otherwise-safe interactive session -- nothing here is lost, it's all already in the logs.
@@ -139,7 +141,10 @@
     }
     local_path_env$path <- p
   }
-  cli::cli_alert_info(c(
+  # cli_bullets(), not cli_alert_info() -- cli_alert_info() only ever renders a single bullet;
+  # handed a 2-element vector it glues both elements onto one line with no line break between
+  # them instead of two separate "i" bullets.
+  cli::cli_bullets(c(
     "i" = "Fix {.field {f$column}} on Excel row {.val {f$excel_row}} in the {.val {f$sheet}} sheet.",
     "i" = "Issue: {f$issue}"
   ))
