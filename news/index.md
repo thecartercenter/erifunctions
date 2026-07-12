@@ -1,5 +1,47 @@
 # Changelog
 
+## erifunctions 0.9.22
+
+### A task registry answers “what are you trying to do?” (docs site redesign, phase 3)
+
+- **Added `inst/registry/task_map.yaml`**, a tree of ~31 common DA/Epi
+  tasks grouped into 8 categories (get set up, bring data in, check
+  quality & approve, work the backlog, use approved data, run a research
+  study, places & maps, add a new program). Each leaf names a
+  representative call, the guide that walks it end to end (if any), and
+  the reference functions it touches — the single shared source the rest
+  of the guidance system (the task-index article now, the planned
+  `eri_guide()` console wizard and pipeline-function “next step”
+  epilogues later) reads from, instead of three copies that can drift
+  apart.
+- **Added
+  [`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)**,
+  an exported console printer (in “Start here”, alongside
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md))
+  that prints the tree grouped by category with each task’s call and
+  guide, and returns the flattened registry invisibly as a data frame.
+- **Added the generated [task-index
+  article](https://thecartercenter.github.io/erifunctions/articles/task-index.html)**
+  (“What are you trying to do?”), a real executed chunk that reads the
+  bundled registry and renders a
+  [`knitr::kable()`](https://rdrr.io/pkg/knitr/man/kable.html) table —
+  it can’t go stale relative to the YAML the way hand-written prose can.
+- **Added `tests/testthat/test-task-map.R`**, an integrity suite: every
+  `reference:` name is a real exported function, every `guide:` slug
+  matches a real `vignettes/*.Rmd` file, every `call:` template parses
+  as valid R, every `next:` id resolves to a real task id, and every
+  leaf id is unique. An unverifiable claim in the registry is now a test
+  failure, not a stale doc.
+- A review pass caught 7 `call:` templates using invented parameter
+  names/order instead of the real function signature (worst case:
+  [`eri_sharepoint_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_sharepoint_upload.md)’s
+  first two positional arguments swapped) — the integrity suite only
+  checks that a call *parses*, not that it matches the real signature,
+  so these slipped past it; all 7 fixed and the field’s own comment
+  tightened to say parameter names/order must be real. Also moved
+  `compare_cutover` from “use approved data” to “bring data in” (it’s a
+  pipeline-validation step, not a reporting output).
+
 ## erifunctions 0.9.21
 
 ### Every guide now says what it costs before you start (docs site redesign, phase 2)

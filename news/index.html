@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,6 +24,7 @@
     <li><a class="dropdown-item" href="../articles/connections-guide.html">Connecting to Azure, ODK Central, SharePoint, and Teams</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
+    <li><a class="dropdown-item" href="../articles/task-index.html">What are you trying to do?</a></li>
     <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
     <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
     <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
@@ -69,9 +70,24 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.21/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.22" id="erifunctions-0922">erifunctions 0.9.22<a class="anchor" aria-label="anchor" href="#erifunctions-0922"></a></h2>
+<div class="section level3">
+<h3 id="a-task-registry-answers-what-are-you-trying-to-do-docs-site-redesign-phase-0-9-22">A task registry answers “what are you trying to do?” (docs site redesign, phase 3)<a class="anchor" aria-label="anchor" href="#a-task-registry-answers-what-are-you-trying-to-do-docs-site-redesign-phase-0-9-22"></a></h3>
+<ul><li>
+<strong>Added <code>inst/registry/task_map.yaml</code></strong>, a tree of ~31 common DA/Epi tasks grouped into 8 categories (get set up, bring data in, check quality &amp; approve, work the backlog, use approved data, run a research study, places &amp; maps, add a new program). Each leaf names a representative call, the guide that walks it end to end (if any), and the reference functions it touches — the single shared source the rest of the guidance system (the task-index article now, the planned <code>eri_guide()</code> console wizard and pipeline-function “next step” epilogues later) reads from, instead of three copies that can drift apart.</li>
+<li>
+<strong>Added <code><a href="../reference/eri_task_map.html">eri_task_map()</a></code></strong>, an exported console printer (in “Start here”, alongside <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code>) that prints the tree grouped by category with each task’s call and guide, and returns the flattened registry invisibly as a data frame.</li>
+<li>
+<strong>Added the generated <a href="https://thecartercenter.github.io/erifunctions/articles/task-index.html">task-index article</a></strong> (“What are you trying to do?”), a real executed chunk that reads the bundled registry and renders a <code><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">knitr::kable()</a></code> table — it can’t go stale relative to the YAML the way hand-written prose can.</li>
+<li>
+<strong>Added <code>tests/testthat/test-task-map.R</code></strong>, an integrity suite: every <code>reference:</code> name is a real exported function, every <code>guide:</code> slug matches a real <code>vignettes/*.Rmd</code> file, every <code>call:</code> template parses as valid R, every <code>next:</code> id resolves to a real task id, and every leaf id is unique. An unverifiable claim in the registry is now a test failure, not a stale doc.</li>
+<li>A review pass caught 7 <code>call:</code> templates using invented parameter names/order instead of the real function signature (worst case: <code><a href="../reference/eri_sharepoint_upload.html">eri_sharepoint_upload()</a></code>’s first two positional arguments swapped) — the integrity suite only checks that a call <em>parses</em>, not that it matches the real signature, so these slipped past it; all 7 fixed and the field’s own comment tightened to say parameter names/order must be real. Also moved <code>compare_cutover</code> from “use approved data” to “bring data in” (it’s a pipeline-validation step, not a reporting output).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.21" id="erifunctions-0921">erifunctions 0.9.21<a class="anchor" aria-label="anchor" href="#erifunctions-0921"></a></h2>
 <div class="section level3">

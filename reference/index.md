@@ -5,6 +5,9 @@
 Run these first, and reach for them whenever you’re not sure what to
 call next.
 
+- [`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)
+  **\[experimental\]** : Show the task registry: what are you trying to
+  do?
 - [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
   **\[experimental\]** : Show the data-addressing model: known sources,
   measures and formats

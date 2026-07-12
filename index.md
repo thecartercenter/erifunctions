@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.21 · **Status:** Active development
+**Version:** 0.9.22 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -34,6 +34,10 @@ path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**
 a paced Week-0 → Week-2 track through the guides below, and keep the
 quick-reference articles open as you work:
 
+- [What are you trying to
+  do?](https://thecartercenter.github.io/erifunctions/articles/task-index.html):
+  a generated index of ~31 common tasks — pick yours, get the call and
+  the guide
 - [Orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html):
   the big picture: the data system, the pipeline, and where your tasks
   live

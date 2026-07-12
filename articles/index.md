@@ -12,10 +12,13 @@ path, then how to connect to the services erifunctions talks to.
 
 ### Quick reference & onboarding
 
-Desk references and the new-analyst path: the big-picture orientation,
-the paced onboarding track, the one-page cheat sheet, the
-channel-vs-measure data-model card, and the troubleshooting card.
+Desk references and the new-analyst path: what are you trying to do, the
+big-picture orientation, the paced onboarding track, the one-page cheat
+sheet, the channel-vs-measure data-model card, and the troubleshooting
+card.
 
+- [What are you trying to
+  do?](https://thecartercenter.github.io/erifunctions/articles/task-index.md):
 - [Orientation: the data system at a
   glance](https://thecartercenter.github.io/erifunctions/articles/orientation.md):
 - [Onboarding a new Data
