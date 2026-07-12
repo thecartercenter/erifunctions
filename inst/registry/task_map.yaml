@@ -16,8 +16,10 @@
 #   id        unique key, used by `next:` to cross-reference
 #   title     task phrased the way a DA/Epi would say it
 #   role      da | epi | both
-#   call      one representative starting call (a template; braces are illustrative,
-#             not string-substituted here -- just needs to parse as R)
+#   call      one representative starting call: real parameter names/order from the
+#             function's own signature (optional args may be omitted), with plain
+#             placeholder values in place of real data -- illustrative, not
+#             copy-paste-exact, but never a fabricated signature
 #   guide     a vignettes/*.Rmd slug (optional -- not every task has its own guide)
 #   reference exported function names this task touches (checked against NAMESPACE)
 #   next      ids of the natural next task(s) (optional)
@@ -79,6 +81,11 @@
     call: 'eri_spatial_load(country, level)'
     guide: spatial-workflow
     reference: [eri_spatial_load, eri_spatial_upload, eri_landscan_upload, eri_landscan_list]
+  - id: compare_cutover
+    title: "Compare a new pipeline's output against a legacy one before trusting it"
+    role: da
+    call: 'eri_compare(new, old, by)'
+    reference: [eri_compare, eri_inject_anomalies, eri_simulate_check, eri_cutover_check, eri_cutover_status]
 
 - id: check_quality_approve
   title: "Check data quality and approve"
@@ -132,7 +139,7 @@
   - id: share_notify
     title: "Share files via SharePoint or post to Teams"
     role: both
-    call: 'eri_sharepoint_upload(site, local_path, remote_path)'
+    call: 'eri_sharepoint_upload(local_path, site, folder_path)'
     guide: sharepoint-workflow
     reference: [eri_sharepoint_list, eri_sharepoint_read, eri_sharepoint_upload, eri_teams_send]
 
@@ -159,20 +166,15 @@
   - id: survey_summary
     title: "Summarise an approved survey (e.g. LF TAS)"
     role: da
-    call: 'eri_lf_tas_summary(data)'
+    call: 'eri_lf_tas_summary(data, fts_col, rdt_col)'
     guide: da-survey-report-guide
     reference: [eri_lf_tas_summary, eri_lf_status_map, eri_lf_pooled_prev, eri_lf_program_levels]
   - id: epi_analytics
     title: "Incidence, epiweeks, and epidemic curves"
     role: epi
-    call: 'eri_incidence_rate(cases, population)'
+    call: 'eri_incidence_rate(cases, pop)'
     guide: epi-analytics
     reference: [eri_incidence_rate, eri_epidemic_curve, eri_epiweek_date, eri_case_summary]
-  - id: compare_cutover
-    title: "Compare a new pipeline's output against a legacy one"
-    role: da
-    call: 'eri_compare(new, old, by)'
-    reference: [eri_compare, eri_inject_anomalies, eri_simulate_check, eri_cutover_check, eri_cutover_status]
 
 - id: run_research_study
   title: "Run a research study"
@@ -193,7 +195,7 @@
   - id: snapshot_tag
     title: "Snapshot data and tag a citable, reproducible version"
     role: epi
-    call: 'eri_research_tag(version)'
+    call: 'eri_research_tag(label)'
     reference: [eri_research_snapshot, eri_research_tag, eri_research_upload_figure, eri_research_upload_output]
   - id: templates
     title: "Pull or contribute a reusable research template"
@@ -207,14 +209,14 @@
   - id: reconcile_localities
     title: "Reconcile free-text localities to admin units"
     role: epi
-    call: 'eri_spatial_reconcile(data, name_col, admin_level)'
+    call: 'eri_spatial_reconcile(data, loc_cols, shapefile, admin_cols)'
     guide: epi-reconcile-guide
     reference: [eri_spatial_reconcile]
     next: [join_map]
   - id: join_map
     title: "Join points to admin units and map them"
     role: both
-    call: 'eri_spatial_join(data, boundaries)'
+    call: 'eri_spatial_join(data, lat_col, lon_col, shapefile)'
     guide: spatial-workflow
     reference: [eri_spatial_join, eri_map_points, eri_map_inset, eri_map_incidence, eri_bbox_expand]
   - id: population_totals
@@ -241,5 +243,5 @@
   - id: contribute_schema
     title: "Contribute a schema or disease analytics to the package"
     role: both
-    call: 'eri_schema_validate(path)'
+    call: 'eri_schema_validate(schema_path)'
     guide: adding-a-program

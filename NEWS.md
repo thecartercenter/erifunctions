@@ -19,6 +19,12 @@
   exported function, every `guide:` slug matches a real `vignettes/*.Rmd` file, every `call:`
   template parses as valid R, every `next:` id resolves to a real task id, and every leaf id is
   unique. An unverifiable claim in the registry is now a test failure, not a stale doc.
+- A review pass caught 7 `call:` templates using invented parameter names/order instead of the
+  real function signature (worst case: `eri_sharepoint_upload()`'s first two positional arguments
+  swapped) — the integrity suite only checks that a call *parses*, not that it matches the real
+  signature, so these slipped past it; all 7 fixed and the field's own comment tightened to say
+  parameter names/order must be real. Also moved `compare_cutover` from "use approved data" to
+  "bring data in" (it's a pipeline-validation step, not a reporting output).
 
 # erifunctions 0.9.21
 
