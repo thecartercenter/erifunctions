@@ -1,5 +1,8 @@
 # Catching anomalies in a new surveillance extract (for epidemiologists)
 
+**Walkthrough** · ~15 min · needs: nothing · sandbox-safe: yes (fully
+offline, no Azure, no real data)
+
 A fresh surveillance extract can be **valid cell-by-cell and still wrong
 epidemiologically**, a week that suddenly triples, a reporting week that
 never arrived, a count that exceeds what was tested. This guide, for
@@ -242,3 +245,9 @@ index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 for the full set, and the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
 for the anomaly-detector help pages.
+
+**Epidemiologist path, step 4 of 4 (last).** ← [Reconciling
+localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md)
+· That’s the core path — dip into [Epi
+analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md)
+as needed.

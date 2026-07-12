@@ -1,5 +1,8 @@
 # Reconciling free-text localities to admin units (for epidemiologists)
 
+**Walkthrough** · ~15 min · needs: nothing · sandbox-safe: yes (offline
+string-match; writes nothing to Azure)
+
 Surveillance data arrives with **messy, free-text place names**,
 `"Jínova"`, `"JUAN DE HERRERA"`, `"S. Juan"`: that have to be matched to
 the **canonical admin units** in an authoritative boundary before you
@@ -263,3 +266,9 @@ index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 and the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
 for the full set.
+
+**Epidemiologist path, step 3 of 4.** ← [A complete research
+workflow](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md)
+· Next: [Catching anomalies in a new
+extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.md)
+→

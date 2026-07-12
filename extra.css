@@ -1,0 +1,38 @@
+/* Guide metadata strip: type / time / needs / sandbox-safe, shown at the top of every article.
+   Answers "can I run this without breaking a real country" before the reader reads a word. */
+.eri-guide-meta {
+  display: inline-block;
+  font-size: 0.92rem;
+  color: #5b6678;
+  background: #f3f6fa;
+  border: 1px solid #dde6ef;
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  margin: 0.5rem 0 1.5rem;
+}
+.eri-guide-meta strong {
+  color: #001737;
+}
+.eri-guide-meta .eri-sandbox-yes {
+  color: #00873f;
+  font-weight: 600;
+}
+.eri-guide-meta .eri-sandbox-no {
+  color: #96302a;
+  font-weight: 600;
+}
+
+/* Prev/next path footer, shown at the bottom of articles that are part of a strictly ordered
+   role path (see docs/guides.md and getting-started.Rmd's "New here? Do these in order"). */
+.eri-path-nav {
+  margin-top: 2.5rem;
+  padding: 0.9rem 1.1rem;
+  background: #eaf3ee;
+  border: 1px solid #cfe6d6;
+  border-left: 4px solid #00873f;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+.eri-path-nav strong {
+  color: #001737;
+}

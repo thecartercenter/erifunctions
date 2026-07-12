@@ -1,5 +1,8 @@
 # Triaging the error & data-quality log backlog (for data analysts)
 
+**Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
+`atlantis`)
+
 Every operation `erifunctions` runs, an ingest, an approval, an ODK
 sync, **leaves a log** in Azure. When something fails, or a data-quality
 check raises issues, that log is the record. This guide is for a **Data
@@ -303,3 +306,10 @@ See the [guide
 index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 and the **Logs & triage** group in the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md).
+
+**Data Analyst path, step 4 of 4 (last).** ← [Ingesting a surveillance
+dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+· Then, as those feeds arrive: [monthly CMR
+reports](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
+and [ODK Central
+forms](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md).

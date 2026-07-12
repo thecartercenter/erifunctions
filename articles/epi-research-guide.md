@@ -1,5 +1,8 @@
 # A complete research workflow for epidemiologists
 
+**Walkthrough** · ~40 min · needs: Azure · sandbox-safe: yes (public
+`mtcars` under a demo project)
+
 This is a hands-on, **start-to-finish walkthrough** of running a
 research study with `erifunctions`. It is written for
 **epidemiologists**, domain experts who are *not* software developers.
@@ -594,3 +597,9 @@ for what exists today and what is coming.
 
 For the full menu of functions grouped by purpose, see the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md).
+
+**Epidemiologist path, step 2 of 4.** ← [Connecting to the
+services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
+· Next: [Reconciling localities to admin
+units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md)
+→

@@ -1,5 +1,8 @@
 # SharePoint Workflow
 
+**Deep-dive** · ~15 min · needs: Azure · sandbox-safe: no (connects to
+the real SharePoint site)
+
 This vignette covers the full SharePoint read/write pattern using the
 `eri_sharepoint_*` functions. These functions require the
 `Microsoft365R` package:

@@ -1,5 +1,8 @@
 # Answering ad-hoc data requests with SQL (eri_query)
 
+**Walkthrough** · ~15 min · needs: Azure · sandbox-safe: no (illustrates
+a real catalog rollup)
+
 “How many malaria cases by province this year?” “Pull treatment coverage
 for these three countries.” Ad-hoc requests are a daily part of the job,
 and they usually mean the same thing: **combine a few approved datasets

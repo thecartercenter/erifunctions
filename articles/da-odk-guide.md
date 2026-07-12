@@ -1,5 +1,8 @@
 # Working with ODK Central: connect, monitor, and pull form data (for data analysts)
 
+**Walkthrough** · ~40 min · needs: Azure + ODK · sandbox-safe: no (uses
+a real country’s ODK project)
+
 **ODK Central** is where field data is born, survey teams collect
 submissions on phones, and they land on an ODK Central server. This is a
 hands-on walkthrough for a **Data Analyst (DA)** of the whole loop:

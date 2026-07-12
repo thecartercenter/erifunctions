@@ -18,7 +18,8 @@
 <link href="../deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Adding a New NTD Program">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Adding a New NTD Program">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -28,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -103,16 +104,22 @@
       <img src="../logo.png" class="logo" alt=""><h1>Adding a New NTD Program</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.20/vignettes/adding-a-program.Rmd" class="external-link"><code>vignettes/adding-a-program.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/adding-a-program.Rmd" class="external-link"><code>vignettes/adding-a-program.Rmd</code></a></small>
       <div class="d-none name"><code>adding-a-program.Rmd</code></div>
     </div>
 
     
     
+<div class="eri-guide-meta">
+<p><strong>Walkthrough</strong> · ~20 min for the shipped example below
+· needs: nothing · sandbox-safe: <span class="eri-sandbox-yes">yes</span> (local schema files, dry-run
+only)</p>
+</div>
 <p>This vignette walks through the full process of adding a new disease
 program to <code>erifunctions</code> – from generating skeleton schemas
-to opening a pull request. Estimated time: 1–2 hours for a new
-country/disease combination.</p>
+to opening a pull request. Estimated time for a <em>real</em> new
+country/disease combination (not just running the example below): 1–2
+hours.</p>
 <div class="section level2">
 <h2 id="generate-skeleton-schemas">1. Generate skeleton schemas<a class="anchor" aria-label="anchor" href="#generate-skeleton-schemas"></a>
 </h2>

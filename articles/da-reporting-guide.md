@@ -1,5 +1,8 @@
 # Branded tables, figures, and decks for outputs
 
+**Walkthrough** · ~10 min · needs: nothing · sandbox-safe: yes (no Azure
+touched)
+
 Once data is approved, a lot of the job is turning it into **outputs**,
 a table for a memo, a figure for proceedings, a workbook for a partner,
 a slide deck for a meeting. `erifunctions` ships a small, consistent

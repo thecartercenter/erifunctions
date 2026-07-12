@@ -1,5 +1,8 @@
 # Spatial Workflow
 
+**Deep-dive** · ~15 min · needs: Azure · sandbox-safe: no (illustrates
+real country boundaries)
+
 The spatial workflow covers three use cases: loading canonical admin
 boundaries from Azure, joining GPS coordinates to those boundaries, and
 producing programmatic maps. All functions require the `sf` package.

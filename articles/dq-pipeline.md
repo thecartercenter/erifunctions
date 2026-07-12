@@ -1,5 +1,8 @@
 # Data Quality Pipeline
 
+**Deep-dive** · ~15 min · needs: nothing · sandbox-safe: n/a (bundled
+schema, offline)
+
 The DQ pipeline is a schema-driven system for cleaning and validating
 surveillance data before analysis. A single YAML schema file describes
 the expected columns, types, ranges, allowed values, translations, and

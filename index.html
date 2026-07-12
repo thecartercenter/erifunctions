@@ -18,7 +18,8 @@
 <link href="deps/Source_Serif_4-0.4.10/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="ERI team functions">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="ERI team functions">
 <meta name="description" content="Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.">
 <meta property="og:description" content="Key functions used by the Epidemiology, Research and Innovation Team in the Health Programs at the Carter Center.">
 <meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png">
@@ -31,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +112,7 @@
 <a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
 </h3>
 <p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
-<p><strong>Version:</strong> 0.9.20 · <strong>Status:</strong> Active development</p>
+<p><strong>Version:</strong> 0.9.21 · <strong>Status:</strong> Active development</p>
 <blockquote>
 <p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
@@ -139,92 +140,155 @@
 <li>
 <strong>New Epidemiologist:</strong> <a href="https://thecartercenter.github.io/erifunctions/articles/connections-guide.html">Connections</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html">Research workflow</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html">Reconcile localities</a> → <a href="https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html">Catch anomalies</a>.</li>
 </ul>
-<p>The full set:</p>
+<p>The full set (<strong>Sandbox</strong> = runs safely with no real country ever touched — on the built-in <code>atlantis</code> training country, fully offline, or with public/placeholder data under a non-real country code):</p>
 <table class="table">
 <colgroup>
-<col width="50%">
-<col width="50%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
 </colgroup>
 <thead><tr>
 <th>Guide</th>
 <th>For</th>
+<th>Time</th>
+<th>Needs</th>
+<th>Sandbox</th>
 </tr></thead>
 <tbody>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/connections-guide.html">Connecting to Azure, ODK, SharePoint &amp; Teams</a></td>
 <td>Everyone, how to authenticate to each service and confirm it works (start here)</td>
+<td>~20 min</td>
+<td>Azure + ODK</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html">A complete research workflow for epidemiologists</a></td>
 <td>Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result</td>
+<td>~40 min</td>
+<td>Azure</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html">Ingesting a surveillance dataset (raw → approved)</a></td>
 <td>Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate</td>
+<td>~35 min</td>
+<td>Azure</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html">Uploading a monthly country report (CMR)</a></td>
 <td>Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file</td>
+<td>~25 min</td>
+<td>Azure</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html">Triaging DQ flags interactively</a></td>
 <td>Data analysts working a CMR’s DQ flags through one guided menu (<code><a href="reference/eri_dq_review.html">eri_dq_review()</a></code>) instead of the underlying functions, ending in a handback file (<code><a href="reference/eri_dq_export.html">eri_dq_export()</a></code>)</td>
+<td>~20 min</td>
+<td>Azure</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html">Working with ODK Central</a></td>
 <td>Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline</td>
+<td>~40 min</td>
+<td>Azure + ODK</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html">Onboarding a new country / disease / data type</a></td>
 <td>Data analysts standing up the schema + folders for a new program before any data flows</td>
+<td>~20 min</td>
+<td>Azure</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html">Triaging the error &amp; DQ log backlog</a></td>
 <td>Data analysts finding what failed or needs review and closing it out (shared across the team)</td>
+<td>~20 min</td>
+<td>Azure</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html">Answering ad-hoc requests with SQL</a></td>
 <td>Data analysts running SQL across approved datasets (roll-ups, joins) with the <code><a href="reference/eri_query.html">eri_query()</a></code> DuckDB layer</td>
+<td>~15 min</td>
+<td>Azure</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html">Branded tables, figures &amp; decks</a></td>
 <td>Data analysts turning approved data into on-brand tables, plots, Excel workbooks, and PowerPoint decks</td>
+<td>~10 min</td>
+<td>Nothing</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html">QC an extract &amp; give a country feedback</a></td>
 <td>Data analysts running DQ checks on a submission and turning the flags into clear country feedback</td>
+<td>~10 min</td>
+<td>Nothing</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.html">Final summaries &amp; reports from an ODK survey</a></td>
 <td>Data analysts summarising an approved survey (e.g. LF TAS) with the disease helpers and packaging the result</td>
+<td>~10 min</td>
+<td>Nothing</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html">Data quality pipeline</a></td>
 <td>Running schema-driven DQ checks and anomaly detection on an extract</td>
+<td>~15 min</td>
+<td>Nothing</td>
+<td>n/a</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html">Epi analytics</a></td>
 <td>Incidence, epiweeks, epidemic curves, and disease-specific helpers</td>
+<td>~10 min</td>
+<td>n/a</td>
+<td>n/a</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html">Reconciling localities to admin units</a></td>
 <td>Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review)</td>
+<td>~15 min</td>
+<td>Nothing</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html">Catching anomalies in a new extract</a></td>
 <td>Epidemiologists QC-ing an extract for spikes, missing weeks, and cross-field/spatial anomalies before analysis</td>
+<td>~15 min</td>
+<td>Nothing</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html">Spatial workflow</a></td>
 <td>Admin boundaries, population, and spatial joins/maps</td>
+<td>~15 min</td>
+<td>Azure</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html">SharePoint workflow</a></td>
 <td>Sharing files via SharePoint and posting to Teams</td>
+<td>~15 min</td>
+<td>Azure</td>
+<td>No</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html">Adding a new program</a></td>
 <td>Onboarding a new country, disease, or data type</td>
+<td>~20 min</td>
+<td>Nothing</td>
+<td>Yes</td>
 </tr>
 </tbody>
 </table>

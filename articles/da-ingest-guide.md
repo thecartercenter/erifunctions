@@ -1,5 +1,8 @@
 # Ingesting a surveillance dataset: raw to approved (for data analysts)
 
+**Walkthrough** · ~35 min · needs: Azure · sandbox-safe: yes (runs on
+`atlantis`)
+
 This is a hands-on, **start-to-finish walkthrough** of getting a
 surveillance dataset into the Carter Center data system, the daily work
 of a **Data Analyst (DA)**. It is written for domain experts who are
@@ -596,3 +599,9 @@ index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 for what exists today and what is coming, and the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
 for the full menu of functions grouped by purpose.
+
+**Data Analyst path, step 3 of 4.** ← [Onboarding a new
+program](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
+· Next: [Triaging the error & DQ log
+backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md)
+→

@@ -1,5 +1,8 @@
 # Final summaries and reports from an ODK survey
 
+**Walkthrough** · ~10 min · needs: nothing · sandbox-safe: yes (offline
+synthetic data, no Azure)
+
 Once a survey has been pulled from ODK, cleaned, and **approved**, the
 last step is the deliverable: a summary, a results table, a short
 report. This guide takes an approved survey dataset to a final summary

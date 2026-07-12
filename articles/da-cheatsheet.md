@@ -1,5 +1,7 @@
 # Data Analyst cheat sheet
 
+**Desk reference** · ~5 min · needs: n/a · sandbox-safe: n/a
+
 *One page. The functions you actually use, the path model, and which
 pipeline to reach for. Pair with [the data-model
 card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.md)

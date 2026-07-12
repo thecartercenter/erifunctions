@@ -1,5 +1,7 @@
 # Epidemiological Analytics
 
+**Desk reference** · ~10 min · needs: n/a · sandbox-safe: n/a
+
 This vignette covers the epidemiological helper functions for malaria,
 lymphatic filariasis, and onchocerciasis analyses, from computing
 incidence rates and epiweek dates to LF pooled prevalence and

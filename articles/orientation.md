@@ -1,5 +1,7 @@
 # Orientation: the data system at a glance
 
+**Desk reference** · ~5 min · needs: n/a · sandbox-safe: n/a
+
 The big picture for a new Data Analyst, the data system, the human-gated
 pipeline, and where your tasks live. Read this once before the hands-on
 guides; it’s also the basis for a first training session. (For the

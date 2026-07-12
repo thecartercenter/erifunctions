@@ -1,5 +1,8 @@
 # Triaging and handing back DQ flags, interactively (for data analysts)
 
+**Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
+`atlantis`)
+
 The [CMR
 guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
 and the [QC/feedback

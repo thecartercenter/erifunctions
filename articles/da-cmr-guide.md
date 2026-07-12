@@ -1,5 +1,8 @@
 # Uploading and processing a monthly country report (CMR) (for data analysts)
 
+**Walkthrough** · ~25 min · needs: Azure · sandbox-safe: no
+(stage/approve need a real registered country)
+
 Every month, country programmes file a **Case Management Report (CMR)**,
 a filled Excel template of treatment, training, and survey numbers. This
 guide, for a **Data Analyst**, walks the monthly job: take that incoming

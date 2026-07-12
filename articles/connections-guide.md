@@ -1,5 +1,8 @@
 # Connecting to Azure, ODK Central, SharePoint, and Teams
 
+**Walkthrough** · ~20 min · needs: Azure + ODK · sandbox-safe: no
+(illustrates real Azure/SharePoint/Teams destinations)
+
 `erifunctions` talks to four outside services on your behalf, **Azure**
 (where the data lives), **ODK Central** (where field submissions come
 from), **SharePoint** (shared files), and **Teams** (notifications).
@@ -294,3 +297,10 @@ Now that you can connect, the role guides put these connections to work:
 For every connection function grouped together, see the **Connections &
 authentication** section of the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md).
+
+**Step 1, shared by both role paths.** Next: [Onboarding a new country,
+disease, or data
+type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
+(Data Analyst path) · or [A complete research
+workflow](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md)
+(Epidemiologist path).

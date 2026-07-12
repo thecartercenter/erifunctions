@@ -1,9 +1,12 @@
 # Adding a New NTD Program
 
+**Walkthrough** · ~20 min for the shipped example below · needs: nothing
+· sandbox-safe: yes (local schema files, dry-run only)
+
 This vignette walks through the full process of adding a new disease
 program to `erifunctions` – from generating skeleton schemas to opening
-a pull request. Estimated time: 1–2 hours for a new country/disease
-combination.
+a pull request. Estimated time for a *real* new country/disease
+combination (not just running the example below): 1–2 hours.
 
 ## 1. Generate skeleton schemas
 

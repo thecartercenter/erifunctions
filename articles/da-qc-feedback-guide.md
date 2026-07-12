@@ -1,5 +1,9 @@
 # Quality-check an extract and give a country feedback
 
+**Walkthrough** · ~10 min · needs: nothing · sandbox-safe: no (the QC
+steps are offline, but the “Notify the team” aside illustrates a real
+country’s Teams channel)
+
 When a country sends a data extract, quality-checking it is only half
 the job, the other half is telling them, **specifically and clearly,
 what needs fixing**.

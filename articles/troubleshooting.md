@@ -1,5 +1,7 @@
 # Troubleshooting card
 
+**Desk reference** · ~5 min · needs: n/a · sandbox-safe: n/a
+
 *The errors a DA actually hits, what they mean, and the fix. Then: how
 to work the shared error/DQ log backlog with
 [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md).*

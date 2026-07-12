@@ -1,5 +1,8 @@
 # Getting started with erifunctions
 
+**Walkthrough** · ~10 min · needs: nothing · sandbox-safe: n/a
+(install + orientation only)
+
 `erifunctions` is the Carter Center ERI team’s R package, the way **Data
 Analysts** and **Epidemiologists** work with TCC’s Azure-centred data
 system across countries (Haiti, DR, Uganda, OEPA, …) and diseases

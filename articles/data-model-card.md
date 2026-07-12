@@ -1,5 +1,7 @@
 # Data-model decision card: channel vs. measure
 
+**Desk reference** · ~5 min · needs: n/a · sandbox-safe: n/a
+
 *The one concept everything else rests on. If you can answer the four
 questions below for a dataset, you can address it, ingest it, and
 approve it. Run

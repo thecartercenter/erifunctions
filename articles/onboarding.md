@@ -1,5 +1,7 @@
 # Onboarding a new Data Analyst
 
+**Desk reference** · ~10 min · needs: n/a · sandbox-safe: n/a
+
 This is the **starting page** for a new ERI Data Analyst. It strings the
 reference and the run-it-live guides into a paced path with checkpoints,
 so onboarding is repeatable and self-serve rather than tribal knowledge.

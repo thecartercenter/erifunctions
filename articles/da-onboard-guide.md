@@ -1,5 +1,8 @@
 # Onboarding a new country, disease, or data type (for data analysts)
 
+**Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
+`atlantis`)
+
 Before any data can flow through `erifunctions`, the **space for it has
 to exist**: a data-quality schema that describes the data, and the
 `raw → staged → processed` folders it will move through. This guide is
@@ -336,3 +339,9 @@ index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md)
 for the full set, and the
 [reference](https://thecartercenter.github.io/erifunctions/reference/index.md)
 for every function grouped by purpose.
+
+**Data Analyst path, step 2 of 4.** ← [Connecting to the
+services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)
+· Next: [Ingesting a surveillance
+dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+→
