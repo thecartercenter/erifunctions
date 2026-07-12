@@ -287,6 +287,33 @@ session) instead of only printing to console. Closes the loop the whole redesign
 DQ triage now produces a structured, attributable handback artifact instead of an ad hoc table. All 8
 phases of the DQ workflow redesign are now shipped.
 
+**Docs site & guidance system redesign (in progress):** the DQ workflow redesign's biggest lesson —
+collapsing "remember N functions in the right order" into "answer a guided menu" — prompted a second
+Fable design consult on the pkgdown documentation site itself, asking whether the same idea
+generalizes beyond DQ to the whole package. The consult proposed an 8-phase plan: (1) reference
+architecture — **shipped**: `_pkgdown.yml`'s reference index consolidated from 17 module-shaped
+groups (which mirrored `R/` source files — "Data pipeline" vs. "Data quality" vs. "Logs & triage" all
+described one lifecycle a user experiences as a single loop) to 15 lifecycle-shaped groups, functions
+within each ordered by what to reach for first rather than alphabetically; a new "Start here" group
+surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and `eri_verbosity()` regardless of
+which lifecycle group they'd otherwise sit in (`eri_data_path()`/`eri_dq_review()` also cross-listed
+in their original lifecycle groups); degenerate/overlapping groups merged ("Data catalog" +
+"Querying", "SharePoint & Teams" + "Feedback"); a docs-only, single-file change, verified lossless
+(152 unique reference topics before and after, only the two intentional cross-listings added). A
+same-PR review pass also caught two `desc:`-vs-actual-order mismatches (the DQ-schema functions'
+view/override/submit claim, and ODK's server-vs-admin split) and fixed both. The consult's own
+proposal to use pkgdown's `subtitle:` field for sub-grouping *within* a
+group's `contents:` turned out not to be how pkgdown actually works — `subtitle` is a whole-section
+heading, like `title`, not a per-item nesting key — and was caught by a real CI failure
+(`build_reference_index()`: "contents[1] must be a string") before merge; reverted to flat,
+thoughtfully-ordered lists. (2) article metadata + path navigation, (3) a bundled task
+registry (`inst/registry/task_map.yaml`) plus a generated task-index article, (4) an `index.md`
+homepage with role cards and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive
+console wizard walking the task registry, (6) next-step epilogues on pipeline functions, (7) wizard
+depth (preflight checks, session memory, deep links) + a roxygen `@family`/title-audit pass, and (8) an
+evidence-gated, deliberately-deferred client-side decision-tree wizard on the site itself — not yet
+started.
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)
