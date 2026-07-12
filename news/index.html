@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.22/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.23" id="erifunctions-0923">erifunctions 0.9.23<a class="anchor" aria-label="anchor" href="#erifunctions-0923"></a></h2>
+<div class="section level3">
+<h3 id="a-real-front-door-role-cards--a-pipeline-diagram-on-the-site-homepage-docs-site-redesign-phase-0-9-23">A real front door: role cards + a pipeline diagram on the site homepage (docs site redesign, phase 4)<a class="anchor" aria-label="anchor" href="#a-real-front-door-role-cards--a-pipeline-diagram-on-the-site-homepage-docs-site-redesign-phase-0-9-23"></a></h3>
+<ul><li>
+<strong>Added <code>pkgdown/index.md</code></strong>, a pkgdown-only homepage (pkgdown checks <code>pkgdown/index.md</code> before <code>index.md</code> before <code>README.md</code>; placed inside <code>pkgdown/</code>, already <code>.Rbuildignore</code>d for <code>pkgdown/extra.css</code>/<code>pkgdown/favicon/</code> in earlier phases, rather than at the package root — a root-level <code>index.md</code> triggers <code>R CMD check</code>’s “Non-standard file/directory found at top level” NOTE, caught by a review pass reading the actual CI log rather than trusting the green check mark) built for a site visitor rather than a GitHub browser: two role cards (Data Analyst / Epidemiologist), each with its ordered path and a link into the paced/analytics follow-on; a callout up top to the new <a href="https://thecartercenter.github.io/erifunctions/articles/task-index.html">task-index article</a> for “what are you trying to do?”; and a Mermaid diagram of the raw → staged → processed pipeline with the <code><a href="../reference/eri_approve.html">eri_approve()</a></code> gate. <code>README.md</code>’s own content is unchanged aside from the routine version-line bump — it’s still the GitHub landing page and the fuller reference (install steps, environment variables, contributing) the homepage links out to.</li>
+<li>Verified locally via <code>pkgdown:::build_home()</code> (not a full <code>build_site()</code> — the home page alone doesn’t need the reference/article build): confirmed the role cards and Mermaid diagram render, and caught that <code>man/figures/logo.png</code> needs <code>copy_figures()</code> to run before <code>build_home()</code> or pkgdown can’t resolve the path it rewrites to (<code>reference/figures/logo.png</code>) — a build-order detail of my local verification harness, not a site bug (the real <code>build_site()</code> call always runs both steps).</li>
+<li>A review pass also reconciled the install snippet with README’s (<code>devtools::install_github()</code>, not <code>remotes::install_github()</code>) — both work, but the site and the README are meant to converge, not quietly diverge on the first thing a new user copies.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.22" id="erifunctions-0922">erifunctions 0.9.22<a class="anchor" aria-label="anchor" href="#erifunctions-0922"></a></h2>
 <div class="section level3">
