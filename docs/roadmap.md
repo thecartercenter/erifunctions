@@ -293,13 +293,17 @@ Fable design consult on the pkgdown documentation site itself, asking whether th
 generalizes beyond DQ to the whole package. The consult proposed an 8-phase plan: (1) reference
 architecture — **shipped**: `_pkgdown.yml`'s reference index consolidated from 17 module-shaped
 groups (which mirrored `R/` source files — "Data pipeline" vs. "Data quality" vs. "Logs & triage" all
-described one lifecycle a user experiences as a single loop) to lifecycle-shaped groups using
-pkgdown's `subtitle:` mechanism for sub-grouping without multiplying top-level groups; a new "Start
-here" group surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and `eri_verbosity()`
-regardless of which lifecycle group they'd otherwise sit in; degenerate/overlapping groups merged
-("Data catalog" + "Querying", "SharePoint & Teams" + "Feedback"); a docs-only, single-file change,
-verified lossless (152 unique reference topics before and after, only the intentional
-`eri_dq_review` cross-listing added). (2) article metadata + path navigation, (3) a bundled task
+described one lifecycle a user experiences as a single loop) to 15 lifecycle-shaped groups, functions
+within each ordered by what to reach for first rather than alphabetically; a new "Start here" group
+surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and `eri_verbosity()` regardless of
+which lifecycle group they'd otherwise sit in; degenerate/overlapping groups merged ("Data catalog" +
+"Querying", "SharePoint & Teams" + "Feedback"); a docs-only, single-file change, verified lossless
+(152 unique reference topics before and after, only the intentional `eri_dq_review` cross-listing
+added). The consult's own proposal to use pkgdown's `subtitle:` field for sub-grouping *within* a
+group's `contents:` turned out not to be how pkgdown actually works — `subtitle` is a whole-section
+heading, like `title`, not a per-item nesting key — and was caught by a real CI failure
+(`build_reference_index()`: "contents[1] must be a string") before merge; reverted to flat,
+thoughtfully-ordered lists. (2) article metadata + path navigation, (3) a bundled task
 registry (`inst/registry/task_map.yaml`) plus a generated task-index article, (4) an `index.md`
 homepage with role cards and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive
 console wizard walking the task registry, (6) next-step epilogues on pipeline functions, (7) wizard

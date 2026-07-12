@@ -3,13 +3,16 @@
 ## Reference index reorganized around the user's lifecycle, not the source layout (docs site redesign, phase 1)
 
 - **Consolidated `_pkgdown.yml`'s reference index from 17 module-shaped groups to 15 lifecycle-shaped
-  ones**, using pkgdown's `subtitle:` mechanism (previously unused) to keep granularity within a
-  group without multiplying top-level groups. Resolves the real overlap between "Data pipeline"
-  (the user-facing DQ surface), "Data quality" (the check engine), and "Logs & triage" (the
-  persistence layer) — three names for one lifecycle a user experiences as a single loop (bring
-  data in → check it → work the flags → approve) — by making the lifecycle the group ("The
-  pipeline: raw → staged → processed") with the engine explicitly subordinate to it ("The
-  data-quality engine — the scriptable core under `eri_dq_review()`").
+  ones.** Resolves the real overlap between "Data pipeline" (the user-facing DQ surface), "Data
+  quality" (the check engine), and "Logs & triage" (the persistence layer) — three names for one
+  lifecycle a user experiences as a single loop (bring data in → check it → work the flags →
+  approve) — by making the lifecycle the group ("The pipeline: raw → staged → processed") with the
+  engine explicitly subordinate to it ("The data-quality engine — the scriptable core under
+  `eri_dq_review()`"). Within each group, functions are ordered by what to reach for first (called
+  out in the group's `desc:`) rather than alphabetically — pkgdown's `subtitle:` field turned out to
+  be a whole-*section* heading, not a way to sub-group entries within one group's `contents:`, so
+  visual sub-grouping (attempted, then reverted after a real CI failure caught it) isn't part of
+  this pass; a caption-only ordering is.
 - New **"Start here"** group surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and
   `eri_verbosity()` regardless of which lifecycle group they'd otherwise sit in (absorbing the
   1-function "Console output" group).
