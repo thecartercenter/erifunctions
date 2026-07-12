@@ -80,8 +80,8 @@ values are known, so you never have to guess one.
 ## Install
 
 ```r
-install.packages("remotes")
-remotes::install_github("thecartercenter/erifunctions")
+# Install from GitHub
+devtools::install_github("thecartercenter/erifunctions")
 
 # Pin the version in your analysis project (recommended)
 renv::install("thecartercenter/erifunctions")
