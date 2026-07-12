@@ -342,10 +342,29 @@ stale doc. The generated [task-index article](https://thecartercenter.github.io/
 `system.file()`, the same pattern already used elsewhere in vignettes for bundled `extdata`) in a real
 executed chunk and renders a `knitr::kable()` table, so it can't drift from the YAML the way
 hand-written prose could; added to the "Quick reference & onboarding" article group and README's
-guide bullet list, alongside the other desk references. (4) an `index.md` homepage with role cards
-and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive console wizard walking the
-task registry, (6) next-step epilogues on pipeline functions, (7) wizard depth (preflight checks,
-session memory, deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
+guide bullet list, alongside the other desk references. (4) the front door — **shipped**: a new
+`pkgdown/index.md`, which pkgdown prefers over `README.md` as the home page when both exist (lookup
+order is `pkgdown/index.md` → `index.md` → `README.md`). Placed inside `pkgdown/` — already
+`.Rbuildignore`d for `pkgdown/extra.css`/`pkgdown/favicon/` from earlier phases — rather than at the
+package root: a first draft placed it at the root and a review pass, reading the actual CI log
+rather than trusting the green check mark, caught that `R CMD check` flags a root-level `index.md`
+with a real "Non-standard file/directory found at top level" NOTE; relocating avoided it entirely.
+Built for a site visitor rather than a GitHub browser: two role cards (Data Analyst /
+Epidemiologist), each showing its ordered path and a link into the paced-onboarding/analytics
+follow-on; a callout to the task-index article for "what are you trying to do?"; a Mermaid diagram
+of the raw → staged → processed pipeline with the `eri_approve()` gate; and an install snippet
+(reconciled to match README's `devtools::install_github()`, not a second, quietly-diverging
+`remotes::install_github()`). `README.md`'s own content is unchanged aside from the routine
+version-line bump — it stays the GitHub landing page and the fuller reference (install steps,
+environment variables, contributing) the new homepage links out to, rather than being duplicated.
+Verified locally via `pkgdown:::build_home()` rather than a full `build_site()` (the home page
+alone doesn't need the reference/article build to render, and re-run after the relocation); this
+surfaced a real pkgdown mechanic worth remembering — `man/figures/*` images referenced from
+root-level markdown are rewritten to `reference/figures/*` on the built site, and resolving that
+path requires `copy_figures()` to have run (a `build_site()` step my minimal harness had to call
+explicitly). (5) `eri_guide()` — an `eri_dq_review()`-style interactive console wizard walking the task registry,
+(6) next-step epilogues on pipeline functions, (7) wizard depth (preflight checks, session memory,
+deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
 deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.
 
 ---
