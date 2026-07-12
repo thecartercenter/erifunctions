@@ -1,3 +1,35 @@
+# erifunctions 0.9.24
+
+## `eri_guide()`: an interactive console wizard over the task registry (docs site redesign, phase 5)
+
+- **Added `eri_guide()`**, an `eri_dq_review()`-style interactive menu wizard over the task
+  registry (`inst/registry/task_map.yaml`): pick a category, pick a task, see its call, its guide,
+  and the reference functions it touches. Reuses `R/dq_review.R`'s exact
+  `.eri_prompt_menu()`/`utils::menu()` primitives — nothing new to learn, nothing persisted, safe
+  to exit and rerun anytime.
+- **The "run guardrail" is mechanical, not a schema field**: a task's call is only offered as "Run
+  it now" when it parses to a genuinely zero-argument call (`.eri_guide_zero_arg()`, checked
+  against the exact same call string `test-task-map.R` already verifies parses as R) — 4 of the
+  ~32 registry tasks qualify (`get_azure_storage_connection()`, `eri_data_model()` ×2,
+  `eri_template_list()`). Everything else needs real argument values this wizard has no safe way
+  to fabricate, so it can only be shown, with its guide opened (`utils::vignette()`) for the full
+  walkthrough. Deeper argument collection (preflight checks, session memory) stays scoped to Phase
+  7 ("wizard depth") rather than building it prematurely here.
+- **Added `tests/testthat/test-guide.R`**: the interactive-only guard, the zero-arg classifier
+  (both synthetically and cross-checked against every call actually in the bundled registry), and
+  the menu loop itself via the same scripted-`.eri_prompt_menu()` mocking pattern
+  `test-dq_review.R` already established.
+- Cross-linked from `pkgdown/index.md` and `README.md`'s task-index callout, and added to
+  `_pkgdown.yml`'s "Start here" reference group alongside `eri_task_map()`/`eri_data_model()`.
+- A review pass caught that "Run it now" had no `tryCatch`, unlike the "Open the guide" branch
+  right next to it — a live call that fails (auth cancelled, no network) would have dumped a raw
+  error at a Data Analyst mid-wizard instead of returning to the menu; fixed. Also fixed a silent
+  case: `eval()`'s return value isn't auto-printed the way typing the same call at the console
+  would be, so a genuinely visible result (e.g. `get_azure_storage_connection()`'s connection
+  object) was being discarded with no confirmation the connect succeeded — now printed via
+  `withVisible()`, matching console behavior exactly. New tests cover both the failure path and
+  the visible-result path.
+
 # erifunctions 0.9.23
 
 ## A real front door: role cards + a pipeline diagram on the site homepage (docs site redesign, phase 4)

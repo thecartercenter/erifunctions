@@ -121,6 +121,7 @@ reference:
   desc: >
     Run these first, and reach for them whenever you're not sure what to call next.
   contents:
+  - eri_guide
   - eri_task_map
   - eri_data_model
   - eri_data_path
