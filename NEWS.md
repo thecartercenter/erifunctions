@@ -1,3 +1,22 @@
+# erifunctions 0.9.23
+
+## A real front door: role cards + a pipeline diagram on the site homepage (docs site redesign, phase 4)
+
+- **Added `index.md`**, a pkgdown-only homepage (pkgdown prefers `index.md` over `README.md` when
+  both exist) built for a site visitor rather than a GitHub browser: two role cards (Data Analyst /
+  Epidemiologist), each with its ordered path and a link into the paced/analytics follow-on; a
+  callout up top to the new [task-index article](https://thecartercenter.github.io/erifunctions/articles/task-index.html)
+  for "what are you trying to do?"; and a Mermaid diagram of the raw → staged → processed pipeline
+  with the `eri_approve()` gate. `README.md` keeps its own content unchanged — it's still the
+  GitHub landing page and the fuller reference (install steps, environment variables,
+  contributing) the homepage links out to.
+- Verified locally via `pkgdown:::build_home()` (not a full `build_site()` — the home page alone
+  doesn't need the reference/article build): confirmed the role cards and Mermaid diagram render,
+  and caught that `man/figures/logo.png` needs `copy_figures()` to run before `build_home()` or
+  pkgdown can't resolve the path it rewrites to (`reference/figures/logo.png`) — a build-order
+  detail of my local verification harness, not a site bug (the real `build_site()` call always
+  runs both steps).
+
 # erifunctions 0.9.22
 
 ## A task registry answers "what are you trying to do?" (docs site redesign, phase 3)
