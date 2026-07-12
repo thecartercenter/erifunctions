@@ -816,8 +816,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
   outstanding_tbl <- if (length(outstanding) > 0L) dplyr::bind_rows(outstanding) else NULL
 
   if (!is.null(outstanding_tbl) && !isTRUE(force)) {
-    cli::cli_alert_danger(c(
-      "{nrow(outstanding_tbl)} measure{?s} still need{?s/} attention -- approving nothing.",
+    cli::cli_bullets(c(
+      "x" = "{nrow(outstanding_tbl)} measure{?s} still need{?s/} attention -- approving nothing.",
       "i" = "Review each below, close it out with {.fn eri_logs_resolve} (pass a {.arg note}), then re-run this.",
       "i" = "Or pass {.code force = TRUE} and a {.arg justification} to approve anyway."
     ))
@@ -826,7 +826,7 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
   }
 
   if (!is.null(outstanding_tbl)) {
-    cli::cli_alert_danger(c(
+    cli::cli_bullets(c(
       "!" = "FORCE-APPROVING {.val {country}} / {.val {period}} despite {nrow(outstanding_tbl)} outstanding measure{?s}.",
       "i" = "Justification: {justification}"
     ))
@@ -905,8 +905,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
     }
   )
   if (is.null(trail_path)) {
-    cli::cli_alert_danger(c(
-      "The measures above ARE approved, but the {.val dq_reviewed} audit-trail record could not be written",
+    cli::cli_bullets(c(
+      "x" = "The measures above ARE approved, but the {.val dq_reviewed} audit-trail record could not be written",
       "i" = "(see the Azure write warning above). The per-measure {.fn eri_approve} logs still exist; only this combined cross-reference is missing."
     ))
   }
