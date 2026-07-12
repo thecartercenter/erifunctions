@@ -30,15 +30,17 @@ and
 – but as a DA running this interactively, you never call any of them
 directly. You just answer the menu.
 
-> **The wrapper holds no state of its own.** Close your laptop
-> mid-review and run
+> **The wrapper holds no state of its own.** Every open re-derives
+> current flags fresh from a real, logged DQ check against whatever’s
+> actually staged – it never trusts a possibly-stale in-memory or cached
+> view. Every triage decision is written through immediately too, not
+> batched. So closing your laptop mid-review and running
 > [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
-> again later: it picks up exactly where the log YAMLs say things are,
-> because every decision is written through immediately, not batched.
-> The one thing it doesn’t remember between separate runs is *which
-> local file you were fixing* – point it back at your working copy (or
-> the original; see [below](#fix-in-source)) if you come back to re-run
-> a check.
+> again later is always safe: it re-checks from the real staged data and
+> picks up your prior decisions from the logs. The one thing it doesn’t
+> remember between separate runs is *which local file you were fixing* –
+> point it back at your working copy (or the original; see
+> [below](#fix-in-source)) if you come back to re-run a check.
 
 ## Before you start
 
@@ -145,6 +147,15 @@ choice at a time – the menu prompts themselves come straight from the
 function; the informational and success messages between them are real,
 captured output.
 
+> **Your console will be busier than the transcripts below.** Each DQ
+> check also prints its own “renamed column” and “corrections/flags”
+> lines, and you’ll likely see
+> `! Could not load schema from Azure (Not Found...). Falling back to local.`
+> – expected here, since `atlantis`’s DQ schema only ships inside the
+> package and is never uploaded to Azure. Nothing below is broken; the
+> transcripts are trimmed to what changes each step, not a full console
+> dump.
+
 ### It opens on the flags
 
     ── DQ review: atlantis / 202608 ────────────────────────────────────────────────
@@ -188,6 +199,7 @@ in source”** for this flag:
     ✔ Made a working copy: '202608_atlantis_demo_fixed.xlsx' (original preserved)
     ℹ Fix treated on Excel row 6 in the "RB Treatment" sheet.
     ℹ Issue: Value outside expected range [0, 10000000]
+    ℹ Open this file to review/edit: '.../202608_atlantis_demo_fixed.xlsx'
     ℹ When you're done with this and any other fixes, choose "Re-run the DQ check" from the main menu -- it re-splits '202608_atlantis_demo_fixed.xlsx' and re-checks.
 
 The first time you fix anything in a session,
@@ -231,6 +243,8 @@ check”**:
     ── DQ review: atlantis / 202608 ────────────────────────────────────────────────
     ✖ 1 of 1 sheet have open flags (1 flag total)
 
+    ── RB Treatment (oncho/treatment) -- 1 open ──
+
      excel_row   column         value                            issue
              8 district Atlantis City Value not in allowed_values list
 
@@ -271,8 +285,16 @@ into the log, and into the handback file below.
 flawless – one flag is just `noted` rather than `open`. Choose **“Print
 report”**:
 
+    ── RB Treatment
+     excel_row   column         value                            issue status
+             8 district Atlantis City Value not in allowed_values list  noted
+                                                                                                                                                               note
+     Confirmed with the country lead: Atlantis City is a real, if not-yet-catalogued, locality -- flagging for the schema maintainer to add it to the allowed list.
+
     ✔ DQ report (1 flag · 0 open) written to '.../dq-report-atlantis-202608-2026-07-12.html'.
 
+A quick console eyeball first – a long `note` doesn’t truncate, it just
+pushes the table wide, as it does here – then the handback file.
 [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
 calls
 [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
@@ -317,7 +339,15 @@ yourself even once.
 
 Everything above lives under `atlantis`’s own namespace, so it’s safe to
 leave – but if you were following along and want to tidy up the sandbox
-behind you:
+behind you, three things were created: the Azure-side
+staged/log/processed files, the local practice workbook (`path`) and its
+`_fixed` working copy (forked in [Flag 1](#fix-in-source)), and the
+exported HTML report
+([`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+writes to your working directory by default, not a temp folder – see the
+[QC/feedback
+guide](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html#export)
+– so it won’t clean itself up):
 
 ``` r
 
@@ -329,7 +359,10 @@ eri_catalog_remove(
 all_files <- AzureStor::list_storage_files(con, "atlantis", recursive = TRUE)
 mine      <- all_files$name[!all_files$isdir & grepl("202608", all_files$name)]
 for (f in mine) AzureStor::delete_storage_file(con, f, confirm = FALSE)
-unlink(path)
+
+unlink(path)                                                    # the original practice workbook
+unlink(sub("\\.xlsx$", "_fixed.xlsx", path))                     # its "fix in source" working copy
+unlink(list.files(getwd(), pattern = "^dq-report-atlantis-202608-.*\\.html$", full.names = TRUE))
 ```
 
 Real submissions are not disposable like this practice run – never

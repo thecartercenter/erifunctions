@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -103,7 +103,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging and handing back DQ flags, interactively (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.18/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-dq-review-guide.Rmd</code></div>
     </div>
 
@@ -134,14 +134,17 @@ flowchart TD
 <code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> – but as a DA running this interactively,
 you never call any of them directly. You just answer the menu.</p>
 <blockquote>
-<p><strong>The wrapper holds no state of its own.</strong> Close your
-laptop mid-review and run <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> again later: it
-picks up exactly where the log YAMLs say things are, because every
-decision is written through immediately, not batched. The one thing it
-doesn’t remember between separate runs is <em>which local file you were
-fixing</em> – point it back at your working copy (or the original; see
-<a href="#fix-in-source">below</a>) if you come back to re-run a
-check.</p>
+<p><strong>The wrapper holds no state of its own.</strong> Every open
+re-derives current flags fresh from a real, logged DQ check against
+whatever’s actually staged – it never trusts a possibly-stale in-memory
+or cached view. Every triage decision is written through immediately
+too, not batched. So closing your laptop mid-review and running
+<code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> again later is always safe: it re-checks
+from the real staged data and picks up your prior decisions from the
+logs. The one thing it doesn’t remember between separate runs is
+<em>which local file you were fixing</em> – point it back at your
+working copy (or the original; see <a href="#fix-in-source">below</a>)
+if you come back to re-run a check.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="before-you-start">Before you start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
@@ -235,6 +238,16 @@ console or RStudio session. Below is a real session against the workbook
 built above, one menu choice at a time – the menu prompts themselves
 come straight from the function; the informational and success messages
 between them are real, captured output.</p>
+<blockquote>
+<p><strong>Your console will be busier than the transcripts
+below.</strong> Each DQ check also prints its own “renamed column” and
+“corrections/flags” lines, and you’ll likely see
+<code>! Could not load schema from Azure (Not Found...). Falling back to local.</code>
+– expected here, since <code>atlantis</code>’s DQ schema only ships
+inside the package and is never uploaded to Azure. Nothing below is
+broken; the transcripts are trimmed to what changes each step, not a
+full console dump.</p>
+</blockquote>
 <div class="section level3">
 <h3 id="opens">It opens on the flags<a class="anchor" aria-label="anchor" href="#opens"></a>
 </h3>
@@ -280,6 +293,7 @@ Path to the local source workbook for this period (or a '_fixed' copy you've alr
 ✔ Made a working copy: '202608_atlantis_demo_fixed.xlsx' (original preserved)
 ℹ Fix treated on Excel row 6 in the "RB Treatment" sheet.
 ℹ Issue: Value outside expected range [0, 10000000]
+ℹ Open this file to review/edit: '.../202608_atlantis_demo_fixed.xlsx'
 ℹ When you're done with this and any other fixes, choose "Re-run the DQ check" from the main menu -- it re-splits '202608_atlantis_demo_fixed.xlsx' and re-checks.</code></pre>
 <p>The first time you fix anything in a session,
 <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> forks a <code>_fixed</code> working copy
@@ -323,6 +337,8 @@ check”</strong>:</p>
 ── DQ review: atlantis / 202608 ────────────────────────────────────────────────
 ✖ 1 of 1 sheet have open flags (1 flag total)
 
+── RB Treatment (oncho/treatment) -- 1 open ──
+
  excel_row   column         value                            issue
          8 district Atlantis City Value not in allowed_values list</code></pre>
 <p>The <code>treated</code> flag is gone – the underlying value is
@@ -362,8 +378,16 @@ below.</p>
 <p>“All clean” means every flag has been triaged, not that the data is
 now flawless – one flag is just <code>noted</code> rather than
 <code>open</code>. Choose <strong>“Print report”</strong>:</p>
-<pre><code>✔ DQ report (1 flag · 0 open) written to '.../dq-report-atlantis-202608-2026-07-12.html'.</code></pre>
-<p><code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> calls <a href="../reference/eri_dq_export.html"><code>eri_dq_export()</code></a>
+<pre><code>── RB Treatment
+ excel_row   column         value                            issue status
+         8 district Atlantis City Value not in allowed_values list  noted
+                                                                                                                                                           note
+ Confirmed with the country lead: Atlantis City is a real, if not-yet-catalogued, locality -- flagging for the schema maintainer to add it to the allowed list.
+
+✔ DQ report (1 flag · 0 open) written to '.../dq-report-atlantis-202608-2026-07-12.html'.</code></pre>
+<p>A quick console eyeball first – a long <code>note</code> doesn’t
+truncate, it just pushes the table wide, as it does here – then the
+handback file. <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> calls <a href="../reference/eri_dq_export.html"><code>eri_dq_export()</code></a>
 for you here – see the <a href="da-qc-feedback-guide.html#export">QC/feedback guide</a> for what
 that function does on its own. Open the file: a self-contained page,
 organised by sheet, with the <code>noted</code> status shown as a chip
@@ -402,7 +426,13 @@ handback file, one approval – without calling
 </h2>
 <p>Everything above lives under <code>atlantis</code>’s own namespace,
 so it’s safe to leave – but if you were following along and want to tidy
-up the sandbox behind you:</p>
+up the sandbox behind you, three things were created: the Azure-side
+staged/log/processed files, the local practice workbook
+(<code>path</code>) and its <code>_fixed</code> working copy (forked in
+<a href="#fix-in-source">Flag 1</a>), and the exported HTML report
+(<code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> writes to your working directory by
+default, not a temp folder – see the <a href="da-qc-feedback-guide.html#export">QC/feedback guide</a> – so it
+won’t clean itself up):</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ERIFUNCTIONS_DATA_STORAGE_NAME"</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span></span>
@@ -412,7 +442,10 @@ up the sandbox behind you:</p>
 <span><span class="va">all_files</span> <span class="op">&lt;-</span> <span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">list_storage_files</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"atlantis"</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">mine</span>      <span class="op">&lt;-</span> <span class="va">all_files</span><span class="op">$</span><span class="va">name</span><span class="op">[</span><span class="op">!</span><span class="va">all_files</span><span class="op">$</span><span class="va">isdir</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"202608"</span>, <span class="va">all_files</span><span class="op">$</span><span class="va">name</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">f</span> <span class="kw">in</span> <span class="va">mine</span><span class="op">)</span> <span class="fu">AzureStor</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/AzureStor/man/generics.html" class="external-link">delete_storage_file</a></span><span class="op">(</span><span class="va">con</span>, <span class="va">f</span>, confirm <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span>                                                    <span class="co"># the original practice workbook</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"\\.xlsx$"</span>, <span class="st">"_fixed.xlsx"</span>, <span class="va">path</span><span class="op">)</span><span class="op">)</span>                     <span class="co"># its "fix in source" working copy</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/getwd.html" class="external-link">getwd</a></span><span class="op">(</span><span class="op">)</span>, pattern <span class="op">=</span> <span class="st">"^dq-report-atlantis-202608-.*\\.html$"</span>, full.names <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Real submissions are not disposable like this practice run – never
 delete a real country’s staged, processed, or log files this way.</p>
 </div>

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,9 +69,22 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.18/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.19" id="erifunctions-0919">erifunctions 0.9.19<a class="anchor" aria-label="anchor" href="#erifunctions-0919"></a></h2>
+<div class="section level3">
+<h3 id="fixes-found-by-a-fresh-user-test-of-the-new-dq-review-guide-0-9-19">Fixes found by a fresh-user test of the new DQ-review guide<a class="anchor" aria-label="anchor" href="#fixes-found-by-a-fresh-user-test-of-the-new-dq-review-guide-0-9-19"></a></h3>
+<ul><li>
+<strong>Fixed a real bug in <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s “Print report” menu item</strong>: it printed an <code><a href="../reference/eri_table.html">eri_table()</a></code> flextable to the console, which – outside RStudio’s Viewer (a plain console, VS Code terminal, SSH session) – has nowhere to render and dumps <code>print.flextable()</code>’s raw diagnostic summary instead (<code>a flextable object. col_keys: ... original dataset sample: ...</code>) rather than the flags. Now prints a plain table, matching the console-native convention <code>.eri_dq_review_report()</code> (the main loop’s own display) already followed for exactly this reason.</li>
+<li>
+<strong>Fixed a formatting bug</strong>: <code>.eri_dq_review_fix_in_source()</code>’s “fix this value” instructions used <code>cli_alert_info()</code> with a two-element bullet vector; <code>cli_alert_info()</code> only ever renders a single bullet, so the two lines were glued together with no space (<code>"...sheet.Issue: ..."</code>). Switched to <code>cli_bullets()</code>, which renders each element as its own line. The same anti-pattern (<code>cli_alert_info()</code>/ <code>cli_alert_danger()</code>/<code>cli_alert_warning()</code> called with a multi-element vector) was found and fixed in ten more places across <code>R/dq.R</code> (the schema-override lifecycle messages) and <code>R/cmr.R</code> (the force-approve, outstanding-measures, and audit-trail-missing messages) – all now use <code>cli_bullets()</code>.</li>
+<li>
+<strong>Tightened <code>da-dq-review-guide.Rmd</code>’s transcript accuracy</strong>: added a disclosure that real console output is noisier than the trimmed transcripts shown (schema-fallback warnings, rename messages), an explanation for the expected <code>atlantis</code>-only “Could not load schema from Azure” warning, the previously-missing “Open this file to review/edit” line, a missing per-sheet subheader in the re-run listing, and a corrected “holds no state of its own” claim (it re-derives from a real, logged DQ check on every open, it doesn’t read stale cached state). The cleanup section now also removes the <code>_fixed</code> workbook copy and the exported HTML report, which <code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> writes to the working directory by default and previously went uncleaned.</li>
+<li>Found via a fresh-user (<code>da-fresh-user</code> agent) run of the whole guide live against the real <code>atlantis</code> sandbox – caught two real bugs and several accuracy gaps that a hand-review alone had missed; nothing else in the guide needed correction (every menu prompt, choice order, and the full Approve transcript matched exactly).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.18" id="erifunctions-0918">erifunctions 0.9.18<a class="anchor" aria-label="anchor" href="#erifunctions-0918"></a></h2>
 <div class="section level3">

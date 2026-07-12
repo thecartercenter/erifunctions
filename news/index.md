@@ -1,5 +1,50 @@
 # Changelog
 
+## erifunctions 0.9.19
+
+### Fixes found by a fresh-user test of the new DQ-review guide
+
+- **Fixed a real bug in
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
+  “Print report” menu item**: it printed an
+  [`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md)
+  flextable to the console, which – outside RStudio’s Viewer (a plain
+  console, VS Code terminal, SSH session) – has nowhere to render and
+  dumps `print.flextable()`’s raw diagnostic summary instead
+  (`a flextable object. col_keys: ... original dataset sample: ...`)
+  rather than the flags. Now prints a plain table, matching the
+  console-native convention `.eri_dq_review_report()` (the main loop’s
+  own display) already followed for exactly this reason.
+- **Fixed a formatting bug**: `.eri_dq_review_fix_in_source()`’s “fix
+  this value” instructions used `cli_alert_info()` with a two-element
+  bullet vector; `cli_alert_info()` only ever renders a single bullet,
+  so the two lines were glued together with no space
+  (`"...sheet.Issue: ..."`). Switched to `cli_bullets()`, which renders
+  each element as its own line. The same anti-pattern
+  (`cli_alert_info()`/ `cli_alert_danger()`/`cli_alert_warning()` called
+  with a multi-element vector) was found and fixed in ten more places
+  across `R/dq.R` (the schema-override lifecycle messages) and `R/cmr.R`
+  (the force-approve, outstanding-measures, and audit-trail-missing
+  messages) – all now use `cli_bullets()`.
+- **Tightened `da-dq-review-guide.Rmd`’s transcript accuracy**: added a
+  disclosure that real console output is noisier than the trimmed
+  transcripts shown (schema-fallback warnings, rename messages), an
+  explanation for the expected `atlantis`-only “Could not load schema
+  from Azure” warning, the previously-missing “Open this file to
+  review/edit” line, a missing per-sheet subheader in the re-run
+  listing, and a corrected “holds no state of its own” claim (it
+  re-derives from a real, logged DQ check on every open, it doesn’t read
+  stale cached state). The cleanup section now also removes the `_fixed`
+  workbook copy and the exported HTML report, which
+  [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+  writes to the working directory by default and previously went
+  uncleaned.
+- Found via a fresh-user (`da-fresh-user` agent) run of the whole guide
+  live against the real `atlantis` sandbox – caught two real bugs and
+  several accuracy gaps that a hand-review alone had missed; nothing
+  else in the guide needed correction (every menu prompt, choice order,
+  and the full Approve transcript matched exactly).
+
 ## erifunctions 0.9.18
 
 ### New guide: interactively triaging and handing back DQ flags (`da-dq-review-guide`)
