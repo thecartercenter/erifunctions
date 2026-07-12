@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~10 min &middot; needs: n/a &middot; sandbox-safe: n/a
+:::
+
 This vignette covers the epidemiological helper functions for malaria, lymphatic
 filariasis, and onchocerciasis analyses, from computing incidence rates and
 epiweek dates to LF pooled prevalence and onchocerciasis programme-status maps.

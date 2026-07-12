@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Deep-dive** &middot; ~15 min &middot; needs: Azure &middot; sandbox-safe: no (connects to the real SharePoint site)
+:::
+
 This vignette covers the full SharePoint read/write pattern using the `eri_sharepoint_*`
 functions. These functions require the `Microsoft365R` package:
 

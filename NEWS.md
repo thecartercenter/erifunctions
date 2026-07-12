@@ -1,3 +1,29 @@
+# erifunctions 0.9.21
+
+## Every guide now says what it costs before you start (docs site redesign, phase 2)
+
+- **Added a metadata strip to all 25 vignettes**: type (Walkthrough / Desk reference / Deep-dive),
+  a time estimate, what it needs (nothing / Azure / Azure + ODK), and whether it's sandbox-safe
+  (runs on the built-in `atlantis` training country, or fully offline, vs. touches/illustrates a
+  real country's namespace) — answers "can I run this without breaking a real country" before
+  reading a word. Implemented as a pandoc fenced div (`::: {.eri-guide-meta}`), styled from a new
+  `pkgdown/extra.css` (pkgdown auto-copies and links any `pkgdown/extra.css`/`extra.js`).
+- **Added prev/next path footers to the 7 articles that are actually part of a strictly ordered
+  role path** — not the ~14 originally estimated. Reading the package's own "in order" text
+  (`getting-started.Rmd`, `docs/guides.md`) before implementing found the real strict sequence is
+  `connections-guide` (shared first step), then either the 3-step DA core (onboard → ingest →
+  logs) or the 3-step Epi core (research → reconcile → DQ). CMR, ODK, ad-hoc SQL, reporting,
+  QC-feedback, and survey-report guides are explicitly "feeds/tasks you reach for as needed," not
+  forced continuations — they get a metadata strip, not an invented "step N of 10."
+- **README's guide table gained Time / Needs / Sandbox columns**, matching the vignette strips.
+- Verified with a **full local `pkgdown::build_site()`** — not just `check_pkgdown()` — unlocked by
+  pointing `RSTUDIO_PANDOC` at RStudio's bundled Quarto Pandoc (a real capability gap from Phase 1,
+  where the equivalent invalid-config bug could only be caught by CI). Every reference page and all
+  25 articles built clean; confirmed `extra.css` is copied and linked and both fenced-div classes
+  render correctly in the actual rendered HTML, not just that the source parses.
+- Found but out of scope here: `epi-analytics.Rmd`'s code chunks reference undefined objects and
+  aren't actually runnable as shipped — logged as a nice-to-have, not fixed in this PR.
+
 # erifunctions 0.9.20
 
 ## Reference index reorganized around the user's lifecycle, not the source layout (docs site redesign, phase 1)

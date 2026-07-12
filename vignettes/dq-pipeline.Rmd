@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Deep-dive** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: n/a (bundled schema, offline)
+:::
+
 The DQ pipeline is a schema-driven system for cleaning and validating
 surveillance data before analysis. A single YAML schema file describes the
 expected columns, types, ranges, allowed values, translations, and

@@ -7,6 +7,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~5 min &middot; needs: n/a &middot; sandbox-safe: n/a
+:::
+
 *The one concept everything else rests on. If you can answer the four questions below for a dataset,
 you can address it, ingest it, and approve it. Run `eri_data_model()` to see the live list of allowed
 values.*

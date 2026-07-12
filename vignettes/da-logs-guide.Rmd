@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: yes (runs on `atlantis`)
+:::
+
 Every operation `erifunctions` runs, an ingest, an approval, an ODK sync, **leaves a log** in
 Azure. When something fails, or a data-quality check raises issues, that log is the record. This guide
 is for a **Data Analyst** working the **backlog**: finding what failed or needs review with
@@ -252,3 +256,9 @@ teammate. The logs you are reading are written by the workflows in the other gui
 
 See the [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md) and the
 **Logs & triage** group in the [reference](../reference/index.html).
+
+::: {.eri-path-nav}
+**Data Analyst path, step 4 of 4 (last).** &larr; [Ingesting a surveillance dataset](da-ingest-guide.html)
+&middot; Then, as those feeds arrive: [monthly CMR reports](da-cmr-guide.html) and
+[ODK Central forms](da-odk-guide.html).
+:::

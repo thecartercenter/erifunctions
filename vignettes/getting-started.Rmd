@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: n/a (install + orientation only)
+:::
+
 `erifunctions` is the Carter Center ERI team's R package, the way **Data Analysts** and
 **Epidemiologists** work with TCC's Azure-centred data system across countries (Haiti, DR, Uganda,
 OEPA, …) and diseases (malaria, oncho, LF, SCH, STH). You install it, authenticate through your

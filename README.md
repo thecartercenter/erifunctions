@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.20 · **Status:** Active development
+**Version:** 0.9.21 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -59,29 +59,30 @@ assumes.
   [Reconcile localities](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) →
   [Catch anomalies](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html).
 
-The full set:
+The full set (**Sandbox** = runs safely on the built-in `atlantis` training country or fully
+offline, with no real country ever touched):
 
-| Guide | For |
-|---|---|
-| [Connecting to Azure, ODK, SharePoint & Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | Everyone, how to authenticate to each service and confirm it works (start here) |
-| [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result |
-| [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
-| [Uploading a monthly country report (CMR)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file |
-| [Triaging DQ flags interactively](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html) | Data analysts working a CMR's DQ flags through one guided menu (`eri_dq_review()`) instead of the underlying functions, ending in a handback file (`eri_dq_export()`) |
-| [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |
-| [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows |
-| [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) |
-| [Answering ad-hoc requests with SQL](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | Data analysts running SQL across approved datasets (roll-ups, joins) with the `eri_query()` DuckDB layer |
-| [Branded tables, figures & decks](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | Data analysts turning approved data into on-brand tables, plots, Excel workbooks, and PowerPoint decks |
-| [QC an extract & give a country feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | Data analysts running DQ checks on a submission and turning the flags into clear country feedback |
-| [Final summaries & reports from an ODK survey](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.html) | Data analysts summarising an approved survey (e.g. LF TAS) with the disease helpers and packaging the result |
-| [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract |
-| [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers |
-| [Reconciling localities to admin units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review) |
-| [Catching anomalies in a new extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html) | Epidemiologists QC-ing an extract for spikes, missing weeks, and cross-field/spatial anomalies before analysis |
-| [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps |
-| [SharePoint workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html) | Sharing files via SharePoint and posting to Teams |
-| [Adding a new program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html) | Onboarding a new country, disease, or data type |
+| Guide | For | Time | Needs | Sandbox |
+|---|---|---|---|---|
+| [Connecting to Azure, ODK, SharePoint & Teams](https://thecartercenter.github.io/erifunctions/articles/connections-guide.html) | Everyone, how to authenticate to each service and confirm it works (start here) | ~20 min | Azure + ODK | No |
+| [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result | ~40 min | Azure | Yes |
+| [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate | ~35 min | Azure | Yes |
+| [Uploading a monthly country report (CMR)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file | ~25 min | Azure | No |
+| [Triaging DQ flags interactively](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html) | Data analysts working a CMR's DQ flags through one guided menu (`eri_dq_review()`) instead of the underlying functions, ending in a handback file (`eri_dq_export()`) | ~20 min | Azure | Yes |
+| [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline | ~40 min | Azure + ODK | No |
+| [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows | ~20 min | Azure | Yes |
+| [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) | ~20 min | Azure | Yes |
+| [Answering ad-hoc requests with SQL](https://thecartercenter.github.io/erifunctions/articles/da-adhoc-guide.html) | Data analysts running SQL across approved datasets (roll-ups, joins) with the `eri_query()` DuckDB layer | ~15 min | Azure | No |
+| [Branded tables, figures & decks](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.html) | Data analysts turning approved data into on-brand tables, plots, Excel workbooks, and PowerPoint decks | ~10 min | Nothing | Yes |
+| [QC an extract & give a country feedback](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.html) | Data analysts running DQ checks on a submission and turning the flags into clear country feedback | ~10 min | Nothing | Yes |
+| [Final summaries & reports from an ODK survey](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.html) | Data analysts summarising an approved survey (e.g. LF TAS) with the disease helpers and packaging the result | ~10 min | Nothing | Yes |
+| [Data quality pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.html) | Running schema-driven DQ checks and anomaly detection on an extract | ~15 min | Nothing | n/a |
+| [Epi analytics](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.html) | Incidence, epiweeks, epidemic curves, and disease-specific helpers | ~10 min | n/a | n/a |
+| [Reconciling localities to admin units](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.html) | Epidemiologists mapping messy free-text place names to canonical admin units (match → geocode → review) | ~15 min | Nothing | Yes |
+| [Catching anomalies in a new extract](https://thecartercenter.github.io/erifunctions/articles/epi-dq-guide.html) | Epidemiologists QC-ing an extract for spikes, missing weeks, and cross-field/spatial anomalies before analysis | ~15 min | Nothing | Yes |
+| [Spatial workflow](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.html) | Admin boundaries, population, and spatial joins/maps | ~15 min | Azure | No |
+| [SharePoint workflow](https://thecartercenter.github.io/erifunctions/articles/sharepoint-workflow.html) | Sharing files via SharePoint and posting to Teams | ~15 min | Azure | No |
+| [Adding a new program](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.html) | Onboarding a new country, disease, or data type | ~20 min | Nothing | Yes |
 
 The full, grouped **function reference** lives at
 <https://thecartercenter.github.io/erifunctions/reference/>.

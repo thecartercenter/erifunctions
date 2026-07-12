@@ -11,6 +11,10 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: yes (no Azure touched)
+:::
+
 Once data is approved, a lot of the job is turning it into **outputs**, a table for a memo, a figure
 for proceedings, a workbook for a partner, a slide deck for a meeting. `erifunctions` ships a small,
 consistent **reporting toolkit** so those come out on-brand without fiddling with styling each time.

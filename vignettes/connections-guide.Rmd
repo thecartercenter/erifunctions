@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~20 min &middot; needs: Azure + ODK &middot; sandbox-safe: no (illustrates real Azure/SharePoint/Teams destinations)
+:::
+
 `erifunctions` talks to four outside services on your behalf, **Azure** (where the data lives),
 **ODK Central** (where field submissions come from), **SharePoint** (shared files), and **Teams**
 (notifications). This is the one place that shows how to connect to each and **confirm it works**.
@@ -268,3 +272,9 @@ Now that you can connect, the role guides put these connections to work:
 
 For every connection function grouped together, see the **Connections & authentication** section of
 the [reference](../reference/index.html).
+
+::: {.eri-path-nav}
+**Step 1, shared by both role paths.** Next: [Onboarding a new program](da-onboard-guide.html)
+(Data Analyst path) &middot; or [A complete research workflow](epi-research-guide.html)
+(Epidemiologist path).
+:::

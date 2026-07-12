@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~15 min &middot; needs: nothing &middot; sandbox-safe: yes (fully offline, no Azure, no real data)
+:::
+
 A fresh surveillance extract can be **valid cell-by-cell and still wrong epidemiologically**, a week
 that suddenly triples, a reporting week that never arrived, a count that exceeds what was tested. This
 guide, for **epidemiologists**, is about that second layer: after the basic
@@ -224,3 +228,8 @@ interrogated.
 
 See the [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md) for the
 full set, and the [reference](../reference/index.html) for the anomaly-detector help pages.
+
+::: {.eri-path-nav}
+**Epidemiologist path, step 4 of 4 (last).** &larr; [Reconciling localities](epi-reconcile-guide.html)
+&middot; That's the core path — dip into [Epi analytics](epi-analytics.html) as needed.
+:::

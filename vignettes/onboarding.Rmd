@@ -7,6 +7,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~10 min &middot; needs: n/a &middot; sandbox-safe: n/a
+:::
+
 This is the **starting page** for a new ERI Data Analyst. It strings the reference and the run-it-live
 guides into a paced path with checkpoints, so onboarding is repeatable and self-serve rather than
 tribal knowledge. It ships with the package, so when a guide or function changes, this path changes
