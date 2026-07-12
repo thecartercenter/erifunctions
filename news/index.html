@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.25</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,22 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.24/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.25" id="erifunctions-0925">erifunctions 0.9.25<a class="anchor" aria-label="anchor" href="#erifunctions-0925"></a></h2>
+<div class="section level3">
+<h3 id="pipeline-functions-now-hint-at-the-next-step-sourced-from-the-task-registry-docs-site-redesign-phase-0-9-25">Pipeline functions now hint at the next step, sourced from the task registry (docs site redesign, phase 6)<a class="anchor" aria-label="anchor" href="#pipeline-functions-now-hint-at-the-next-step-sourced-from-the-task-registry-docs-site-redesign-phase-0-9-25"></a></h3>
+<ul><li>
+<strong>Five pipeline functions now print a one-line “Next:” hint on success</strong>, naming the natural next task and its representative call: <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> (→ join points to admin units and map them), <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> (→ review and approve the CMR interactively), <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> (→ triage the log backlog), <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> (→ triage the log backlog), and <code><a href="../reference/eri_research_init.html">eri_research_init()</a></code> (→ log progress and manage artifacts as you go). Gated at “full” verbosity like every other narration (<code><a href="../reference/dot-eri_say_info.html">.eri_say_info()</a></code>, <code>eri_verbosity("quiet")</code> silences it same as anything else).</li>
+<li>
+<strong>The hook is a new optional <code>epilogue_after:</code> field in <code>inst/registry/task_map.yaml</code></strong>, not new logic scattered across five files: each hooked leaf names one of its own <code>reference:</code> functions as the unambiguous completion point, and <code>.eri_task_epilogue()</code> (<code>R/task_registry.R</code>) does the actual lookup + printing generically from the leaf’s own <code>next:</code> field. Only 5 of the ~32 tasks got a hook — most multi-reference leaves (e.g. “log progress and manage artifacts,” which covers six functions called routinely throughout a study) have no single call that means “done with this task,” and guessing one would fire the hint at the wrong moment; those are deliberately left unhooked rather than forced.</li>
+<li>
+<strong><code>tests/testthat/test-task-map.R</code> gained 3 new integrity checks</strong>: every <code>epilogue_after:</code> value is in that leaf’s own <code>reference:</code> list (so the hook can’t name a function the task doesn’t even claim to touch), every leaf with <code>epilogue_after:</code> also has a <code>next:</code> to point to, and no two leaves hook the same function — plus 3 runtime tests exercising <code>.eri_task_epilogue()</code> directly (a real hook fires the right message, an unregistered function name is silent, and quiet verbosity suppresses it).</li>
+<li>A review pass caught that nothing exercised the real call sites in situ — every existing test covering the 5 hooked functions’ success paths, plus the new <code>.eri_task_epilogue()</code> unit tests, but nothing that would fail if the <code>.eri_task_epilogue(...)</code> call at a real call site were ever deleted or broken (it’s wrapped in <code>tryCatch</code>, so a broken lookup fails silently, not loudly). Added one <code>expect_message(..., "Next:")</code> per hooked function to <code>test-cmr.R</code> (×2), <code>test-dal.R</code>, <code>test-research.R</code>, and <code>test-spatial.R</code>. Also tidied <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code>’s hook placement to match the other four (assign, then epilogue, then return a bare variable — nothing after the hook can fail) and added a one-line comment at <code>.eri_task_epilogue()</code>’s <code>[[1]]</code> explaining the single-match assumption it relies on.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.24" id="erifunctions-0924">erifunctions 0.9.24<a class="anchor" aria-label="anchor" href="#erifunctions-0924"></a></h2>
 <div class="section level3">
