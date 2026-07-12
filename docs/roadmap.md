@@ -217,7 +217,7 @@ periods as they arrive; `eri_cutover_check()` each one; watch `eri_cutover_statu
 streak; only then retire the adapters for that stream. The toolchain is ready and end-to-end tested
 offline. It needs real uploads, not more code.
 
-**DQ workflow redesign (in progress, pilot-feedback-driven):** the SDN/SSD CMR pilot surfaced a
+**DQ workflow redesign (shipped, pilot-feedback-driven):** the SDN/SSD CMR pilot surfaced a
 recurring pain point — a DA fixing DQ flags had no structured way to note *what* they fixed or *why*,
 and no way to trace a `processed/` figure back to the exact source bytes it came from. A design consult
 scoped an 8-phase plan to close this: (1) raw retention + source hashing on every ingest path — **shipped**
@@ -274,8 +274,18 @@ calls, only the prompt helpers scripted) caught a real design bug before it ship
 originally re-ran the DQ check at the top of every iteration, so marking a flag not-important
 (which doesn't touch the underlying data) would get re-flagged as a brand-new "open" issue
 forever — fixed by tracking the flags tibble in-memory between loop iterations and only
-re-fetching on an explicit "Re-run" action; (8) `eri_dq_export()` (PDF flag report) + guide
-convergence. Phase 8 is not yet started.
+re-fetching on an explicit "Re-run" action; (8) `eri_dq_export()` + guide convergence — **shipped**:
+new `R/dq_export.R` renders a DQ flags tibble to a self-contained HTML (with a print stylesheet, so
+browser print-to-PDF works cleanly, avoiding a pagedown/weasyprint dependency) or Markdown file,
+organised by `sheet` when present; deliberately generalised beyond the CMR case to also accept a
+plain `run_dq_checks()` flags tibble (`column`/`value`/`issue` only — no `sheet`/`excel_row`/`status`),
+rendering one flat table instead of per-sheet sections; shares its page shell/CSS/table helpers with
+`eri_feedback_report()` via a new `R/reports_lite.R` (both are hand-rolled rather than routed through
+`eri_report_html()`, which hard-requires Quarto); wired into `eri_dq_review()`'s "Print report" menu
+item, which now hands it the in-session flags tibble (including any `status`/`note` triage from that
+session) instead of only printing to console. Closes the loop the whole redesign started from: a DA's
+DQ triage now produces a structured, attributable handback artifact instead of an ad hoc table. All 8
+phases of the DQ workflow redesign are now shipped.
 
 ---
 

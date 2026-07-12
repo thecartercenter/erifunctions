@@ -1222,6 +1222,37 @@ test_that("eri_cmr_dq_report combines every measure's flags into one tibble with
   expect_setequal(flags$disease, c("oncho", "lf"))
   expect_true(all(grepl("::1$", flags$flag_id)))
   expect_true(all(flags$status == "open"))
+  expect_true("note" %in% names(flags))
+  expect_true(all(is.na(flags$note)))
+})
+
+test_that("eri_cmr_dq_report surfaces a flag's note once it's been triaged and the check re-run", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+    dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  fake_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                flags = tibble::tibble(row = 1L, column = "district",
+                                                        value = "Bad", issue = "not allowed")),
+                           class = "dq_result")
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) fake_result,
+    .eri_dq_log_write = function(...) {
+      list(n_flags = 1L, status = "needs_review",
+          log_path = "sdn/oncho/programmatic/treatment/logs/x.yaml",
+          flags = list(list(index = 1, row = 1L, column = "district", value = "Bad",
+                            issue = "not allowed", status = "not_important",
+                            note = "known template quirk")))
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(flags$status, "not_important")
+  expect_equal(flags$note, "known template quirk")
 })
 
 test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is clean", {
@@ -1245,6 +1276,7 @@ test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is cle
 
   flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
   expect_equal(nrow(flags), 0L)
+  expect_true("note" %in% names(flags))
 })
 
 test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries for the same measure/period", {

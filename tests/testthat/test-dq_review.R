@@ -90,7 +90,7 @@ flagged_tbl <- tibble::tibble(
   log_path = "sdn/oncho/programmatic/treatment/logs/dq.yaml",
   flag_id = "sdn/oncho/programmatic/treatment/logs/dq.yaml::1",
   row = 1L, excel_row = 7L, column = "district", value = "Kordofn",
-  issue = "not an allowed value", status = "open"
+  issue = "not an allowed value", status = "open", note = NA_character_
 )
 
 test_that("eri_dq_review marking the only flag not_important closes out the entry so approve can proceed", {
@@ -311,4 +311,55 @@ test_that(".eri_dq_review_fix_in_source forks even when the ORIGINAL filename co
   expect_false(identical(local_path_env$path, original))  # a real working copy was made
   expect_true(file.exists(local_path_env$path))
   expect_equal(opened, local_path_env$path)
+})
+
+test_that(".eri_dq_review_apply_local_resolutions writes both status and note into the flags tibble", {
+  flags <- tibble::tibble(
+    flag_id = c("a::1", "a::2"), status = c("open", "open"),
+    note = c(NA_character_, NA_character_)
+  )
+  resolved <- list(
+    "a::1" = list(status = "not_important", note = "known template quirk"),
+    "a::2" = list(status = "noted", note = NA_character_)
+  )
+
+  out <- .eri_dq_review_apply_local_resolutions(flags, resolved)
+  expect_equal(out$status, c("not_important", "noted"))
+  expect_equal(out$note, c("known template quirk", NA_character_))
+})
+
+test_that(".eri_dq_review_apply_local_resolutions leaves flags alone when there's no note column", {
+  flags <- tibble::tibble(flag_id = "a::1", status = "open")
+  resolved <- list("a::1" = list(status = "not_important", note = "a note"))
+
+  out <- .eri_dq_review_apply_local_resolutions(flags, resolved)
+  expect_equal(out$status, "not_important")
+  expect_false("note" %in% names(out))
+})
+
+test_that("eri_dq_review's 'print report' hands the in-session flags (with notes) to eri_dq_export", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  exported <- NULL
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) flagged_tbl,
+    eri_dq_flag_resolve = function(...) invisible(NULL),
+    eri_logs_resolve = function(...) invisible(NULL),
+    eri_approve_cmr = function(...) invisible(NULL),
+    eri_dq_export = function(flags, country, period, ...) { exported <<- flags; invisible("x") },
+    # main menu: "Work through flags"; within the flag: "Mark noted" (with a note); back at the
+    # now-clean "Nothing outstanding" menu: "Print report", then "Exit"
+    .eri_prompt_menu = scripted(list(1L, 4L, 2L, 3L)),
+    .eri_prompt_line = scripted(list("worth a second look")),
+    .package = "erifunctions"
+  )
+
+  eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+
+  expect_false(is.null(exported))
+  expect_true("note" %in% names(exported))
+  expect_equal(exported$status, "noted")
+  expect_equal(exported$note, "worth a second look")
 })

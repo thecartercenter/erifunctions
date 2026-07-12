@@ -35,8 +35,10 @@ A tibble with one row per flag across every measure: \code{sheet},
 \code{disease}, \code{data_type}, \code{log_path}, \code{flag_id}, \code{row} (the flag's index
 into the checked data, not the workbook), \code{excel_row} (the real row in
 the original Excel sheet -- use this one when telling a DA what to go
-fix), \code{column}, \code{value}, \code{issue}, \code{status} (all \code{"open"} on a fresh run).
-Zero rows if every measure is clean.
+fix), \code{column}, \code{value}, \code{issue}, \code{status} (all \code{"open"} on a fresh run),
+\code{note} (\code{NA} on a fresh run -- only set once a flag has been triaged via
+\code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}} and this function is re-run). Zero rows if every
+measure is clean.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

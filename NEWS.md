@@ -1,3 +1,32 @@
+# erifunctions 0.9.17
+
+## `eri_dq_export()`: a self-contained DQ handback file, and the QC/CMR guides converge on it (Phase 8, final phase of the DQ workflow redesign)
+
+- **New `eri_dq_export(flags, file, format, country, period)`**: renders a DQ flags tibble to a
+  self-contained HTML (with a print stylesheet, so browser print-to-PDF works cleanly -- no
+  pagedown/weasyprint dependency) or GitHub-flavoured Markdown file. Deliberately generalised beyond
+  the CMR case: it renders the richer per-measure tibble from `eri_cmr_dq_report()` (`sheet`,
+  `excel_row`, `status`, `note`), organised into one section per sheet, or a plain `run_dq_checks()`
+  flags tibble (`column`/`value`/`issue` only), rendered as one flat table -- whichever shape you
+  hand it. `file = NULL` (the default) writes `dq-report-<country>-<period>-<date>.<ext>` in the
+  working directory, mirroring `eri_feedback_report()`'s convention.
+- **`eri_dq_review()`'s "Print report" menu item now calls this automatically**, handing it the
+  in-session flags tibble -- including whatever `status`/`note` triage happened during that
+  session -- instead of only printing to the console. Closes the loop the whole redesign started
+  from: a DA's DQ triage now produces a structured, attributable handback artifact instead of an ad
+  hoc `eri_table()` call.
+- **New `R/reports_lite.R`** factors the shared hand-rolled HTML page shell, Carter Center org-palette
+  CSS foundation, and table-cell helpers out of `eri_feedback_report()`'s renderer so the new export
+  doesn't duplicate escaping/table/page-wrapper logic (no behavior change to `eri_feedback_report()`).
+- **`eri_cmr_dq_report()`'s returned tibble gains a `note` column** (`NA` on a fresh run, populated
+  once a flag has been triaged via `eri_dq_flag_resolve()` and the report re-run), and
+  `eri_dq_review()`'s internal in-session triage tracking now carries the note text a DA types
+  through to the flags tibble handed to `eri_dq_export()`.
+- **Guide convergence**: the [QC/feedback guide](da-qc-feedback-guide.html) now ends with
+  `eri_dq_export()` as the handback artifact instead of an ad hoc `eri_table()`; the
+  [CMR guide](da-cmr-guide.html) cross-links to it and its illustrative `eri_cmr_dq_report()` tibble
+  example is updated for the new `note` column.
+
 # erifunctions 0.9.16
 
 ## `eri_dq_review()`: the interactive front door over the scriptable DQ core (Phase 7 of the DQ workflow redesign)

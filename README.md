@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.16 · **Status:** Active development
+**Version:** 0.9.17 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -283,6 +283,7 @@ eri_catalog_verify()
 | `eri_cmr_dq_report(country, period)` | DQ-check every measure a CMR workbook routed to, one combined flags tibble |
 | `eri_approve_cmr(country, period, force, justification)` | Approve every measure in one call, but only if none are outstanding (opt-in `force = TRUE` + `justification` to approve anyway) |
 | `eri_dq_review(country, period)` | Interactive, menu-driven check → fix → re-check → approve loop over the functions above |
+| `eri_dq_export(flags, file, format)` | Render a DQ flags tibble (CMR or plain `run_dq_checks()`) to a self-contained HTML/Markdown handback file |
 
 ### ODK
 

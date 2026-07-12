@@ -159,6 +159,7 @@ reference:
   - eri_approve_cmr
   - eri_cmr_dq_report
   - eri_dq_review
+  - eri_dq_export
   - load_cmr_schema
 
 - title: Data quality

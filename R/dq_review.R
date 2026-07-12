@@ -79,21 +79,22 @@
   invisible(NULL)
 }
 
-# "Print report" menu item: the full flags tibble plus one branded eri_table() per sheet -- a
-# stub for the real PDF/HTML export planned for Phase 8 (eri_dq_export()); reuses what already
-# exists (eri_table()) rather than building throwaway formatting here.
+# "Print report" menu item: one branded eri_table() per sheet on the console for a quick
+# eyeball, then eri_dq_export() writes the self-contained HTML handback file (with any in-session
+# status/note triage already folded in via .eri_dq_review_apply_local_resolutions()).
 #' @keywords internal
 .eri_dq_review_print_report <- function(flags, country, period) {
   if (nrow(flags) == 0L) {
     cli::cli_alert_info("Nothing to report -- no DQ flags for {.val {country}} / {.val {period}}.")
     return(invisible(NULL))
   }
-  print(flags)
   for (sh in unique(flags$sheet)) {
-    sub <- flags[flags$sheet == sh, c("excel_row", "column", "value", "issue", "status"), drop = FALSE]
+    cols <- intersect(c("excel_row", "column", "value", "issue", "status", "note"), names(flags))
+    sub  <- flags[flags$sheet == sh, cols, drop = FALSE]
     cli::cli_h3(sh)
     print(eri_table(sub, title = sh))
   }
+  eri_dq_export(flags, country = country, period = period)
   invisible(NULL)
 }
 
@@ -149,15 +150,16 @@
 # per-flag status already lives in the log YAML. Returns list(touched, resolved): `touched` is
 # the set of schema stems ("country|disease|data_source|data_type") touched via "Adjust the
 # schema" this batch, so the caller can offer eri_dq_schema_submit() once at the end rather than
-# after every single edit; `resolved` is a named vector (flag_id -> new status) for flags marked
-# not_important/noted, so the caller can update its own in-memory flags view WITHOUT a fresh
-# eri_cmr_dq_report() call -- re-deriving from the still-unchanged underlying data would just
-# re-surface the exact same issue as a brand-new "open" flag (see .eri_dq_review_rerun(), the
-# only place a fresh check should actually happen).
+# after every single edit; `resolved` is a list keyed by flag_id, each element
+# list(status, note), for flags marked not_important/noted, so the caller can update its own
+# in-memory flags view (status AND note, for eri_dq_export()'s "if triaged" column) WITHOUT a
+# fresh eri_cmr_dq_report() call -- re-deriving from the still-unchanged underlying data would
+# just re-surface the exact same issue as a brand-new "open" flag (see .eri_dq_review_rerun(),
+# the only place a fresh check should actually happen).
 #' @keywords internal
 .eri_dq_review_walk_flags <- function(open_flags, country, data_con, local_path_env) {
   touched  <- character(0)
-  resolved <- character(0)
+  resolved <- list()
   for (i in seq_len(nrow(open_flags))) {
     f <- open_flags[i, ]
     cli::cli_h3("Flag {i}/{nrow(open_flags)}: {f$sheet} row {f$excel_row}")
@@ -182,10 +184,11 @@
       )
       touched <- union(touched, paste(country, f$disease, "programmatic", f$data_type, sep = "|"))
     } else if (choice %in% c(3L, 4L)) {
-      status <- if (choice == 3L) "not_important" else "noted"
-      note   <- .eri_prompt_line("Note (optional): ")
-      eri_dq_flag_resolve(f$flag_id, status, note = if (nzchar(trimws(note))) note else NULL, data_con = data_con)
-      resolved[[f$flag_id]] <- status
+      status   <- if (choice == 3L) "not_important" else "noted"
+      note_raw <- .eri_prompt_line("Note (optional): ")
+      note     <- if (nzchar(trimws(note_raw))) note_raw else NA_character_
+      eri_dq_flag_resolve(f$flag_id, status, note = if (is.na(note)) NULL else note, data_con = data_con)
+      resolved[[f$flag_id]] <- list(status = status, note = note)
     }
   }
   list(touched = touched, resolved = resolved)
@@ -201,7 +204,13 @@
   if (length(resolved) == 0L || nrow(flags) == 0L) return(flags)
   idx <- match(names(resolved), flags$flag_id)
   ok  <- !is.na(idx)
-  if (any(ok)) flags$status[idx[ok]] <- unlist(resolved, use.names = FALSE)[ok]
+  if (!any(ok)) return(flags)
+  matched <- resolved[ok]
+  flags$status[idx[ok]] <- vapply(matched, function(r) r$status, character(1L))
+  if ("note" %in% names(flags)) {
+    flags$note[idx[ok]] <- vapply(matched, function(r) if (is.na(r$note)) NA_character_ else r$note,
+                                  character(1L))
+  }
   flags
 }
 
