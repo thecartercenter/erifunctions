@@ -13,8 +13,8 @@
   bullet, so the two lines were glued together with no space (`"...sheet.Issue: ..."`). Switched to
   `cli_bullets()`, which renders each element as its own line. The same anti-pattern (`cli_alert_info()`/
   `cli_alert_danger()`/`cli_alert_warning()` called with a multi-element vector) was found and fixed
-  in six more places across `R/dq.R` (the schema-override lifecycle messages) and `R/cmr.R` (the
-  force-approve and outstanding-measures messages) -- all now use `cli_bullets()`.
+  in ten more places across `R/dq.R` (the schema-override lifecycle messages) and `R/cmr.R` (the
+  force-approve, outstanding-measures, and audit-trail-missing messages) -- all now use `cli_bullets()`.
 - **Tightened `da-dq-review-guide.Rmd`'s transcript accuracy**: added a disclosure that real console
   output is noisier than the trimmed transcripts shown (schema-fallback warnings, rename messages),
   an explanation for the expected `atlantis`-only "Could not load schema from Azure" warning, the

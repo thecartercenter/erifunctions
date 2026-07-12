@@ -268,14 +268,14 @@ with the flag from here on -- into the log, and into the handback file below.
 ── RB Treatment
  excel_row   column         value                            issue status
          8 district Atlantis City Value not in allowed_values list  noted
-                                                                    note
- Confirmed with the country lead: Atlantis City is a real, if not-yet-...
+                                                                                                                                                           note
+ Confirmed with the country lead: Atlantis City is a real, if not-yet-catalogued, locality -- flagging for the schema maintainer to add it to the allowed list.
 
 ✔ DQ report (1 flag · 0 open) written to '.../dq-report-atlantis-202608-2026-07-12.html'.
 ```
 
-A quick console eyeball first (the `note` column wraps if it's long, as it does here), then the
-handback file. `eri_dq_review()` calls [`eri_dq_export()`](../reference/eri_dq_export.html) for you here -- see the
+A quick console eyeball first -- a long `note` doesn't truncate, it just pushes the table wide, as it
+does here -- then the handback file. `eri_dq_review()` calls [`eri_dq_export()`](../reference/eri_dq_export.html) for you here -- see the
 [QC/feedback guide](da-qc-feedback-guide.html#export) for what that function does on its own. Open
 the file: a self-contained page, organised by sheet, with the `noted` status shown as a chip and the
 note text in its own column -- exactly what you'd forward to the country or paste into Teams, with
@@ -311,10 +311,10 @@ once.
 ## Cleaning up {#cleanup}
 
 Everything above lives under `atlantis`'s own namespace, so it's safe to leave -- but if you were
-following along and want to tidy up the sandbox behind you. Three things were created: the Azure-side
+following along and want to tidy up the sandbox behind you, three things were created: the Azure-side
 staged/log/processed files, the local practice workbook (`path`) and its `_fixed` working copy
-(forked in [Flag 1](#fix-in-source)), and the exported HTML report
-(`eri_dq_export()` writes to your working directory by default, not a temp folder -- see the
+(forked in [Flag 1](#fix-in-source)), and the exported HTML report (`eri_dq_export()` writes to your
+working directory by default, not a temp folder -- see the
 [QC/feedback guide](da-qc-feedback-guide.html#export) -- so it won't clean itself up):
 
 ```{r cleanup}
