@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,24 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.23/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.24" id="erifunctions-0924">erifunctions 0.9.24<a class="anchor" aria-label="anchor" href="#erifunctions-0924"></a></h2>
+<div class="section level3">
+<h3 id="eri_guide-an-interactive-console-wizard-over-the-task-registry-docs-site-redesign-phase-0-9-24">
+<code>eri_guide()</code>: an interactive console wizard over the task registry (docs site redesign, phase 5)<a class="anchor" aria-label="anchor" href="#eri_guide-an-interactive-console-wizard-over-the-task-registry-docs-site-redesign-phase-0-9-24"></a></h3>
+<ul><li>
+<strong>Added <code><a href="../reference/eri_guide.html">eri_guide()</a></code></strong>, an <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>-style interactive menu wizard over the task registry (<code>inst/registry/task_map.yaml</code>): pick a category, pick a task, see its call, its guide, and the reference functions it touches. Reuses <code>R/dq_review.R</code>’s exact <code>.eri_prompt_menu()</code>/<code><a href="https://rdrr.io/r/utils/menu.html" class="external-link">utils::menu()</a></code> primitives — nothing new to learn, nothing persisted, safe to exit and rerun anytime.</li>
+<li>
+<strong>The “run guardrail” is mechanical, not a schema field</strong>: a task’s call is only offered as “Run it now” when it parses to a genuinely zero-argument call (<code>.eri_guide_zero_arg()</code>, checked against the exact same call string <code>test-task-map.R</code> already verifies parses as R) — 4 of the ~32 registry tasks qualify (<code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code>, <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> ×2, <code><a href="../reference/eri_template_list.html">eri_template_list()</a></code>). Everything else needs real argument values this wizard has no safe way to fabricate, so it can only be shown, with its guide opened (<code><a href="https://rdrr.io/r/utils/vignette.html" class="external-link">utils::vignette()</a></code>) for the full walkthrough. Deeper argument collection (preflight checks, session memory) stays scoped to Phase 7 (“wizard depth”) rather than building it prematurely here.</li>
+<li>
+<strong>Added <code>tests/testthat/test-guide.R</code></strong>: the interactive-only guard, the zero-arg classifier (both synthetically and cross-checked against every call actually in the bundled registry), and the menu loop itself via the same scripted-<code>.eri_prompt_menu()</code> mocking pattern <code>test-dq_review.R</code> already established.</li>
+<li>Cross-linked from <code>pkgdown/index.md</code> and <code>README.md</code>’s task-index callout, and added to <code>_pkgdown.yml</code>’s “Start here” reference group alongside <code><a href="../reference/eri_task_map.html">eri_task_map()</a></code>/<code><a href="../reference/eri_data_model.html">eri_data_model()</a></code>.</li>
+<li>A review pass caught that “Run it now” had no <code>tryCatch</code>, unlike the “Open the guide” branch right next to it — a live call that fails (auth cancelled, no network) would have dumped a raw error at a Data Analyst mid-wizard instead of returning to the menu; fixed. Also fixed a silent case: <code><a href="https://rdrr.io/r/base/eval.html" class="external-link">eval()</a></code>’s return value isn’t auto-printed the way typing the same call at the console would be, so a genuinely visible result (e.g. <code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code>’s connection object) was being discarded with no confirmation the connect succeeded — now printed via <code><a href="https://rdrr.io/r/base/withVisible.html" class="external-link">withVisible()</a></code>, matching console behavior exactly. New tests cover both the failure path and the visible-result path.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.23" id="erifunctions-0923">erifunctions 0.9.23<a class="anchor" aria-label="anchor" href="#erifunctions-0923"></a></h2>
 <div class="section level3">
@@ -88,7 +103,7 @@
 <div class="section level3">
 <h3 id="a-task-registry-answers-what-are-you-trying-to-do-docs-site-redesign-phase-0-9-22">A task registry answers “what are you trying to do?” (docs site redesign, phase 3)<a class="anchor" aria-label="anchor" href="#a-task-registry-answers-what-are-you-trying-to-do-docs-site-redesign-phase-0-9-22"></a></h3>
 <ul><li>
-<strong>Added <code>inst/registry/task_map.yaml</code></strong>, a tree of ~31 common DA/Epi tasks grouped into 8 categories (get set up, bring data in, check quality &amp; approve, work the backlog, use approved data, run a research study, places &amp; maps, add a new program). Each leaf names a representative call, the guide that walks it end to end (if any), and the reference functions it touches — the single shared source the rest of the guidance system (the task-index article now, the planned <code>eri_guide()</code> console wizard and pipeline-function “next step” epilogues later) reads from, instead of three copies that can drift apart.</li>
+<strong>Added <code>inst/registry/task_map.yaml</code></strong>, a tree of ~31 common DA/Epi tasks grouped into 8 categories (get set up, bring data in, check quality &amp; approve, work the backlog, use approved data, run a research study, places &amp; maps, add a new program). Each leaf names a representative call, the guide that walks it end to end (if any), and the reference functions it touches — the single shared source the rest of the guidance system (the task-index article now, the planned <code><a href="../reference/eri_guide.html">eri_guide()</a></code> console wizard and pipeline-function “next step” epilogues later) reads from, instead of three copies that can drift apart.</li>
 <li>
 <strong>Added <code><a href="../reference/eri_task_map.html">eri_task_map()</a></code></strong>, an exported console printer (in “Start here”, alongside <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code>) that prints the tree grouped by category with each task’s call and guide, and returns the flattened registry invisibly as a data frame.</li>
 <li>
@@ -122,7 +137,7 @@
 <li>New <strong>“Start here”</strong> group surfaces <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code>, <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>, <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>, and <code><a href="../reference/eri_verbosity.html">eri_verbosity()</a></code> regardless of which lifecycle group they’d otherwise sit in (absorbing the 1-function “Console output” group). <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code> and <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> are also cross-listed in their original lifecycle groups (“Files in Azure”, “The pipeline”) so a reader browsing there doesn’t come up empty.</li>
 <li>Merged two pairs of overlapping/degenerate groups: “Data catalog” + “Querying” → “Catalog &amp; querying”; “SharePoint &amp; Teams” + “Feedback” → “Collaboration: SharePoint, Teams &amp; feedback”. Renamed “Reconciliation” → “Dataset comparison &amp; cutover” to stop colliding with <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> (a different task, in the Spatial group, whose description now explicitly mentions it).</li>
 <li>Docs-only, single-file change (<code>_pkgdown.yml</code>); verified lossless against the prior structure — 152 unique reference topics before and after, only the two intentional cross-listings (<code>eri_data_path</code>, <code>eri_dq_review</code>) added.</li>
-<li>First of an 8-phase docs-site redesign plan from a second Fable design consult (following the DQ workflow redesign’s), which also scoped a longer-term <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>-style interactive console wizard (<code>eri_guide()</code>) for the whole package — see <code>docs/roadmap.md</code>.</li>
+<li>First of an 8-phase docs-site redesign plan from a second Fable design consult (following the DQ workflow redesign’s), which also scoped a longer-term <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>-style interactive console wizard (<code><a href="../reference/eri_guide.html">eri_guide()</a></code>) for the whole package — see <code>docs/roadmap.md</code>.</li>
 </ul></div>
 </div>
     <div class="section level2">

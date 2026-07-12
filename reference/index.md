@@ -5,6 +5,9 @@
 Run these first, and reach for them whenever you’re not sure what to
 call next.
 
+- [`eri_guide()`](https://thecartercenter.github.io/erifunctions/reference/eri_guide.md)
+  **\[experimental\]** : Find your task and get its call and guide
+  (interactive)
 - [`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)
   **\[experimental\]** : Show the task registry: what are you trying to
   do?
