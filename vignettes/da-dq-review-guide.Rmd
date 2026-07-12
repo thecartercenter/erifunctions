@@ -71,11 +71,16 @@ there's nothing for a DQ check to catch. To have something to actually review, w
 introduce two realistic problems into a copy of it -- the same kind of thing a real submission might
 contain: an impossible value, and a locality the schema doesn't recognise yet.
 
+We also drop the `SCH Treatment` sheet: `atlantis` only ships a bundled DQ schema for
+`oncho/treatment`, and `eri_approve_cmr()` blocks on **any** routed measure that's never been
+DQ-checked (a schema-less measure never gets one) -- the same rule applies to a real, multi-sheet
+CMR, where every routed measure needs a schema before the whole workbook can be approved.
+
 ```{r build-workbook}
 library(openxlsx2)
 
 wb <- wb_load(system.file("extdata", "cmr-example.xlsx", package = "erifunctions"))
-wb$remove_worksheet("SCH Treatment")  # atlantis only ships a DQ schema for RB Treatment
+wb$remove_worksheet("SCH Treatment")
 wb <- wb_add_data(wb, sheet = "RB Treatment", x = -50,
                   start_col = 6, start_row = 6, col_names = FALSE)             # Kampala's treated count
 wb <- wb_add_data(wb, sheet = "RB Treatment", x = "Atlantis City",
@@ -130,12 +135,14 @@ between them are real, captured output.
          6  treated           -50 Value outside expected range [0, 10000000]
          8 district Atlantis City           Value not in allowed_values list
 
-2 open flag(s) across the workbook. What do you want to do?
+── 2 open flag(s) across the workbook. What do you want to do?
+
 1: Work through the open flags one at a time
 2: Re-run the DQ check
 3: Force-approve anyway
 4: Print report
 5: Exit
+
 ```
 
 Two open flags need two different responses, not the same one -- that's the whole reason to work
@@ -149,12 +156,14 @@ through them one at a time rather than bulk-resolving.
 ```
 ── Flag 1/2: RB Treatment row 6
 treated: "-50" -- Value outside expected range [0, 10000000]
-What do you want to do with this flag?
+── What do you want to do with this flag?
+
 1: Fix in source (open/copy the workbook)
 2: Adjust the schema (alias, allowed value, range...)
 3: Mark not important
 4: Mark noted
 5: Skip to the next flag
+
 Path to the local source workbook for this period (or a '_fixed' copy you've already started, if you have one): <you type the path here>
 ✔ Made a working copy: '202608_atlantis_demo_fixed.xlsx' (original preserved)
 ℹ Fix treated on Excel row 6 in the "RB Treatment" sheet.
@@ -187,9 +196,11 @@ Back at the main menu (still 2 open -- fixing the workbook doesn't retroactively
 flags), choose **"Re-run the DQ check"**:
 
 ```
-Re-split '202608_atlantis_demo_fixed.xlsx' and re-check just what it routes to?
+── Re-split '202608_atlantis_demo_fixed.xlsx' and re-check just what it routes to?
+
 1: Yes
 2: No -- cancel
+
 ```
 
 ```
@@ -231,11 +242,12 @@ with the flag from here on -- into the log, and into the handback file below.
 ```
 ── DQ review: atlantis / 202608 ────────────────────────────────────────────────
 ✔ 1 sheet checked -- all clean.
+── Nothing outstanding. What next?
 
-Nothing outstanding. What next?
 1: Approve
 2: Print report
 3: Exit
+
 ```
 
 "All clean" means every flag has been triaged, not that the data is now flawless -- one flag is just
@@ -257,12 +269,22 @@ Back at the same "Nothing outstanding" menu (print report loops back to it, it d
 **"Approve"**:
 
 ```
+✔ Catalog: registered '202608_atlantis_demo_fixed_rb_treatment.parquet'.
 ✔ Approved: '202608_atlantis_demo_fixed_rb_treatment.parquet'
+✔ Approval log: 'atlantis/oncho/programmatic/treatment/processed/202608_approval_log.yaml'
 ── ✔ Approved "202608" ─────────────────────────────────────────────────────────
 Dataset: atlantis / oncho / programmatic / treatment
 Files: 1 moved to processed
+Approver: NishantKishore (unverified)
+Location: atlantis/oncho/programmatic/treatment/processed
+ℹ Operation log: 'atlantis/oncho/programmatic/treatment/logs/20260712_014108_eri_approve_202608.yaml'
+ℹ Operation log: 'atlantis/rblf/cmr/logs/20260712_014108_eri_approve_cmr_202608.yaml'
 ✔ Approved 1 measure for "atlantis" / "202608".
 ```
+
+> `Approver` shows as "(unverified)" here because this sandbox session has no `ERI_ANALYST_ID` set --
+> on a normal analyst machine it carries your verified identity instead (see the
+> [onboarding guide](onboarding.html)).
 
 That's the whole session: two flags, two different resolutions, a handback file, one approval --
 without calling `eri_dq_flag_resolve()`, `eri_logs_resolve()`, or `eri_approve_cmr()` yourself even
