@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Deep-dive** &middot; ~15 min &middot; needs: Azure &middot; sandbox-safe: [no]{.eri-sandbox-no} (illustrates real country boundaries)
+:::
+
 The spatial workflow covers three use cases: loading canonical admin boundaries
 from Azure, joining GPS coordinates to those boundaries, and producing
 programmatic maps. All functions require the `sf` package.

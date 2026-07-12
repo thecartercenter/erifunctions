@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~20 min &middot; needs: Azure &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (runs on `atlantis`)
+:::
+
 The [CMR guide](da-cmr-guide.html) and the [QC/feedback guide](da-qc-feedback-guide.html) both walk
 the DQ pipeline as a **sequence of functions you call yourself**: check, resolve each flag, close out
 the entry, re-run, approve. That's the scriptable core, and it has to exist for automation. But you

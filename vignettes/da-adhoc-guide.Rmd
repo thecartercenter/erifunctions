@@ -11,6 +11,10 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~15 min &middot; needs: Azure &middot; sandbox-safe: [no]{.eri-sandbox-no} (illustrates a real catalog rollup)
+:::
+
 "How many malaria cases by province this year?" "Pull treatment coverage for these three countries."
 Ad-hoc requests are a daily part of the job, and they usually mean the same thing: **combine a few
 approved datasets and compute a number.** [`eri_query()`](../reference/eri_query.html) does that with

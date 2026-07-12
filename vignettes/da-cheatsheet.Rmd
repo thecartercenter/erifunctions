@@ -7,6 +7,10 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~5 min &middot; needs: n/a &middot; sandbox-safe: n/a
+:::
+
 *One page. The functions you actually use, the path model, and which pipeline to reach for. Pair with
 [the data-model card](data-model-card.html) for the channel-vs-measure decision, and the role guides
 when you want the full walkthrough.*

@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~40 min &middot; needs: Azure &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (public `mtcars` under a demo project)
+:::
+
 This is a hands-on, **start-to-finish walkthrough** of running a research study with
 `erifunctions`. It is written for **epidemiologists**, domain experts who are *not*
 software developers. You do not need to memorise anything: work through it once, in order,
@@ -520,3 +524,8 @@ for what exists today and what is coming.
 
 For the full menu of functions grouped by purpose, see the
 [reference](../reference/index.html).
+
+::: {.eri-path-nav}
+**Epidemiologist path, step 2 of 4.** &larr; [Connecting to the services](connections-guide.html)
+&middot; Next: [Reconciling localities to admin units](epi-reconcile-guide.html) &rarr;
+:::

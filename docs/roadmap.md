@@ -306,7 +306,25 @@ proposal to use pkgdown's `subtitle:` field for sub-grouping *within* a
 group's `contents:` turned out not to be how pkgdown actually works — `subtitle` is a whole-section
 heading, like `title`, not a per-item nesting key — and was caught by a real CI failure
 (`build_reference_index()`: "contents[1] must be a string") before merge; reverted to flat,
-thoughtfully-ordered lists. (2) article metadata + path navigation, (3) a bundled task
+thoughtfully-ordered lists. (2) article metadata + path navigation — **shipped**: a metadata strip
+(`::: {.eri-guide-meta}`, a pandoc fenced div styled from a new `pkgdown/extra.css`) added to all 25
+vignettes, naming its type (Walkthrough/Desk reference/Deep-dive), a time estimate, what it needs
+(nothing/Azure/Azure+ODK), and whether it's sandbox-safe (runs on `atlantis` or fully offline vs.
+touches/illustrates a real country); the README's guide table gained matching Time/Needs/Sandbox
+columns. Prev/next path footers (`::: {.eri-path-nav}`) added, but to **7 articles, not the ~14
+originally estimated** — reading the package's own authoritative "in order" text
+(`getting-started.Rmd`, `docs/guides.md`) before implementing found the real strict sequence is only
+`connections-guide` (shared first step) → then either the 3-step DA core
+(`da-onboard-guide` → `da-ingest-guide` → `da-logs-guide`) or the 3-step Epi core
+(`epi-research-guide` → `epi-reconcile-guide` → `epi-dq-guide`); CMR/ODK/ad-hoc/reporting/
+QC-feedback/survey-report are explicitly "feeds/tasks you reach for as needed," not forced
+continuations, so they got a metadata strip but not an invented linear "step N of 10." Verified with
+a full local `pkgdown::build_site()` (unlocked via `RSTUDIO_PANDOC` pointing at RStudio's bundled
+Quarto Pandoc — see this redesign's own Phase 1 note above on the CI-only-catchable `subtitle:`
+bug), not just `check_pkgdown()`: every reference page and all 25 articles built clean, `extra.css` copied and
+linked, both fenced-div classes render correctly in the actual output. Found but out of scope to fix
+here: `epi-analytics.Rmd`'s code chunks reference undefined objects (`result`, `population_data`, …)
+and aren't actually runnable as shipped — logged as a nice-to-have. (3) a bundled task
 registry (`inst/registry/task_map.yaml`) plus a generated task-index article, (4) an `index.md`
 homepage with role cards and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive
 console wizard walking the task registry, (6) next-step epilogues on pipeline functions, (7) wizard

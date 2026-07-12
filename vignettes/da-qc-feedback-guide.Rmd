@@ -11,6 +11,10 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
+::: {.eri-guide-meta}
+**Walkthrough** &middot; ~10 min &middot; needs: nothing &middot; sandbox-safe: [no]{.eri-sandbox-no} (the QC steps are offline, but the "Notify the team" aside illustrates a real country's Teams channel)
+:::
+
 When a country sends a data extract, quality-checking it is only half the job, the other half is
 telling them, **specifically and clearly, what needs fixing**. `run_dq_checks()` does both: it
 **auto-corrects** the safe, unambiguous things (and records what it changed) and **flags** the rest for
