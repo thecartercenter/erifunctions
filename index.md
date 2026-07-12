@@ -9,7 +9,7 @@ Standardized data tools for the Epidemiology, Research and Innovation
 guides, the full function reference, and the project roadmap. This
 README is the quick orientation.
 
-**Version:** 0.9.17 · **Status:** Active development
+**Version:** 0.9.18 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the [V2
 > roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md)
@@ -84,6 +84,7 @@ The full set:
 | [A complete research workflow for epidemiologists](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.html) | Epidemiologists running a study end-to-end, from a fresh project to a citable, reproducible result |
 | [Ingesting a surveillance dataset (raw → approved)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.html) | Data analysts taking a dataset through the raw → staged → approved pipeline, with a human approval gate |
 | [Uploading a monthly country report (CMR)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html) | Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file |
+| [Triaging DQ flags interactively](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html) | Data analysts working a CMR’s DQ flags through one guided menu ([`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)) instead of the underlying functions, ending in a handback file ([`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)) |
 | [Working with ODK Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html) | Data analysts connecting to ODK Central to monitor a form, manage collectors, and pull submissions into the pipeline |
 | [Onboarding a new country / disease / data type](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.html) | Data analysts standing up the schema + folders for a new program before any data flows |
 | [Triaging the error & DQ log backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.html) | Data analysts finding what failed or needs review and closing it out (shared across the team) |

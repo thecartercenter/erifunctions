@@ -7,6 +7,7 @@ articles:
   da-adhoc-guide: da-adhoc-guide.html
   da-cheatsheet: da-cheatsheet.html
   da-cmr-guide: da-cmr-guide.html
+  da-dq-review-guide: da-dq-review-guide.html
   da-ingest-guide: da-ingest-guide.html
   da-logs-guide: da-logs-guide.html
   da-odk-guide: da-odk-guide.html
@@ -26,7 +27,7 @@ articles:
   sharepoint-workflow: sharepoint-workflow.html
   spatial-workflow: spatial-workflow.html
   troubleshooting: troubleshooting.html
-last_built: 2026-07-12T00:37Z
+last_built: 2026-07-12T02:18Z
 urls:
   reference: https://thecartercenter.github.io/erifunctions/reference
   article: https://thecartercenter.github.io/erifunctions/articles

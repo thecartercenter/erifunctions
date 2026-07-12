@@ -39,6 +39,8 @@ ODK as those feeds arrive.
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md):
 - [Uploading and processing a monthly country report (CMR) (for data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md):
+- [Triaging and handing back DQ flags, interactively (for data
+  analysts)](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md):
 - [Working with ODK Central: connect, monitor, and pull form data (for
   data
   analysts)](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md):

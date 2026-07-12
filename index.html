@@ -31,7 +31,7 @@
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,6 +60,7 @@
     <li><a class="dropdown-item" href="articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="articles/da-dq-review-guide.html">Triaging and handing back DQ flags, interactively (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="articles/da-adhoc-guide.html">Answering ad-hoc data requests with SQL (eri_query)</a></li>
@@ -110,7 +111,7 @@
 <a class="anchor" aria-label="anchor" href="#open_book-documentation--guides--httpsthecartercentergithubioerifunctions"></a>
 </h3>
 <p><strong>New here, start there.</strong> The documentation site has step-by-step guides, the full function reference, and the project roadmap. This README is the quick orientation.</p>
-<p><strong>Version:</strong> 0.9.17 · <strong>Status:</strong> Active development</p>
+<p><strong>Version:</strong> 0.9.18 · <strong>Status:</strong> Active development</p>
 <blockquote>
 <p>🛣️ <strong>Where this is going:</strong> see the <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md" class="external-link">V2 roadmap</a> and the <a href="https://github.com/thecartercenter/erifunctions/tree/main/docs/adr" class="external-link">architecture decision records</a> for the development plan and the reasoning behind key design choices.</p>
 </blockquote>
@@ -164,6 +165,10 @@
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.html">Uploading a monthly country report (CMR)</a></td>
 <td>Data analysts uploading, staging, parsing, and approving the monthly CMR Excel reports countries file</td>
+</tr>
+<tr>
+<td><a href="https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html">Triaging DQ flags interactively</a></td>
+<td>Data analysts working a CMR’s DQ flags through one guided menu (<code><a href="reference/eri_dq_review.html">eri_dq_review()</a></code>) instead of the underlying functions, ending in a handback file (<code><a href="reference/eri_dq_export.html">eri_dq_export()</a></code>)</td>
 </tr>
 <tr>
 <td><a href="https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.html">Working with ODK Central</a></td>

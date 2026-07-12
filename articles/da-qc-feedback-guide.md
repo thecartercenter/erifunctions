@@ -169,6 +169,8 @@ guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide
   [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
   – see the [CMR
   guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
-  and
-  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
-  for the interactive triage wrapper that calls it automatically. \`\`\`
+  and the [DQ review
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md)
+  for
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md),
+  the interactive triage wrapper that calls it automatically. \`\`\`

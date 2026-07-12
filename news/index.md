@@ -1,5 +1,32 @@
 # Changelog
 
+## erifunctions 0.9.18
+
+### New guide: interactively triaging and handing back DQ flags (`da-dq-review-guide`)
+
+- **New vignette `da-dq-review-guide.Rmd`**, a worked, run-it-live
+  walkthrough of
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  end to end – build a practice CMR workbook with two deliberate
+  problems, split it, run the review, work through both flags (one via
+  “fix in source” + re-run, one via “mark noted” with an explanation),
+  print the handback file
+  ([`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)),
+  and approve. Practiced entirely against the built-in `atlantis`
+  training sandbox, so nothing touches a real country’s data.
+- Framed around
+  **[`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  as the single entry point**: the CMR and QC/feedback guides both
+  present the DQ pipeline as a sequence of functions a DA calls
+  themselves (the scriptable core, which still has to exist for
+  automation); this guide leads with the interactive wrapper instead, so
+  a DA never has to remember that sequence or which function does which
+  part of it.
+- Added to `_pkgdown.yml`’s “For data analysts” articles,
+  `docs/guides.md`’s guide matrix, and `README.md`’s guide table;
+  cross-linked from both `da-cmr-guide.Rmd` and
+  `da-qc-feedback-guide.Rmd`.
+
 ## erifunctions 0.9.17
 
 ### `eri_dq_export()`: a self-contained DQ handback file, and the QC/CMR guides converge on it (Phase 8, final phase of the DQ workflow redesign)

@@ -330,7 +330,9 @@ remove the old file by hand.
 > applies – interactive-only (it refuses to run in a script or CI, where
 > these functions are what you use directly), and it holds no state of
 > its own: close it mid-review and running it again picks up exactly
-> where the logs say things are.
+> where the logs say things are. See the [DQ review
+> guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md)
+> for a full worked session.
 
 CMR routing does **not** auto-run DQ checks – CMR review is manual, on
 purpose.
@@ -412,7 +414,9 @@ to a self-contained HTML or markdown file, organised by sheet – see the
 guide](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.md)
 for the general pattern.
 [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
-“Print report” menu option calls this automatically.
+“Print report” menu option calls this automatically – see the [DQ review
+guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md)
+for that whole session end to end.
 
 ``` r
 

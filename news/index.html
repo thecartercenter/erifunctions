@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,6 +34,7 @@
     <li><a class="dropdown-item" href="../articles/da-onboard-guide.html">Onboarding a new country, disease, or data type (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-ingest-guide.html">Ingesting a surveillance dataset: raw to approved (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-cmr-guide.html">Uploading and processing a monthly country report (CMR) (for data analysts)</a></li>
+    <li><a class="dropdown-item" href="../articles/da-dq-review-guide.html">Triaging and handing back DQ flags, interactively (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-odk-guide.html">Working with ODK Central: connect, monitor, and pull form data (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-logs-guide.html">Triaging the error &amp; data-quality log backlog (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/da-adhoc-guide.html">Answering ad-hoc data requests with SQL (eri_query)</a></li>
@@ -68,9 +69,19 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.17/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.18" id="erifunctions-0918">erifunctions 0.9.18<a class="anchor" aria-label="anchor" href="#erifunctions-0918"></a></h2>
+<div class="section level3">
+<h3 id="new-guide-interactively-triaging-and-handing-back-dq-flags-da-dq-review-guide-0-9-18">New guide: interactively triaging and handing back DQ flags (<code>da-dq-review-guide</code>)<a class="anchor" aria-label="anchor" href="#new-guide-interactively-triaging-and-handing-back-dq-flags-da-dq-review-guide-0-9-18"></a></h3>
+<ul><li>
+<strong>New vignette <code>da-dq-review-guide.Rmd</code></strong>, a worked, run-it-live walkthrough of <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> end to end – build a practice CMR workbook with two deliberate problems, split it, run the review, work through both flags (one via “fix in source” + re-run, one via “mark noted” with an explanation), print the handback file (<code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code>), and approve. Practiced entirely against the built-in <code>atlantis</code> training sandbox, so nothing touches a real country’s data.</li>
+<li>Framed around <strong><code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> as the single entry point</strong>: the CMR and QC/feedback guides both present the DQ pipeline as a sequence of functions a DA calls themselves (the scriptable core, which still has to exist for automation); this guide leads with the interactive wrapper instead, so a DA never has to remember that sequence or which function does which part of it.</li>
+<li>Added to <code>_pkgdown.yml</code>’s “For data analysts” articles, <code>docs/guides.md</code>’s guide matrix, and <code>README.md</code>’s guide table; cross-linked from both <code>da-cmr-guide.Rmd</code> and <code>da-qc-feedback-guide.Rmd</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.17" id="erifunctions-0917">erifunctions 0.9.17<a class="anchor" aria-label="anchor" href="#erifunctions-0917"></a></h2>
 <div class="section level3">
