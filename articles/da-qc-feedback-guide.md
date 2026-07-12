@@ -107,16 +107,16 @@ res$flags
 #> 5     3 SampleDate         2026-03-15 Year extracted from SampleDate does not match EpiWeekYear
 ```
 
-Turn it into a clean artifact to attach to your message with
-[`eri_table()`](https://thecartercenter.github.io/erifunctions/reference/eri_table.md):
+Turn it into a self-contained handback file with
+[`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md),
+a self-contained HTML (prints cleanly to PDF from a browser) or markdown
+file ready to attach to an email or paste into Teams – one consistent
+format instead of an ad hoc table each time:
 
 ``` r
 
-eri_table(
-  res$flags,
-  title    = "DR malaria, items to correct and resubmit",
-  footnote = "Auto-corrected values are not listed; only rows needing your review."
-)
+eri_dq_export(res$flags, country = "dr")
+#> ✔ DQ report (5 flags · 5 open) written to '.../dq-report-dr-2026-07-11.html'.
 ```
 
 ## Notify the team / country
@@ -163,4 +163,12 @@ guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide
   [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md),
   the [log-triage
   guide](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md).
-  \`\`\`
+- For a CMR workbook specifically,
+  [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+  also renders the richer, per-sheet flags tibble from
+  [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+  – see the [CMR
+  guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
+  and
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  for the interactive triage wrapper that calls it automatically. \`\`\`

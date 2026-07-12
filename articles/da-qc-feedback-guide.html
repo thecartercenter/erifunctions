@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,7 +102,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Quality-check an extract and give a country feedback</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.16/vignettes/da-qc-feedback-guide.Rmd" class="external-link"><code>vignettes/da-qc-feedback-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-qc-feedback-guide.Rmd" class="external-link"><code>vignettes/da-qc-feedback-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-qc-feedback-guide.Rmd</code></div>
     </div>
 
@@ -205,13 +205,13 @@ could <strong>not</strong> resolve. This is what you send back:</p>
 <span><span class="co">#&gt; 3     4 Sex                X          Value not in allowed_values list</span></span>
 <span><span class="co">#&gt; 4     5 Province_Residence Nowhere    Value not in allowed_values list</span></span>
 <span><span class="co">#&gt; 5     3 SampleDate         2026-03-15 Year extracted from SampleDate does not match EpiWeekYear</span></span></code></pre></div>
-<p>Turn it into a clean artifact to attach to your message with <a href="../reference/eri_table.html"><code>eri_table()</code></a>:</p>
+<p>Turn it into a self-contained handback file with <a href="../reference/eri_dq_export.html"><code>eri_dq_export()</code></a>,
+a self-contained HTML (prints cleanly to PDF from a browser) or markdown
+file ready to attach to an email or paste into Teams – one consistent
+format instead of an ad hoc table each time:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_table.html">eri_table</a></span><span class="op">(</span></span>
-<span>  <span class="va">res</span><span class="op">$</span><span class="va">flags</span>,</span>
-<span>  title    <span class="op">=</span> <span class="st">"DR malaria, items to correct and resubmit"</span>,</span>
-<span>  footnote <span class="op">=</span> <span class="st">"Auto-corrected values are not listed; only rows needing your review."</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_dq_export.html">eri_dq_export</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">flags</span>, country <span class="op">=</span> <span class="st">"dr"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ✔ DQ report (5 flags · 5 open) written to '.../dq-report-dr-2026-07-11.html'.</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="notify">Notify the team / country<a class="anchor" aria-label="anchor" href="#notify"></a>
@@ -247,7 +247,11 @@ schema rules, and adding <code>custom_checks</code>.</li>
 and cross-field/spatial anomalies beyond cell-level validity.</li>
 <li>Persist the flags to the shared backlog with
 <code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code>, the <a href="da-logs-guide.html">log-triage
-guide</a>. ```</li>
+guide</a>.</li>
+<li>For a CMR workbook specifically, <code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> also
+renders the richer, per-sheet flags tibble from <a href="../reference/eri_cmr_dq_report.html"><code>eri_cmr_dq_report()</code></a>
+– see the <a href="da-cmr-guide.html">CMR guide</a> and <a href="../reference/eri_dq_review.html"><code>eri_dq_review()</code></a>
+for the interactive triage wrapper that calls it automatically. ```</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

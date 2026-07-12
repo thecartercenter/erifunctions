@@ -76,8 +76,10 @@ A tibble with one row per flag across every measure: `sheet`, `disease`,
 `data_type`, `log_path`, `flag_id`, `row` (the flag's index into the
 checked data, not the workbook), `excel_row` (the real row in the
 original Excel sheet – use this one when telling a DA what to go fix),
-`column`, `value`, `issue`, `status` (all `"open"` on a fresh run). Zero
-rows if every measure is clean.
+`column`, `value`, `issue`, `status` (all `"open"` on a fresh run),
+`note` (`NA` on a fresh run – only set once a flag has been triaged via
+[`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
+and this function is re-run). Zero rows if every measure is clean.
 
 ## Examples
 

@@ -100,6 +100,9 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
   **\[experimental\]** : Interactively review and resolve a CMR
   workbook's DQ flags, then approve
 
+- [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+  : Export a DQ flag report to HTML or markdown
+
 - [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
   **\[experimental\]** : Load a CMR country schema
 

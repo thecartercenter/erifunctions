@@ -27,7 +27,7 @@ closing out the whole measure with eri_logs_resolve()."><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,7 @@ closing out the whole measure with eri_logs_resolve()."><meta property="og:image
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Run and log DQ checks for a whole CMR workbook, one combined report</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.16/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_cmr_dq_report.Rd</code></div>
     </div>
 
@@ -154,8 +154,10 @@ to keep every run's entry open until you resolve it yourself.</p></dd>
 <code>disease</code>, <code>data_type</code>, <code>log_path</code>, <code>flag_id</code>, <code>row</code> (the flag's index
 into the checked data, not the workbook), <code>excel_row</code> (the real row in
 the original Excel sheet – use this one when telling a DA what to go
-fix), <code>column</code>, <code>value</code>, <code>issue</code>, <code>status</code> (all <code>"open"</code> on a fresh run).
-Zero rows if every measure is clean.</p>
+fix), <code>column</code>, <code>value</code>, <code>issue</code>, <code>status</code> (all <code>"open"</code> on a fresh run),
+<code>note</code> (<code>NA</code> on a fresh run – only set once a flag has been triaged via
+<code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> and this function is re-run). Zero rows if every
+measure is clean.</p>
     </div>
 
     <div class="section level2">

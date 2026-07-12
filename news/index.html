@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,9 +68,26 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.16/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.17" id="erifunctions-0917">erifunctions 0.9.17<a class="anchor" aria-label="anchor" href="#erifunctions-0917"></a></h2>
+<div class="section level3">
+<h3 id="eri_dq_export-a-self-contained-dq-handback-file-and-the-qccmr-guides-converge-on-it-phase-final-phase-of-the-dq-workflow-redesign-0-9-17">
+<code>eri_dq_export()</code>: a self-contained DQ handback file, and the QC/CMR guides converge on it (Phase 8, final phase of the DQ workflow redesign)<a class="anchor" aria-label="anchor" href="#eri_dq_export-a-self-contained-dq-handback-file-and-the-qccmr-guides-converge-on-it-phase-final-phase-of-the-dq-workflow-redesign-0-9-17"></a></h3>
+<ul><li>
+<strong>New <code>eri_dq_export(flags, file, format, country, period)</code></strong>: renders a DQ flags tibble to a self-contained HTML (with a print stylesheet, so browser print-to-PDF works cleanly – no pagedown/weasyprint dependency) or GitHub-flavoured Markdown file. Deliberately generalised beyond the CMR case: it renders the richer per-measure tibble from <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> (<code>sheet</code>, <code>excel_row</code>, <code>status</code>, <code>note</code>), organised into one section per sheet, or a plain <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> flags tibble (<code>column</code>/<code>value</code>/<code>issue</code> only), rendered as one flat table – whichever shape you hand it. <code>file = NULL</code> (the default) writes <code>dq-report-&lt;country&gt;-&lt;period&gt;-&lt;date&gt;.&lt;ext&gt;</code> in the working directory, mirroring <code><a href="../reference/eri_feedback_report.html">eri_feedback_report()</a></code>’s convention.</li>
+<li>
+<strong><code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s “Print report” menu item now calls this automatically</strong>, handing it the in-session flags tibble – including whatever <code>status</code>/<code>note</code> triage happened during that session – instead of only printing to the console. Closes the loop the whole redesign started from: a DA’s DQ triage now produces a structured, attributable handback artifact instead of an ad hoc <code><a href="../reference/eri_table.html">eri_table()</a></code> call.</li>
+<li>
+<strong>New <code>R/reports_lite.R</code></strong> factors the shared hand-rolled HTML page shell, Carter Center org-palette CSS foundation, and table-cell helpers out of <code><a href="../reference/eri_feedback_report.html">eri_feedback_report()</a></code>’s renderer so the new export doesn’t duplicate escaping/table/page-wrapper logic (no behavior change to <code><a href="../reference/eri_feedback_report.html">eri_feedback_report()</a></code>).</li>
+<li>
+<strong><code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>’s returned tibble gains a <code>note</code> column</strong> (<code>NA</code> on a fresh run, populated once a flag has been triaged via <code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> and the report re-run), and <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s internal in-session triage tracking now carries the note text a DA types through to the flags tibble handed to <code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code>.</li>
+<li>
+<strong>Guide convergence</strong>: the <a href="da-qc-feedback-guide.html">QC/feedback guide</a> now ends with <code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> as the handback artifact instead of an ad hoc <code><a href="../reference/eri_table.html">eri_table()</a></code>; the <a href="da-cmr-guide.html">CMR guide</a> cross-links to it and its illustrative <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> tibble example is updated for the new <code>note</code> column.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.16" id="erifunctions-0916">erifunctions 0.9.16<a class="anchor" aria-label="anchor" href="#erifunctions-0916"></a></h2>
 <div class="section level3">

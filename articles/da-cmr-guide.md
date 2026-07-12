@@ -347,10 +347,10 @@ flags <- eri_cmr_dq_report("uga", "202406")
 #> ✔ Logged 1 DQ flag (needs_review).
 #> ✔ Logged 0 DQ flags (clean).
 flags
-#> # A tibble: 1 × 10
-#>   sheet        disease data_type log_path      flag_id        row column value issue         status
-#>   <chr>        <chr>   <chr>     <chr>         <chr>        <int> <chr>  <chr> <chr>         <chr>
-#> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open
+#> # A tibble: 1 × 11
+#>   sheet        disease data_type log_path      flag_id        row column value issue         status note
+#>   <chr>        <chr>   <chr>     <chr>         <chr>        <int> <chr>  <chr> <chr>         <chr>  <chr>
+#> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open   <NA>
 ```
 
 Work through it **issue by issue**, not measure by measure: mark each
@@ -361,6 +361,19 @@ what you did or decided:
 
 eri_dq_flag_resolve(flags$flag_id[1], "not_important",
                    note = "confirmed with the country: target is genuinely 0 this period")
+```
+
+[`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
+updates the *logged* flag, not this run’s in-memory `flags` tibble –
+update your own copy the same way
+[`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+tracks triage between loop iterations, so anything you print or export
+below reflects the decision:
+
+``` r
+
+flags$status[1] <- "not_important"
+flags$note[1]   <- "confirmed with the country: target is genuinely 0 this period"
 ```
 
 Once every flag in a measure’s report has been triaged, close out that
@@ -389,6 +402,22 @@ eri_logs("uga", data_source = "programmatic", operation = "dq_flags", since = "2
 #>   <chr>          <chr>      <chr>     <chr>        <chr>   <chr>     <int>
 #> 1 uga/oncho/...  2026-07-...dq_flags  needs_review oncho   treatment 1
 #> 2 uga/sch/...    2026-07-...dq_flags  clean        sch     treatment 0
+```
+
+Handing this back to a country or pasting it into a Teams thread?
+[`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+renders `flags` (with whatever `status`/`note` triage you’ve done above)
+to a self-contained HTML or markdown file, organised by sheet – see the
+[QC/feedback
+guide](https://thecartercenter.github.io/erifunctions/articles/da-qc-feedback-guide.md)
+for the general pattern.
+[`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
+“Print report” menu option calls this automatically.
+
+``` r
+
+eri_dq_export(flags, country = "uga", period = "202406")
+#> ✔ DQ report (1 flag · 0 open) written to '.../dq-report-uga-202406-2026-07-11.html'.
 ```
 
 ## 6. Approve
