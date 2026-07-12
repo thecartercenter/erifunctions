@@ -21,6 +21,14 @@
   `test-dq_review.R` already established.
 - Cross-linked from `pkgdown/index.md` and `README.md`'s task-index callout, and added to
   `_pkgdown.yml`'s "Start here" reference group alongside `eri_task_map()`/`eri_data_model()`.
+- A review pass caught that "Run it now" had no `tryCatch`, unlike the "Open the guide" branch
+  right next to it — a live call that fails (auth cancelled, no network) would have dumped a raw
+  error at a Data Analyst mid-wizard instead of returning to the menu; fixed. Also fixed a silent
+  case: `eval()`'s return value isn't auto-printed the way typing the same call at the console
+  would be, so a genuinely visible result (e.g. `get_azure_storage_connection()`'s connection
+  object) was being discarded with no confirmation the connect succeeded — now printed via
+  `withVisible()`, matching console behavior exactly. New tests cover both the failure path and
+  the visible-result path.
 
 # erifunctions 0.9.23
 

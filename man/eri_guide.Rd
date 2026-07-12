@@ -7,8 +7,11 @@
 eri_guide()
 }
 \value{
-Invisibly, \code{NULL}. Any effect happens through whichever reference function you choose
-to run, which is where the real return value lives.
+Invisibly, \code{NULL}. "Run it now" prints its visibly-returned result the same way typing
+the call at the console would (so e.g. \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}'s connection object is
+shown, not silently discarded), and a failure is caught and reported rather than crashing the
+wizard -- but the result itself is not kept for later use; assign it yourself if you need it
+again (\code{con <- get_azure_storage_connection()}).
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

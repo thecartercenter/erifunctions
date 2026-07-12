@@ -93,15 +93,43 @@ test_that("eri_guide's task screen opens the guide when selected, without errori
   expect_equal(opened, "da-adhoc-guide")
 })
 
-test_that("eri_guide's task screen never offers 'Run it now' for a call with arguments", {
+test_that("eri_guide's task screen never offers 'Run it now' for a call with arguments, nor 'Open the guide' with no guide", {
   withr::local_options(rlang_interactive = TRUE)
   leaf <- list(id = "x", title = "Test task", call = "eri_query(sql)", guide = NULL, reference = "eri_query")
   local_mocked_bindings(
     .eri_prompt_menu = function(title, choices) {
       expect_false("Run it now" %in% choices)
+      expect_false("Open the guide" %in% choices)
       0L
     },
     .package = "erifunctions"
   )
   expect_invisible(.eri_guide_show_task(leaf))
+})
+
+test_that("eri_guide's task screen shows the visible result of a successful zero-argument run", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(get_azure_storage_connection = function() "a connection object", .package = "erifunctions")
+
+  leaf <- list(id = "x", title = "Test task", call = "get_azure_storage_connection()", guide = NULL, reference = "get_azure_storage_connection")
+  local_mocked_bindings(
+    .eri_prompt_menu = scripted(list(1L, 0L)),  # "Run it now", then "Back"
+    .package = "erifunctions"
+  )
+  expect_output(.eri_guide_show_task(leaf), "a connection object")
+})
+
+test_that("eri_guide's task screen catches a failing zero-argument run instead of crashing", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    get_azure_storage_connection = function() stop("auth cancelled"),
+    .package = "erifunctions"
+  )
+
+  leaf <- list(id = "x", title = "Test task", call = "get_azure_storage_connection()", guide = NULL, reference = "get_azure_storage_connection")
+  local_mocked_bindings(
+    .eri_prompt_menu = scripted(list(1L, 0L)),  # "Run it now", then "Back"
+    .package = "erifunctions"
+  )
+  expect_no_error(.eri_guide_show_task(leaf))
 })

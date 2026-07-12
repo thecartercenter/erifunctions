@@ -43,7 +43,17 @@
     picked <- if (choice == 0L) "Back" else options[[choice]]
 
     if (picked == "Run it now") {
-      eval(str2lang(leaf$call))
+      tryCatch(
+        {
+          # withVisible() so a visibly-returned result (e.g. get_azure_storage_connection()'s
+          # container) prints here exactly as it would at the console top level, while a call
+          # that already prints its own output via cli:: (eri_data_model()) or returns
+          # invisibly doesn't print twice.
+          result <- withVisible(eval(str2lang(leaf$call)))
+          if (isTRUE(result$visible)) print(result$value)
+        },
+        error = function(e) cli::cli_alert_warning("That call failed: {conditionMessage(e)}")
+      )
     } else if (picked == "Open the guide") {
       tryCatch(
         print(utils::vignette(leaf$guide, package = "erifunctions")),
@@ -73,8 +83,11 @@
 #'
 #' **Interactive only.** In a script, browse [eri_task_map()] or the task-index article instead.
 #'
-#' @returns Invisibly, `NULL`. Any effect happens through whichever reference function you choose
-#'   to run, which is where the real return value lives.
+#' @returns Invisibly, `NULL`. "Run it now" prints its visibly-returned result the same way typing
+#'   the call at the console would (so e.g. [get_azure_storage_connection()]'s connection object is
+#'   shown, not silently discarded), and a failure is caught and reported rather than crashing the
+#'   wizard -- but the result itself is not kept for later use; assign it yourself if you need it
+#'   again (`con <- get_azure_storage_connection()`).
 #' @examples
 #' \dontrun{
 #' eri_guide()
