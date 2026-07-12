@@ -83,6 +83,25 @@ test_that("eri_research_init scaffolds local dirs and research.yaml", {
   expect_true(is.list(manifest$outputs))
 })
 
+test_that("eri_research_init prints the registered next-step hint on success (task-registry epilogue)", {
+  tmp <- withr::local_tempdir()
+
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(
+    storage_dir_exists = function(...) FALSE,
+    create_storage_dir = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+
+  expect_message(
+    eri_research_init("dr_irs_2024", "dr", "malaria", "ITS analysis", path = tmp),
+    "Next:"
+  )
+})
+
 test_that("eri_research_init errors if project already exists locally", {
   tmp <- withr::local_tempdir()
 

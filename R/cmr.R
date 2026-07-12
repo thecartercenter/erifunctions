@@ -628,6 +628,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   .eri_write_log(op_log, data_con, log_dir)
   if (had_error) cli::cli_abort(err_msg, call = NULL)
 
+  .eri_task_epilogue("eri_split_cmr")
   invisible(plan_tbl)
 }
 
@@ -910,6 +911,7 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
       "i" = "(see the Azure write warning above). The per-measure {.fn eri_approve} logs still exist; only this combined cross-reference is missing."
     ))
   }
+  .eri_task_epilogue("eri_approve_cmr")
   invisible(approved_tbl)
 }
 

@@ -581,6 +581,28 @@ test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", 
   expect_true(any(grepl("^uga/lf/programmatic/mmdp/staged/", written)))
 })
 
+test_that("eri_split_cmr prints the registered next-step hint on a real (non-dry-run) success (task-registry epilogue)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  expect_message(
+    suppressWarnings(eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"))),
+    "Next:"
+  )
+})
+
 test_that("eri_split_cmr defaults to warning about superseded files, not deleting them", {
   tmp <- withr::local_tempfile(pattern = "202406_fixed", fileext = ".xlsx")
   make_uga_cmr(tmp)
@@ -1012,6 +1034,25 @@ test_that("eri_approve_cmr approves every measure once all are clean", {
   result <- eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
   expect_length(approved, 2L)
   expect_equal(nrow(result), 2L)
+})
+
+test_that("eri_approve_cmr prints the registered next-step hint on success (task-registry epilogue)", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho", data_type = "treatment", dest = "a", n_rows = 1L
+  )
+  local_mocked_bindings(
+    eri_logs = function(...) tibble::tibble(
+      log_path = "sdn/x/programmatic/treatment/logs/x.yaml", period = "202605",
+      status = "clean", handled = FALSE, n_issues = 0L
+    ),
+    eri_approve = function(...) NULL,
+    .package = "erifunctions"
+  )
+
+  expect_message(
+    eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock")),
+    "Next:"
+  )
 })
 
 test_that("eri_approve_cmr records a dq_reviewed cross-reference in its own op-log", {

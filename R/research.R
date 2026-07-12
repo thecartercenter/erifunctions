@@ -123,6 +123,7 @@ eri_research_init <- function(
     " " = "Manifest:   {.path research.yaml}",
     " " = "Azure:      {.path {azure_path}}"
   ))
+  .eri_task_epilogue("eri_research_init")
   invisible(yaml_path)
 }
 

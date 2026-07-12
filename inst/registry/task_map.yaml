@@ -23,6 +23,13 @@
 #   guide     a vignettes/*.Rmd slug (optional -- not every task has its own guide)
 #   reference exported function names this task touches (checked against NAMESPACE)
 #   next      ids of the natural next task(s) (optional)
+#   epilogue_after
+#             an exported function name from this leaf's own `reference:` list (optional).
+#             When set, that function prints a one-line "next step" hint (sourced from
+#             `next:`) after it succeeds -- see .eri_task_epilogue() in R/task_registry.R.
+#             Only set where a single call is genuinely the unambiguous completion point of
+#             the task; most multi-reference leaves have no one true "done" call and are
+#             deliberately left unhooked rather than guessing.
 
 - id: get_set_up
   title: "Get set up"
@@ -56,6 +63,7 @@
     guide: da-cmr-guide
     reference: [eri_stage_cmr, eri_split_cmr, eri_ingest_cmr, eri_cmr_last_plan]
     next: [check_cmr]
+    epilogue_after: eri_split_cmr
   - id: surveillance_file
     title: "A surveillance dataset (csv/xlsx from a country)"
     role: da
@@ -63,6 +71,7 @@
     guide: da-ingest-guide
     reference: [eri_ingest, eri_stage, eri_approve]
     next: [triage_logs]
+    epilogue_after: eri_ingest
   - id: odk_submissions
     title: "ODK Central survey submissions"
     role: da
@@ -97,6 +106,7 @@
     guide: da-dq-review-guide
     reference: [eri_dq_review, eri_cmr_dq_report, eri_dq_export, eri_approve_cmr]
     next: [triage_logs]
+    epilogue_after: eri_approve_cmr
   - id: qc_feedback
     title: "QC a submission and give a country feedback"
     role: da
@@ -186,6 +196,7 @@
     guide: epi-research-guide
     reference: [eri_research_init, eri_research_scaffold, eri_research_resume, eri_research_status]
     next: [track_provenance]
+    epilogue_after: eri_research_init
   - id: track_provenance
     title: "Log progress and manage artifacts as you go"
     role: epi
@@ -213,6 +224,7 @@
     guide: epi-reconcile-guide
     reference: [eri_spatial_reconcile]
     next: [join_map]
+    epilogue_after: eri_spatial_reconcile
   - id: join_map
     title: "Join points to admin units and map them"
     role: both

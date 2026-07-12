@@ -1,3 +1,38 @@
+# erifunctions 0.9.25
+
+## Pipeline functions now hint at the next step, sourced from the task registry (docs site redesign, phase 6)
+
+- **Five pipeline functions now print a one-line "Next:" hint on success**, naming the natural
+  next task and its representative call: `eri_spatial_reconcile()` (→ join points to admin units
+  and map them), `eri_split_cmr()` (→ review and approve the CMR interactively),
+  `eri_ingest()` (→ triage the log backlog), `eri_approve_cmr()` (→ triage the log backlog), and
+  `eri_research_init()` (→ log progress and manage artifacts as you go). Gated at "full" verbosity
+  like every other narration (`.eri_say_info()`, `eri_verbosity("quiet")` silences it same as
+  anything else).
+- **The hook is a new optional `epilogue_after:` field in `inst/registry/task_map.yaml`**, not new
+  logic scattered across five files: each hooked leaf names one of its own `reference:` functions
+  as the unambiguous completion point, and `.eri_task_epilogue()` (`R/task_registry.R`) does the
+  actual lookup + printing generically from the leaf's own `next:` field. Only 5 of the ~32 tasks
+  got a hook — most multi-reference leaves (e.g. "log progress and manage artifacts," which covers
+  six functions called routinely throughout a study) have no single call that means "done with
+  this task," and guessing one would fire the hint at the wrong moment; those are deliberately left
+  unhooked rather than forced.
+- **`tests/testthat/test-task-map.R` gained 3 new integrity checks**: every `epilogue_after:`
+  value is in that leaf's own `reference:` list (so the hook can't name a function the task
+  doesn't even claim to touch), every leaf with `epilogue_after:` also has a `next:` to point to,
+  and no two leaves hook the same function — plus 3 runtime tests exercising
+  `.eri_task_epilogue()` directly (a real hook fires the right message, an unregistered function
+  name is silent, and quiet verbosity suppresses it).
+- A review pass caught that nothing exercised the real call sites in situ — every existing test
+  covering the 5 hooked functions' success paths, plus the new `.eri_task_epilogue()` unit tests,
+  but nothing that would fail if the `.eri_task_epilogue(...)` call at a real call site were ever
+  deleted or broken (it's wrapped in `tryCatch`, so a broken lookup fails silently, not loudly).
+  Added one `expect_message(..., "Next:")` per hooked function to `test-cmr.R` (×2), `test-dal.R`,
+  `test-research.R`, and `test-spatial.R`. Also tidied `eri_spatial_reconcile()`'s hook placement
+  to match the other four (assign, then epilogue, then return a bare variable — nothing after the
+  hook can fail) and added a one-line comment at `.eri_task_epilogue()`'s `[[1]]` explaining the
+  single-match assumption it relies on.
+
 # erifunctions 0.9.24
 
 ## `eri_guide()`: an interactive console wizard over the task registry (docs site redesign, phase 5)

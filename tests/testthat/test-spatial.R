@@ -517,6 +517,21 @@ test_that("eri_spatial_reconcile matches exactly without geocoding", {
   expect_true(all(is.na(c(out$geocoded_adm4_name, out$geocoded_adm3_name, out$geocoded_adm2_name))))
 })
 
+test_that("eri_spatial_reconcile prints the registered next-step hint on success (task-registry epilogue)", {
+  skip_no_sf()
+  local_mocked_bindings(
+    .eri_geocode = function(...) stop("must not geocode a matched row"),
+    .package = "erifunctions"
+  )
+  df <- tibble::tibble(
+    loc  = "jinova", mun = "Juan de Herrera", prov = "San Juan", cases = 3L
+  )
+  expect_message(
+    eri_spatial_reconcile(df, recon_cols$loc_cols, recon_shp(), recon_cols$admin_cols),
+    "Next:"
+  )
+})
+
 test_that("eri_spatial_reconcile scopes matching by coarser levels", {
   skip_no_sf()
   # "Jínova" exists, but under the wrong municipality -> no match (no geocode).
