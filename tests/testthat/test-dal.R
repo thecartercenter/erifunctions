@@ -340,6 +340,37 @@ test_that("eri_ingest stages to the five-axis {data_source}/{data_type} path", {
   expect_equal(logged_dir, "uga/oncho/programmatic/treatment/logs")
 })
 
+test_that("eri_ingest prints the registered next-step hint on success (task-registry epilogue)", {
+  raw_csv <- withr::local_tempfile(fileext = ".csv")
+  utils::write.csv(data.frame(Year = 2024L, EpiWeek = 1L), raw_csv, row.names = FALSE)
+
+  schema <- list(
+    country = "uga", disease = "oncho",
+    data_source = "programmatic", data_type = "treatment",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year    = list(required = TRUE, type = "numeric"),
+      EpiWeek = list(required = TRUE, type = "numeric")
+    )
+  )
+
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    eri_dq_log       = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(storage_dir_exists = function(...) TRUE, .package = "AzureStor")
+
+  expect_message(
+    eri_ingest(raw_csv, "uga", "oncho",
+               data_source = "programmatic", data_type = "treatment",
+               schema = schema, data_con = structure(list(), class = "mock")),
+    "Next:"
+  )
+})
+
 test_that("eri_ingest with data_type = NULL stays four-axis (no measure level)", {
   raw_csv <- withr::local_tempfile(fileext = ".csv")
   utils::write.csv(data.frame(Year = 2024L, EpiWeek = 1L), raw_csv, row.names = FALSE)

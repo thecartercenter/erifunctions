@@ -837,8 +837,9 @@ eri_spatial_reconcile <- function(data,
       "{n_r} geocode{?s} flagged {.val geocoded_review} (low-confidence or parent mismatch) -- verify before use."
     )
   }
+  out <- tibble::as_tibble(out)
   .eri_task_epilogue("eri_spatial_reconcile")
-  tibble::as_tibble(out)
+  out
 }
 
 #### eri_landscan_upload ####

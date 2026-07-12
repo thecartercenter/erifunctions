@@ -23,6 +23,15 @@
   and no two leaves hook the same function — plus 3 runtime tests exercising
   `.eri_task_epilogue()` directly (a real hook fires the right message, an unregistered function
   name is silent, and quiet verbosity suppresses it).
+- A review pass caught that nothing exercised the real call sites in situ — every existing test
+  covering the 5 hooked functions' success paths, plus the new `.eri_task_epilogue()` unit tests,
+  but nothing that would fail if the `.eri_task_epilogue(...)` call at a real call site were ever
+  deleted or broken (it's wrapped in `tryCatch`, so a broken lookup fails silently, not loudly).
+  Added one `expect_message(..., "Next:")` per hooked function to `test-cmr.R` (×2), `test-dal.R`,
+  `test-research.R`, and `test-spatial.R`. Also tidied `eri_spatial_reconcile()`'s hook placement
+  to match the other four (assign, then epilogue, then return a bare variable — nothing after the
+  hook can fail) and added a one-line comment at `.eri_task_epilogue()`'s `[[1]]` explaining the
+  single-match assumption it relies on.
 
 # erifunctions 0.9.24
 

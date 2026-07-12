@@ -51,6 +51,9 @@
     hit  <- flat[!is.na(flat$epilogue_after) & flat$epilogue_after == fn_name, , drop = FALSE]
     if (nrow(hit) == 0L) return(invisible(NULL))
 
+    # [[1]] assumes exactly one match -- enforced by test-task-map.R's "no two leaves hook the
+    # same epilogue_after" check, since a second match's next_ids would otherwise be silently
+    # ignored rather than merged or erred.
     next_ids <- hit$next_ids[[1]]
     for (nid in next_ids) {
       nxt <- flat[flat$id == nid, , drop = FALSE]
