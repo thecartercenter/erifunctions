@@ -362,7 +362,23 @@ alone doesn't need the reference/article build to render, and re-run after the r
 surfaced a real pkgdown mechanic worth remembering — `man/figures/*` images referenced from
 root-level markdown are rewritten to `reference/figures/*` on the built site, and resolving that
 path requires `copy_figures()` to have run (a `build_site()` step my minimal harness had to call
-explicitly). (5) `eri_guide()` — an `eri_dq_review()`-style interactive console wizard walking the task registry,
+explicitly). (5) `eri_guide()` — **shipped**: an `eri_dq_review()`-style interactive console wizard
+(`R/guide.R`) walking the task registry — pick a category, pick a task, see its call/guide/reference
+functions. Reuses `R/dq_review.R`'s exact `.eri_prompt_menu()`/`utils::menu()` primitives rather
+than inventing a second prompt convention. The "run guardrail" from this redesign's own earlier
+phrasing turned out not to need a new schema field: whether a task is safe to run with no
+fabricated arguments is determined mechanically, by checking whether its `call:` string parses to
+zero arguments (`.eri_guide_zero_arg()`) — the same string `test-task-map.R` already verifies
+parses as R at all. Only 4 of the ~32 tasks qualify (`get_azure_storage_connection()`,
+`eri_data_model()` ×2, `eri_template_list()`); everything else can only be shown, with its guide
+opened via `utils::vignette()`. Real per-function argument collection (so more than 4 tasks could
+ever be run from the wizard) is deliberately left to Phase 7 ("wizard depth") rather than building
+it now for a schema that doesn't need it yet — the same "don't design for a hypothetical future
+requirement" call already made in Phase 3. `tests/testthat/test-guide.R` mirrors
+`test-dq_review.R`'s scripted-`.eri_prompt_menu()` mocking pattern exactly, plus one test that
+cross-checks `.eri_guide_zero_arg()`'s classification against every call actually in the bundled
+registry, not just synthetic examples. Cross-linked from `pkgdown/index.md`, `README.md`, and
+`_pkgdown.yml`'s "Start here" reference group.
 (6) next-step epilogues on pipeline functions, (7) wizard depth (preflight checks, session memory,
 deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
 deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.

@@ -9,7 +9,9 @@ TCC's Azure-centred data system across countries (Haiti, DR, Uganda, OEPA, …) 
 functions — you don't edit the package.
 
 Not sure where to start? **[What are you trying to do?](articles/task-index.html)** is a generated
-index of ~30 common tasks; pick yours and get the call and the guide. Otherwise, read
+index of ~30 common tasks; pick yours and get the call and the guide. In the console, `eri_guide()`
+walks the same list interactively — pick a category, pick a task, run it if it's safe to run with
+no arguments, or open its guide. Otherwise, read
 **[Getting started](articles/getting-started.html)** first — it's the one idea every guide assumes.
 
 ## Two roles, two paths
