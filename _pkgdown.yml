@@ -136,6 +136,7 @@ reference:
 - title: Files in Azure
   desc: Read, write, list, and manage files at any path — the layer everything else builds on.
   contents:
+  - eri_data_path
   - eri_read
   - eri_write
   - eri_upload
@@ -181,9 +182,9 @@ reference:
   - add_anomaly_consistency
   - add_anomaly_spatial
   - load_dq_schema
-  - eri_dq_schema_edit
   - eri_dq_schema_path
   - eri_dq_schema_status
+  - eri_dq_schema_edit
   - eri_dq_schema_reset
   - eri_dq_schema_submit
 
@@ -221,7 +222,7 @@ reference:
 - title: ODK
   desc: >
     Registry & sync (register, deregister, list, sync, upload) first, then survey monitoring, then
-    server & user admin.
+    browsing/downloading from the server, then user admin.
   contents:
   - eri_odk_register
   - eri_odk_deregister
@@ -231,11 +232,11 @@ reference:
   - eri_odk_upload
   - eri_survey_status
   - print.survey_status
-  - eri_odk_bulk_users
   - list_odk_projects
   - list_odk_forms
   - download_odk_form
   - download_form_attachments
+  - eri_odk_bulk_users
   - list_all_odk_app_users
   - list_odk_form_users
   - update_odk_app_user_role

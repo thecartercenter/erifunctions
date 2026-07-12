@@ -15,15 +15,17 @@
   this pass; a caption-only ordering is.
 - New **"Start here"** group surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and
   `eri_verbosity()` regardless of which lifecycle group they'd otherwise sit in (absorbing the
-  1-function "Console output" group).
+  1-function "Console output" group). `eri_data_path()` and `eri_dq_review()` are also cross-listed
+  in their original lifecycle groups ("Files in Azure", "The pipeline") so a reader browsing there
+  doesn't come up empty.
 - Merged two pairs of overlapping/degenerate groups: "Data catalog" + "Querying" →
   "Catalog & querying"; "SharePoint & Teams" + "Feedback" → "Collaboration: SharePoint, Teams &
   feedback". Renamed "Reconciliation" → "Dataset comparison & cutover" to stop colliding with
   `eri_spatial_reconcile()` (a different task, in the Spatial group, whose description now
   explicitly mentions it).
 - Docs-only, single-file change (`_pkgdown.yml`); verified lossless against the prior structure —
-  152 unique reference topics before and after, only the intentional `eri_dq_review` cross-listing
-  (also shown in "The pipeline") added.
+  152 unique reference topics before and after, only the two intentional cross-listings
+  (`eri_data_path`, `eri_dq_review`) added.
 - First of an 8-phase docs-site redesign plan from a second Fable design consult (following the DQ
   workflow redesign's), which also scoped a longer-term `eri_dq_review()`-style interactive
   console wizard (`eri_guide()`) for the whole package — see `docs/roadmap.md`.

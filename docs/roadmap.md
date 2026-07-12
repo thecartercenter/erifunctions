@@ -296,10 +296,13 @@ groups (which mirrored `R/` source files — "Data pipeline" vs. "Data quality" 
 described one lifecycle a user experiences as a single loop) to 15 lifecycle-shaped groups, functions
 within each ordered by what to reach for first rather than alphabetically; a new "Start here" group
 surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and `eri_verbosity()` regardless of
-which lifecycle group they'd otherwise sit in; degenerate/overlapping groups merged ("Data catalog" +
+which lifecycle group they'd otherwise sit in (`eri_data_path()`/`eri_dq_review()` also cross-listed
+in their original lifecycle groups); degenerate/overlapping groups merged ("Data catalog" +
 "Querying", "SharePoint & Teams" + "Feedback"); a docs-only, single-file change, verified lossless
-(152 unique reference topics before and after, only the intentional `eri_dq_review` cross-listing
-added). The consult's own proposal to use pkgdown's `subtitle:` field for sub-grouping *within* a
+(152 unique reference topics before and after, only the two intentional cross-listings added). A
+same-PR review pass also caught two `desc:`-vs-actual-order mismatches (the DQ-schema functions'
+view/override/submit claim, and ODK's server-vs-admin split) and fixed both. The consult's own
+proposal to use pkgdown's `subtitle:` field for sub-grouping *within* a
 group's `contents:` turned out not to be how pkgdown actually works — `subtitle` is a whole-section
 heading, like `title`, not a per-item nesting key — and was caught by a real CI failure
 (`build_reference_index()`: "contents[1] must be a string") before merge; reverted to flat,
