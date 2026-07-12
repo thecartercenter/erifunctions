@@ -946,8 +946,10 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   `disease`, `data_type`, `log_path`, `flag_id`, `row` (the flag's index
 #'   into the checked data, not the workbook), `excel_row` (the real row in
 #'   the original Excel sheet -- use this one when telling a DA what to go
-#'   fix), `column`, `value`, `issue`, `status` (all `"open"` on a fresh run).
-#'   Zero rows if every measure is clean.
+#'   fix), `column`, `value`, `issue`, `status` (all `"open"` on a fresh run),
+#'   `note` (`NA` on a fresh run -- only set once a flag has been triaged via
+#'   [eri_dq_flag_resolve()] and this function is re-run). Zero rows if every
+#'   measure is clean.
 #' @examples
 #' \dontrun{
 #' flags <- eri_cmr_dq_report("sdn", "202605")
@@ -1019,7 +1021,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
         sheet = p$sheet, disease = p$disease, data_type = p$data_type,
         log_path = written$log_path, flag_id = paste0(written$log_path, "::", f$index),
         row = f$row, excel_row = excel_row_val, column = f$column, value = f$value,
-        issue = f$issue, status = f$status
+        issue = f$issue, status = f$status, note = .eri_na_chr(f$note)
       )
     }
   }
@@ -1030,7 +1032,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
       sheet = character(0), disease = character(0), data_type = character(0),
       log_path = character(0), flag_id = character(0), row = integer(0),
       excel_row = integer(0), column = character(0), value = character(0),
-      issue = character(0), status = character(0)
+      issue = character(0), status = character(0), note = character(0)
     ))
   }
 

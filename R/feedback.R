@@ -527,22 +527,14 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
   vapply(.ERI_FEEDBACK_STATUSES, function(s) sum(statuses == s), integer(1L))
 }
 
-#' @keywords internal
-.eri_html_escape <- function(x) {
-  x <- as.character(x)
-  x <- gsub("&", "&amp;", x, fixed = TRUE)
-  x <- gsub("<", "&lt;",  x, fixed = TRUE)
-  x <- gsub(">", "&gt;",  x, fixed = TRUE)
-  x
-}
-
 # HTML renderer ----------------------------------------------------------------
 #
 # Deliberately hand-rolled rather than reusing eri_report_html(): that helper
 # hard-requires a Quarto install (so a one-line standing report would fail for a
 # user without Quarto) and its section/table/figure model doesn't fit a
-# status-bucketed digest. The CSS below uses the Carter Center *org* palette
-# (navy #001737 / green #00873f) for a shared artifact — intentionally not the
+# status-bucketed digest. Shares its page shell/CSS foundation/table helpers
+# with eri_dq_export() via reports_lite.R — both are hand-rolled Carter Center
+# *org*-palette artifacts (navy #001737 / green #00873f), intentionally not the
 # package's eri_brand_colors(), which brands data products.
 #' @keywords internal
 .eri_feedback_render_html <- function(entries, since_days) {
@@ -552,32 +544,22 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
   n_total  <- length(entries)
   n_open   <- sum(counts[.ERI_FEEDBACK_OPEN])
 
-  css <- paste(
-    "body{font-family:'Source Sans 3',system-ui,Segoe UI,Roboto,sans-serif;color:#1c2638;",
-    "max-width:960px;margin:2rem auto;padding:0 1.2rem;line-height:1.45}",
-    "h1{font-family:'Source Serif 4',Georgia,serif;color:#001737;margin-bottom:.2rem}",
-    "h2{font-family:'Source Serif 4',Georgia,serif;color:#001737;margin-top:2rem;",
-    "border-bottom:1px solid #dde6ef;padding-bottom:.3rem}",
-    ".meta{color:#5b6678;margin-bottom:1rem}",
+  css <- paste0(
+    .eri_org_html_css_base(),
     ".board{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}",
     ".chip{border-radius:999px;padding:.25rem .7rem;font-size:.85rem;font-weight:600;",
     "background:#f3f6fa;border:1px solid #dde6ef;color:#1c2638}",
     ".chip b{color:#001737}",
     ".chip.fixed{background:#e7f5ec;border-color:#cfe6d6;color:#00873f}",
-    "table{border-collapse:collapse;width:100%;margin:.5rem 0;font-size:.92rem}",
-    "th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid #eef2f7;vertical-align:top}",
-    "th{color:#5b6678;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}",
     "td.id{font-variant-numeric:tabular-nums;color:#135aa6;font-weight:700;white-space:nowrap}",
-    ".tag{font-size:.74rem;font-weight:700;border-radius:6px;padding:.1rem .4rem;background:#eef2f7;color:#41617f}",
-    ".empty{color:#5b6678;font-style:italic}",
-    sep = ""
+    ".tag{font-size:.74rem;font-weight:700;border-radius:6px;padding:.1rem .4rem;background:#eef2f7;color:#41617f}"
   )
 
-  row <- function(cells) paste0("<tr>", paste0(cells, collapse = ""), "</tr>")
-  td  <- function(x, cls = "") paste0("<td", if (nzchar(cls)) paste0(" class='", cls, "'") else "", ">", x, "</td>")
-  th  <- function(xs) paste0("<tr>", paste0("<th>", xs, "</th>", collapse = ""), "</tr>")
+  row <- .eri_html_row
+  td  <- .eri_html_td
+  th  <- .eri_html_th_row
 
-  fmt_date <- function(x) { d <- substr(x %||% "", 1L, 10L); if (is.na(d) || !nzchar(d)) "—" else d }
+  fmt_date <- .eri_html_fmt_date
 
   tbl_new <- function(es) {
     if (length(es) == 0L) return("<p class='empty'>Nothing new this week.</p>")
@@ -627,17 +609,11 @@ eri_feedback_report <- function(file = NULL, format = c("html", "md"),
     )
   }
 
-  paste0(
-    "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>",
-    "<title>ERI feedback backlog</title>",
-    "<link href='https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&",
-    "family=Source+Sans+3:wght@400;600;700&display=swap' rel='stylesheet'>",
-    "<style>", css, "</style></head><body>",
-    "<h1>ERI feedback backlog</h1>",
+  meta <- paste0(
     "<p class='meta'>Generated ", gen, " · ", n_total, " ticket", if (n_total == 1L) "" else "s",
-    " · ", n_open, " open · last ", since_days, " days highlighted</p>",
-    body, "</body></html>"
+    " · ", n_open, " open · last ", since_days, " days highlighted</p>"
   )
+  .eri_html_page("ERI feedback backlog", css, paste0(meta, body))
 }
 
 # Markdown renderer ------------------------------------------------------------
