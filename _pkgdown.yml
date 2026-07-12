@@ -59,10 +59,11 @@ articles:
 - title: Quick reference & onboarding
   navbar: Quick reference
   desc: >
-    Desk references and the new-analyst path: the big-picture orientation, the paced onboarding
-    track, the one-page cheat sheet, the channel-vs-measure data-model card, and the troubleshooting
-    card.
+    Desk references and the new-analyst path: what are you trying to do, the big-picture
+    orientation, the paced onboarding track, the one-page cheat sheet, the channel-vs-measure
+    data-model card, and the troubleshooting card.
   contents:
+  - task-index
   - orientation
   - onboarding
   - da-cheatsheet
@@ -120,6 +121,7 @@ reference:
   desc: >
     Run these first, and reach for them whenever you're not sure what to call next.
   contents:
+  - eri_task_map
   - eri_data_model
   - eri_data_path
   - eri_dq_review

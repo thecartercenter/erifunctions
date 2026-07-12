@@ -1,3 +1,25 @@
+# erifunctions 0.9.22
+
+## A task registry answers "what are you trying to do?" (docs site redesign, phase 3)
+
+- **Added `inst/registry/task_map.yaml`**, a tree of ~31 common DA/Epi tasks grouped into 8
+  categories (get set up, bring data in, check quality & approve, work the backlog, use approved
+  data, run a research study, places & maps, add a new program). Each leaf names a representative
+  call, the guide that walks it end to end (if any), and the reference functions it touches — the
+  single shared source the rest of the guidance system (the task-index article now, the planned
+  `eri_guide()` console wizard and pipeline-function "next step" epilogues later) reads from,
+  instead of three copies that can drift apart.
+- **Added `eri_task_map()`**, an exported console printer (in "Start here", alongside
+  `eri_data_model()`) that prints the tree grouped by category with each task's call and guide, and
+  returns the flattened registry invisibly as a data frame.
+- **Added the generated [task-index article](https://thecartercenter.github.io/erifunctions/articles/task-index.html)**
+  ("What are you trying to do?"), a real executed chunk that reads the bundled registry and renders
+  a `knitr::kable()` table — it can't go stale relative to the YAML the way hand-written prose can.
+- **Added `tests/testthat/test-task-map.R`**, an integrity suite: every `reference:` name is a real
+  exported function, every `guide:` slug matches a real `vignettes/*.Rmd` file, every `call:`
+  template parses as valid R, every `next:` id resolves to a real task id, and every leaf id is
+  unique. An unverifiable claim in the registry is now a test failure, not a stale doc.
+
 # erifunctions 0.9.21
 
 ## Every guide now says what it costs before you start (docs site redesign, phase 2)
