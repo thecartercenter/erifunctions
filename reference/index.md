@@ -1,5 +1,22 @@
 # Package index
 
+## Start here
+
+Run these first, and reach for them whenever you’re not sure what to
+call next.
+
+- [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
+  **\[experimental\]** : Show the data-addressing model: known sources,
+  measures and formats
+- [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
+  **\[experimental\]** : Build a canonical blob path in the data/
+  container
+- [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  **\[experimental\]** : Interactively review and resolve a CMR
+  workbook's DQ flags, then approve
+- [`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
+  : Control how much erifunctions prints to the console
+
 ## Connections & authentication
 
 Authenticate to Azure, ODK, SharePoint, and Teams.
@@ -13,17 +30,14 @@ Authenticate to Azure, ODK, SharePoint, and Teams.
 - [`get_teams_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_teams_connection.md)
   : Connect to Microsoft Teams via the Graph API
 
-## Console output
+## Files in Azure
 
-Control how chatty erifunctions is in the console.
+Read, write, list, and manage files at any path — the layer everything
+else builds on.
 
-- [`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
-  : Control how much erifunctions prints to the console
-
-## Reading & writing data
-
-Read, write, list, and manage files in Azure (and locally).
-
+- [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
+  **\[experimental\]** : Build a canonical blob path in the data/
+  container
 - [`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
   **\[experimental\]** : Read a file
 - [`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md)
@@ -42,20 +56,28 @@ Read, write, list, and manage files in Azure (and locally).
   **\[experimental\]** : Delete a file
 - [`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md)
   **\[experimental\]** : Delete a directory
-- [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
-  **\[experimental\]** : Build a canonical blob path in the data/
-  container
-- [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
-  **\[experimental\]** : Show the data-addressing model: known sources,
-  measures and formats
 - [`erifunctions_io()`](https://thecartercenter.github.io/erifunctions/reference/erifunctions_io.md)
   **\[experimental\]** : erifunctions i/o handler
 - [`azure_io()`](https://thecartercenter.github.io/erifunctions/reference/azure_io.md)
   : Helper function to read and write key data to the Azure environment
 
-## Data pipeline
+## The pipeline: raw → staged → processed
 
-Ingest, stage, approve, and trigger surveillance and CMR pipelines.
+Every route ends at eri_approve()/eri_approve_cmr(); nothing reaches
+processed/ without one of them. Start with the guided review & handback
+trio (eri_dq_review, eri_cmr_dq_report, eri_dq_export); the rest are
+generic ingest/approval, then CMR-specific routing.
+
+- [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  **\[experimental\]** : Interactively review and resolve a CMR
+  workbook's DQ flags, then approve
+
+- [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+  **\[experimental\]** : Run and log DQ checks for a whole CMR workbook,
+  one combined report
+
+- [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
+  : Export a DQ flag report to HTML or markdown
 
 - [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
   **\[experimental\]** : Ingest a local data file: DQ-check and stage it
@@ -92,39 +114,15 @@ Ingest, stage, approve, and trigger surveillance and CMR pipelines.
   **\[experimental\]** : Approve every disease/measure one CMR workbook
   routed to, in one call
 
-- [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
-  **\[experimental\]** : Run and log DQ checks for a whole CMR workbook,
-  one combined report
-
-- [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
-  **\[experimental\]** : Interactively review and resolve a CMR
-  workbook's DQ flags, then approve
-
-- [`eri_dq_export()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_export.md)
-  : Export a DQ flag report to HTML or markdown
-
 - [`load_cmr_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_cmr_schema.md)
   **\[experimental\]** : Load a CMR country schema
 
-## Data quality
+## The data-quality engine
 
-Schema-driven DQ checks and anomaly detection.
+The scriptable core under eri_dq_review() — running checks
+(run_dq_checks and the anomaly detectors), then the DQ schemas that
+define them (view, override, submit).
 
-- [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
-  : Load a DQ schema
-- [`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md)
-  **\[experimental\]** : Fork the active DQ schema into a local,
-  editable override
-- [`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md)
-  **\[experimental\]** : Resolve the local file path of the currently
-  active DQ schema
-- [`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md)
-  **\[experimental\]** : List local DQ schema overrides
-- [`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md)
-  **\[experimental\]** : Delete a local DQ schema override
-- [`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md)
-  **\[experimental\]** : Submit a local DQ schema override for a
-  maintainer to fold in
 - [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
   : Run data quality checks on surveillance data
 - [`print(`*`<dq_result>`*`)`](https://thecartercenter.github.io/erifunctions/reference/dq_result-methods.md)
@@ -143,10 +141,25 @@ Schema-driven DQ checks and anomaly detection.
 - [`add_anomaly_spatial()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_spatial.md)
   **\[experimental\]** : Validate admin unit names against a spatial
   reference
+- [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+  : Load a DQ schema
+- [`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md)
+  **\[experimental\]** : Resolve the local file path of the currently
+  active DQ schema
+- [`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md)
+  **\[experimental\]** : List local DQ schema overrides
+- [`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md)
+  **\[experimental\]** : Fork the active DQ schema into a local,
+  editable override
+- [`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md)
+  **\[experimental\]** : Delete a local DQ schema override
+- [`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md)
+  **\[experimental\]** : Submit a local DQ schema override for a
+  maintainer to fold in
 
-## Data catalog
+## Catalog & querying
 
-Register, query, verify, and rebuild processed-layer data.
+What approved data exists, and SQL across it.
 
 - [`eri_catalog_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_register.md)
   : Register a processed-layer file in the data catalog
@@ -158,15 +171,10 @@ Register, query, verify, and rebuild processed-layer data.
   : Verify that catalog entries still exist in Azure
 - [`eri_catalog_rebuild()`](https://thecartercenter.github.io/erifunctions/reference/eri_catalog_rebuild.md)
   : Rebuild the data catalog by scanning the processed layer
-
-## Querying
-
-Run SQL across processed datasets with a serverless DuckDB layer.
-
 - [`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md)
   : Query processed data with SQL (serverless DuckDB)
 
-## Reconciliation
+## Dataset comparison & cutover
 
 Diff a new dataset against a reference, dirty clean data, and gate the
 cutover.
@@ -182,9 +190,10 @@ cutover.
 - [`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md)
   : Report a stream's cutover readiness from the ledger
 
-## Logs & triage
+## Flags, logs & audit
 
-Persist data-quality flags and triage the error / DQ log backlog.
+The durable record behind the pipeline: persist DQ flags, triage and
+close the backlog, and reconstruct what happened to any dataset.
 
 - [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md)
   : Persist data-quality flags to the log backlog
@@ -211,25 +220,11 @@ Persist data-quality flags and triage the error / DQ log backlog.
 
   Print method for an `eri_audit_trail`
 
-## Feedback
-
-File, read, triage, and summarise the team’s internal feedback / ticket
-log.
-
-- [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md)
-  : Log a piece of feedback to the shared ticket log
-- [`eri_feedback_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_list.md)
-  : List logged feedback
-- [`eri_feedback_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_status.md)
-  : Move a feedback ticket through the triage lifecycle
-- [`eri_feedback_board()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_board.md)
-  : Summarise the feedback backlog by status
-- [`eri_feedback_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_report.md)
-  : Write a weekly feedback report (HTML or markdown)
-
 ## ODK
 
-Register forms, sync submissions, monitor surveys, and manage users.
+Registry & sync (register, deregister, list, sync, upload) first, then
+survey monitoring, then browsing/downloading from the server, then user
+admin.
 
 - [`eri_odk_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_register.md)
   : Register an ODK form in the shared Azure registry
@@ -247,8 +242,6 @@ Register forms, sync submissions, monitor surveys, and manage users.
   : ODK form submission metrics
 - [`print(`*`<survey_status>`*`)`](https://thecartercenter.github.io/erifunctions/reference/print.survey_status.md)
   : Print method for survey_status objects
-- [`eri_odk_bulk_users()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_bulk_users.md)
-  : Manage ODK app users in bulk from a validated CSV
 - [`list_odk_projects()`](https://thecartercenter.github.io/erifunctions/reference/list_odk_projects.md)
   : List ODK projects
 - [`list_odk_forms()`](https://thecartercenter.github.io/erifunctions/reference/list_odk_forms.md)
@@ -257,6 +250,8 @@ Register forms, sync submissions, monitor surveys, and manage users.
   : Download all submissions from an ODK form
 - [`download_form_attachments()`](https://thecartercenter.github.io/erifunctions/reference/download_form_attachments.md)
   : Download all media attachments from an ODK form
+- [`eri_odk_bulk_users()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_bulk_users.md)
+  : Manage ODK app users in bulk from a validated CSV
 - [`list_all_odk_app_users()`](https://thecartercenter.github.io/erifunctions/reference/list_all_odk_app_users.md)
   : List all app users in an ODK project
 - [`list_odk_form_users()`](https://thecartercenter.github.io/erifunctions/reference/list_odk_form_users.md)
@@ -266,7 +261,8 @@ Register forms, sync submissions, monitor surveys, and manage users.
 
 ## Spatial
 
-Admin boundaries, LandScan population, and spatial joins.
+Admin boundaries, LandScan population, spatial joins, and reconciling
+free-text place names (eri_spatial_reconcile) to admin units.
 
 - [`eri_spatial_load()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_load.md)
   : Load admin boundary from Azure
@@ -299,7 +295,8 @@ Admin boundaries, LandScan population, and spatial joins.
 
 ## Epi analytics
 
-Incidence, epiweeks, epidemic curves, and disease-specific functions.
+Time, incidence & curves (disease-agnostic) first, then the LF- and
+oncho-specific functions.
 
 - [`eri_incidence_rate()`](https://thecartercenter.github.io/erifunctions/reference/eri_incidence_rate.md)
   : Compute incidence rate per population
@@ -330,7 +327,8 @@ Incidence, epiweeks, epidemic curves, and disease-specific functions.
 
 ## Reporting & visual style
 
-Branded tables, themes, maps, and Excel/HTML/PowerPoint reports.
+Brand/themes/colors, then tables & maps, then Excel workbooks, then HTML
+& PowerPoint.
 
 - [`eri_brand_colors()`](https://thecartercenter.github.io/erifunctions/reference/eri_brand_colors.md)
   : Carter Center brand colour palette
@@ -375,9 +373,10 @@ Branded tables, themes, maps, and Excel/HTML/PowerPoint reports.
 - [`eri_pptx_save()`](https://thecartercenter.github.io/erifunctions/reference/eri_pptx_save.md)
   : Save an ERI PowerPoint to disk
 
-## Research projects
+## Research projects & artifacts
 
-Scaffold studies, track provenance, manage artifacts, and snapshot data.
+Project lifecycle (scaffold, track provenance, snapshot) first, then
+artifacts & templates.
 
 - [`eri_research_init()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_init.md)
   : Initialise a new research project
@@ -416,9 +415,10 @@ Scaffold studies, track provenance, manage artifacts, and snapshot data.
 - [`eri_template_upload()`](https://thecartercenter.github.io/erifunctions/reference/eri_template_upload.md)
   : Upload a custom template to Azure
 
-## SharePoint & Teams
+## Collaboration: SharePoint, Teams & feedback
 
-Share files via SharePoint and post notifications to Teams.
+Share files via SharePoint, post notifications to Teams, and file/triage
+the team’s internal feedback log.
 
 - [`eri_sharepoint_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_sharepoint_list.md)
   : List files in a SharePoint document library folder
@@ -430,6 +430,16 @@ Share files via SharePoint and post notifications to Teams.
   : Send a message to Microsoft Teams
 - [`eri_notify_dq()`](https://thecartercenter.github.io/erifunctions/reference/eri_notify_dq.md)
   : Send a DQ result summary to Microsoft Teams
+- [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md)
+  : Log a piece of feedback to the shared ticket log
+- [`eri_feedback_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_list.md)
+  : List logged feedback
+- [`eri_feedback_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_status.md)
+  : Move a feedback ticket through the triage lifecycle
+- [`eri_feedback_board()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_board.md)
+  : Summarise the feedback backlog by status
+- [`eri_feedback_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback_report.md)
+  : Write a weekly feedback report (HTML or markdown)
 
 ## Onboarding new programs
 

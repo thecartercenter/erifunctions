@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,6 +72,43 @@
     </div>
 
     <div class="section level2">
+      <h2 id="start-here">Start here<a class="anchor" aria-label="anchor" href="#start-here"></a></h2>
+
+      <div class="section-desc"><p>Run these first, and reach for them whenever you’re not sure what to call next.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="eri_data_model.html">eri_data_model()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Show the data-addressing model: known sources, measures and formats</dd>
+
+        <dt>
+
+          <code><a href="eri_data_path.html">eri_data_path()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Build a canonical blob path in the data/ container</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_review.html">eri_dq_review()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Interactively review and resolve a CMR workbook's DQ flags, then approve</dd>
+
+        <dt>
+
+          <code><a href="eri_verbosity.html">eri_verbosity()</a></code>
+
+        </dt>
+        <dd>Control how much erifunctions prints to the console</dd>
+      </dl></div><div class="section level2">
       <h2 id="connections-authentication">Connections &amp; authentication<a class="anchor" aria-label="anchor" href="#connections-authentication"></a></h2>
 
       <div class="section-desc"><p>Authenticate to Azure, ODK, SharePoint, and Teams.</p></div>
@@ -109,9 +146,9 @@
         </dt>
         <dd>Connect to Microsoft Teams via the Graph API</dd>
       </dl></div><div class="section level2">
-      <h2 id="console-output">Console output<a class="anchor" aria-label="anchor" href="#console-output"></a></h2>
+      <h2 id="files-in-azure">Files in Azure<a class="anchor" aria-label="anchor" href="#files-in-azure"></a></h2>
 
-      <div class="section-desc"><p>Control how chatty erifunctions is in the console.</p></div>
+      <div class="section-desc"><p>Read, write, list, and manage files at any path — the layer everything else builds on.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -120,21 +157,12 @@
 
       <dl><dt>
 
-          <code><a href="eri_verbosity.html">eri_verbosity()</a></code>
-
+          <code><a href="eri_data_path.html">eri_data_path()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
-        <dd>Control how much erifunctions prints to the console</dd>
-      </dl></div><div class="section level2">
-      <h2 id="reading-writing-data">Reading &amp; writing data<a class="anchor" aria-label="anchor" href="#reading-writing-data"></a></h2>
+        <dd>Build a canonical blob path in the data/ container</dd>
 
-      <div class="section-desc"><p>Read, write, list, and manage files in Azure (and locally).</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="eri_read.html">eri_read()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
@@ -199,20 +227,6 @@
 
         <dt>
 
-          <code><a href="eri_data_path.html">eri_data_path()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Build a canonical blob path in the data/ container</dd>
-
-        <dt>
-
-          <code><a href="eri_data_model.html">eri_data_model()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Show the data-addressing model: known sources, measures and formats</dd>
-
-        <dt>
-
           <code><a href="erifunctions_io.html">erifunctions_io()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
@@ -225,9 +239,9 @@
         </dt>
         <dd>Helper function to read and write key data to the Azure environment</dd>
       </dl></div><div class="section level2">
-      <h2 id="data-pipeline">Data pipeline<a class="anchor" aria-label="anchor" href="#data-pipeline"></a></h2>
+      <h2 id="the-pipeline-raw-staged-processed">The pipeline: raw → staged → processed<a class="anchor" aria-label="anchor" href="#the-pipeline-raw-staged-processed"></a></h2>
 
-      <div class="section-desc"><p>Ingest, stage, approve, and trigger surveillance and CMR pipelines.</p></div>
+      <div class="section-desc"><p>Every route ends at eri_approve()/eri_approve_cmr(); nothing reaches processed/ without one of them. Start with the guided review &amp; handback trio (eri_dq_review, eri_cmr_dq_report, eri_dq_export); the rest are generic ingest/approval, then CMR-specific routing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -235,6 +249,27 @@
 
 
       <dl><dt>
+
+          <code><a href="eri_dq_review.html">eri_dq_review()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Interactively review and resolve a CMR workbook's DQ flags, then approve</dd>
+
+        <dt>
+
+          <code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Run and log DQ checks for a whole CMR workbook, one combined report</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_export.html">eri_dq_export()</a></code>
+
+        </dt>
+        <dd>Export a DQ flag report to HTML or markdown</dd>
+
+        <dt>
 
           <code><a href="eri_ingest.html">eri_ingest()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
@@ -299,35 +334,14 @@
 
         <dt>
 
-          <code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Run and log DQ checks for a whole CMR workbook, one combined report</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_review.html">eri_dq_review()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Interactively review and resolve a CMR workbook's DQ flags, then approve</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_export.html">eri_dq_export()</a></code>
-
-        </dt>
-        <dd>Export a DQ flag report to HTML or markdown</dd>
-
-        <dt>
-
           <code><a href="load_cmr_schema.html">load_cmr_schema()</a></code>
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Load a CMR country schema</dd>
       </dl></div><div class="section level2">
-      <h2 id="data-quality">Data quality<a class="anchor" aria-label="anchor" href="#data-quality"></a></h2>
+      <h2 id="the-data-quality-engine">The data-quality engine<a class="anchor" aria-label="anchor" href="#the-data-quality-engine"></a></h2>
 
-      <div class="section-desc"><p>Schema-driven DQ checks and anomaly detection.</p></div>
+      <div class="section-desc"><p>The scriptable core under eri_dq_review() — running checks (run_dq_checks and the anomaly detectors), then the DQ schemas that define them (view, override, submit).</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -335,48 +349,6 @@
 
 
       <dl><dt>
-
-          <code><a href="load_dq_schema.html">load_dq_schema()</a></code>
-
-        </dt>
-        <dd>Load a DQ schema</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_schema_edit.html">eri_dq_schema_edit()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Fork the active DQ schema into a local, editable override</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_schema_path.html">eri_dq_schema_path()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Resolve the local file path of the currently active DQ schema</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_schema_status.html">eri_dq_schema_status()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>List local DQ schema overrides</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_schema_reset.html">eri_dq_schema_reset()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Delete a local DQ schema override</dd>
-
-        <dt>
-
-          <code><a href="eri_dq_schema_submit.html">eri_dq_schema_submit()</a></code>
-          <span class="badge lifecycle lifecycle-experimental">experimental</span>
-        </dt>
-        <dd>Submit a local DQ schema override for a maintainer to fold in</dd>
-
-        <dt>
 
           <code><a href="run_dq_checks.html">run_dq_checks()</a></code>
 
@@ -424,10 +396,52 @@
           <span class="badge lifecycle lifecycle-experimental">experimental</span>
         </dt>
         <dd>Validate admin unit names against a spatial reference</dd>
-      </dl></div><div class="section level2">
-      <h2 id="data-catalog">Data catalog<a class="anchor" aria-label="anchor" href="#data-catalog"></a></h2>
 
-      <div class="section-desc"><p>Register, query, verify, and rebuild processed-layer data.</p></div>
+        <dt>
+
+          <code><a href="load_dq_schema.html">load_dq_schema()</a></code>
+
+        </dt>
+        <dd>Load a DQ schema</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_schema_path.html">eri_dq_schema_path()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Resolve the local file path of the currently active DQ schema</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_schema_status.html">eri_dq_schema_status()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>List local DQ schema overrides</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_schema_edit.html">eri_dq_schema_edit()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Fork the active DQ schema into a local, editable override</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_schema_reset.html">eri_dq_schema_reset()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Delete a local DQ schema override</dd>
+
+        <dt>
+
+          <code><a href="eri_dq_schema_submit.html">eri_dq_schema_submit()</a></code>
+          <span class="badge lifecycle lifecycle-experimental">experimental</span>
+        </dt>
+        <dd>Submit a local DQ schema override for a maintainer to fold in</dd>
+      </dl></div><div class="section level2">
+      <h2 id="catalog-querying">Catalog &amp; querying<a class="anchor" aria-label="anchor" href="#catalog-querying"></a></h2>
+
+      <div class="section-desc"><p>What approved data exists, and SQL across it.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -468,24 +482,15 @@
 
         </dt>
         <dd>Rebuild the data catalog by scanning the processed layer</dd>
-      </dl></div><div class="section level2">
-      <h2 id="querying">Querying<a class="anchor" aria-label="anchor" href="#querying"></a></h2>
 
-      <div class="section-desc"><p>Run SQL across processed datasets with a serverless DuckDB layer.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
+        <dt>
 
           <code><a href="eri_query.html">eri_query()</a></code>
 
         </dt>
         <dd>Query processed data with SQL (serverless DuckDB)</dd>
       </dl></div><div class="section level2">
-      <h2 id="reconciliation">Reconciliation<a class="anchor" aria-label="anchor" href="#reconciliation"></a></h2>
+      <h2 id="dataset-comparison-cutover">Dataset comparison &amp; cutover<a class="anchor" aria-label="anchor" href="#dataset-comparison-cutover"></a></h2>
 
       <div class="section-desc"><p>Diff a new dataset against a reference, dirty clean data, and gate the cutover.</p></div>
 
@@ -529,9 +534,9 @@
         </dt>
         <dd>Report a stream's cutover readiness from the ledger</dd>
       </dl></div><div class="section level2">
-      <h2 id="logs-triage">Logs &amp; triage<a class="anchor" aria-label="anchor" href="#logs-triage"></a></h2>
+      <h2 id="flags-logs-audit">Flags, logs &amp; audit<a class="anchor" aria-label="anchor" href="#flags-logs-audit"></a></h2>
 
-      <div class="section-desc"><p>Persist data-quality flags and triage the error / DQ log backlog.</p></div>
+      <div class="section-desc"><p>The durable record behind the pipeline: persist DQ flags, triage and close the backlog, and reconstruct what happened to any dataset.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -580,53 +585,9 @@
         </dt>
         <dd>Print method for an <code>eri_audit_trail</code></dd>
       </dl></div><div class="section level2">
-      <h2 id="feedback">Feedback<a class="anchor" aria-label="anchor" href="#feedback"></a></h2>
-
-      <div class="section-desc"><p>File, read, triage, and summarise the team’s internal feedback / ticket log.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="eri_feedback.html">eri_feedback()</a></code>
-
-        </dt>
-        <dd>Log a piece of feedback to the shared ticket log</dd>
-
-        <dt>
-
-          <code><a href="eri_feedback_list.html">eri_feedback_list()</a></code>
-
-        </dt>
-        <dd>List logged feedback</dd>
-
-        <dt>
-
-          <code><a href="eri_feedback_status.html">eri_feedback_status()</a></code>
-
-        </dt>
-        <dd>Move a feedback ticket through the triage lifecycle</dd>
-
-        <dt>
-
-          <code><a href="eri_feedback_board.html">eri_feedback_board()</a></code>
-
-        </dt>
-        <dd>Summarise the feedback backlog by status</dd>
-
-        <dt>
-
-          <code><a href="eri_feedback_report.html">eri_feedback_report()</a></code>
-
-        </dt>
-        <dd>Write a weekly feedback report (HTML or markdown)</dd>
-      </dl></div><div class="section level2">
       <h2 id="odk">ODK<a class="anchor" aria-label="anchor" href="#odk"></a></h2>
 
-      <div class="section-desc"><p>Register forms, sync submissions, monitor surveys, and manage users.</p></div>
+      <div class="section-desc"><p>Registry &amp; sync (register, deregister, list, sync, upload) first, then survey monitoring, then browsing/downloading from the server, then user admin.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -691,13 +652,6 @@
 
         <dt>
 
-          <code><a href="eri_odk_bulk_users.html">eri_odk_bulk_users()</a></code>
-
-        </dt>
-        <dd>Manage ODK app users in bulk from a validated CSV</dd>
-
-        <dt>
-
           <code><a href="list_odk_projects.html">list_odk_projects()</a></code>
 
         </dt>
@@ -726,6 +680,13 @@
 
         <dt>
 
+          <code><a href="eri_odk_bulk_users.html">eri_odk_bulk_users()</a></code>
+
+        </dt>
+        <dd>Manage ODK app users in bulk from a validated CSV</dd>
+
+        <dt>
+
           <code><a href="list_all_odk_app_users.html">list_all_odk_app_users()</a></code>
 
         </dt>
@@ -747,7 +708,7 @@
       </dl></div><div class="section level2">
       <h2 id="spatial">Spatial<a class="anchor" aria-label="anchor" href="#spatial"></a></h2>
 
-      <div class="section-desc"><p>Admin boundaries, LandScan population, and spatial joins.</p></div>
+      <div class="section-desc"><p>Admin boundaries, LandScan population, spatial joins, and reconciling free-text place names (eri_spatial_reconcile) to admin units.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -819,7 +780,7 @@
       </dl></div><div class="section level2">
       <h2 id="epi-analytics">Epi analytics<a class="anchor" aria-label="anchor" href="#epi-analytics"></a></h2>
 
-      <div class="section-desc"><p>Incidence, epiweeks, epidemic curves, and disease-specific functions.</p></div>
+      <div class="section-desc"><p>Time, incidence &amp; curves (disease-agnostic) first, then the LF- and oncho-specific functions.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -919,7 +880,7 @@
       </dl></div><div class="section level2">
       <h2 id="reporting-visual-style">Reporting &amp; visual style<a class="anchor" aria-label="anchor" href="#reporting-visual-style"></a></h2>
 
-      <div class="section-desc"><p>Branded tables, themes, maps, and Excel/HTML/PowerPoint reports.</p></div>
+      <div class="section-desc"><p>Brand/themes/colors, then tables &amp; maps, then Excel workbooks, then HTML &amp; PowerPoint.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1073,9 +1034,9 @@
         </dt>
         <dd>Save an ERI PowerPoint to disk</dd>
       </dl></div><div class="section level2">
-      <h2 id="research-projects">Research projects<a class="anchor" aria-label="anchor" href="#research-projects"></a></h2>
+      <h2 id="research-projects-artifacts">Research projects &amp; artifacts<a class="anchor" aria-label="anchor" href="#research-projects-artifacts"></a></h2>
 
-      <div class="section-desc"><p>Scaffold studies, track provenance, manage artifacts, and snapshot data.</p></div>
+      <div class="section-desc"><p>Project lifecycle (scaffold, track provenance, snapshot) first, then artifacts &amp; templates.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1208,9 +1169,9 @@
         </dt>
         <dd>Upload a custom template to Azure</dd>
       </dl></div><div class="section level2">
-      <h2 id="sharepoint-teams">SharePoint &amp; Teams<a class="anchor" aria-label="anchor" href="#sharepoint-teams"></a></h2>
+      <h2 id="collaboration-sharepoint-teams-feedback">Collaboration: SharePoint, Teams &amp; feedback<a class="anchor" aria-label="anchor" href="#collaboration-sharepoint-teams-feedback"></a></h2>
 
-      <div class="section-desc"><p>Share files via SharePoint and post notifications to Teams.</p></div>
+      <div class="section-desc"><p>Share files via SharePoint, post notifications to Teams, and file/triage the team’s internal feedback log.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1251,6 +1212,41 @@
 
         </dt>
         <dd>Send a DQ result summary to Microsoft Teams</dd>
+
+        <dt>
+
+          <code><a href="eri_feedback.html">eri_feedback()</a></code>
+
+        </dt>
+        <dd>Log a piece of feedback to the shared ticket log</dd>
+
+        <dt>
+
+          <code><a href="eri_feedback_list.html">eri_feedback_list()</a></code>
+
+        </dt>
+        <dd>List logged feedback</dd>
+
+        <dt>
+
+          <code><a href="eri_feedback_status.html">eri_feedback_status()</a></code>
+
+        </dt>
+        <dd>Move a feedback ticket through the triage lifecycle</dd>
+
+        <dt>
+
+          <code><a href="eri_feedback_board.html">eri_feedback_board()</a></code>
+
+        </dt>
+        <dd>Summarise the feedback backlog by status</dd>
+
+        <dt>
+
+          <code><a href="eri_feedback_report.html">eri_feedback_report()</a></code>
+
+        </dt>
+        <dd>Write a weekly feedback report (HTML or markdown)</dd>
       </dl></div><div class="section level2">
       <h2 id="onboarding-new-programs">Onboarding new programs<a class="anchor" aria-label="anchor" href="#onboarding-new-programs"></a></h2>
 

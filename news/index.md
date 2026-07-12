@@ -1,5 +1,59 @@
 # Changelog
 
+## erifunctions 0.9.20
+
+### Reference index reorganized around the user’s lifecycle, not the source layout (docs site redesign, phase 1)
+
+- **Consolidated `_pkgdown.yml`’s reference index from 17 module-shaped
+  groups to 15 lifecycle-shaped ones.** Resolves the real overlap
+  between “Data pipeline” (the user-facing DQ surface), “Data quality”
+  (the check engine), and “Logs & triage” (the persistence layer) —
+  three names for one lifecycle a user experiences as a single loop
+  (bring data in → check it → work the flags → approve) — by making the
+  lifecycle the group (“The pipeline: raw → staged → processed”) with
+  the engine explicitly subordinate to it (“The data-quality engine —
+  the scriptable core under
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)”).
+  Within each group, functions are ordered by what to reach for first
+  (called out in the group’s `desc:`) rather than alphabetically —
+  pkgdown’s `subtitle:` field turned out to be a whole-*section*
+  heading, not a way to sub-group entries within one group’s
+  `contents:`, so visual sub-grouping (attempted, then reverted after a
+  real CI failure caught it) isn’t part of this pass; a caption-only
+  ordering is.
+- New **“Start here”** group surfaces
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md),
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md),
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md),
+  and
+  [`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
+  regardless of which lifecycle group they’d otherwise sit in (absorbing
+  the 1-function “Console output” group).
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
+  and
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+  are also cross-listed in their original lifecycle groups (“Files in
+  Azure”, “The pipeline”) so a reader browsing there doesn’t come up
+  empty.
+- Merged two pairs of overlapping/degenerate groups: “Data catalog” +
+  “Querying” → “Catalog & querying”; “SharePoint & Teams” + “Feedback” →
+  “Collaboration: SharePoint, Teams & feedback”. Renamed
+  “Reconciliation” → “Dataset comparison & cutover” to stop colliding
+  with
+  [`eri_spatial_reconcile()`](https://thecartercenter.github.io/erifunctions/reference/eri_spatial_reconcile.md)
+  (a different task, in the Spatial group, whose description now
+  explicitly mentions it).
+- Docs-only, single-file change (`_pkgdown.yml`); verified lossless
+  against the prior structure — 152 unique reference topics before and
+  after, only the two intentional cross-listings (`eri_data_path`,
+  `eri_dq_review`) added.
+- First of an 8-phase docs-site redesign plan from a second Fable design
+  consult (following the DQ workflow redesign’s), which also scoped a
+  longer-term
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)-style
+  interactive console wizard (`eri_guide()`) for the whole package — see
+  `docs/roadmap.md`.
+
 ## erifunctions 0.9.19
 
 ### Fixes found by a fresh-user test of the new DQ-review guide

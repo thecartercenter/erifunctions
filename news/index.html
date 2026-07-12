@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,9 +69,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.19/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.20" id="erifunctions-0920">erifunctions 0.9.20<a class="anchor" aria-label="anchor" href="#erifunctions-0920"></a></h2>
+<div class="section level3">
+<h3 id="reference-index-reorganized-around-the-users-lifecycle-not-the-source-layout-docs-site-redesign-phase-0-9-20">Reference index reorganized around the user’s lifecycle, not the source layout (docs site redesign, phase 1)<a class="anchor" aria-label="anchor" href="#reference-index-reorganized-around-the-users-lifecycle-not-the-source-layout-docs-site-redesign-phase-0-9-20"></a></h3>
+<ul><li>
+<strong>Consolidated <code>_pkgdown.yml</code>’s reference index from 17 module-shaped groups to 15 lifecycle-shaped ones.</strong> Resolves the real overlap between “Data pipeline” (the user-facing DQ surface), “Data quality” (the check engine), and “Logs &amp; triage” (the persistence layer) — three names for one lifecycle a user experiences as a single loop (bring data in → check it → work the flags → approve) — by making the lifecycle the group (“The pipeline: raw → staged → processed”) with the engine explicitly subordinate to it (“The data-quality engine — the scriptable core under <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>”). Within each group, functions are ordered by what to reach for first (called out in the group’s <code>desc:</code>) rather than alphabetically — pkgdown’s <code>subtitle:</code> field turned out to be a whole-<em>section</em> heading, not a way to sub-group entries within one group’s <code>contents:</code>, so visual sub-grouping (attempted, then reverted after a real CI failure caught it) isn’t part of this pass; a caption-only ordering is.</li>
+<li>New <strong>“Start here”</strong> group surfaces <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code>, <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>, <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>, and <code><a href="../reference/eri_verbosity.html">eri_verbosity()</a></code> regardless of which lifecycle group they’d otherwise sit in (absorbing the 1-function “Console output” group). <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code> and <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> are also cross-listed in their original lifecycle groups (“Files in Azure”, “The pipeline”) so a reader browsing there doesn’t come up empty.</li>
+<li>Merged two pairs of overlapping/degenerate groups: “Data catalog” + “Querying” → “Catalog &amp; querying”; “SharePoint &amp; Teams” + “Feedback” → “Collaboration: SharePoint, Teams &amp; feedback”. Renamed “Reconciliation” → “Dataset comparison &amp; cutover” to stop colliding with <code><a href="../reference/eri_spatial_reconcile.html">eri_spatial_reconcile()</a></code> (a different task, in the Spatial group, whose description now explicitly mentions it).</li>
+<li>Docs-only, single-file change (<code>_pkgdown.yml</code>); verified lossless against the prior structure — 152 unique reference topics before and after, only the two intentional cross-listings (<code>eri_data_path</code>, <code>eri_dq_review</code>) added.</li>
+<li>First of an 8-phase docs-site redesign plan from a second Fable design consult (following the DQ workflow redesign’s), which also scoped a longer-term <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>-style interactive console wizard (<code>eri_guide()</code>) for the whole package — see <code>docs/roadmap.md</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.19" id="erifunctions-0919">erifunctions 0.9.19<a class="anchor" aria-label="anchor" href="#erifunctions-0919"></a></h2>
 <div class="section level3">
