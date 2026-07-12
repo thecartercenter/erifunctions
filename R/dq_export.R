@@ -96,6 +96,12 @@ eri_dq_export <- function(flags, file = NULL, format = c("html", "md"),
   else NA_character_
 }
 
+# A missing required column (.dq_check_required() in R/dq.R) flags with
+# row/value = NA -- render that as the same "--" placeholder every other NA
+# (note, status) gets, not the literal string "NA".
+#' @keywords internal
+.eri_dq_export_html_cell <- function(x, esc) if (is.na(x)) "—" else esc(x)
+
 # HTML renderer ----------------------------------------------------------------
 
 #' @keywords internal
@@ -134,19 +140,20 @@ eri_dq_export <- function(flags, file = NULL, format = c("html", "md"),
   section_table <- function(fs) {
     rows <- vapply(seq_len(nrow(fs)), function(i) {
       cells <- c(
-        if (has_row) .eri_html_td(fs[[row_col]][i]),
-        .eri_html_td(esc(fs$column[i])),
-        .eri_html_td(esc(fs$value[i])),
-        .eri_html_td(esc(fs$issue[i]))
+        if (has_row) .eri_html_td(.eri_dq_export_html_cell(fs[[row_col]][i], esc)),
+        .eri_html_td(.eri_dq_export_html_cell(fs$column[i], esc)),
+        .eri_html_td(.eri_dq_export_html_cell(fs$value[i], esc)),
+        .eri_html_td(.eri_dq_export_html_cell(fs$issue[i], esc))
       )
       if (has_status) {
         status <- fs$status[i]
         status_cls <- if (identical(status, "open")) "tag open" else "tag closed"
-        cells <- c(cells, .eri_html_td(paste0("<span class='", status_cls, "'>", esc(status), "</span>")))
+        cells <- c(cells, .eri_html_td(paste0(
+          "<span class='", status_cls, "'>", .eri_dq_export_html_cell(status, esc), "</span>"
+        )))
       }
       if (has_note) {
-        note <- fs$note[i]
-        cells <- c(cells, .eri_html_td(if (is.na(note)) "—" else esc(note)))
+        cells <- c(cells, .eri_html_td(.eri_dq_export_html_cell(fs$note[i], esc)))
       }
       .eri_html_row(cells)
     }, character(1L))
@@ -175,7 +182,8 @@ eri_dq_export <- function(flags, file = NULL, format = c("html", "md"),
   title <- .eri_dq_export_title(country, period)
 
   cell <- function(x) {
-    x <- as.character(x %||% "")
+    if (length(x) == 0L || is.na(x)) return("—")
+    x <- as.character(x)
     x <- gsub("\\|", "\\\\|", x); x <- gsub("[\r\n]+", " ", x)
     if (!nzchar(x)) "—" else x
   }

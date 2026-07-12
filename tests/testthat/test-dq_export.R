@@ -66,7 +66,31 @@ test_that("eri_dq_export writes markdown with a table per sheet, including the n
   expect_match(md, "^# DQ flag report", fixed = FALSE)
   expect_match(md, "## RB Treatment \\(2\\)")
   expect_match(md, "known template quirk")
-  expect_match(md, "—")  # NA note rendered as an em dash placeholder
+  # row 1's NA note renders as the "|---|---| ... | — |" placeholder, not the title's em dash
+  expect_match(md, "\\| 7 \\| district \\| Kordofn \\| not an allowed value \\| open \\| — \\|")
+})
+
+test_that("eri_dq_export renders NA row/value/issue as the placeholder, never the literal string 'NA'", {
+  withr::local_dir(withr::local_tempdir())
+  # Shape .dq_check_required() actually emits for a missing required column: row/value are NA.
+  missing_col <- tibble::tibble(
+    row = NA_integer_, column = "district", value = NA_character_,
+    issue = "Required column is missing from data"
+  )
+
+  html <- {
+    p <- eri_dq_export(missing_col, format = "html")
+    paste(readLines(p, warn = FALSE), collapse = "\n")
+  }
+  expect_no_match(html, ">NA<")
+  expect_match(html, "—")
+
+  md <- {
+    p <- eri_dq_export(missing_col, format = "md")
+    paste(readLines(p, warn = FALSE), collapse = "\n")
+  }
+  expect_no_match(md, "\\bNA\\b")
+  expect_match(md, "\\| — \\| district \\| — \\| Required column is missing from data \\|")
 })
 
 test_that("eri_dq_export reports a clean run without erroring", {

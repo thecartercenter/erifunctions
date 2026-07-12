@@ -310,6 +310,15 @@ eri_dq_flag_resolve(flags$flag_id[1], "not_important",
                    note = "confirmed with the country: target is genuinely 0 this period")
 ```
 
+`eri_dq_flag_resolve()` updates the *logged* flag, not this run's in-memory `flags` tibble --
+update your own copy the same way [`eri_dq_review()`](../reference/eri_dq_review.html) tracks
+triage between loop iterations, so anything you print or export below reflects the decision:
+
+```{r dq-triage-local}
+flags$status[1] <- "not_important"
+flags$note[1]   <- "confirmed with the country: target is genuinely 0 this period"
+```
+
 Once every flag in a measure's report has been triaged, close out that measure's whole log entry --
 this is what actually unblocks [`eri_approve_cmr()`](#approve) below. Skip `note` and it auto-summarizes
 from the per-flag decisions you just made instead of leaving the entry's own note blank:

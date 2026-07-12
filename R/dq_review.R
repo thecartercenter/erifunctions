@@ -94,7 +94,12 @@
     cli::cli_h3(sh)
     print(eri_table(sub, title = sh))
   }
-  eri_dq_export(flags, country = country, period = period)
+  # Best-effort: a write failure (read-only cwd, locked file...) shouldn't eject the DA from an
+  # otherwise-safe interactive session -- nothing here is lost, it's all already in the logs.
+  tryCatch(
+    eri_dq_export(flags, country = country, period = period),
+    error = function(e) cli::cli_alert_warning("Could not write the DQ export file: {conditionMessage(e)}")
+  )
   invisible(NULL)
 }
 
@@ -194,11 +199,11 @@
   list(touched = touched, resolved = resolved)
 }
 
-# Merges walk_flags()'s `resolved` (flag_id -> new status) into a flags tibble in-memory, so a
-# not_important/noted decision is reflected immediately in the wrapper's own view of "what's
-# still open" without a network round-trip. A "Fix in source"/"Adjust schema" action does NOT
-# appear here -- those flags correctly stay "open" until an explicit re-run actually verifies
-# the underlying data changed.
+# Merges walk_flags()'s `resolved` (flag_id -> list(status, note)) into a flags tibble in-memory,
+# so a not_important/noted decision (and any note typed for it) is reflected immediately in the
+# wrapper's own view of "what's still open" without a network round-trip. A "Fix in
+# source"/"Adjust schema" action does NOT appear here -- those flags correctly stay "open" until
+# an explicit re-run actually verifies the underlying data changed.
 #' @keywords internal
 .eri_dq_review_apply_local_resolutions <- function(flags, resolved) {
   if (length(resolved) == 0L || nrow(flags) == 0L) return(flags)
