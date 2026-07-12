@@ -88,16 +88,73 @@ test_that("every `next:` id resolves to a real task id in the tree", {
   }
 })
 
+test_that("every `epilogue_after:` value is in that same leaf's own `reference:` list", {
+  # The runtime hook (.eri_task_epilogue()) is only ever called FROM the function it names, so an
+  # epilogue_after value the task doesn't even claim to touch would be a self-contradiction.
+  tree <- .eri_task_map()
+  for (branch in tree) {
+    for (leaf in branch$children) {
+      if (!is.null(leaf$epilogue_after)) {
+        expect_true(leaf$epilogue_after %in% leaf$reference, info = leaf$id)
+      }
+    }
+  }
+})
+
+test_that("every leaf with `epilogue_after:` also has a `next:` to point to", {
+  tree <- .eri_task_map()
+  for (branch in tree) {
+    for (leaf in branch$children) {
+      if (!is.null(leaf$epilogue_after)) {
+        expect_true(length(leaf[["next"]]) > 0L, info = leaf$id)
+      }
+    }
+  }
+})
+
+test_that("no two leaves hook the same `epilogue_after:` function", {
+  tree <- .eri_task_map()
+  hooks <- unlist(lapply(tree, function(b) {
+    Filter(Negate(is.null), lapply(b$children, function(l) l$epilogue_after))
+  }))
+  expect_equal(anyDuplicated(hooks), 0L)
+})
+
 test_that(".eri_task_flatten produces one row per leaf with the expected columns", {
   tree <- .eri_task_map()
   n_leaves <- sum(vapply(tree, function(b) length(b$children), integer(1)))
   flat <- .eri_task_flatten(tree)
   expect_equal(nrow(flat), n_leaves)
-  expect_true(all(c("branch", "id", "title", "role", "call", "guide", "reference", "next_ids") %in% names(flat)))
+  expect_true(all(
+    c("branch", "id", "title", "role", "call", "guide", "reference", "next_ids", "epilogue_after") %in%
+      names(flat)
+  ))
 })
 
 test_that("eri_task_map() prints and returns the flattened registry invisibly", {
   expect_invisible(out <- eri_task_map())
   expect_s3_class(out, "data.frame")
   expect_true(all(c("id", "title", "call") %in% names(out)))
+})
+
+test_that(".eri_task_epilogue prints the real registered next-step hint for a real hook", {
+  # eri_spatial_reconcile's epilogue_after -> next: join_map ("Join points to admin units and map
+  # them"), cross-checked against the actual registry rather than a hardcoded expectation, so this
+  # test can't drift out of sync with the YAML.
+  tree <- .eri_task_map()
+  flat <- .eri_task_flatten(tree)
+  hit  <- flat[!is.na(flat$epilogue_after) & flat$epilogue_after == "eri_spatial_reconcile", , drop = FALSE]
+  expect_equal(nrow(hit), 1L)
+  nxt <- flat[flat$id == hit$next_ids[[1]], , drop = FALSE]
+
+  expect_message(.eri_task_epilogue("eri_spatial_reconcile"), nxt$title[[1]], fixed = TRUE)
+})
+
+test_that(".eri_task_epilogue is silent for a function with no registered hook", {
+  expect_no_message(.eri_task_epilogue("not_a_real_hook"))
+})
+
+test_that(".eri_task_epilogue respects quiet verbosity like any other narration", {
+  withr::local_options(erifunctions.verbosity = "quiet")
+  expect_no_message(.eri_task_epilogue("eri_spatial_reconcile"))
 })

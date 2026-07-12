@@ -29,11 +29,36 @@
         guide     = if (is.null(leaf$guide)) NA_character_ else leaf$guide,
         reference = I(list(leaf$reference)),
         next_ids  = I(list(leaf[["next"]])),
+        epilogue_after = if (is.null(leaf$epilogue_after)) NA_character_ else leaf$epilogue_after,
         stringsAsFactors = FALSE
       )
     }))
   })
   do.call(rbind, rows)
+}
+
+# Prints a one-line "what's next" hint sourced from the registry's own `next:` field, for the
+# handful of tasks where a single call is the unambiguous completion point (a leaf's
+# `epilogue_after:`, R/guide.R's phase-5 zero-arg check has no bearing here -- this fires
+# regardless of a task's argument shape, since the CALLER already ran it successfully).
+# Gated at "full" verbosity like any other narration (.eri_say_info(), R/console.R) and never
+# lets a lookup problem surface as an error -- this is pure narration, not part of the actual
+# operation that just succeeded.
+#' @keywords internal
+.eri_task_epilogue <- function(fn_name) {
+  tryCatch({
+    flat <- .eri_task_flatten()
+    hit  <- flat[!is.na(flat$epilogue_after) & flat$epilogue_after == fn_name, , drop = FALSE]
+    if (nrow(hit) == 0L) return(invisible(NULL))
+
+    next_ids <- hit$next_ids[[1]]
+    for (nid in next_ids) {
+      nxt <- flat[flat$id == nid, , drop = FALSE]
+      if (nrow(nxt) == 0L) next
+      .eri_say_info("Next: {.strong {nxt$title[[1]]}} -- {.code {nxt$call[[1]]}}")
+    }
+    invisible(NULL)
+  }, error = function(e) invisible(NULL))
 }
 
 #' Show the task registry: what are you trying to do?

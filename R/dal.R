@@ -1593,6 +1593,7 @@ eri_ingest <- function(path, country, disease,
   }
   .eri_write_log(op_log, data_con, log_dir)
   if (had_error) cli::cli_abort(err_msg, call = NULL)
+  .eri_task_epilogue("eri_ingest")
   invisible(result)
 }
 

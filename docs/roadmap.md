@@ -379,7 +379,21 @@ requirement" call already made in Phase 3. `tests/testthat/test-guide.R` mirrors
 cross-checks `.eri_guide_zero_arg()`'s classification against every call actually in the bundled
 registry, not just synthetic examples. Cross-linked from `pkgdown/index.md`, `README.md`, and
 `_pkgdown.yml`'s "Start here" reference group.
-(6) next-step epilogues on pipeline functions, (7) wizard depth (preflight checks, session memory,
+(6) next-step epilogues on pipeline functions — **shipped**: 5 pipeline functions
+(`eri_spatial_reconcile()`, `eri_split_cmr()`, `eri_ingest()`, `eri_approve_cmr()`,
+`eri_research_init()`) now print a one-line "Next:" hint on success, sourced from the task
+registry's own `next:` field via a new internal `.eri_task_epilogue()` (`R/task_registry.R`) —
+gated at "full" verbosity like every other narration, never new logic duplicated across five
+files. The hook point itself is a new optional per-leaf `epilogue_after:` field naming one of the
+leaf's own `reference:` functions as the unambiguous completion point; only 5 of the ~32 tasks got
+one, because most multi-reference leaves (e.g. "log progress and manage artifacts," six functions
+called routinely throughout a study, not once at a clean "done" moment) have no single call that
+means "finished this task," and hooking one anyway would guess wrong and fire at the wrong time —
+those are deliberately left unhooked rather than forced, matching the same "don't force a fit"
+call already made for `eri_guide()`'s run guardrail in Phase 5. `test-task-map.R` gained 3 new
+integrity checks (`epilogue_after:` must be in the leaf's own `reference:` list, must have a
+`next:` to point to, and must be unique across the tree) plus 3 runtime tests exercising
+`.eri_task_epilogue()` directly. (7) wizard depth (preflight checks, session memory,
 deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
 deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.
 
