@@ -1,0 +1,54 @@
+---
+title: "What are you trying to do?"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{What are you trying to do?}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~2 min to scan &middot; needs: nothing &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (reads a bundled file, nothing runs)
+:::
+
+Every task below is a real one, generated from the same registry (`inst/registry/task_map.yaml`) that
+backs `eri_task_map()`. Find your task, then follow its **Run** call or its **Guide**. New to the
+package? [Getting started](getting-started.html) is a better front door; this page is for when you
+already know what you're trying to do and just need the entry point.
+
+```{r task-table, eval=TRUE, echo=FALSE, message=FALSE}
+tm <- yaml::read_yaml(system.file("registry", "task_map.yaml", package = "erifunctions"))
+
+rows <- do.call(rbind, lapply(tm, function(branch) {
+  do.call(rbind, lapply(branch$children, function(leaf) {
+    data.frame(
+      Category = branch$title,
+      Task     = leaf$title,
+      Run      = sprintf("`%s`", leaf$call),
+      Guide    = if (is.null(leaf$guide)) {
+        ""
+      } else {
+        sprintf("[guide](%s.html)", leaf$guide)
+      },
+      stringsAsFactors = FALSE
+    )
+  }))
+}))
+
+knitr::kable(rows, col.names = c("Category", "I want to…", "Run", "Guide"))
+```
+
+Prefer the console? `eri_task_map()` prints this same tree interactively, grouped by category, with
+every reference function each task touches:
+
+```{r console-version}
+eri_task_map()
+```

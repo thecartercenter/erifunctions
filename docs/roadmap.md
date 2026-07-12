@@ -324,13 +324,29 @@ Quarto Pandoc — see this redesign's own Phase 1 note above on the CI-only-catc
 bug), not just `check_pkgdown()`: every reference page and all 25 articles built clean, `extra.css` copied and
 linked, both fenced-div classes render correctly in the actual output. Found but out of scope to fix
 here: `epi-analytics.Rmd`'s code chunks reference undefined objects (`result`, `population_data`, …)
-and aren't actually runnable as shipped — logged as a nice-to-have. (3) a bundled task
-registry (`inst/registry/task_map.yaml`) plus a generated task-index article, (4) an `index.md`
-homepage with role cards and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive
-console wizard walking the task registry, (6) next-step epilogues on pipeline functions, (7) wizard
-depth (preflight checks, session memory, deep links) + a roxygen `@family`/title-audit pass, and (8) an
-evidence-gated, deliberately-deferred client-side decision-tree wizard on the site itself — not yet
-started.
+and aren't actually runnable as shipped — logged as a nice-to-have. (3) the task registry —
+**shipped**: a bundled `inst/registry/task_map.yaml`, a tree of ~31 common DA/Epi tasks grouped into
+8 categories (get set up, bring data in, check quality & approve, work the backlog, use approved
+data, run a research study, places & maps, add a new program); each leaf names a representative
+call, an optional guide slug, and the reference functions it touches, plus optional `next:` ids
+laying groundwork for phase 6's epilogues without building them yet. Deliberately simplified relative
+to the consult's fuller future-facing schema (`ask`/`needs`/`sandbox`/`steps` fields meant for
+`eri_guide()`) — phase 5 can extend the schema later without restructuring it now. `R/task_registry.R`
+mirrors `R/data_model.R`'s exact loading convention (`.eri_task_map()` internal loader,
+`eri_task_map()` exported console printer, cross-listed in "Start here"). `tests/testthat/test-task-map.R`
+makes the registry self-checking: every `reference:` name is a real exported function, every `guide:`
+slug matches a real `vignettes/*.Rmd` file, every `call:` template parses as valid R, every `next:` id
+resolves, every leaf id is unique — an unverifiable claim in the YAML is now a test failure, not a
+stale doc. The generated [task-index article](https://thecartercenter.github.io/erifunctions/articles/task-index.html)
+("What are you trying to do?") reads the bundled registry directly (`yaml::read_yaml()` +
+`system.file()`, the same pattern already used elsewhere in vignettes for bundled `extdata`) in a real
+executed chunk and renders a `knitr::kable()` table, so it can't drift from the YAML the way
+hand-written prose could; added to the "Quick reference & onboarding" article group and README's
+guide bullet list, alongside the other desk references. (4) an `index.md` homepage with role cards
+and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive console wizard walking the
+task registry, (6) next-step epilogues on pipeline functions, (7) wizard depth (preflight checks,
+session memory, deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
+deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.
 
 ---
 
