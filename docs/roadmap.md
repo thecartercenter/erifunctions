@@ -287,6 +287,26 @@ session) instead of only printing to console. Closes the loop the whole redesign
 DQ triage now produces a structured, attributable handback artifact instead of an ad hoc table. All 8
 phases of the DQ workflow redesign are now shipped.
 
+**Docs site & guidance system redesign (in progress):** the DQ workflow redesign's biggest lesson —
+collapsing "remember N functions in the right order" into "answer a guided menu" — prompted a second
+Fable design consult on the pkgdown documentation site itself, asking whether the same idea
+generalizes beyond DQ to the whole package. The consult proposed an 8-phase plan: (1) reference
+architecture — **shipped**: `_pkgdown.yml`'s reference index consolidated from 17 module-shaped
+groups (which mirrored `R/` source files — "Data pipeline" vs. "Data quality" vs. "Logs & triage" all
+described one lifecycle a user experiences as a single loop) to lifecycle-shaped groups using
+pkgdown's `subtitle:` mechanism for sub-grouping without multiplying top-level groups; a new "Start
+here" group surfaces `eri_data_model()`, `eri_data_path()`, `eri_dq_review()`, and `eri_verbosity()`
+regardless of which lifecycle group they'd otherwise sit in; degenerate/overlapping groups merged
+("Data catalog" + "Querying", "SharePoint & Teams" + "Feedback"); a docs-only, single-file change,
+verified lossless (152 unique reference topics before and after, only the intentional
+`eri_dq_review` cross-listing added). (2) article metadata + path navigation, (3) a bundled task
+registry (`inst/registry/task_map.yaml`) plus a generated task-index article, (4) an `index.md`
+homepage with role cards and diagrams, (5) `eri_guide()` — an `eri_dq_review()`-style interactive
+console wizard walking the task registry, (6) next-step epilogues on pipeline functions, (7) wizard
+depth (preflight checks, session memory, deep links) + a roxygen `@family`/title-audit pass, and (8) an
+evidence-gated, deliberately-deferred client-side decision-tree wizard on the site itself — not yet
+started.
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)

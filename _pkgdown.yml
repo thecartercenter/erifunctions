@@ -116,6 +116,15 @@ articles:
   - adding-a-program
 
 reference:
+- title: Start here
+  desc: >
+    Run these first, and reach for them whenever you're not sure what to call next.
+  contents:
+  - eri_data_model
+  - eri_data_path
+  - eri_dq_review
+  - eri_verbosity
+
 - title: Connections & authentication
   desc: Authenticate to Azure, ODK, SharePoint, and Teams.
   contents:
@@ -124,13 +133,8 @@ reference:
   - eri_sharepoint_connect
   - get_teams_connection
 
-- title: Console output
-  desc: Control how chatty erifunctions is in the console.
-  contents:
-  - eri_verbosity
-
-- title: Reading & writing data
-  desc: Read, write, list, and manage files in Azure (and locally).
+- title: Files in Azure
+  desc: Read, write, list, and manage files at any path — the layer everything else builds on.
   contents:
   - eri_read
   - eri_write
@@ -141,60 +145,66 @@ reference:
   - eri_dir_create
   - eri_delete
   - eri_dir_delete
-  - eri_data_path
-  - eri_data_model
   - erifunctions_io
   - azure_io
 
-- title: Data pipeline
-  desc: Ingest, stage, approve, and trigger surveillance and CMR pipelines.
+- title: "The pipeline: raw → staged → processed"
+  desc: >
+    Every route ends at eri_approve()/eri_approve_cmr(); nothing reaches processed/ without one
+    of them.
   contents:
-  - eri_ingest
-  - eri_stage
-  - eri_approve
-  - eri_trigger
-  - eri_ingest_cmr
-  - eri_split_cmr
-  - eri_stage_cmr
-  - eri_cmr_last_plan
-  - eri_approve_cmr
-  - eri_cmr_dq_report
-  - eri_dq_review
-  - eri_dq_export
-  - load_cmr_schema
+  - subtitle: Generic ingest & approval
+    contents:
+    - eri_ingest
+    - eri_stage
+    - eri_approve
+    - eri_trigger
+  - subtitle: CMR monthly reports
+    contents:
+    - eri_ingest_cmr
+    - eri_split_cmr
+    - eri_stage_cmr
+    - eri_cmr_last_plan
+    - eri_approve_cmr
+    - load_cmr_schema
+  - subtitle: Guided review & handback (start with these)
+    contents:
+    - eri_dq_review
+    - eri_cmr_dq_report
+    - eri_dq_export
 
-- title: Data quality
-  desc: Schema-driven DQ checks and anomaly detection.
+- title: The data-quality engine
+  desc: The scriptable core under eri_dq_review() — checks, anomaly detectors, and schemas.
   contents:
-  - load_dq_schema
-  - eri_dq_schema_edit
-  - eri_dq_schema_path
-  - eri_dq_schema_status
-  - eri_dq_schema_reset
-  - eri_dq_schema_submit
-  - run_dq_checks
-  - dq_result-methods
-  - dq_report
-  - add_anomaly_pct_change
-  - add_anomaly_gaps
-  - add_anomaly_consistency
-  - add_anomaly_spatial
+  - subtitle: Run checks
+    contents:
+    - run_dq_checks
+    - dq_result-methods
+    - dq_report
+    - add_anomaly_pct_change
+    - add_anomaly_gaps
+    - add_anomaly_consistency
+    - add_anomaly_spatial
+  - subtitle: DQ schemas (view, override, submit)
+    contents:
+    - load_dq_schema
+    - eri_dq_schema_edit
+    - eri_dq_schema_path
+    - eri_dq_schema_status
+    - eri_dq_schema_reset
+    - eri_dq_schema_submit
 
-- title: Data catalog
-  desc: Register, query, verify, and rebuild processed-layer data.
+- title: Catalog & querying
+  desc: What approved data exists, and SQL across it.
   contents:
   - eri_catalog_register
   - eri_catalog_remove
   - eri_catalog_query
   - eri_catalog_verify
   - eri_catalog_rebuild
-
-- title: Querying
-  desc: Run SQL across processed datasets with a serverless DuckDB layer.
-  contents:
   - eri_query
 
-- title: Reconciliation
+- title: Dataset comparison & cutover
   desc: Diff a new dataset against a reference, dirty clean data, and gate the cutover.
   contents:
   - eri_compare
@@ -203,8 +213,10 @@ reference:
   - eri_cutover_check
   - eri_cutover_status
 
-- title: Logs & triage
-  desc: Persist data-quality flags and triage the error / DQ log backlog.
+- title: Flags, logs & audit
+  desc: >
+    The durable record behind the pipeline: persist DQ flags, triage and close the backlog, and
+    reconstruct what happened to any dataset.
   contents:
   - eri_dq_log
   - eri_dq_flag_resolve
@@ -213,37 +225,36 @@ reference:
   - eri_audit
   - print.eri_audit_trail
 
-- title: Feedback
-  desc: File, read, triage, and summarise the team's internal feedback / ticket log.
-  contents:
-  - eri_feedback
-  - eri_feedback_list
-  - eri_feedback_status
-  - eri_feedback_board
-  - eri_feedback_report
-
 - title: ODK
   desc: Register forms, sync submissions, monitor surveys, and manage users.
   contents:
-  - eri_odk_register
-  - eri_odk_deregister
-  - eri_odk_purge
-  - eri_odk_list_registered
-  - eri_odk_sync
-  - eri_odk_upload
-  - eri_survey_status
-  - print.survey_status
-  - eri_odk_bulk_users
-  - list_odk_projects
-  - list_odk_forms
-  - download_odk_form
-  - download_form_attachments
-  - list_all_odk_app_users
-  - list_odk_form_users
-  - update_odk_app_user_role
+  - subtitle: Registry & sync
+    contents:
+    - eri_odk_register
+    - eri_odk_deregister
+    - eri_odk_purge
+    - eri_odk_list_registered
+    - eri_odk_sync
+    - eri_odk_upload
+  - subtitle: Survey monitoring
+    contents:
+    - eri_survey_status
+    - print.survey_status
+  - subtitle: Server & user admin
+    contents:
+    - eri_odk_bulk_users
+    - list_odk_projects
+    - list_odk_forms
+    - download_odk_form
+    - download_form_attachments
+    - list_all_odk_app_users
+    - list_odk_form_users
+    - update_odk_app_user_role
 
 - title: Spatial
-  desc: Admin boundaries, LandScan population, and spatial joins.
+  desc: >
+    Admin boundaries, LandScan population, spatial joins, and reconciling free-text place names
+    (eri_spatial_reconcile) to admin units.
   contents:
   - eri_spatial_load
   - eri_spatial_upload
@@ -258,75 +269,100 @@ reference:
 - title: Epi analytics
   desc: Incidence, epiweeks, epidemic curves, and disease-specific functions.
   contents:
-  - eri_incidence_rate
-  - eri_case_summary
-  - eri_epidemic_curve
-  - eri_epiweek_date
-  - eri_study_week
-  - eri_date_to_epiweek
-  - eri_epiweek_range
-  - eri_lf_pooled_prev
-  - eri_lf_program_levels
-  - eri_lf_tas_summary
-  - eri_lf_status_map
-  - eri_oncho_program_levels
-  - eri_oncho_status_map
+  - subtitle: Time, incidence & curves
+    contents:
+    - eri_incidence_rate
+    - eri_case_summary
+    - eri_epidemic_curve
+    - eri_epiweek_date
+    - eri_study_week
+    - eri_date_to_epiweek
+    - eri_epiweek_range
+  - subtitle: Lymphatic filariasis
+    contents:
+    - eri_lf_pooled_prev
+    - eri_lf_program_levels
+    - eri_lf_tas_summary
+    - eri_lf_status_map
+  - subtitle: Onchocerciasis
+    contents:
+    - eri_oncho_program_levels
+    - eri_oncho_status_map
 
 - title: Reporting & visual style
   desc: Branded tables, themes, maps, and Excel/HTML/PowerPoint reports.
   contents:
-  - eri_brand_colors
-  - eri_brand_ggplot_theme
-  - eri_color_scheme
-  - eri_plot_theme
-  - eri_table
-  - eri_map_choropleth
-  - eri_map_incidence
-  - eri_map_points
-  - eri_map_inset
-  - eri_report_excel
-  - eri_wb_create
-  - eri_wb_add_sheet
-  - eri_wb_save
-  - eri_report_html
-  - eri_report_qmd_template
-  - eri_pptx_create
-  - eri_pptx_add_title
-  - eri_pptx_add_section
-  - eri_pptx_add_table
-  - eri_pptx_add_plot
-  - eri_pptx_save
+  - subtitle: Brand, themes & colors
+    contents:
+    - eri_brand_colors
+    - eri_brand_ggplot_theme
+    - eri_color_scheme
+    - eri_plot_theme
+  - subtitle: Tables & maps
+    contents:
+    - eri_table
+    - eri_map_choropleth
+    - eri_map_incidence
+    - eri_map_points
+    - eri_map_inset
+  - subtitle: Excel workbooks
+    contents:
+    - eri_report_excel
+    - eri_wb_create
+    - eri_wb_add_sheet
+    - eri_wb_save
+  - subtitle: HTML & PowerPoint
+    contents:
+    - eri_report_html
+    - eri_report_qmd_template
+    - eri_pptx_create
+    - eri_pptx_add_title
+    - eri_pptx_add_section
+    - eri_pptx_add_table
+    - eri_pptx_add_plot
+    - eri_pptx_save
 
-- title: Research projects
+- title: Research projects & artifacts
   desc: Scaffold studies, track provenance, manage artifacts, and snapshot data.
   contents:
-  - eri_research_init
-  - eri_research_scaffold
-  - eri_research_resume
-  - eri_research_log
-  - eri_research_list
-  - eri_research_pull
-  - eri_research_status
-  - eri_research_upload_figure
-  - eri_research_upload_output
-  - eri_research_snapshot
-  - eri_research_tag
-  - eri_artifact_upload
-  - eri_artifact_list
-  - eri_artifact_pull
-  - eri_artifact_archive
-  - eri_template_list
-  - eri_template_pull
-  - eri_template_upload
+  - subtitle: Project lifecycle
+    contents:
+    - eri_research_init
+    - eri_research_scaffold
+    - eri_research_resume
+    - eri_research_log
+    - eri_research_list
+    - eri_research_pull
+    - eri_research_status
+    - eri_research_upload_figure
+    - eri_research_upload_output
+    - eri_research_snapshot
+    - eri_research_tag
+  - subtitle: Artifacts & templates
+    contents:
+    - eri_artifact_upload
+    - eri_artifact_list
+    - eri_artifact_pull
+    - eri_artifact_archive
+    - eri_template_list
+    - eri_template_pull
+    - eri_template_upload
 
-- title: SharePoint & Teams
-  desc: Share files via SharePoint and post notifications to Teams.
+- title: "Collaboration: SharePoint, Teams & feedback"
+  desc: >
+    Share files via SharePoint, post notifications to Teams, and file/triage the team's internal
+    feedback log.
   contents:
   - eri_sharepoint_list
   - eri_sharepoint_read
   - eri_sharepoint_upload
   - eri_teams_send
   - eri_notify_dq
+  - eri_feedback
+  - eri_feedback_list
+  - eri_feedback_status
+  - eri_feedback_board
+  - eri_feedback_report
 
 - title: Onboarding new programs
   desc: Scaffold schemas and Azure directories for a new country, disease, or CMR.
