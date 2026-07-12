@@ -150,6 +150,7 @@ token (the Graph-API path), see the [connections guide](connections-guide.html#t
   [log-triage guide](da-logs-guide.html).
 - For a CMR workbook specifically, `eri_dq_export()` also renders the richer, per-sheet flags
   tibble from [`eri_cmr_dq_report()`](../reference/eri_cmr_dq_report.html) -- see the
-  [CMR guide](da-cmr-guide.html) and [`eri_dq_review()`](../reference/eri_dq_review.html) for the
-  interactive triage wrapper that calls it automatically.
+  [CMR guide](da-cmr-guide.html) and the [DQ review guide](da-dq-review-guide.html) for
+  [`eri_dq_review()`](../reference/eri_dq_review.html), the interactive triage wrapper that calls it
+  automatically.
 ```

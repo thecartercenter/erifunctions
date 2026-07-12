@@ -1,6 +1,6 @@
 Package: erifunctions
 Title: ERI team functions
-Version: 0.9.17
+Version: 0.9.18
 Authors@R:
     person("Nishant", "Kishore", , "ynm2@cdc.gov", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-0408-2747"))
