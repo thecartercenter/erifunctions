@@ -299,8 +299,11 @@
 #' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] / [eri_cmr_last_plan()]. `NULL`
 #'   (default) looks it up via [eri_cmr_last_plan()].
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
-#' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls, which is
-#'   where the real return values (approvals, resolved flags, submitted tickets) live.
+#' @returns Invisibly, one of `"approved"`, `"force_approved"`, or `"exited"` -- how the session
+#'   ended, for a caller like [eri_do()] that hands off into this same loop and needs to know
+#'   whether to print its own closing message. Every effect happens through the scriptable core it
+#'   calls, which is where the real return values (approvals, resolved flags, submitted tickets)
+#'   live.
 #' @examples
 #' \dontrun{
 #' eri_dq_review("sdn", "202605")
@@ -318,6 +321,22 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
 
   data_con <- .eri_logs_con(data_con)
   if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
+
+  invisible(.eri_dq_review_loop(country, period, plan, data_con))
+}
+
+# The main check -> fix -> re-check -> approve loop, extracted from eri_dq_review() so
+# R/wizard.R's CMR flow can hand off into it directly with the plan it just built (no
+# eri_cmr_last_plan() round-trip needed) instead of duplicating this control flow. eri_dq_review()
+# itself is now a thin wrapper: resolve data_con/plan, then call this. No behavior change to
+# eri_dq_review()'s exported signature or console output.
+#
+# Returns (invisibly) one of "approved" / "force_approved" / "exited" -- so a caller like the
+# wizard knows whether the workbook actually got approved (and can print its own closing message)
+# without having to re-derive that from eri_logs()/the catalog.
+#' @keywords internal
+.eri_dq_review_loop <- function(country, period, plan, data_con) {
+  status <- "exited"
 
   local_path_env           <- new.env(parent = emptyenv())
   local_path_env$path      <- NULL
@@ -354,6 +373,7 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
       choice <- .eri_prompt_menu("Nothing outstanding. What next?", c("Approve", "Print report", "Exit"))
       if (choice == 1L) {
         eri_approve_cmr(country, period, plan = plan, data_con = data_con)
+        status <- "approved"
         break
       } else if (choice == 2L) {
         .eri_dq_review_print_report(flags, country, period)
@@ -382,7 +402,10 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
         flags <- dplyr::bind_rows(flags, fresh)
       }
     } else if (choice == 3L) {
-      if (isTRUE(.eri_dq_review_force_approve(country, period, plan, data_con))) break
+      if (isTRUE(.eri_dq_review_force_approve(country, period, plan, data_con))) {
+        status <- "force_approved"
+        break
+      }
     } else if (choice == 4L) {
       .eri_dq_review_print_report(flags, country, period)
     } else {
@@ -406,5 +429,5 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
     }
   }
 
-  invisible(NULL)
+  invisible(status)
 }

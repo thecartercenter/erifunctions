@@ -17,8 +17,11 @@ eri_dq_review(country, period, plan = NULL, data_con = NULL)
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
-Invisibly, \code{NULL}. Every effect happens through the scriptable core it calls, which is
-where the real return values (approvals, resolved flags, submitted tickets) live.
+Invisibly, one of \code{"approved"}, \code{"force_approved"}, or \code{"exited"} -- how the session
+ended, for a caller like \code{\link[=eri_do]{eri_do()}} that hands off into this same loop and needs to know
+whether to print its own closing message. Every effect happens through the scriptable core it
+calls, which is where the real return values (approvals, resolved flags, submitted tickets)
+live.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

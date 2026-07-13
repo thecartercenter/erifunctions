@@ -29,6 +29,50 @@ test_that("eri_dq_review offers approve when clean, and approves on request", {
   expect_true(approved)
 })
 
+test_that("eri_dq_review's loop returns 'approved'/'force_approved'/'exited', for R/wizard.R's flow hand-off", {
+  # eri_dq_review() itself still returns invisibly (unchanged console behavior); assigning the
+  # call captures the status .eri_dq_review_loop() now reports, which R/wizard.R's CMR flow reads
+  # to decide whether to print its own "done" message.
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      excel_row = integer(0), column = character(0), value = character(0),
+      issue = character(0), status = character(0)
+    ),
+    eri_approve_cmr = function(...) invisible(NULL),
+    .eri_prompt_menu = scripted(list(1L)),  # "Approve"
+    .package = "erifunctions"
+  )
+
+  status <- eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_equal(status, "approved")
+})
+
+test_that("eri_dq_review's loop returns 'exited' when the DA exits from the clean menu", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      excel_row = integer(0), column = character(0), value = character(0),
+      issue = character(0), status = character(0)
+    ),
+    .eri_prompt_menu = scripted(list(3L)),  # "Exit"
+    .package = "erifunctions"
+  )
+
+  status <- eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_equal(status, "exited")
+})
+
 test_that("eri_dq_review's 'print report' loops back to the same menu instead of exiting", {
   withr::local_options(rlang_interactive = TRUE)
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",

@@ -119,8 +119,11 @@ articles:
 reference:
 - title: Start here
   desc: >
-    Run these first, and reach for them whenever you're not sure what to call next.
+    Run these first, and reach for them whenever you're not sure what to call next. eri_do() is
+    the guided front door -- pick a country and a file, answer a few prompts, and it runs the
+    pipeline for you; the rest are for browsing or for when you're calling the pieces yourself.
   contents:
+  - eri_do
   - eri_guide
   - eri_task_map
   - eri_data_model
