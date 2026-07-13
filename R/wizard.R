@@ -1,4 +1,4 @@
-#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: ingest; Phase C.1: ODK; Phase C.2: onboarding) ####
+#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: ingest; Phase C.1: ODK; Phase C.2: onboarding; Phase D: deep links + overwrite protection) ####
 #
 # Design consult: docs/design/interactive-wizard-consult.md. Corrects the docs-site redesign's
 # direction -- that work optimized *discoverability* (can a DA find the right guide); this optimizes
@@ -40,8 +40,26 @@
 #
 # Phase C.3 retired eri_guide() (deprecated + narrowed to a static lookup, R/guide.R) and re-audited
 # the doc cut against what actually shipped in A-C.2, finding it much narrower than the consult
-# estimated -- see docs/roadmap.md's Phase C.3 entry. Progress-detection polish is Phase D, not
-# started.
+# estimated -- see docs/roadmap.md's Phase C.3 entry.
+#
+# Phase D: the consult's own scope for this phase was one line -- "progress-detection polish,
+# eri_do('cmr') deep-links, feedback-on-confusing-flag" -- so it needed its own re-audit against
+# what actually exists, same as Phase C.3's doc cut. `eri_do(flow=)` deep-links shipped as designed
+# (.ERI_DO_FLOWS/.eri_do_run_flow(), one dispatch table the menu and the deep-link both validate
+# against, so they can't diverge). "Progress-detection polish" turned out to mean something more
+# concrete and more valuable than the phrase implied: CMR already has real resume detection
+# (.eri_wizard_detect_cmr_progress(), Phase A, built on eri_cmr_last_plan()'s clean YYYYMM period
+# key) -- ingest and ODK have no equivalent, but investigating why revealed it isn't a gap worth
+# closing the same way: ingest's period is free text with no fixed key until eri_approve() is
+# actually called, so a resume check would need new, fragile core logic just to peek at what
+# WOULD be approved, not real polish; ODK already effectively resumes via its "already registered"
+# check, no separate prompt needed. What WAS a genuine, previously-undiscovered gap:
+# eri_onboard_country()/eri_onboard_cmr()/eri_onboard_disease() unconditionally overwrite an
+# existing local schema file with a fresh blank template -- real data loss for a DA who re-runs
+# onboarding after already filling in the TODOs. Added .eri_wizard_confirm_onboard_write(), a
+# file.exists() check (no new core function) before the real write, in all three onboarding
+# sub-flows. "Feedback-on-confusing-flag" is already served by the existing eri_dq_schema_submit()/
+# eri_feedback() machinery the DQ-review loop already exposes -- no new wizard-specific hook needed.
 #
 # Concrete R control flow, not a declarative flow schema. The original consult proposed a
 # `flow_map.yaml`/`kind:`-dispatch engine "once a second/third flow gives it real shape to
@@ -567,6 +585,24 @@
   invisible(NULL)
 }
 
+# eri_onboard_*() unconditionally overwrite an existing local schema file with a fresh blank
+# template -- real data loss if a DA re-runs onboarding after already filling in the TODOs. None of
+# the three functions guard against this themselves (scaffolding fresh on every call is the right
+# default for a script author); the wizard adds the check since protecting the DA from an
+# accidental clobber of their own in-progress edits is exactly its job. Compares against the SAME
+# filename convention eri_onboard_country()/eri_onboard_cmr()/eri_onboard_disease() build
+# themselves, in the current working directory (none of the three flows expose `path`/`output_dir`,
+# so it's always getwd()).
+#' @keywords internal
+.eri_wizard_confirm_onboard_write <- function(paths, write_prompt) {
+  existing <- paths[file.exists(paths)]
+  if (length(existing) > 0L) {
+    cli::cli_alert_warning("Already exists here: {.path {existing}}")
+    return(.eri_wizard_confirm("Overwrite with a fresh template? Any edits already made will be lost."))
+  }
+  .eri_wizard_confirm(write_prompt)
+}
+
 # No country/disease registry to pick-list from here -- onboarding's entire purpose is standing up
 # a space for a country/disease that ISN'T registered anywhere yet. Country code and full name are
 # both free-typed; disease reuses the shared pick-list-plus-Other pattern.
@@ -592,7 +628,10 @@
   })
   if (!preview$ok) return(invisible(NULL))
 
-  if (!.eri_wizard_confirm("Write this schema template and create the Azure folders?")) {
+  schema_path <- paste0(country, "_", disease, "_surveillance_aggregate.yaml")
+  if (!.eri_wizard_confirm_onboard_write(
+    schema_path, "Write this schema template and create the Azure folders?"
+  )) {
     return(invisible(NULL))
   }
 
@@ -624,7 +663,10 @@
   })
   if (!preview$ok) return(invisible(NULL))
 
-  if (!.eri_wizard_confirm("Write this CMR schema template and create the Azure folders?")) {
+  schema_path <- paste0(country, "_cmr_schema.yaml")
+  if (!.eri_wizard_confirm_onboard_write(
+    schema_path, "Write this CMR schema template and create the Azure folders?"
+  )) {
     return(invisible(NULL))
   }
 
@@ -663,7 +705,17 @@
   })
   if (!preview$ok) return(invisible(NULL))
 
-  if (!.eri_wizard_confirm("Write these schema template(s)?")) return(invisible(NULL))
+  # Matches eri_onboard_disease()'s own kind_map exactly (mda -> programmatic/treatment,
+  # prevalence -> research/prevalence) so the existence check looks at the SAME filenames it writes.
+  kind_map    <- list(mda = c("programmatic", "treatment"), prevalence = c("research", "prevalence"))
+  schema_paths <- vapply(data_types, function(k) {
+    m <- kind_map[[k]]
+    paste0(country, "_", disease, "_", m[[1L]], "_", m[[2L]], ".yaml")
+  }, character(1L))
+
+  if (!.eri_wizard_confirm_onboard_write(schema_paths, "Write these schema template(s)?")) {
+    return(invisible(NULL))
+  }
 
   result <- .eri_wizard_step(function() eri_onboard_disease(disease, country, data_types = data_types))
   if (!result$ok) return(invisible(NULL))
@@ -703,20 +755,38 @@
 #' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()], [eri_ingest()],
 #' [eri_approve()], [eri_odk_sync()], [eri_onboard_country()].
 #'
+#' @param flow `chr` or `NULL` A flow to jump straight into, skipping the top-level menu:
+#'   `"cmr"`, `"ingest"`, `"odk"`, `"onboard"`, or `"review"` (the DQ-review shortcut). Runs that one
+#'   flow once and returns, it does not loop back into the menu afterward. `NULL` (default) shows
+#'   the menu and loops until you exit.
 #' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls.
 #' @examples
 #' \dontrun{
 #' eri_do()
+#' eri_do("cmr")  # jump straight to the CMR flow, skipping the menu
 #' }
 #' @seealso [eri_dq_review()] for the data-quality review loop this hands off into,
 #'   [eri_cutover_status()] for the mirroring criterion this checks automatically.
 #' @export
-eri_do <- function() {
+eri_do <- function(flow = NULL) {
   if (!rlang::is_interactive()) {
     cli::cli_abort(c(
       "{.fn eri_do} is interactive-only.",
       "i" = "In scripts/CI use the scriptable core directly: {.fn eri_upload}, {.fn eri_stage_cmr}, {.fn eri_split_cmr}, {.fn eri_cmr_dq_report}, {.fn eri_approve_cmr}."
     ))
+  }
+
+  if (!is.null(flow)) {
+    flow <- tolower(trimws(flow))
+    valid_flows <- .ERI_DO_FLOWS
+    if (!flow %in% valid_flows) {
+      cli::cli_abort(c(
+        "{.arg flow} must be one of {.val {valid_flows}}, not {.val {flow}}.",
+        "i" = "Or call {.fn eri_do} with no argument to pick from the menu."
+      ))
+    }
+    .eri_do_run_flow(flow)
+    return(invisible(NULL))
   }
 
   repeat {
@@ -729,24 +799,33 @@ eri_do <- function() {
       "Exit"
     ))
     if (choice == 0L || choice == 6L) break
-
-    if (choice == 1L) {
-      .eri_flow_cmr()
-    } else if (choice == 2L) {
-      .eri_flow_ingest()
-    } else if (choice == 3L) {
-      .eri_flow_odk()
-    } else if (choice == 4L) {
-      .eri_flow_onboard()
-    } else if (choice == 5L) {
-      country <- .eri_prompt_pick_country(.eri_pipeline_registry[["rb-expansion"]]$country_map,
-                                          "Which country?")
-      if (!is.null(country)) {
-        period <- .eri_wizard_pick_period("")
-        if (!is.na(period)) eri_dq_review(country, period)
-      }
-    }
+    .eri_do_run_flow(.ERI_DO_FLOWS[[choice]])
   }
 
+  invisible(NULL)
+}
+
+# One name per top-menu item, same order -- the single source both the menu dispatch and the
+# flow= deep-link validate against, so they can't silently diverge.
+.ERI_DO_FLOWS <- c("cmr", "ingest", "odk", "onboard", "review")
+
+#' @keywords internal
+.eri_do_run_flow <- function(flow) {
+  if (flow == "cmr") {
+    .eri_flow_cmr()
+  } else if (flow == "ingest") {
+    .eri_flow_ingest()
+  } else if (flow == "odk") {
+    .eri_flow_odk()
+  } else if (flow == "onboard") {
+    .eri_flow_onboard()
+  } else if (flow == "review") {
+    country <- .eri_prompt_pick_country(.eri_pipeline_registry[["rb-expansion"]]$country_map,
+                                        "Which country?")
+    if (!is.null(country)) {
+      period <- .eri_wizard_pick_period("")
+      if (!is.na(period)) eri_dq_review(country, period)
+    }
+  }
   invisible(NULL)
 }

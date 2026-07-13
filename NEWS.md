@@ -1,3 +1,41 @@
+# erifunctions 0.9.34
+
+## `eri_do(flow=)` deep links, and a real overwrite protection found along the way (Phase D of the interactive-wizard course correction)
+
+- **`eri_do(flow = NULL)`**: pass `"cmr"`, `"ingest"`, `"odk"`, `"onboard"`, or `"review"` to jump
+  straight into that flow, skipping the top-level menu -- runs it once and returns, rather than
+  looping back into the menu. An unrecognized name errors immediately rather than silently falling
+  through. One shared dispatch table (`.ERI_DO_FLOWS`/`.eri_do_run_flow()`) backs both the menu and
+  the deep-link, so they can't quietly diverge.
+- **Re-audited the design consult's one-line Phase D scope** ("progress-detection polish,
+  `eri_do('cmr')` deep-links, feedback-on-confusing-flag") against what actually exists, the same
+  discipline Phase C.3 applied to the doc-cutting plan. "Feedback-on-confusing-flag" is already
+  served by the existing `eri_dq_schema_submit()`/`eri_feedback()` machinery the DQ-review loop
+  already exposes -- no new wizard-specific hook needed. Extending CMR's resume-detection pattern
+  to ingest/ODK turned out not to be real polish: ingest's period is free text with no fixed key
+  until `eri_approve()` is actually called (a resume check would need new, fragile core logic just
+  to guess at what would be approved), and ODK already effectively resumes via its "already
+  registered" check.
+- **A genuine, previously-undiscovered gap surfaced investigating "progress-detection" instead**:
+  `eri_onboard_country()`/`eri_onboard_cmr()`/`eri_onboard_disease()` all unconditionally overwrite
+  an existing local schema file with a fresh blank template -- real data loss for a DA who re-runs
+  onboarding after already filling in the TODO sections. Added
+  `.eri_wizard_confirm_onboard_write()` (a `file.exists()` check before the real write, no new core
+  function needed) to all three onboarding sub-flows: it warns and asks a different, explicit
+  confirm ("Overwrite with a fresh template? Any edits already made will be lost.") when a target
+  file already exists, instead of the normal "write this?" prompt.
+- **A real bug caught by the test suite, not review**: the initial `flow=` validation error used
+  `{.val {.ERI_DO_FLOWS}}` in a `cli::cli_abort()` call, which errors in current `cli` versions
+  because an interpolated expression starting with `.` is reserved for cli styles -- fixed by
+  assigning to a plain local variable first. Caught immediately by the new "unrecognized flow name"
+  test, not by manual inspection.
+- `vignettes/da-do-guide.Rmd` updated with the `flow=` deep-link examples and the overwrite-protection
+  transcript.
+- **`tests/testthat/test-wizard.R`** (134 tests, +21): every `flow=` value routes correctly and
+  skips the top menu, case/whitespace-insensitivity, the unrecognized-name error, and the overwrite
+  check for each of the three onboarding sub-flows (no-existing-file, existing-file-confirm,
+  existing-file-decline).
+
 # erifunctions 0.9.33
 
 ## New guide: a tour of `eri_do()` itself

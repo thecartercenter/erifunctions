@@ -804,3 +804,164 @@ test_that("eri_do exits immediately from the top menu with no navigation", {
   )
   expect_invisible(eri_do())
 })
+
+#### Phase D: eri_do(flow=) deep links ####
+
+test_that("eri_do(flow=) jumps straight into each named flow without showing the top menu", {
+  withr::local_options(rlang_interactive = TRUE)
+  ran <- character(0)
+  local_mocked_bindings(
+    .eri_flow_cmr     = function() { ran <<- c(ran, "cmr"); invisible(NULL) },
+    .eri_flow_ingest  = function() { ran <<- c(ran, "ingest"); invisible(NULL) },
+    .eri_flow_odk     = function() { ran <<- c(ran, "odk"); invisible(NULL) },
+    .eri_flow_onboard = function() { ran <<- c(ran, "onboard"); invisible(NULL) },
+    .eri_prompt_menu  = function(...) stop("must not show the top menu -- a flow was named directly"),
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do("cmr"))
+  expect_invisible(eri_do("ingest"))
+  expect_invisible(eri_do("odk"))
+  expect_invisible(eri_do("onboard"))
+  expect_equal(ran, c("cmr", "ingest", "odk", "onboard"))
+})
+
+test_that("eri_do(flow='review') jumps straight into the DQ-review shortcut", {
+  withr::local_options(rlang_interactive = TRUE)
+  reviewed <- NULL
+  local_mocked_bindings(
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_wizard_pick_period  = function(...) "202406",
+    eri_dq_review = function(country, period) { reviewed <<- c(country, period); invisible(NULL) },
+    .eri_prompt_menu = function(...) stop("must not show the top menu -- a flow was named directly"),
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do("review"))
+  expect_equal(reviewed, c("uga", "202406"))
+})
+
+test_that("eri_do(flow=) is case/whitespace-insensitive and does not loop back to the menu", {
+  withr::local_options(rlang_interactive = TRUE)
+  cmr_calls <- 0L
+  local_mocked_bindings(
+    .eri_flow_cmr = function() { cmr_calls <<- cmr_calls + 1L; invisible(NULL) },
+    .eri_prompt_menu = function(...) stop("must not show the top menu after a deep-link flow finishes"),
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do("  CMR  "))
+  expect_equal(cmr_calls, 1L)
+})
+
+test_that("eri_do(flow=) errors clearly on an unrecognized flow name", {
+  withr::local_options(rlang_interactive = TRUE)
+  expect_error(eri_do("bogus"), "must be one of")
+})
+
+#### Phase D: onboarding overwrite protection ####
+
+test_that(".eri_flow_onboard_surveillance writes normally when no local schema file exists yet", {
+  withr::local_options(rlang_interactive = TRUE)
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("Atlantis")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) TRUE,
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+  expect_true(real_called)
+})
+
+test_that(".eri_flow_onboard_surveillance warns and re-confirms before overwriting an existing schema file", {
+  withr::local_options(rlang_interactive = TRUE)
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  writeLines("# a DA's in-progress schema edits", "atlantis_malaria_surveillance_aggregate.yaml")
+
+  confirm_prompts <- character(0)
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("Atlantis")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(prompt) { confirm_prompts <<- c(confirm_prompts, prompt); TRUE },
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+  expect_true(real_called)
+  expect_match(confirm_prompts[[1]], "Overwrite", fixed = TRUE)
+})
+
+test_that(".eri_flow_onboard_surveillance does not overwrite when the DA declines", {
+  withr::local_options(rlang_interactive = TRUE)
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  writeLines("# a DA's in-progress schema edits", "atlantis_malaria_surveillance_aggregate.yaml")
+
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("Atlantis")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) FALSE,
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+  expect_false(real_called)
+})
+
+test_that(".eri_flow_onboard_cmr warns before overwriting an existing CMR schema file", {
+  withr::local_options(rlang_interactive = TRUE)
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  writeLines("# existing CMR schema", "uga_cmr_schema.yaml")
+
+  confirm_prompts <- character(0)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_cmr = function(...) invisible(NULL),
+    .eri_wizard_confirm = function(prompt) { confirm_prompts <<- c(confirm_prompts, prompt); TRUE },
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+  expect_match(confirm_prompts[[1]], "Overwrite", fixed = TRUE)
+})
+
+test_that(".eri_flow_onboard_disease warns once for two existing schema files (both types)", {
+  withr::local_options(rlang_interactive = TRUE)
+  tmp <- withr::local_tempdir()
+  withr::local_dir(tmp)
+  writeLines("# existing", "atlantis_schisto_programmatic_treatment.yaml")
+  writeLines("# existing", "atlantis_schisto_research_prevalence.yaml")
+
+  confirm_prompts <- character(0)
+  local_mocked_bindings(
+    .eri_prompt_pick_or_type = function(...) "schisto",
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_menu = scripted(list(1L)),  # "Both (MDA + prevalence)"
+    eri_onboard_disease = function(...) invisible(NULL),
+    .eri_wizard_confirm = function(prompt) { confirm_prompts <<- c(confirm_prompts, prompt); TRUE },
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_disease())
+  expect_match(confirm_prompts[[1]], "Overwrite", fixed = TRUE)
+})
