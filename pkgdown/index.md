@@ -15,8 +15,7 @@ time. No function names to memorize, no Azure path to type by hand.
 
 Not sure where to start otherwise? **[What are you trying to do?](articles/task-index.html)** is a
 generated index of ~30 common tasks; pick yours and get the call and the guide. In the console,
-`eri_guide()` walks the same list interactively — pick a category, pick a task, run it if it's safe
-to run with no arguments, or open its guide. Otherwise, read
+`eri_task_map()` prints the same list. Otherwise, read
 **[Getting started](articles/getting-started.html)** first — it's the one idea every guide assumes.
 
 ## Two roles, two paths

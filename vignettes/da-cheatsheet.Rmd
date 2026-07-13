@@ -39,22 +39,10 @@ data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
 
 ## Which pipeline do I use?
 
-```
-What did you receive?
-│
-├─ A monthly country CMR Excel (eth/nga/sdn/ssd/uga/tcd/mad)
-│     → eri_stage_cmr() → eri_split_cmr() → eri_approve(..., "programmatic", <measure>)
-│
-├─ A malaria surveillance extract (line-list or aggregate, e.g. dr/ht)
-│     → eri_ingest()                      [registered countries: one call, dual-writes]
-│       or the primitives below           [sandbox / new space]
-│
-├─ ODK survey submissions
-│     → eri_odk_register() → eri_odk_sync() → (clean) → eri_approve(..., "research", ...)
-│
-└─ A brand-new country / disease / data-type space (nothing exists yet)
-      → eri_onboard_country() / eri_onboard_disease() / eri_onboard_cmr()  (do this FIRST)
-```
+**Run [`eri_do()`](../reference/eri_do.html)** and pick from its menu (CMR / surveillance ingest /
+ODK / onboard a new space / review something staged) -- it picks the right functions and calls them
+for you, in order, so you don't have to hold this decision tree in your head. The table below is for
+when you're scripting the steps yourself, not deciding which pipeline to reach for.
 
 **The general primitive pipeline** (works on any data, incl. the practice sandbox):
 

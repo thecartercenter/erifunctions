@@ -2,47 +2,38 @@
 % Please edit documentation in R/guide.R
 \name{eri_guide}
 \alias{eri_guide}
-\title{Find your task and get its call and guide (interactive)}
+\title{Look up a task's call and guide (deprecated; use \code{\link[=eri_do]{eri_do()}} or \code{\link[=eri_task_map]{eri_task_map()}})}
 \usage{
 eri_guide(task_id = NULL)
 }
 \arguments{
-\item{task_id}{\code{chr} or \code{NULL} A task id to jump straight to its detail screen, skipping the
-category/task menus. \code{NULL} (default) starts at the top-level category menu.}
+\item{task_id}{\code{chr} or \code{NULL} A task id to show (see \code{\link[=eri_task_map]{eri_task_map()}}'s \code{id} column, or the
+generated task-index article, for valid ids). \code{NULL} (default) prints the full task list instead.}
 }
 \value{
-Invisibly, \code{NULL}. "Run it now" prints its visibly-returned result the same way typing
-the call at the console would (so e.g. \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}'s connection object is
-shown, not silently discarded), and a failure is caught and reported rather than crashing the
-wizard -- but the result itself is not kept for later use; assign it yourself if you need it
-again (\code{con <- get_azure_storage_connection()}).
+Invisibly, \code{NULL}.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-A console wizard over the task registry (\code{\link[=eri_task_map]{eri_task_map()}}'s bundled
-\code{inst/registry/task_map.yaml}): pick a category, pick a task, see its representative call, its
-guide (if any), and the reference functions it touches. A zero-argument task (e.g.
-\code{\link[=eri_data_model]{eri_data_model()}}, \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}) can be run right from the menu;
-everything else -- which needs real argument values this wizard has no safe way to fabricate --
-can only be shown, with its guide opened for the full walkthrough.
+\code{eri_guide()} used to be a menu-driven console wizard. It's deprecated in favor of two sharper
+tools: \code{\link[=eri_do]{eri_do()}}, which actually \emph{runs} the CMR/ingest/ODK/onboarding pipelines through a guided
+console flow, and \code{\link[=eri_task_map]{eri_task_map()}} (or the generated task-index article), which browses every
+task's representative call, guide, and reference functions as a static list. \code{eri_guide()} never
+had "run it now" for more than 4 of ~32 tasks -- for anything else it could only describe, which is
+what the vignettes and \code{\link[=eri_task_map]{eri_task_map()}} already do, without a menu to navigate.
 
-The wizard remembers the last category you visited this session and offers to resume there.
-Pass a task id to jump straight to its detail screen instead of navigating the menus (see
-\code{\link[=eri_task_map]{eri_task_map()}}'s \code{id} column, or the generated task-index article, for valid ids).
-
-Prefer the generated \href{../articles/task-index.html}{task-index article} or \code{\link[=eri_task_map]{eri_task_map()}} when
-you don't need the back-and-forth of a menu.
-
-\strong{Interactive only.} In a script, browse \code{\link[=eri_task_map]{eri_task_map()}} or the task-index article instead.
+This function is kept, narrowed, rather than removed outright: pass a \code{task_id} and it still shows
+that task's call, guide, and reference functions (no menu); called with no argument, it prints the
+full \code{\link[=eri_task_map]{eri_task_map()}} listing instead of opening an interactive browser.
 }
 \examples{
 \dontrun{
-eri_guide()
-eri_guide("check_cmr")  # jump straight to a known task
+eri_guide("check_cmr")  # show one task's call/guide/reference, no menu
+eri_guide()             # equivalent to eri_task_map()
 }
 }
 \seealso{
-\code{\link[=eri_task_map]{eri_task_map()}} for the non-interactive console version, \code{\link[=eri_dq_review]{eri_dq_review()}} for the
-same menu-driven wizard pattern applied to DQ triage.
+\code{\link[=eri_do]{eri_do()}} for the guided pipeline wizard that replaced this, \code{\link[=eri_task_map]{eri_task_map()}} for the
+full static listing.
 }
