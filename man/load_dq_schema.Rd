@@ -61,3 +61,12 @@ schema <- load_dq_schema("dr", "malaria", "surveillance", "case")
 schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment")
 }
 }
+\seealso{
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_edit}()},
+\code{\link{eri_dq_schema_path}()},
+\code{\link{eri_dq_schema_reset}()},
+\code{\link{eri_dq_schema_status}()},
+\code{\link{eri_dq_schema_submit}()}
+}
+\concept{DQ schema functions}

@@ -192,7 +192,7 @@
   - id: start_project
     title: "Start or resume a research project"
     role: epi
-    call: 'eri_research_init(project_name)'
+    call: 'eri_research_init(project_name, country, disease, description)'
     guide: epi-research-guide
     reference: [eri_research_init, eri_research_scaffold, eri_research_resume, eri_research_status]
     next: [track_provenance]
@@ -234,7 +234,7 @@
   - id: population_totals
     title: "Get population totals for an area"
     role: epi
-    call: 'eri_spatial_pop(boundaries)'
+    call: 'eri_spatial_pop(shapefile)'
     reference: [eri_spatial_pop]
 
 - id: add_new_program

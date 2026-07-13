@@ -1,17 +1,7 @@
 #### Tests for eri_guide() and its internal helpers ####
-
-# Returns a function that yields the next element of `responses` on each call,
-# ignoring its arguments -- the standard "scripted decision sequence" pattern
-# already used for eri_dq_review() (test-dq_review.R), reused here to script
-# .eri_prompt_menu() for eri_guide()'s own menu loop.
-scripted <- function(responses) {
-  i <- 0L
-  function(...) {
-    i <<- i + 1L
-    if (i > length(responses)) stop("scripted responses exhausted at call ", i)
-    responses[[i]]
-  }
-}
+#
+# scripted() (the interactive-menu mocking helper) lives in helper-scripted.R, shared with
+# test-dq_review.R.
 
 test_that("eri_guide refuses to run non-interactively", {
   expect_error(eri_guide(), "interactive-only")
@@ -132,4 +122,105 @@ test_that("eri_guide's task screen catches a failing zero-argument run instead o
     .package = "erifunctions"
   )
   expect_no_error(.eri_guide_show_task(leaf))
+})
+
+#### Phase 7: deep links (eri_guide(task_id=)) ####
+
+test_that("eri_guide(task_id=) jumps straight to a task's detail screen", {
+  withr::local_options(rlang_interactive = TRUE)
+  shown <- NULL
+  local_mocked_bindings(
+    .eri_guide_show_task = function(leaf) { shown <<- leaf$id; invisible(NULL) },
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_guide("learn_vocabulary"))
+  expect_equal(shown, "learn_vocabulary")
+})
+
+test_that("eri_guide(task_id=) errors clearly for an unknown id", {
+  withr::local_options(rlang_interactive = TRUE)
+  expect_error(eri_guide("not_a_real_task_id"), "No task with id")
+})
+
+#### Phase 7: session memory (resume the last-visited category) ####
+
+test_that(".eri_guide_resolve_branch_choice handles exit/cancel, resume, and plain selection", {
+  tree   <- list(list(id = "a"), list(id = "b"), list(id = "c"))
+  resume <- list(id = "b")
+
+  # No resume option present: choices are c(a, b, c, "Exit").
+  expect_null(.eri_guide_resolve_branch_choice(0L, tree, NULL))
+  expect_null(.eri_guide_resolve_branch_choice(4L, tree, NULL))
+  expect_equal(.eri_guide_resolve_branch_choice(1L, tree, NULL)$id, "a")
+  expect_equal(.eri_guide_resolve_branch_choice(3L, tree, NULL)$id, "c")
+
+  # Resume option present: choices are c("Continue in b", a, b, c, "Exit") -- every real branch
+  # index shifts by one.
+  expect_null(.eri_guide_resolve_branch_choice(0L, tree, resume))
+  expect_null(.eri_guide_resolve_branch_choice(5L, tree, resume))
+  expect_equal(.eri_guide_resolve_branch_choice(1L, tree, resume)$id, "b")
+  expect_equal(.eri_guide_resolve_branch_choice(2L, tree, resume)$id, "a")
+  expect_equal(.eri_guide_resolve_branch_choice(4L, tree, resume)$id, "c")
+})
+
+test_that("eri_guide offers to resume the last-visited category after visiting one", {
+  withr::local_options(rlang_interactive = TRUE, erifunctions.guide_last_branch = NULL)
+  tree <- .eri_task_map()
+  first_branch_title <- tree[[1]]$title
+
+  # First invocation: navigate into the first category, back out, exit -- no resume option should
+  # be offered on the VERY FIRST top-menu display (nothing visited this session yet). A resume
+  # option legitimately appears on the SECOND top-menu display within this same call (after
+  # backing out of the leaf menu), since picking the category already recorded it as
+  # last-visited -- so this only checks the first display, not every one.
+  seen_top_menu  <- 0L
+  next_response  <- scripted(list(1L, 0L, 0L))
+  local_mocked_bindings(
+    .eri_prompt_menu = function(title, choices) {
+      if (identical(title, "What are you trying to do?")) {
+        seen_top_menu <<- seen_top_menu + 1L
+        if (seen_top_menu == 1L) expect_false(any(grepl("^Continue in", choices)))
+      }
+      next_response()
+    },
+    .package = "erifunctions"
+  )
+  eri_guide()
+
+  # Second invocation: the top menu should now offer to resume that category first.
+  local_mocked_bindings(
+    .eri_prompt_menu = function(title, choices) {
+      expect_match(choices[[1]], sprintf('Continue in "%s"', first_branch_title), fixed = TRUE)
+      0L
+    },
+    .package = "erifunctions"
+  )
+  eri_guide()
+})
+
+test_that("picking the resume option lands directly in the remembered category", {
+  withr::local_options(rlang_interactive = TRUE, erifunctions.guide_last_branch = NULL)
+  tree <- .eri_task_map()
+
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(1L, 0L, 0L)), .package = "erifunctions")
+  eri_guide()  # records tree[[1]]$id as the last-visited branch
+
+  leaf_menu_title   <- NULL
+  visited_leaf_menu <- FALSE
+  local_mocked_bindings(
+    .eri_prompt_menu = function(title, choices) {
+      if (identical(title, "What are you trying to do?")) {
+        # "Continue in ..." the first time; once we've already seen the leaf menu, exit --
+        # otherwise this would pick "Continue" forever, since backing out of the leaf menu only
+        # returns to THIS top-level menu, not out of eri_guide()'s own loop.
+        return(if (!visited_leaf_menu) 1L else 0L)
+      }
+      leaf_menu_title   <<- title
+      visited_leaf_menu <<- TRUE
+      0L  # back out of the leaf menu
+    },
+    .package = "erifunctions"
+  )
+  eri_guide()
+  expect_equal(leaf_menu_title, tree[[1]]$title)
 })

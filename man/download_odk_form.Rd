@@ -44,3 +44,19 @@ of tibbles (one per export table, main table first).
 \description{
 Download all submissions from an ODK form
 }
+\seealso{
+Other ODK Central functions: 
+\code{\link{download_form_attachments}()},
+\code{\link{eri_odk_bulk_users}()},
+\code{\link{eri_odk_deregister}()},
+\code{\link{eri_odk_list_registered}()},
+\code{\link{eri_odk_purge}()},
+\code{\link{eri_odk_register}()},
+\code{\link{eri_odk_sync}()},
+\code{\link{eri_odk_upload}()},
+\code{\link{list_all_odk_app_users}()},
+\code{\link{list_odk_forms}()},
+\code{\link{list_odk_projects}()},
+\code{\link{update_odk_app_user_role}()}
+}
+\concept{ODK Central functions}

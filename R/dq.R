@@ -1195,6 +1195,7 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 #' schema <- load_dq_schema("dr", "malaria", "surveillance", "case")
 #' schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment")
 #' }
+#' @family DQ schema functions
 #' @export
 load_dq_schema <- function(
     country,
@@ -1244,6 +1245,7 @@ load_dq_schema <- function(
 #' path <- eri_dq_schema_path("atlantis", "oncho", "programmatic", "treatment")
 #' file.edit(path)  # or rstudioapi::navigateToFile(path)
 #' }
+#' @family DQ schema functions
 #' @export
 eri_dq_schema_path <- function(country, disease, data_source = NULL, data_type = NULL,
                                 azcontainer = suppressMessages(
@@ -1286,6 +1288,7 @@ eri_dq_schema_path <- function(country, disease, data_source = NULL, data_type =
 #' file.edit(path)  # or rstudioapi::navigateToFile(path)
 #' # ... load_dq_schema() now returns this override until eri_dq_schema_reset() ...
 #' }
+#' @family DQ schema functions
 #' @export
 eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type = NULL,
                                 azcontainer = suppressMessages(
@@ -1362,6 +1365,7 @@ eri_dq_schema_edit <- function(country, disease, data_source = NULL, data_type =
 #' \dontrun{
 #' eri_dq_schema_status()
 #' }
+#' @family DQ schema functions
 #' @export
 eri_dq_schema_status <- function(azcontainer = suppressMessages(
                                     get_azure_storage_connection(
@@ -1428,6 +1432,7 @@ eri_dq_schema_status <- function(azcontainer = suppressMessages(
 #' \dontrun{
 #' eri_dq_schema_reset("atlantis", "oncho", "programmatic", "treatment")
 #' }
+#' @family DQ schema functions
 #' @export
 eri_dq_schema_reset <- function(country, disease, data_source = NULL, data_type = NULL,
                                  confirm = TRUE) {
@@ -1569,6 +1574,7 @@ eri_dq_schema_reset <- function(country, disease, data_source = NULL, data_type 
 #' }
 #' @seealso [eri_dq_schema_edit()] to create the override being submitted,
 #'   [eri_feedback()] for the general ticket log.
+#' @family DQ schema functions
 #' @export
 eri_dq_schema_submit <- function(country, disease, data_source = NULL, data_type = NULL,
                                   note = NULL,

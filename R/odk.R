@@ -78,6 +78,7 @@ print.odk_connection <- function(x, ...) {
 #' @param url `chr` Server URL (used when `con = NULL`)
 #' @param auth `chr` Bearer token (used when `con = NULL`)
 #' @returns `tibble` with columns `project_id`, `project`, `description`
+#' @family ODK Central functions
 #' @export
 list_odk_projects <- function(
     con  = NULL,
@@ -104,6 +105,7 @@ list_odk_projects <- function(
 #' @param auth `chr` Bearer token (used when `con = NULL`)
 #' @param project_id `int` Project ID from [list_odk_projects()]
 #' @returns `tibble` with columns `xmlFormId`, `name`
+#' @family ODK Central functions
 #' @export
 list_odk_forms <- function(
     con        = NULL,
@@ -142,6 +144,7 @@ list_odk_forms <- function(
 #' @returns A `tibble` of submissions, or -- when `tables = TRUE` -- a named list
 #'   of tibbles (one per export table, main table first).
 #' @importFrom utils URLencode URLdecode unzip
+#' @family ODK Central functions
 #' @export
 download_odk_form <- function(
     con         = NULL,
@@ -227,6 +230,7 @@ download_odk_form <- function(
 #' @param auth `chr` Bearer token (used when `con = NULL`)
 #' @param project_id `int` Project ID from [list_odk_projects()]
 #' @returns `tibble` of app users
+#' @family ODK Central functions
 #' @export
 list_all_odk_app_users <- function(
     con        = NULL,
@@ -289,6 +293,7 @@ list_odk_form_users <- function(
 #' @param actor_id `int` Actor ID; required for `"delete"`, `"assign"`, `"revoke"`
 #' @returns Named list (for `"create"`) or logical (for all others)
 #' @importFrom utils URLencode URLdecode
+#' @family ODK Central functions
 #' @export
 update_odk_app_user_role <- function(
     action,
@@ -370,6 +375,7 @@ update_odk_app_user_role <- function(
 #' @returns `tibble` of attachment metadata
 #' @importFrom rlang .data
 #' @importFrom utils URLencode URLdecode
+#' @family ODK Central functions
 #' @export
 download_form_attachments <- function(
     con           = NULL,

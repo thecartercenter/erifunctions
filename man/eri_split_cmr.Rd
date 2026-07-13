@@ -131,3 +131,12 @@ eri_split_cmr("202605_ssd_report.xlsx", "ssd", mirror_pipeline = "rb-expansion")
 eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 }
 }
+\seealso{
+Other CMR pipeline functions: 
+\code{\link{eri_approve_cmr}()},
+\code{\link{eri_cmr_dq_report}()},
+\code{\link{eri_cmr_last_plan}()},
+\code{\link{eri_ingest_cmr}()},
+\code{\link{eri_stage_cmr}()}
+}
+\concept{CMR pipeline functions}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/dal.R
 \name{erifunctions_io}
 \alias{erifunctions_io}
-\title{erifunctions i/o handler}
+\title{Legacy I/O handler for the erifunctions data interface}
 \usage{
 erifunctions_io(
   io,

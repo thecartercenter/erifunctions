@@ -183,7 +183,7 @@ get_azure_storage_connection <- function(
 
 #### 2) I/O dispatcher ####
 
-#' erifunctions i/o handler
+#' Legacy I/O handler for the erifunctions data interface
 #'
 #' @description
 #' `r lifecycle::badge("experimental")`

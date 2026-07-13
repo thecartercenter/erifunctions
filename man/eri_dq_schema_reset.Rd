@@ -43,3 +43,12 @@ stay on disk as a record of what a DA's local changes used to be.
 eri_dq_schema_reset("atlantis", "oncho", "programmatic", "treatment")
 }
 }
+\seealso{
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_edit}()},
+\code{\link{eri_dq_schema_path}()},
+\code{\link{eri_dq_schema_status}()},
+\code{\link{eri_dq_schema_submit}()},
+\code{\link{load_dq_schema}()}
+}
+\concept{DQ schema functions}

@@ -433,6 +433,7 @@
 #'                            stage = "river_stage"),
 #'                key_col = "rec", dry_run = TRUE)
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_upload <- function(
     data,

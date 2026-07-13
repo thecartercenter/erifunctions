@@ -64,6 +64,24 @@
   }, error = function(e) invisible(NULL))
 }
 
+# Finds the branch with the given id anywhere in the tree, or NULL if `id` is NULL/unmatched.
+# Used by eri_guide()'s session-memory resume lookup (R/guide.R, phase 7).
+#' @keywords internal
+.eri_task_find_branch <- function(id, tree = .eri_task_map()) {
+  Find(function(b) identical(b$id, id), tree)
+}
+
+# Finds the leaf with the given id anywhere in the tree, or NULL if `id` is NULL/unmatched. Used by
+# eri_guide(task_id = )'s deep-link path (R/guide.R, phase 7).
+#' @keywords internal
+.eri_task_find_leaf <- function(id, tree = .eri_task_map()) {
+  for (branch in tree) {
+    hit <- Find(function(l) identical(l$id, id), branch$children)
+    if (!is.null(hit)) return(hit)
+  }
+  NULL
+}
+
 #' Show the task registry: what are you trying to do?
 #'
 #' @description
