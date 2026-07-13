@@ -36,13 +36,13 @@ you’re trying to do and just need the entry point.
 | Use approved data: query, analyse, report | Turn approved data into on-brand tables, plots, or decks | `eri_table(data, title)` | [guide](https://thecartercenter.github.io/erifunctions/articles/da-reporting-guide.md) |
 | Use approved data: query, analyse, report | Summarise an approved survey (e.g. LF TAS) | `eri_lf_tas_summary(data, fts_col, rdt_col)` | [guide](https://thecartercenter.github.io/erifunctions/articles/da-survey-report-guide.md) |
 | Use approved data: query, analyse, report | Incidence, epiweeks, and epidemic curves | `eri_incidence_rate(cases, pop)` | [guide](https://thecartercenter.github.io/erifunctions/articles/epi-analytics.md) |
-| Run a research study | Start or resume a research project | `eri_research_init(project_name)` | [guide](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md) |
+| Run a research study | Start or resume a research project | `eri_research_init(project_name, country, disease, description)` | [guide](https://thecartercenter.github.io/erifunctions/articles/epi-research-guide.md) |
 | Run a research study | Log progress and manage artifacts as you go | `eri_research_log(note)` |  |
 | Run a research study | Snapshot data and tag a citable, reproducible version | `eri_research_tag(label)` |  |
 | Run a research study | Pull or contribute a reusable research template | [`eri_template_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_template_list.md) |  |
 | Places and maps | Reconcile free-text localities to admin units | `eri_spatial_reconcile(data, loc_cols, shapefile, admin_cols)` | [guide](https://thecartercenter.github.io/erifunctions/articles/epi-reconcile-guide.md) |
 | Places and maps | Join points to admin units and map them | `eri_spatial_join(data, lat_col, lon_col, shapefile)` | [guide](https://thecartercenter.github.io/erifunctions/articles/spatial-workflow.md) |
-| Places and maps | Get population totals for an area | `eri_spatial_pop(boundaries)` |  |
+| Places and maps | Get population totals for an area | `eri_spatial_pop(shapefile)` |  |
 | Add a new country, disease, or data type | Onboard a new surveillance country or disease | `eri_onboard_country(country_code, country_name, disease)` | [guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md) |
 | Add a new country, disease, or data type | Onboard a new CMR-reporting country | `eri_onboard_cmr(country_code, country_name)` | [guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md) |
 | Add a new country, disease, or data type | Contribute a schema or disease analytics to the package | `eri_schema_validate(schema_path)` | [guide](https://thecartercenter.github.io/erifunctions/articles/adding-a-program.md) |

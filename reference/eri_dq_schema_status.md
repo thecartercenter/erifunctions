@@ -37,6 +37,15 @@ A tibble with columns `stem`, `forked_at`, `forked_by`, `base_source`,
 file is missing, e.g. from an interrupted retire). Zero rows if there
 are no overrides.
 
+## See also
+
+Other DQ schema functions:
+[`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md),
+[`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md),
+[`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md),
+[`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md),
+[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+
 ## Examples
 
 ``` r

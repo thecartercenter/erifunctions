@@ -1,4 +1,4 @@
-# erifunctions i/o handler
+# Legacy I/O handler for the erifunctions data interface
 
 **\[experimental\]**
 

@@ -17,7 +17,7 @@ is the shared source the generated task index article reads from
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.25</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,7 +80,7 @@ is the shared source the generated task index article reads from
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Show the task registry: what are you trying to do?</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.25/R/task_registry.R" class="external-link"><code>R/task_registry.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/task_registry.R" class="external-link"><code>R/task_registry.R</code></a></small>
       <div class="d-none name"><code>eri_task_map.Rd</code></div>
     </div>
 
@@ -173,8 +173,8 @@ is the shared source the generated <a href="../articles/task-index.html">task in
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Run a research study</span> ──</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Start or resume a research project</span> -- `eri_research_init(project_name)`</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   (guide: <span style="color: #0000BB;">"epi-research-guide"</span>)</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Start or resume a research project</span> -- `eri_research_init(project_name,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   country, disease, description)` (guide: <span style="color: #0000BB;">"epi-research-guide"</span>)</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Log progress and manage artifacts as you go</span> -- `eri_research_log(note)`</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Snapshot data and tag a citable, reproducible version</span> --</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   `eri_research_tag(label)`</span>
@@ -186,7 +186,7 @@ is the shared source the generated <a href="../articles/task-index.html">task in
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   loc_cols, shapefile, admin_cols)` (guide: <span style="color: #0000BB;">"epi-reconcile-guide"</span>)</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Join points to admin units and map them</span> -- `eri_spatial_join(data, lat_col,</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   lon_col, shapefile)` (guide: <span style="color: #0000BB;">"spatial-workflow"</span>)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Get population totals for an area</span> -- `eri_spatial_pop(boundaries)`</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> <span style="font-weight: bold;">Get population totals for an area</span> -- `eri_spatial_pop(shapefile)`</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Add a new country, disease, or data type</span> ──</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>

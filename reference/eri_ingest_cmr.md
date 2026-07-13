@@ -52,6 +52,15 @@ an `excel_row` column recording each row's real position in the workbook
 rows are removed). If `country` is supplied it is prepended as a
 `country` column.
 
+## See also
+
+Other CMR pipeline functions:
+[`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md),
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md),
+[`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md),
+[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md),
+[`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
+
 ## Examples
 
 ``` r

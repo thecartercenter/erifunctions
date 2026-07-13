@@ -80,6 +80,13 @@ to create the override being submitted,
 [`eri_feedback()`](https://thecartercenter.github.io/erifunctions/reference/eri_feedback.md)
 for the general ticket log.
 
+Other DQ schema functions:
+[`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md),
+[`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md),
+[`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md),
+[`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md),
+[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+
 ## Examples
 
 ``` r

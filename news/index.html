@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.25</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,28 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.25/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.26" id="erifunctions-0926">erifunctions 0.9.26<a class="anchor" aria-label="anchor" href="#erifunctions-0926"></a></h2>
+<div class="section level3">
+<h3 id="eri_guide-remembers-where-you-were-jumps-straight-to-a-task-and-a-documentation-audit-docs-site-redesign-phase-0-9-26">
+<code>eri_guide()</code> remembers where you were, jumps straight to a task, and a documentation audit (docs site redesign, phase 7)<a class="anchor" aria-label="anchor" href="#eri_guide-remembers-where-you-were-jumps-straight-to-a-task-and-a-documentation-audit-docs-site-redesign-phase-0-9-26"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_guide.html">eri_guide()</a></code> gained a <code>task_id</code> argument</strong>: <code>eri_guide("check_cmr")</code> jumps straight to that task’s detail screen, skipping the category/task menus — a deep link for anyone who already knows what they’re looking for (from a script, a colleague’s note, or a future epilogue hint). Unknown ids abort with a clear message pointing at <code><a href="../reference/eri_task_map.html">eri_task_map()</a></code>.</li>
+<li>
+<strong><code><a href="../reference/eri_guide.html">eri_guide()</a></code> now remembers the last category you visited this session</strong> and offers to “Continue in …” it at the top of the menu next time, instead of always starting from the top. Uses the same <code><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption()</a></code>/<code><a href="https://rdrr.io/r/base/options.html" class="external-link">options()</a></code> session-state convention as <code><a href="../reference/eri_verbosity.html">eri_verbosity()</a></code> (<code>R/console.R</code>), not a new package-environment pattern — resets with a fresh R session.</li>
+<li>
+<strong>A registry accuracy sweep found two real bugs the existing tests couldn’t catch</strong>: <code>call:</code> templates that <em>parse</em> as R can still silently omit a <em>required</em> argument. <code>start_project</code>’s <code>eri_research_init(project_name)</code> dropped 3 required arguments (<code>country</code>, <code>disease</code>, <code>description</code>); <code>population_totals</code>’s <code>eri_spatial_pop(boundaries)</code> used a parameter name (<code>boundaries</code>) that doesn’t exist on the real function (<code>shapefile</code>). Both fixed, and <code>test-task-map.R</code> gained a permanent check: every <code>call:</code> template must represent every required argument of its own referenced function, not just parse as valid R.</li>
+<li>
+<strong>A roxygen title/<code>@family</code> audit</strong> (via <code>roxygen2::parse_package()</code>, not eyeballing): checked all 157 exported functions’ titles for sentence case and no trailing period — found exactly one real issue (<code><a href="../reference/erifunctions_io.html">erifunctions_io()</a></code>’s all-lowercase, fragment-style title; the 4 flagged S3 print/summary methods are conventionally undocumented and not a real gap). Added <code>@family</code> tags to 25 functions across 3 tight, already-vetted clusters (CMR pipeline, DQ schema override, ODK Central) — a first pass, not an exhaustive 150-function sweep; <code>_pkgdown.yml</code>’s reference index already covers cross-function discovery at the browse level, so <code>@family</code>’s marginal value here is the “See Also” block on an individual function’s own help page, not a replacement for it.</li>
+<li>
+<strong>“Preflight checks” scoped conservatively</strong>: real per-function argument collection (so more tasks could run from the wizard) stays out of scope — most leaves mix simple strings with real R objects (a data frame, an sf shapefile) a console prompt can’t safely fabricate, and a smart per-arg-type schema to distinguish them would be new complexity for uncertain benefit. “Run it now”’s existing <code>tryCatch</code>-and-report (Phase 5) is treated as the guardrail against a live call failing.</li>
+<li>
+<strong>A serious near-miss, caught and fixed before merge</strong>: a bug in a <em>test</em> (a <code>scripted()</code> mock closure re-created fresh inside its own wrapper function, so it always returned the same first response instead of advancing) sent <code><a href="../reference/eri_guide.html">eri_guide()</a></code>’s menu loop into an infinite “Run it now” loop on a zero-argument task whose call is <code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> — which is real, and hit the live <code>eridev</code> Azure tenant repeatedly until the runaway process was killed. No data was written (the call is a read-only auth/connection handshake), but it burned real API calls against live infrastructure from what was meant to be an offline unit test. Fixed the test bug (build the <code>scripted()</code> closure once, outside the mock wrapper) and a second, related infinite-loop bug it exposed in a different new test (a mock that never returned an “Exit” choice for the top-level menu). Lesson: any test that drives an interactive loop via a mocked prompt has to be traced for every route the mock can take, not just the intended one — offline test code that accidentally reaches an un-mocked live-integration function will actually run it.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.25" id="erifunctions-0925">erifunctions 0.9.25<a class="anchor" aria-label="anchor" href="#erifunctions-0925"></a></h2>
 <div class="section level3">

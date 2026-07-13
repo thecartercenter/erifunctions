@@ -71,6 +71,15 @@ into every `dq_flags` log entry – so a DQ result produced under a
 modified schema is always distinguishable, in the permanent log, from
 one produced under the canonical schema.
 
+## See also
+
+Other DQ schema functions:
+[`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md),
+[`eri_dq_schema_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_path.md),
+[`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md),
+[`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md),
+[`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md)
+
 ## Examples
 
 ``` r

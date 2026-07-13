@@ -13,6 +13,12 @@ can be run right from the menu; everything else – which needs real
 argument values this wizard has no safe way to fabricate – can only be
 shown, with its guide opened for the full walkthrough.
 
+The wizard remembers the last category you visited this session and
+offers to resume there. Pass a task id to jump straight to its detail
+screen instead of navigating the menus (see
+[`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)'s
+`id` column, or the generated task-index article, for valid ids).
+
 Prefer the generated [task-index
 article](https://thecartercenter.github.io/erifunctions/articles/task-index.md)
 or
@@ -26,8 +32,16 @@ or the task-index article instead.
 ## Usage
 
 ``` r
-eri_guide()
+eri_guide(task_id = NULL)
 ```
+
+## Arguments
+
+- task_id:
+
+  `chr` or `NULL` A task id to jump straight to its detail screen,
+  skipping the category/task menus. `NULL` (default) starts at the
+  top-level category menu.
 
 ## Value
 
@@ -51,5 +65,6 @@ for the same menu-driven wizard pattern applied to DQ triage.
 ``` r
 if (FALSE) { # \dontrun{
 eri_guide()
+eri_guide("check_cmr")  # jump straight to a known task
 } # }
 ```

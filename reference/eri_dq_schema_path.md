@@ -53,6 +53,15 @@ eri_dq_schema_path(
 when a live override exists, a per-user cache copy when the source is
 Azure, or the bundled package path when that's the fallback.
 
+## See also
+
+Other DQ schema functions:
+[`eri_dq_schema_edit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_edit.md),
+[`eri_dq_schema_reset()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_reset.md),
+[`eri_dq_schema_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_status.md),
+[`eri_dq_schema_submit()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_schema_submit.md),
+[`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+
 ## Examples
 
 ``` r

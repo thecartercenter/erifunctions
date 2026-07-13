@@ -169,7 +169,8 @@ else builds on.
 - [`eri_dir_delete()`](https://thecartercenter.github.io/erifunctions/reference/eri_dir_delete.md)
   **\[experimental\]** : Delete a directory
 - [`erifunctions_io()`](https://thecartercenter.github.io/erifunctions/reference/erifunctions_io.md)
-  **\[experimental\]** : erifunctions i/o handler
+  **\[experimental\]** : Legacy I/O handler for the erifunctions data
+  interface
 - [`azure_io()`](https://thecartercenter.github.io/erifunctions/reference/azure_io.md)
   : Helper function to read and write key data to the Azure environment
 

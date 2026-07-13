@@ -90,8 +90,8 @@ eri_task_map()
 #> 
 #> ── Run a research study ──
 #> 
-#> • Start or resume a research project -- `eri_research_init(project_name)`
-#>   (guide: "epi-research-guide")
+#> • Start or resume a research project -- `eri_research_init(project_name,
+#>   country, disease, description)` (guide: "epi-research-guide")
 #> • Log progress and manage artifacts as you go -- `eri_research_log(note)`
 #> • Snapshot data and tag a citable, reproducible version --
 #>   `eri_research_tag(label)`
@@ -103,7 +103,7 @@ eri_task_map()
 #>   loc_cols, shapefile, admin_cols)` (guide: "epi-reconcile-guide")
 #> • Join points to admin units and map them -- `eri_spatial_join(data, lat_col,
 #>   lon_col, shapefile)` (guide: "spatial-workflow")
-#> • Get population totals for an area -- `eri_spatial_pop(boundaries)`
+#> • Get population totals for an area -- `eri_spatial_pop(shapefile)`
 #> 
 #> ── Add a new country, disease, or data type ──
 #> 

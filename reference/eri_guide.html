@@ -6,6 +6,9 @@ guide (if any), and the reference functions it touches. A zero-argument task (e.
 eri_data_model(), get_azure_storage_connection()) can be run right from the menu;
 everything else – which needs real argument values this wizard has no safe way to fabricate –
 can only be shown, with its guide opened for the full walkthrough.
+The wizard remembers the last category you visited this session and offers to resume there.
+Pass a task id to jump straight to its detail screen instead of navigating the menus (see
+eri_task_map()'s id column, or the generated task-index article, for valid ids).
 Prefer the generated task-index article or eri_task_map() when
 you don't need the back-and-forth of a menu.
 Interactive only. In a script, browse eri_task_map() or the task-index article instead."><meta property="og:description" content="
@@ -15,6 +18,9 @@ guide (if any), and the reference functions it touches. A zero-argument task (e.
 eri_data_model(), get_azure_storage_connection()) can be run right from the menu;
 everything else – which needs real argument values this wizard has no safe way to fabricate –
 can only be shown, with its guide opened for the full walkthrough.
+The wizard remembers the last category you visited this session and offers to resume there.
+Pass a task id to jump straight to its detail screen instead of navigating the menus (see
+eri_task_map()'s id column, or the generated task-index article, for valid ids).
 Prefer the generated task-index article or eri_task_map() when
 you don't need the back-and-forth of a menu.
 Interactive only. In a script, browse eri_task_map() or the task-index article instead."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
@@ -25,7 +31,7 @@ Interactive only. In a script, browse eri_task_map() or the task-index article i
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.25</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +94,7 @@ Interactive only. In a script, browse eri_task_map() or the task-index article i
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Find your task and get its call and guide (interactive)</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.25/R/guide.R" class="external-link"><code>R/guide.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/guide.R" class="external-link"><code>R/guide.R</code></a></small>
       <div class="d-none name"><code>eri_guide.Rd</code></div>
     </div>
 
@@ -100,6 +106,9 @@ guide (if any), and the reference functions it touches. A zero-argument task (e.
 <code><a href="eri_data_model.html">eri_data_model()</a></code>, <code><a href="get_azure_storage_connection.html">get_azure_storage_connection()</a></code>) can be run right from the menu;
 everything else – which needs real argument values this wizard has no safe way to fabricate –
 can only be shown, with its guide opened for the full walkthrough.</p>
+<p>The wizard remembers the last category you visited this session and offers to resume there.
+Pass a task id to jump straight to its detail screen instead of navigating the menus (see
+<code><a href="eri_task_map.html">eri_task_map()</a></code>'s <code>id</code> column, or the generated task-index article, for valid ids).</p>
 <p>Prefer the generated <a href="../articles/task-index.html">task-index article</a> or <code><a href="eri_task_map.html">eri_task_map()</a></code> when
 you don't need the back-and-forth of a menu.</p>
 <p><strong>Interactive only.</strong> In a script, browse <code><a href="eri_task_map.html">eri_task_map()</a></code> or the task-index article instead.</p>
@@ -107,9 +116,18 @@ you don't need the back-and-forth of a menu.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_guide</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">eri_guide</span><span class="op">(</span>task_id <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
+
+
+<dl><dt id="arg-task-id">task_id<a class="anchor" aria-label="anchor" href="#arg-task-id"></a></dt>
+<dd><p><code>chr</code> or <code>NULL</code> A task id to jump straight to its detail screen, skipping the
+category/task menus. <code>NULL</code> (default) starts at the top-level category menu.</p></dd>
+
+</dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, <code>NULL</code>. "Run it now" prints its visibly-returned result the same way typing
@@ -128,6 +146,7 @@ same menu-driven wizard pattern applied to DQ triage.</p></div>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="fu">eri_guide</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">eri_guide</span><span class="op">(</span><span class="st">"check_cmr"</span><span class="op">)</span>  <span class="co"># jump straight to a known task</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
