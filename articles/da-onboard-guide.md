@@ -3,6 +3,15 @@
 **Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
 `atlantis`)
 
+> **Just need to scaffold the space, not learn the functions?** Run
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> in the console and pick “onboard a new country, disease, or data type”
+> — it walks you through the dry-run preview and writes the schema
+> template + Azure folders for you. It stops there: filling in the
+> schema’s disease-specific columns, validating it, and submitting it
+> via pull request are still yours to do, and this guide is where you
+> learn that part.
+
 Before any data can flow through `erifunctions`, the **space for it has
 to exist**: a data-quality schema that describes the data, and the
 `raw → staged → processed` folders it will move through. This guide is

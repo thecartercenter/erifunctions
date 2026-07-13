@@ -14,7 +14,10 @@ and never asked about. Every mutation is one already-tested function
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md),
 [`eri_odk_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_register.md),
-[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md)),
+[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md),
+[`eri_onboard_country()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_country.md),
+[`eri_onboard_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_cmr.md),
+[`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)),
 and data quality review/approval hands off directly into the same loop
 [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
 uses (for CMR) or points at the scriptable triage tools directly
@@ -24,15 +27,21 @@ for surveillance ingest) – nothing here is reimplemented, and every
 function this calls stays fully usable directly in a script or CI.
 
 Currently covers bringing in a monthly CMR report, bringing in a
-surveillance dataset (CSV/Excel line-list), and pulling in ODK survey
-submissions, end to end. ODK sync stops at `research/raw/` – there is no
-automated stage-then-approve path for ODK data yet (the real guide shows
-a manual
+surveillance dataset (CSV/Excel line-list), pulling in ODK survey
+submissions, and onboarding a new country, disease, or data type, end to
+end. ODK sync stops at `research/raw/` – there is no automated
+stage-then-approve path for ODK data yet (the real guide shows a manual
 [`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md)
-step), so the wizard is honest about handing off there rather than
-fabricating a step the underlying tooling doesn't support. New-program
-onboarding is planned as the same framework grows (see
-`docs/design/interactive-wizard-consult.md`).
+step) – and onboarding stops once the schema template(s) are written
+(and, for surveillance/CMR, the Azure folders exist – an NTD disease's
+MDA/prevalence schemas are local-only, by
+[`eri_onboard_disease()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_disease.md)'s
+own design) – filling in the schema's disease-specific columns,
+validating it, and submitting it via pull request stay a human,
+judgment-driven step (see `vignettes/da-onboard-guide.Rmd`'s "onboarding
+scaffolds; it doesn't finish for you"). The wizard is honest about
+handing off at both points rather than fabricating steps the underlying
+tooling doesn't support or shouldn't automate.
 
 **Interactive only.** In a script or CI, use the scriptable core
 directly:
@@ -43,7 +52,8 @@ directly:
 [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md),
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
 [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md),
-[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md).
+[`eri_odk_sync()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_sync.md),
+[`eri_onboard_country()`](https://thecartercenter.github.io/erifunctions/reference/eri_onboard_country.md).
 
 ## Usage
 

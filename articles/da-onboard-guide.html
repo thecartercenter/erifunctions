@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.30</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.31</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Onboarding a new country, disease, or data type (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.30/vignettes/da-onboard-guide.Rmd" class="external-link"><code>vignettes/da-onboard-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-onboard-guide.Rmd" class="external-link"><code>vignettes/da-onboard-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-onboard-guide.Rmd</code></div>
     </div>
 
@@ -116,6 +116,16 @@
 <span class="eri-sandbox-yes">yes</span> (runs on
 <code>atlantis</code>)</p>
 </div>
+<blockquote>
+<p><strong>Just need to scaffold the space, not learn the
+functions?</strong> Run <a href="../reference/eri_do.html"><code>eri_do()</code></a> in the console
+and pick “onboard a new country, disease, or data type” — it walks you
+through the dry-run preview and writes the schema template + Azure
+folders for you. It stops there: filling in the schema’s
+disease-specific columns, validating it, and submitting it via pull
+request are still yours to do, and this guide is where you learn that
+part.</p>
+</blockquote>
 <p>Before any data can flow through <code>erifunctions</code>, the
 <strong>space for it has to exist</strong>: a data-quality schema that
 describes the data, and the <code>raw → staged → processed</code>

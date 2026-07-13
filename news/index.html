@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.30</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.31</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,27 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.30/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.31" id="erifunctions-0931">erifunctions 0.9.31<a class="anchor" aria-label="anchor" href="#erifunctions-0931"></a></h2>
+<div class="section level3">
+<h3 id="eri_do-now-covers-onboarding-too-phase-c2-of-the-interactive-wizard-course-correction-0-9-31">
+<code>eri_do()</code> now covers onboarding too (Phase C.2 of the interactive-wizard course correction)<a class="anchor" aria-label="anchor" href="#eri_do-now-covers-onboarding-too-phase-c2-of-the-interactive-wizard-course-correction-0-9-31"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_do.html">eri_do()</a></code>’s top menu gained “Onboard a new country, disease, or data type”</strong>, powered by a new <code>.eri_flow_onboard()</code> (<code>R/wizard.R</code>) covering all three real onboarding shapes: a surveillance country/disease (<code><a href="../reference/eri_onboard_country.html">eri_onboard_country()</a></code>), a CMR country (<code>eri_onboard_cmr(create_dirs = TRUE)</code>), and an NTD disease’s MDA/prevalence schemas (<code><a href="../reference/eri_onboard_disease.html">eri_onboard_disease()</a></code>, local-only, no Azure folders). Each sub-flow dry-runs first (reusing the real function’s own <code>dry_run = TRUE</code> preview text), confirms, then writes for real.</li>
+<li>
+<strong>Deliberately stops at “the schema template is written and the folders exist.”</strong> <code>da-onboard-guide.Rmd</code>’s own golden rule is “onboarding scaffolds; it doesn’t finish for you” – filling in a schema’s disease-specific columns, validating it, and submitting it via pull request are real domain judgment calls no wizard should fabricate. The three <code>eri_onboard_*()</code> functions already print their own “Next steps” via <code>cli_inform()</code>, so the flow doesn’t re-print or paraphrase that text – one copy, not two that can quietly drift apart.</li>
+<li>
+<strong>Real bug found and fixed while building this</strong>: <code>.eri_wizard_prompt_country_code()</code> (shared with Phase B’s ingest flow) validated typed country codes against <code>^[a-z]{2,4}$</code> – but the package’s own sandbox demo country, <code>atlantis</code> (8 letters), is exactly the example its own warning message names as valid, and would have been silently rejected. Onboarding is precisely the flow where a DA types a brand-new code, so this surfaced immediately; widened to <code>^[a-z]{2,15}$</code> and added a regression test locking in the <code>atlantis</code> case.</li>
+<li>
+<strong>review-agent caught a real scope drift before merge</strong>: the surveillance and CMR sub-flows called <code><a href="../reference/eri_onboard_country.html">eri_onboard_country()</a></code>/<code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code> without ever surfacing <code>language</code> (“en”/“fr”), silently defaulting to English – a real gap for ERI’s own Francophone countries (Haiti), and exactly what the design consult called for (“language from a pick-list”). Added a shared <code>.eri_wizard_prompt_language()</code> prompt to both sub-flows.</li>
+<li>Cross-linked from <code>pkgdown/index.md</code>, <code>README.md</code>, and a callout at the top of <code>vignettes/da-onboard-guide.Rmd</code> pointing at <code><a href="../reference/eri_do.html">eri_do()</a></code>.</li>
+<li>
+<strong><code>tests/testthat/test-wizard.R</code></strong> (113 tests, +27 over Phase C.1): routing across the three sub-flows, each sub-flow’s dry-run -&gt; confirm -&gt; real-write order, decline-to-confirm and cancel-on-blank-input/language-prompt paths, and the NTD flow’s menu-choice -&gt; <code>data_types</code> vector mapping.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.30" id="erifunctions-0930">erifunctions 0.9.30<a class="anchor" aria-label="anchor" href="#erifunctions-0930"></a></h2>
 <div class="section level3">
