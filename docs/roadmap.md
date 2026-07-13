@@ -521,8 +521,7 @@ to a guessed number rather than to genuine overlap, exactly the CLAUDE.md guardr
 designing for a hypothetical rather than a verified need. `onboarding.Rmd`'s ingestion-spine days
 now point at `eri_do()` as the primary path; its "Competency checklist" heading also dropped the
 "DA + mentor sign off" framing (a standalone DA-rules complaint raised earlier in this session,
-addressed here since the file was already being revised). **Phase D (progress-detection polish,
-`eri_do("cmr")` deep links) remains designed in the consult document but not yet started.**
+addressed here since the file was already being revised).
 
 **Follow-up, same session: `vignettes/da-do-guide.Rmd` shipped as v0.9.33.** A gap noticed only
 after Phase C.3 closed the loop: each of the four flows got its own "prefer to just do it? run
@@ -536,6 +535,36 @@ already use). Deliberately stays a tour, not a redo of the domain-knowledge walk
 section points at its pipeline's own guide for real captured output and depth. Cross-linked from
 `_pkgdown.yml`, `docs/guides.md`, `getting-started.Rmd`, and every existing pipeline guide's own
 `eri_do()` callout.
+
+**Phase D (deep links + a real overwrite protection) shipped as v0.9.34.** The consult's own scope
+for this phase was one line — "progress-detection polish, `eri_do('cmr')` deep-links,
+feedback-on-confusing-flag" — so it needed the same re-audit-against-reality treatment Phase C.3
+gave the doc-cutting plan, rather than executing it literally. **`eri_do(flow = NULL)`** shipped as
+designed: `"cmr"`/`"ingest"`/`"odk"`/`"onboard"`/`"review"` jump straight into that flow, skipping
+the top menu, one shared dispatch table (`.ERI_DO_FLOWS`/`.eri_do_run_flow()`) backing both the
+menu and the deep-link so they can't diverge. **"Feedback-on-confusing-flag" turned out to already
+be served, for the flows that have a DQ step at all**: the CMR flow and the `"review"` shortcut
+both hand off into `eri_dq_review()`'s loop, where `eri_dq_schema_submit()` is already wired in —
+ingest/ODK have no DQ-flag-schema step inside the wizard by their own earlier-phase design, so for
+those two it means "reachable directly," not "exposed in the wizard." No new hook added either way.
+**Extending CMR's resume-detection to ingest/ODK turned out not to be real polish**: ingest's
+period is free text with no fixed key until `eri_approve()` is actually called (a resume check
+would need new, fragile core logic just to guess at what would be approved), and ODK's
+`eri_odk_sync()` has no partial-sync state to resume from at all (full re-download/overwrite every
+call) — its "already registered" check is the only persistent state there is, and it already does
+the right thing.
+**Investigating "progress-detection" surfaced a genuine, previously-undiscovered gap instead**:
+`eri_onboard_country()`/`eri_onboard_cmr()`/`eri_onboard_disease()` all unconditionally overwrite an
+existing local schema file with a fresh blank template — real data loss for a DA who re-runs
+onboarding after already filling in the TODOs. Added `.eri_wizard_confirm_onboard_write()` (a
+`file.exists()` check before the real write, no new core function needed) to all three onboarding
+sub-flows. **A real bug caught by the new test suite, not manual review**: the `flow=` validation
+error initially used `{.val {.ERI_DO_FLOWS}}` inside `cli::cli_abort()`, which errors in current
+`cli` because an interpolated expression starting with `.` is reserved for cli styles — fixed by
+assigning to a plain local variable first, caught immediately by the "unrecognized flow name" test.
+`vignettes/da-do-guide.Rmd` updated with both the deep-link examples and the overwrite-protection
+transcript. **This closes out the interactive-wizard course correction end to end — Phases A
+through D are all shipped.**
 
 ---
 

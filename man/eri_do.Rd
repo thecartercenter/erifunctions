@@ -4,7 +4,13 @@
 \alias{eri_do}
 \title{Bring a monthly report into the system, interactively (the guided console front door)}
 \usage{
-eri_do()
+eri_do(flow = NULL)
+}
+\arguments{
+\item{flow}{\code{chr} or \code{NULL} A flow to jump straight into, skipping the top-level menu:
+\code{"cmr"}, \code{"ingest"}, \code{"odk"}, \code{"onboard"}, or \code{"review"} (the DQ-review shortcut). Runs that one
+flow once and returns, it does not loop back into the menu afterward. \code{NULL} (default) shows
+the menu and loops until you exit.}
 }
 \value{
 Invisibly, \code{NULL}. Every effect happens through the scriptable core it calls.
@@ -42,6 +48,7 @@ doesn't support or shouldn't automate.
 \examples{
 \dontrun{
 eri_do()
+eri_do("cmr")  # jump straight to the CMR flow, skipping the menu
 }
 }
 \seealso{
