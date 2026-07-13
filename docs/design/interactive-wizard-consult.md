@@ -328,6 +328,13 @@ approve gate* — differing only in which values and which calls:
   `eri_logs()`-driven triage (a lighter loop than CMR's per-sheet one — reuse `.eri_dq_review_loop()`'s
   flag-walk helper against the ingest log) → `eri_approve(country, disease, data_source, period,
   data_type)`.
+  **As shipped (Phase B, v0.9.29):** there is no "broader registered-country set" — `eri_ingest()`
+  is deliberately not country-locked (ADR-0012), so there's no registry to build a pick-list from.
+  Country is a validated free-typed code instead (`.eri_wizard_prompt_country_code()`). Disease
+  uses `.eri_prompt_pick_or_type()` (a pick-list with a typed "Other" escape hatch, since disease
+  also has no registry). The DQ stage is a summary + pointer at the scriptable triage tools, not a
+  full interactive walker — building `.eri_dq_review_loop()`'s flag-walk against the ingest log's
+  different shape turned out to be real, separate follow-on work, not a drop-in reuse.
 - **ODK (`.eri_flow_odk()`):** is this form already registered? → if not, collect
   `project_id`/`form_id`/`country`/`disease`/`server_url` (server_url from a small known-servers
   pick-list) and `eri_odk_register(...)`; if yes, pick from `eri_odk_list_registered()` → confirm →
