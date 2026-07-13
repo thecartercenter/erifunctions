@@ -1,3 +1,48 @@
+# erifunctions 0.9.28
+
+## `eri_do()`: a guided console wizard that runs the CMR pipeline for you (Phase A of the interactive-wizard course correction)
+
+- **Added `eri_do()`** (`R/wizard.R`), a menu-driven wizard that carries a Data Analyst through
+  bringing a monthly country report (CMR) into the system end to end: pick a country from a
+  pick-list (never typed), pick the local file with a native file dialog
+  (`rstudioapi::selectFile()`/`file.choose()`, never a hand-constructed Azure path), confirm the
+  filename-detected reporting month, then watch upload → stage → split happen automatically,
+  handing off directly into the same review-and-approve loop `eri_dq_review()` already uses. No
+  function names to memorize.
+- **This is a direct course correction**, not an extension of the docs-site redesign above. That
+  work optimized *discoverability* (can a DA find the right guide); the actual ask, stated
+  explicitly, was *execution simplicity* (can a DA do the job without learning the tool). A design
+  consult (commissioned this session, full document at
+  `docs/design/interactive-wizard-consult.md`) verified the real fix is smaller than it first
+  looked: the "9-function ordeal" DAs faced was inflated — 2 steps are read-only inspection and the
+  last 4 are already one function (`eri_dq_review()`) — so the genuinely new work is just the front
+  half (upload → stage → split), then handing off to what already works.
+- **`mirror_pipeline` is now auto-detected, never asked about.** `eri_do()` checks
+  `eri_cutover_status()$eligible` for every disease/measure this workbook feeds and mirrors to the
+  legacy pipeline only for streams that haven't yet proven 3-period parity (ADR-0015) — a DA never
+  sees or decides this flag. An unrecorded/errored stream defaults to mirroring, the safe direction.
+- **`eri_dq_review()`'s main loop is now `.eri_dq_review_loop()`**, extracted so `eri_do()` can hand
+  off directly into it (with the plan it just built, no extra lookup) instead of duplicating the
+  check → fix → re-check → approve control flow. `eri_dq_review()` itself is unchanged — same
+  signature, same console behavior — and now also returns (invisibly) whether the session ended
+  `"approved"`, `"force_approved"`, or `"exited"`, which `eri_do()` uses to decide whether to print
+  its own closing message.
+- **Deliberately concrete R, not a declarative flow schema.** The consult's own design proposed a
+  `flow_map.yaml`/`kind:`-dispatch engine generalizing across pipelines from the start — building
+  that for a single consumer (Phase A has exactly one flow) would be exactly the premature
+  abstraction this whole redesign effort has repeatedly avoided. Deferred until Phase B gives it
+  two more real flows (surveillance ingest, ODK) to generalize from.
+- **`tests/testthat/test-wizard.R`** (40 tests): every helper unit-tested directly (country
+  picker, file picker fallback chain, period detection matching `eri_split_cmr()`'s own regex
+  exactly, path derivation against the real pipeline registry, mirror auto-detection including the
+  error-defaults-to-mirror case), plus a full flow integration test asserting the real core
+  functions are called in the right order with the derived path/period/mirror flag — and cancel/
+  decline/resume-in-progress paths, so a DA backing out or an interrupted session doesn't silently
+  do the wrong thing.
+- Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at the top of
+  `vignettes/da-cmr-guide.Rmd` pointing at `eri_do()` as the easier path — the full guide-cutting
+  pass (~26 articles → ~11) is Phase C, not done here.
+
 # erifunctions 0.9.27
 
 ## Fix: the site homepage logo rendered doubled and at full column width

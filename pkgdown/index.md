@@ -6,10 +6,14 @@ TCC's Azure-centred data system across countries (Haiti, DR, Uganda, OEPA, …) 
 (malaria, oncho, LF, SCH, STH). You install it, authenticate through your browser, and call
 functions — you don't edit the package.
 
-Not sure where to start? **[What are you trying to do?](articles/task-index.html)** is a generated
-index of ~30 common tasks; pick yours and get the call and the guide. In the console, `eri_guide()`
-walks the same list interactively — pick a category, pick a task, run it if it's safe to run with
-no arguments, or open its guide. Otherwise, read
+**Bringing in a monthly country report? Run `eri_do()`.** It's a guided console wizard — pick your
+country, pick the file, confirm the month, and it walks the whole upload → stage → split → review
+→ approve pipeline for you. No function names to memorize, no Azure path to type by hand.
+
+Not sure where to start otherwise? **[What are you trying to do?](articles/task-index.html)** is a
+generated index of ~30 common tasks; pick yours and get the call and the guide. In the console,
+`eri_guide()` walks the same list interactively — pick a category, pick a task, run it if it's safe
+to run with no arguments, or open its guide. Otherwise, read
 **[Getting started](articles/getting-started.html)** first — it's the one idea every guide assumes.
 
 ## Two roles, two paths

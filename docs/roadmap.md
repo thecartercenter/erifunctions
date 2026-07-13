@@ -421,6 +421,35 @@ an offline test). Fixed the test bug and a second, related infinite-loop bug it 
 that never returned an "Exit" choice for the top-level menu). And (8) an evidence-gated,
 deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.
 
+**Course correction, same session: `eri_do()`, the unified interactive pipeline wizard (v0.9.28+,
+in progress).** The maintainer's verdict on the 8-phase docs-site redesign above: it optimized
+*discoverability* (can a DA find the right guide) when the real ask, stated explicitly up front,
+was *execution simplicity* (can a DA do the job without learning the tool) — a DA bringing in a
+monthly CMR still had to memorize an ordered sequence of functions and hand-construct an Azure
+path. Commissioned a design consult (Opus) to correct direction; full document at
+`docs/design/interactive-wizard-consult.md`. Verdict, verified against the actual code: the
+"9-function ordeal" was inflated — 2 steps are read-only inspection and the last 4 are already one
+function (`eri_dq_review()`); the real new build is upload → stage → split, then hand off to the
+DQ-review loop that already works. **Phase A (ships first): `eri_do()`** (`R/wizard.R`) — a
+menu-driven wizard covering the CMR flow end to end: pick a country (pick-list, never typed), pick
+a local file (`rstudioapi::selectFile()`/`file.choose()`, never a typed Azure path), confirm the
+filename-detected month, then upload/stage/split run automatically and hand off directly into
+`.eri_dq_review_loop()` — `eri_dq_review()`'s main loop, extracted (no behavior change to the
+exported function) so both callers share it rather than duplicating the control flow.
+`mirror_pipeline` is auto-detected from `eri_cutover_status()$eligible` per constituent
+disease/measure stream and never asked about (unknown/errored streams default to mirroring, the
+safe direction). Built as concrete R control flow, not a declarative `flow_map.yaml`/`kind:`-
+dispatch schema — the consult's own design proposed one, but building a mini-DSL for a single
+consumer (Phase A has exactly one flow) is the premature abstraction this whole redesign has
+repeatedly avoided elsewhere; that generalization is deferred until Phase B gives it two more real
+consumers (surveillance ingest, ODK) to abstract from. Every mutation stays one already-tested
+scriptable-core call (`eri_upload()`, `eri_stage_cmr()`, `eri_split_cmr()`, and via the DQ loop,
+`eri_cmr_dq_report()`/`eri_dq_flag_resolve()`/`eri_logs_resolve()`/`eri_approve_cmr()`) — `eri_do()`
+collects inputs and calls them, never reimplements pipeline logic, and every one of those functions
+remains fully usable directly in a script or CI. **Phases B (ingest + ODK flows), C (onboarding
+flow, retire/narrow `eri_guide()`, cut the ~26 guide articles to ~11), and D (progress-detection
+polish, deep links) are designed in the consult document but not yet started.**
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)
