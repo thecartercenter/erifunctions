@@ -295,6 +295,23 @@ test_that(".eri_wizard_prompt_country_code validates the typed code and re-asks 
 
   local_mocked_bindings(.eri_prompt_line = scripted(list("")), .package = "erifunctions")
   expect_true(is.na(.eri_wizard_prompt_country_code()))
+
+  # The package's own sandbox demo country -- must not be rejected as "too long" (a real bug this
+  # phase found: the regex was previously capped at 4 letters, which silently rejected the exact
+  # code the prompt's own warning message cites as a valid example).
+  local_mocked_bindings(.eri_prompt_line = scripted(list("atlantis")), .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_country_code(), "atlantis")
+})
+
+test_that(".eri_wizard_prompt_language returns en/fr by menu choice, or NA on cancel", {
+  local_mocked_bindings(.eri_prompt_menu = function(...) 1L, .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_language(), "en")
+
+  local_mocked_bindings(.eri_prompt_menu = function(...) 2L, .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_language(), "fr")
+
+  local_mocked_bindings(.eri_prompt_menu = function(...) 0L, .package = "erifunctions")
+  expect_true(is.na(.eri_wizard_prompt_language()))
 })
 
 test_that(".eri_wizard_should_mirror_ingest is FALSE outright for a country never registered for hsp-mal", {
@@ -526,12 +543,203 @@ test_that(".eri_flow_odk stops cleanly when there are no visible projects", {
   expect_invisible(.eri_flow_odk())
 })
 
+#### Phase C.2: onboarding ####
+
+test_that(".eri_flow_onboard routes to the surveillance/CMR/disease sub-flows by menu choice", {
+  withr::local_options(rlang_interactive = TRUE)
+  ran <- character(0)
+  local_mocked_bindings(
+    .eri_flow_onboard_surveillance = function() { ran <<- c(ran, "surveillance"); invisible(NULL) },
+    .eri_flow_onboard_cmr          = function() { ran <<- c(ran, "cmr"); invisible(NULL) },
+    .eri_flow_onboard_disease      = function() { ran <<- c(ran, "disease"); invisible(NULL) },
+    .package = "erifunctions"
+  )
+  local_mocked_bindings(.eri_prompt_menu = function(...) 1L, .package = "erifunctions")
+  .eri_flow_onboard()
+  local_mocked_bindings(.eri_prompt_menu = function(...) 2L, .package = "erifunctions")
+  .eri_flow_onboard()
+  local_mocked_bindings(.eri_prompt_menu = function(...) 3L, .package = "erifunctions")
+  .eri_flow_onboard()
+  local_mocked_bindings(.eri_prompt_menu = function(...) 0L, .package = "erifunctions")
+  expect_invisible(.eri_flow_onboard())
+
+  expect_equal(ran, c("surveillance", "cmr", "disease"))
+})
+
+test_that(".eri_flow_onboard_surveillance dry-runs, confirms, then writes for real -- in order", {
+  withr::local_options(rlang_interactive = TRUE)
+  calls <- list()
+  record <- function(name, ...) calls[[length(calls) + 1L]] <<- list(name = name, args = list(...))
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("Atlantis")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(country_code, country_name, disease, language = "en", dry_run = FALSE) {
+      record(if (dry_run) "dry_run" else "real", country_code = country_code,
+             country_name = country_name, disease = disease, language = language)
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) TRUE,
+    .package = "erifunctions"
+  )
+
+  expect_invisible(.eri_flow_onboard_surveillance())
+
+  names_called <- vapply(calls, function(c) c$name, character(1))
+  expect_equal(names_called, c("dry_run", "real"))
+  expect_equal(calls[[2]]$args$country_code, "atlantis")
+  expect_equal(calls[[2]]$args$country_name, "Atlantis")
+  expect_equal(calls[[2]]$args$disease, "malaria")
+})
+
+test_that(".eri_flow_onboard_surveillance does not write for real when the DA declines", {
+  withr::local_options(rlang_interactive = TRUE)
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("Atlantis")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) FALSE,
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+  expect_false(real_called)
+})
+
+test_that(".eri_flow_onboard_surveillance cancels cleanly on a blank country name", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_line = scripted(list("")),
+    eri_onboard_country = function(...) stop("must not be called -- cancelled on blank name"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+})
+
+test_that(".eri_flow_onboard_cmr dry-runs and writes for real with create_dirs = TRUE both times", {
+  withr::local_options(rlang_interactive = TRUE)
+  calls <- list()
+  record <- function(name, ...) calls[[length(calls) + 1L]] <<- list(name = name, args = list(...))
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_cmr = function(country_code, country_name, language = "en", create_dirs = FALSE, dry_run = FALSE) {
+      record(if (dry_run) "dry_run" else "real", create_dirs = create_dirs, language = language)
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) TRUE,
+    .package = "erifunctions"
+  )
+
+  expect_invisible(.eri_flow_onboard_cmr())
+
+  names_called <- vapply(calls, function(c) c$name, character(1))
+  expect_equal(names_called, c("dry_run", "real"))
+  expect_true(calls[[1]]$args$create_dirs)
+  expect_true(calls[[2]]$args$create_dirs)
+})
+
+test_that(".eri_flow_onboard_cmr does not write for real when the DA declines", {
+  withr::local_options(rlang_interactive = TRUE)
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_cmr = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) FALSE,
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+  expect_false(real_called)
+})
+
+test_that(".eri_flow_onboard_cmr cancels cleanly on a blank country name", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("")),
+    eri_onboard_cmr = function(...) stop("must not be called -- cancelled on blank name"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+})
+
+test_that(".eri_flow_onboard_surveillance/_cmr cancel cleanly when the DA declines the language prompt", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) NA_character_,
+    eri_onboard_country = function(...) stop("must not be called -- language prompt was cancelled"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) NA_character_,
+    eri_onboard_cmr = function(...) stop("must not be called -- language prompt was cancelled"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+})
+
+test_that(".eri_flow_onboard_disease maps the menu choice to the right data_types vector", {
+  withr::local_options(rlang_interactive = TRUE)
+  captured_types <- list()
+  local_mocked_bindings(
+    .eri_prompt_pick_or_type = function(...) "schisto",
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    eri_onboard_disease = function(disease, country, data_types, dry_run = FALSE) {
+      if (!dry_run) captured_types[[length(captured_types) + 1L]] <<- data_types
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) TRUE,
+    .package = "erifunctions"
+  )
+
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(1L)), .package = "erifunctions")
+  .eri_flow_onboard_disease()
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(2L)), .package = "erifunctions")
+  .eri_flow_onboard_disease()
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(3L)), .package = "erifunctions")
+  .eri_flow_onboard_disease()
+
+  expect_equal(captured_types, list(c("mda", "prevalence"), "mda", "prevalence"))
+})
+
+test_that(".eri_flow_onboard_disease cancels cleanly when the DA declines the schema-type menu", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_prompt_pick_or_type = function(...) "schisto",
+    .eri_wizard_prompt_country_code = function(...) "atlantis",
+    .eri_prompt_menu = scripted(list(0L)),
+    eri_onboard_disease = function(...) stop("must not be called -- schema-type menu was cancelled"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_disease())
+})
+
 test_that("eri_do's top menu routes to the CMR flow and exits cleanly", {
   withr::local_options(rlang_interactive = TRUE)
   cmr_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_cmr = function() { cmr_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(1L, 5L)),  # CMR flow, then Exit
+    .eri_prompt_menu = scripted(list(1L, 6L)),  # CMR flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
@@ -543,7 +751,7 @@ test_that("eri_do's top menu routes to the surveillance ingest flow and exits cl
   ingest_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_ingest = function() { ingest_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(2L, 5L)),  # ingest flow, then Exit
+    .eri_prompt_menu = scripted(list(2L, 6L)),  # ingest flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
@@ -555,11 +763,23 @@ test_that("eri_do's top menu routes to the ODK flow and exits cleanly", {
   odk_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_odk = function() { odk_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(3L, 5L)),  # ODK flow, then Exit
+    .eri_prompt_menu = scripted(list(3L, 6L)),  # ODK flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
   expect_true(odk_ran)
+})
+
+test_that("eri_do's top menu routes to the onboarding flow and exits cleanly", {
+  withr::local_options(rlang_interactive = TRUE)
+  onboard_ran <- FALSE
+  local_mocked_bindings(
+    .eri_flow_onboard = function() { onboard_ran <<- TRUE; invisible(NULL) },
+    .eri_prompt_menu = scripted(list(4L, 6L)),  # onboarding flow, then Exit
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do())
+  expect_true(onboard_ran)
 })
 
 test_that("eri_do's top menu routes to the DQ-review shortcut with a picked country/period", {
@@ -569,7 +789,7 @@ test_that("eri_do's top menu routes to the DQ-review shortcut with a picked coun
     .eri_prompt_pick_country = function(...) "uga",
     .eri_wizard_pick_period  = function(...) "202406",
     eri_dq_review = function(country, period) { reviewed <<- c(country, period); invisible(NULL) },
-    .eri_prompt_menu = scripted(list(4L, 5L)),  # DQ review shortcut, then Exit
+    .eri_prompt_menu = scripted(list(5L, 6L)),  # DQ review shortcut, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())

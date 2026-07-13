@@ -17,21 +17,27 @@ country, which file, which reporting period -- and calls the existing scriptable
 behalf. Never asks for a function name or an Azure path. \code{mirror_pipeline} is auto-detected from
 \code{\link[=eri_cutover_status]{eri_cutover_status()}} and never asked about. Every mutation is one already-tested function
 (\code{\link[=eri_upload]{eri_upload()}}, \code{\link[=eri_stage_cmr]{eri_stage_cmr()}}, \code{\link[=eri_split_cmr]{eri_split_cmr()}}, \code{\link[=eri_ingest]{eri_ingest()}}, \code{\link[=eri_approve]{eri_approve()}},
-\code{\link[=eri_odk_register]{eri_odk_register()}}, \code{\link[=eri_odk_sync]{eri_odk_sync()}}), and data quality review/approval hands off directly
-into the same loop \code{\link[=eri_dq_review]{eri_dq_review()}} uses (for CMR) or points at the scriptable triage tools
-directly (\code{\link[=eri_logs]{eri_logs()}}, \code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}}, for surveillance ingest) -- nothing here is
-reimplemented, and every function this calls stays fully usable directly in a script or CI.
+\code{\link[=eri_odk_register]{eri_odk_register()}}, \code{\link[=eri_odk_sync]{eri_odk_sync()}}, \code{\link[=eri_onboard_country]{eri_onboard_country()}}, \code{\link[=eri_onboard_cmr]{eri_onboard_cmr()}},
+\code{\link[=eri_onboard_disease]{eri_onboard_disease()}}), and data quality review/approval hands off directly into the same loop
+\code{\link[=eri_dq_review]{eri_dq_review()}} uses (for CMR) or points at the scriptable triage tools directly (\code{\link[=eri_logs]{eri_logs()}},
+\code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}}, for surveillance ingest) -- nothing here is reimplemented, and every
+function this calls stays fully usable directly in a script or CI.
 
 Currently covers bringing in a monthly CMR report, bringing in a surveillance dataset
-(CSV/Excel line-list), and pulling in ODK survey submissions, end to end. ODK sync stops at
-\verb{research/raw/} -- there is no automated stage-then-approve path for ODK data yet (the real
-guide shows a manual \code{\link[=eri_write]{eri_write()}} step), so the wizard is honest about handing off there
-rather than fabricating a step the underlying tooling doesn't support. New-program onboarding
-is planned as the same framework grows (see \code{docs/design/interactive-wizard-consult.md}).
+(CSV/Excel line-list), pulling in ODK survey submissions, and onboarding a new country, disease,
+or data type, end to end. ODK sync stops at \verb{research/raw/} -- there is no automated
+stage-then-approve path for ODK data yet (the real guide shows a manual \code{\link[=eri_write]{eri_write()}} step) --
+and onboarding stops once the schema template(s) are written (and, for surveillance/CMR, the
+Azure folders exist -- an NTD disease's MDA/prevalence schemas are local-only, by
+\code{\link[=eri_onboard_disease]{eri_onboard_disease()}}'s own design) -- filling in the schema's disease-specific columns,
+validating it, and submitting it via pull request stay a human, judgment-driven step (see
+\code{vignettes/da-onboard-guide.Rmd}'s "onboarding scaffolds; it doesn't finish for you"). The wizard
+is honest about handing off at both points rather than fabricating steps the underlying tooling
+doesn't support or shouldn't automate.
 
 \strong{Interactive only.} In a script or CI, use the scriptable core directly: \code{\link[=eri_upload]{eri_upload()}},
 \code{\link[=eri_stage_cmr]{eri_stage_cmr()}}, \code{\link[=eri_split_cmr]{eri_split_cmr()}}, \code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}}, \code{\link[=eri_approve_cmr]{eri_approve_cmr()}}, \code{\link[=eri_ingest]{eri_ingest()}},
-\code{\link[=eri_approve]{eri_approve()}}, \code{\link[=eri_odk_sync]{eri_odk_sync()}}.
+\code{\link[=eri_approve]{eri_approve()}}, \code{\link[=eri_odk_sync]{eri_odk_sync()}}, \code{\link[=eri_onboard_country]{eri_onboard_country()}}.
 }
 \examples{
 \dontrun{
