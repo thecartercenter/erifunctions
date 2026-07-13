@@ -10,12 +10,16 @@
 - **Re-audited the design consult's one-line Phase D scope** ("progress-detection polish,
   `eri_do('cmr')` deep-links, feedback-on-confusing-flag") against what actually exists, the same
   discipline Phase C.3 applied to the doc-cutting plan. "Feedback-on-confusing-flag" is already
-  served by the existing `eri_dq_schema_submit()`/`eri_feedback()` machinery the DQ-review loop
-  already exposes -- no new wizard-specific hook needed. Extending CMR's resume-detection pattern
-  to ingest/ODK turned out not to be real polish: ingest's period is free text with no fixed key
-  until `eri_approve()` is actually called (a resume check would need new, fragile core logic just
-  to guess at what would be approved), and ODK already effectively resumes via its "already
-  registered" check.
+  served for the CMR flow and the `"review"` shortcut, both of which hand off into
+  `eri_dq_review()`'s loop where `eri_dq_schema_submit()` is already wired in -- ingest/ODK have no
+  DQ-flag-schema step inside the wizard at all by their own earlier-phase design, so for those two
+  it means "reachable by calling the function directly," not "exposed inside the wizard." No new
+  wizard-specific hook added either way. Extending CMR's resume-detection pattern to ingest/ODK
+  turned out not to be real polish either: ingest's period is free text with no fixed key until
+  `eri_approve()` is actually called (a resume check would need new, fragile core logic just to
+  guess at what would be approved), and ODK's `eri_odk_sync()` has no partial-sync state to resume
+  from at all (it re-downloads and overwrites every submission on every call) -- its "already
+  registered" check is the only persistent state there is, and it already does the right thing.
 - **A genuine, previously-undiscovered gap surfaced investigating "progress-detection" instead**:
   `eri_onboard_country()`/`eri_onboard_cmr()`/`eri_onboard_disease()` all unconditionally overwrite
   an existing local schema file with a fresh blank template -- real data loss for a DA who re-runs

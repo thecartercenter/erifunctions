@@ -543,11 +543,16 @@ gave the doc-cutting plan, rather than executing it literally. **`eri_do(flow = 
 designed: `"cmr"`/`"ingest"`/`"odk"`/`"onboard"`/`"review"` jump straight into that flow, skipping
 the top menu, one shared dispatch table (`.ERI_DO_FLOWS`/`.eri_do_run_flow()`) backing both the
 menu and the deep-link so they can't diverge. **"Feedback-on-confusing-flag" turned out to already
-be served** by the existing `eri_dq_schema_submit()`/`eri_feedback()` machinery the DQ-review loop
-already exposes — no new wizard hook needed. **Extending CMR's resume-detection to ingest/ODK
-turned out not to be real polish**: ingest's period is free text with no fixed key until
-`eri_approve()` is actually called (a resume check would need new, fragile core logic just to guess
-at what would be approved), and ODK already effectively resumes via its "already registered" check.
+be served, for the flows that have a DQ step at all**: the CMR flow and the `"review"` shortcut
+both hand off into `eri_dq_review()`'s loop, where `eri_dq_schema_submit()` is already wired in —
+ingest/ODK have no DQ-flag-schema step inside the wizard by their own earlier-phase design, so for
+those two it means "reachable directly," not "exposed in the wizard." No new hook added either way.
+**Extending CMR's resume-detection to ingest/ODK turned out not to be real polish**: ingest's
+period is free text with no fixed key until `eri_approve()` is actually called (a resume check
+would need new, fragile core logic just to guess at what would be approved), and ODK's
+`eri_odk_sync()` has no partial-sync state to resume from at all (full re-download/overwrite every
+call) — its "already registered" check is the only persistent state there is, and it already does
+the right thing.
 **Investigating "progress-detection" surfaced a genuine, previously-undiscovered gap instead**:
 `eri_onboard_country()`/`eri_onboard_cmr()`/`eri_onboard_disease()` all unconditionally overwrite an
 existing local schema file with a fresh blank template — real data loss for a DA who re-runs

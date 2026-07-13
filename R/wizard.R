@@ -52,14 +52,20 @@
 # key) -- ingest and ODK have no equivalent, but investigating why revealed it isn't a gap worth
 # closing the same way: ingest's period is free text with no fixed key until eri_approve() is
 # actually called, so a resume check would need new, fragile core logic just to peek at what
-# WOULD be approved, not real polish; ODK already effectively resumes via its "already registered"
-# check, no separate prompt needed. What WAS a genuine, previously-undiscovered gap:
+# WOULD be approved, not real polish; ODK's eri_odk_sync() has no partial-sync state at all to
+# resume from (it re-downloads and overwrites every submission on every call, no watermark/cursor)
+# -- its "already registered" check is the only persistent state there is, and skipping
+# re-registration when it's already set is already the right behavior, not something to build on
+# top of. What WAS a genuine, previously-undiscovered gap:
 # eri_onboard_country()/eri_onboard_cmr()/eri_onboard_disease() unconditionally overwrite an
 # existing local schema file with a fresh blank template -- real data loss for a DA who re-runs
 # onboarding after already filling in the TODOs. Added .eri_wizard_confirm_onboard_write(), a
 # file.exists() check (no new core function) before the real write, in all three onboarding
-# sub-flows. "Feedback-on-confusing-flag" is already served by the existing eri_dq_schema_submit()/
-# eri_feedback() machinery the DQ-review loop already exposes -- no new wizard-specific hook needed.
+# sub-flows. "Feedback-on-confusing-flag" is already served for the CMR flow and the "review"
+# shortcut, both of which hand off into .eri_dq_review_loop() where eri_dq_schema_submit() is
+# already wired in -- ingest/ODK have no DQ-flag-schema step in the wizard at all (by their own
+# Phase B/C.1 design), so for those two "already served" means "reachable by calling the function
+# directly," not "exposed inside the wizard." No new wizard-specific hook added for either case.
 #
 # Concrete R control flow, not a declarative flow schema. The original consult proposed a
 # `flow_map.yaml`/`kind:`-dispatch engine "once a second/third flow gives it real shape to
@@ -778,6 +784,8 @@ eri_do <- function(flow = NULL) {
 
   if (!is.null(flow)) {
     flow <- tolower(trimws(flow))
+    # Assigned to a plain name, not interpolated as {.val {.ERI_DO_FLOWS}} directly -- cli's inline
+    # markup reserves a leading "." on an interpolated expression for styles, and errors on it.
     valid_flows <- .ERI_DO_FLOWS
     if (!flow %in% valid_flows) {
       cli::cli_abort(c(
