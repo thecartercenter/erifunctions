@@ -462,10 +462,24 @@ different enough from CMR to deserve their own careful verification, discovered 
 generalized. So Phase B's DQ step is a summary + a pointer at the existing scriptable triage tools,
 not a full interactive per-flag walker — smaller than CMR's, and honestly scoped that way in
 NEWS.md rather than overstating parity. This is exactly the "generalize from what a second flow
-actually needs, not from what was guessed" case Phase A's own header comment anticipated. **ODK,
-onboarding (Phase C, alongside retiring/narrowing `eri_guide()` and cutting the ~26 guide articles
-to ~11), and progress-detection polish (Phase D) remain designed in the consult document but not
-yet started.**
+actually needs, not from what was guessed" case Phase A's own header comment anticipated. **Phase
+C.1 (ODK sync) shipped as v0.9.30** — `.eri_flow_odk()`, built after reading `da-odk-guide.Rmd` in
+full: connect via `init_odk_connection()`, pick a project and form from what's actually visible
+(`list_odk_projects()`/`list_odk_forms()`, never a typed ID), register with `eri_odk_register()`
+if `eri_odk_list_registered()` shows it isn't already (asking only country/disease — the server URL
+comes from the live connection), then `eri_odk_sync()`. Deliberately stops at `research/raw/`: there
+is no automated stage-then-approve path for ODK data — the real guide shows a manual `eri_write()`
+step after ad hoc quality-checking — so the flow hands off there honestly rather than fabricating an
+approve step the tooling doesn't support. With three real flows now built (CMR, ingest, ODK), the
+consult's proposed declarative `flow_map.yaml`/`kind:`-dispatch schema is now a settled "no": the
+three don't share enough top-level shape to warrant it, only the low-level helper vocabulary
+(`.eri_prompt_pick_country()`, `.eri_wizard_confirm()`, `.eri_wizard_step()`, etc.) is genuinely
+shared — recorded as such in `R/wizard.R`'s own header comment rather than left as a deferred
+question. **Onboarding (Phase C.2, alongside retiring/narrowing `eri_guide()` and cutting the ~26
+guide articles to ~11 in Phase C.3), and progress-detection polish (Phase D) remain designed in the
+consult document but not yet started.** Phase C.3 in particular carries a different risk profile
+from A/B/C.1's purely additive work — deletion and doc cuts — and is flagged for a maintainer
+check-in before starting rather than assumed under a "move on" instruction.
 
 ---
 
