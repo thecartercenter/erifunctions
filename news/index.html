@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.26</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.27</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,17 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.26/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.27" id="erifunctions-0927">erifunctions 0.9.27<a class="anchor" aria-label="anchor" href="#erifunctions-0927"></a></h2>
+<div class="section level3">
+<h3 id="fix-the-site-homepage-logo-rendered-doubled-and-at-full-column-width-0-9-27">Fix: the site homepage logo rendered doubled and at full column width<a class="anchor" aria-label="anchor" href="#fix-the-site-homepage-logo-rendered-doubled-and-at-full-column-width-0-9-27"></a></h3>
+<ul><li>
+<code>pkgdown/index.md</code>’s logo <code>&lt;img&gt;</code> (added in the docs-site redesign’s Phase 4) was on its own line above the <code># erifunctions</code> heading, not inline with it like <code>README.md</code>’s identical-looking tag. That meant two real bugs, not one: (1) pkgdown’s <code>main img { max-width: 100%; height: auto }</code> rule overrode the HTML <code>height="120"</code> attribute, rendering the logo at up to the full width of the main content column — a first-pass fix tried overriding this with an inline <code>style=</code>, which worked but papered over the real problem; (2) a review pass building the actual page locally (<code>pkgdown:::build_home()</code>) found the manual <code>&lt;img&gt;</code> was being rendered <strong>alongside</strong>, not instead of, pkgdown’s own auto-injected logo — pkgdown only de-duplicates a manual logo when it sits <em>inside</em> the <code>&lt;h1&gt;</code> (the <code># pkg &lt;img .../&gt;</code> idiom <code>README.md</code> already used correctly), and this tag was a sibling paragraph before it, so both logos survived and both floated right. Fixed properly by matching <code>README.md</code>’s exact working idiom (<code># erifunctions &lt;img ... height="120" /&gt;</code> on one line) instead of a separate inline-style workaround — pkgdown’s own de-dupe and its already-correct <code>.template-home img.logo { width: 120px }</code> rule now handle sizing entirely, the same mechanism that was already working correctly for every other pkgdown-templated package.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.26" id="erifunctions-0926">erifunctions 0.9.26<a class="anchor" aria-label="anchor" href="#erifunctions-0926"></a></h2>
 <div class="section level3">

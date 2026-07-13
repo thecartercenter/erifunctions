@@ -1,7 +1,5 @@
 # erifunctions
 
-![erifunctions logo](reference/figures/logo.png)
-
 Standardized data tools for the Epidemiology, Research and Innovation
 (ERI) team at The Carter Center’s NTD and malaria programs — the way
 **Data Analysts** and **Epidemiologists** work with TCC’s Azure-centred
