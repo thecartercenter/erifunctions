@@ -1,15 +1,21 @@
 # erifunctions 0.9.27
 
-## Fix: the site homepage logo rendered at full column width, not 120px
+## Fix: the site homepage logo rendered doubled and at full column width
 
-- `pkgdown/index.md`'s logo `<img>` (added in the docs-site redesign's Phase 4) used the HTML
-  `height="120"` attribute, which pkgdown's own site CSS silently overrides with a global
-  `img { max-width: 100%; height: auto }` responsive-image rule — GitHub's own README renderer
-  doesn't have that rule, so the identical tag in `README.md` was never affected, but the pkgdown
-  site's homepage logo rendered at up to the full width of the main content column instead of the
-  intended small corner logo. Fixed by setting the size via an inline `style="height:120px;width:auto;"`
-  attribute instead, which reliably wins the CSS cascade over an external stylesheet rule of equal
-  specificity.
+- `pkgdown/index.md`'s logo `<img>` (added in the docs-site redesign's Phase 4) was on its own line
+  above the `# erifunctions` heading, not inline with it like `README.md`'s identical-looking tag.
+  That meant two real bugs, not one: (1) pkgdown's `main img { max-width: 100%; height: auto }` rule
+  overrode the HTML `height="120"` attribute, rendering the logo at up to the full width of the main
+  content column — a first-pass fix tried overriding this with an inline `style=`, which worked but
+  papered over the real problem; (2) a review pass building the actual page locally
+  (`pkgdown:::build_home()`) found the manual `<img>` was being rendered **alongside**, not instead
+  of, pkgdown's own auto-injected logo — pkgdown only de-duplicates a manual logo when it sits
+  *inside* the `<h1>` (the `# pkg <img .../>` idiom `README.md` already used correctly), and this
+  tag was a sibling paragraph before it, so both logos survived and both floated right. Fixed
+  properly by matching `README.md`'s exact working idiom (`# erifunctions <img ... height="120" />`
+  on one line) instead of a separate inline-style workaround — pkgdown's own de-dupe and its
+  already-correct `.template-home img.logo { width: 120px }` rule now handle sizing entirely, the
+  same mechanism that was already working correctly for every other pkgdown-templated package.
 
 # erifunctions 0.9.26
 
