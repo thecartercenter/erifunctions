@@ -1,3 +1,16 @@
+# erifunctions 0.9.27
+
+## Fix: the site homepage logo rendered at full column width, not 120px
+
+- `pkgdown/index.md`'s logo `<img>` (added in the docs-site redesign's Phase 4) used the HTML
+  `height="120"` attribute, which pkgdown's own site CSS silently overrides with a global
+  `img { max-width: 100%; height: auto }` responsive-image rule — GitHub's own README renderer
+  doesn't have that rule, so the identical tag in `README.md` was never affected, but the pkgdown
+  site's homepage logo rendered at up to the full width of the main content column instead of the
+  intended small corner logo. Fixed by setting the size via an inline `style="height:120px;width:auto;"`
+  attribute instead, which reliably wins the CSS cascade over an external stylesheet rule of equal
+  specificity.
+
 # erifunctions 0.9.26
 
 ## `eri_guide()` remembers where you were, jumps straight to a task, and a documentation audit (docs site redesign, phase 7)

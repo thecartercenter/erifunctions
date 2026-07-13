@@ -1,4 +1,4 @@
-<img src="man/figures/logo.png" align="right" height="120" alt="erifunctions logo" />
+<img src="man/figures/logo.png" align="right" style="height:120px;width:auto;" alt="erifunctions logo" />
 
 # erifunctions
 
