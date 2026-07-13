@@ -56,6 +56,17 @@
 # can't silently diverge from each other.
 .KNOWN_DISEASES <- c("malaria", "oncho", "lf", "sch", "sth")
 
+# Both onboarding schema templates (eri_onboard_country()/eri_onboard_cmr()) take a language for
+# their comments -- ERI's own countries include Francophone ones (Haiti), and the consult itself
+# calls for "language from a pick-list" (interactive-wizard-consult.md). Returns "en"/"fr", or NA on
+# cancel -- same escape-hatch convention as every other prompt in this file.
+#' @keywords internal
+.eri_wizard_prompt_language <- function() {
+  choice <- .eri_prompt_menu("Schema comments in which language?", c("English", "French"))
+  if (choice == 0L) return(NA_character_)
+  c("en", "fr")[[choice]]
+}
+
 # Builds a numbered pick-list from a named country_map (code = display name is backwards here --
 # `.eri_pipeline_registry[[...]]$country_map` maps OUR code to the registry's own downstream code,
 # so the DISPLAY uses names(country_map), the pick-list choice IS the code) and returns the picked
@@ -570,8 +581,11 @@
   )
   if (is.na(disease)) return(invisible(NULL))
 
+  language <- .eri_wizard_prompt_language()
+  if (is.na(language)) return(invisible(NULL))
+
   preview <- .eri_wizard_step(function() {
-    eri_onboard_country(country, country_name, disease, dry_run = TRUE)
+    eri_onboard_country(country, country_name, disease, language = language, dry_run = TRUE)
   })
   if (!preview$ok) return(invisible(NULL))
 
@@ -579,7 +593,9 @@
     return(invisible(NULL))
   }
 
-  result <- .eri_wizard_step(function() eri_onboard_country(country, country_name, disease))
+  result <- .eri_wizard_step(function() {
+    eri_onboard_country(country, country_name, disease, language = language)
+  })
   if (!result$ok) return(invisible(NULL))
 
   invisible(NULL)
@@ -597,8 +613,11 @@
   country_name <- .eri_prompt_line("Full country name (e.g. Uganda; blank to cancel): ")
   if (!nzchar(trimws(country_name))) return(invisible(NULL))
 
+  language <- .eri_wizard_prompt_language()
+  if (is.na(language)) return(invisible(NULL))
+
   preview <- .eri_wizard_step(function() {
-    eri_onboard_cmr(country, country_name, create_dirs = TRUE, dry_run = TRUE)
+    eri_onboard_cmr(country, country_name, language = language, create_dirs = TRUE, dry_run = TRUE)
   })
   if (!preview$ok) return(invisible(NULL))
 
@@ -606,7 +625,9 @@
     return(invisible(NULL))
   }
 
-  result <- .eri_wizard_step(function() eri_onboard_cmr(country, country_name, create_dirs = TRUE))
+  result <- .eri_wizard_step(function() {
+    eri_onboard_cmr(country, country_name, language = language, create_dirs = TRUE)
+  })
   if (!result$ok) return(invisible(NULL))
 
   invisible(NULL)
@@ -667,11 +688,13 @@
 #' (CSV/Excel line-list), pulling in ODK survey submissions, and onboarding a new country, disease,
 #' or data type, end to end. ODK sync stops at `research/raw/` -- there is no automated
 #' stage-then-approve path for ODK data yet (the real guide shows a manual [eri_write()] step) --
-#' and onboarding stops once the schema template is written and Azure folders exist -- filling in
-#' the schema's disease-specific columns, validating it, and submitting it via pull request stay a
-#' human, judgment-driven step (see `vignettes/da-onboard-guide.Rmd`'s "onboarding scaffolds; it
-#' doesn't finish for you"). The wizard is honest about handing off at both points rather than
-#' fabricating steps the underlying tooling doesn't support or shouldn't automate.
+#' and onboarding stops once the schema template(s) are written (and, for surveillance/CMR, the
+#' Azure folders exist -- an NTD disease's MDA/prevalence schemas are local-only, by
+#' [eri_onboard_disease()]'s own design) -- filling in the schema's disease-specific columns,
+#' validating it, and submitting it via pull request stay a human, judgment-driven step (see
+#' `vignettes/da-onboard-guide.Rmd`'s "onboarding scaffolds; it doesn't finish for you"). The wizard
+#' is honest about handing off at both points rather than fabricating steps the underlying tooling
+#' doesn't support or shouldn't automate.
 #'
 #' **Interactive only.** In a script or CI, use the scriptable core directly: [eri_upload()],
 #' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()], [eri_ingest()],

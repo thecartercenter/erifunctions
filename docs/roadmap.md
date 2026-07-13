@@ -487,7 +487,11 @@ the shared `.eri_wizard_prompt_country_code()` (also used by Phase B's ingest fl
 codes against `^[a-z]{2,4}$`, which would have silently rejected the package's own `atlantis`
 sandbox demo country (8 letters) — exactly the example its own warning message names as valid.
 Onboarding is precisely the flow where a DA types a brand-new code, so this surfaced immediately;
-widened to `^[a-z]{2,15}$` with a regression test locking in the `atlantis` case. **Phase C.3
+widened to `^[a-z]{2,15}$` with a regression test locking in the `atlantis` case. **review-agent
+also caught a real scope drift**: the surveillance/CMR sub-flows silently defaulted `language` to
+English, dropping the design consult's explicit "language from a pick-list" call — a real gap for
+ERI's own Francophone countries (Haiti) — fixed with a shared `.eri_wizard_prompt_language()`
+prompt before merge. **Phase C.3
 (retiring/narrowing `eri_guide()`, cutting the ~26 guide articles to ~11) and progress-detection
 polish (Phase D) remain designed in the consult document but not yet started.** Phase C.3 in
 particular carries a different risk profile from A/B/C.1/C.2's purely additive work — deletion and

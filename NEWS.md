@@ -20,11 +20,17 @@
   names as valid, and would have been silently rejected. Onboarding is precisely the flow where a
   DA types a brand-new code, so this surfaced immediately; widened to `^[a-z]{2,15}$` and added a
   regression test locking in the `atlantis` case.
+- **review-agent caught a real scope drift before merge**: the surveillance and CMR sub-flows called
+  `eri_onboard_country()`/`eri_onboard_cmr()` without ever surfacing `language` ("en"/"fr"), silently
+  defaulting to English -- a real gap for ERI's own Francophone countries (Haiti), and exactly what
+  the design consult called for ("language from a pick-list"). Added a shared
+  `.eri_wizard_prompt_language()` prompt to both sub-flows.
 - Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at the top of
   `vignettes/da-onboard-guide.Rmd` pointing at `eri_do()`.
-- **`tests/testthat/test-wizard.R`** (105 tests, +19 over Phase C.1): routing across the three
+- **`tests/testthat/test-wizard.R`** (113 tests, +27 over Phase C.1): routing across the three
   sub-flows, each sub-flow's dry-run -> confirm -> real-write order, decline-to-confirm and
-  cancel-on-blank-input paths, and the NTD flow's menu-choice -> `data_types` vector mapping.
+  cancel-on-blank-input/language-prompt paths, and the NTD flow's menu-choice -> `data_types` vector
+  mapping.
 
 # erifunctions 0.9.30
 

@@ -27,11 +27,13 @@ Currently covers bringing in a monthly CMR report, bringing in a surveillance da
 (CSV/Excel line-list), pulling in ODK survey submissions, and onboarding a new country, disease,
 or data type, end to end. ODK sync stops at \verb{research/raw/} -- there is no automated
 stage-then-approve path for ODK data yet (the real guide shows a manual \code{\link[=eri_write]{eri_write()}} step) --
-and onboarding stops once the schema template is written and Azure folders exist -- filling in
-the schema's disease-specific columns, validating it, and submitting it via pull request stay a
-human, judgment-driven step (see \code{vignettes/da-onboard-guide.Rmd}'s "onboarding scaffolds; it
-doesn't finish for you"). The wizard is honest about handing off at both points rather than
-fabricating steps the underlying tooling doesn't support or shouldn't automate.
+and onboarding stops once the schema template(s) are written (and, for surveillance/CMR, the
+Azure folders exist -- an NTD disease's MDA/prevalence schemas are local-only, by
+\code{\link[=eri_onboard_disease]{eri_onboard_disease()}}'s own design) -- filling in the schema's disease-specific columns,
+validating it, and submitting it via pull request stay a human, judgment-driven step (see
+\code{vignettes/da-onboard-guide.Rmd}'s "onboarding scaffolds; it doesn't finish for you"). The wizard
+is honest about handing off at both points rather than fabricating steps the underlying tooling
+doesn't support or shouldn't automate.
 
 \strong{Interactive only.} In a script or CI, use the scriptable core directly: \code{\link[=eri_upload]{eri_upload()}},
 \code{\link[=eri_stage_cmr]{eri_stage_cmr()}}, \code{\link[=eri_split_cmr]{eri_split_cmr()}}, \code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}}, \code{\link[=eri_approve_cmr]{eri_approve_cmr()}}, \code{\link[=eri_ingest]{eri_ingest()}},

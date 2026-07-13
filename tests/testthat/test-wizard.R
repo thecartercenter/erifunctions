@@ -303,6 +303,17 @@ test_that(".eri_wizard_prompt_country_code validates the typed code and re-asks 
   expect_equal(.eri_wizard_prompt_country_code(), "atlantis")
 })
 
+test_that(".eri_wizard_prompt_language returns en/fr by menu choice, or NA on cancel", {
+  local_mocked_bindings(.eri_prompt_menu = function(...) 1L, .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_language(), "en")
+
+  local_mocked_bindings(.eri_prompt_menu = function(...) 2L, .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_language(), "fr")
+
+  local_mocked_bindings(.eri_prompt_menu = function(...) 0L, .package = "erifunctions")
+  expect_true(is.na(.eri_wizard_prompt_language()))
+})
+
 test_that(".eri_wizard_should_mirror_ingest is FALSE outright for a country never registered for hsp-mal", {
   # uga is registered for rb-expansion (CMR), NOT hsp-mal -- eri_ingest() would abort if the wizard
   # ever passed mirror_pipeline = "hsp-mal" for it, so this must never even check cutover status.
@@ -563,9 +574,10 @@ test_that(".eri_flow_onboard_surveillance dry-runs, confirms, then writes for re
     .eri_wizard_prompt_country_code = function(...) "atlantis",
     .eri_prompt_line = scripted(list("Atlantis")),
     .eri_prompt_pick_or_type = function(...) "malaria",
-    eri_onboard_country = function(country_code, country_name, disease, dry_run = FALSE) {
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_country = function(country_code, country_name, disease, language = "en", dry_run = FALSE) {
       record(if (dry_run) "dry_run" else "real", country_code = country_code,
-             country_name = country_name, disease = disease)
+             country_name = country_name, disease = disease, language = language)
       invisible(NULL)
     },
     .eri_wizard_confirm = function(...) TRUE,
@@ -588,6 +600,7 @@ test_that(".eri_flow_onboard_surveillance does not write for real when the DA de
     .eri_wizard_prompt_country_code = function(...) "atlantis",
     .eri_prompt_line = scripted(list("Atlantis")),
     .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) "en",
     eri_onboard_country = function(..., dry_run = FALSE) {
       if (!dry_run) real_called <<- TRUE
       invisible(NULL)
@@ -617,8 +630,9 @@ test_that(".eri_flow_onboard_cmr dry-runs and writes for real with create_dirs =
   local_mocked_bindings(
     .eri_wizard_prompt_country_code = function(...) "uga",
     .eri_prompt_line = scripted(list("Uganda")),
-    eri_onboard_cmr = function(country_code, country_name, create_dirs = FALSE, dry_run = FALSE) {
-      record(if (dry_run) "dry_run" else "real", create_dirs = create_dirs)
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_cmr = function(country_code, country_name, language = "en", create_dirs = FALSE, dry_run = FALSE) {
+      record(if (dry_run) "dry_run" else "real", create_dirs = create_dirs, language = language)
       invisible(NULL)
     },
     .eri_wizard_confirm = function(...) TRUE,
@@ -631,6 +645,57 @@ test_that(".eri_flow_onboard_cmr dry-runs and writes for real with create_dirs =
   expect_equal(names_called, c("dry_run", "real"))
   expect_true(calls[[1]]$args$create_dirs)
   expect_true(calls[[2]]$args$create_dirs)
+})
+
+test_that(".eri_flow_onboard_cmr does not write for real when the DA declines", {
+  withr::local_options(rlang_interactive = TRUE)
+  real_called <- FALSE
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) "en",
+    eri_onboard_cmr = function(..., dry_run = FALSE) {
+      if (!dry_run) real_called <<- TRUE
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) FALSE,
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+  expect_false(real_called)
+})
+
+test_that(".eri_flow_onboard_cmr cancels cleanly on a blank country name", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("")),
+    eri_onboard_cmr = function(...) stop("must not be called -- cancelled on blank name"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
+})
+
+test_that(".eri_flow_onboard_surveillance/_cmr cancel cleanly when the DA declines the language prompt", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    .eri_wizard_prompt_language = function(...) NA_character_,
+    eri_onboard_country = function(...) stop("must not be called -- language prompt was cancelled"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_surveillance())
+
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_line = scripted(list("Uganda")),
+    .eri_wizard_prompt_language = function(...) NA_character_,
+    eri_onboard_cmr = function(...) stop("must not be called -- language prompt was cancelled"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_onboard_cmr())
 })
 
 test_that(".eri_flow_onboard_disease maps the menu choice to the right data_types vector", {
