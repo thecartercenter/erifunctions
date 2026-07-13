@@ -264,16 +264,158 @@ test_that(".eri_flow_cmr offers to resume into DQ review when this country/perio
   expect_invisible(.eri_flow_cmr())
 })
 
+#### Phase B: surveillance ingest ####
+
+test_that(".eri_prompt_pick_or_type returns a picked value, a typed 'Other', or NA on cancel", {
+  known <- c("malaria", "oncho")
+
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(2L)), .package = "erifunctions")
+  expect_equal(.eri_prompt_pick_or_type("Disease?", known, "Type it: "), "oncho")
+
+  local_mocked_bindings(
+    .eri_prompt_menu = scripted(list(3L)),  # "Other (type it)" -- the item after the 2 known values
+    .eri_prompt_line = scripted(list("Ebola")),
+    .package = "erifunctions"
+  )
+  expect_equal(.eri_prompt_pick_or_type("Disease?", known, "Type it: "), "ebola")  # lowercased
+
+  local_mocked_bindings(.eri_prompt_menu = scripted(list(0L)), .package = "erifunctions")
+  expect_true(is.na(.eri_prompt_pick_or_type("Disease?", known, "Type it: ")))
+})
+
+test_that(".eri_wizard_prompt_country_code validates the typed code and re-asks on a bad one", {
+  local_mocked_bindings(.eri_prompt_line = scripted(list("sdn")), .package = "erifunctions")
+  expect_equal(.eri_wizard_prompt_country_code(), "sdn")
+
+  local_mocked_bindings(
+    .eri_prompt_line = scripted(list("123", "sdn")),
+    .package = "erifunctions"
+  )
+  expect_equal(.eri_wizard_prompt_country_code(), "sdn")
+
+  local_mocked_bindings(.eri_prompt_line = scripted(list("")), .package = "erifunctions")
+  expect_true(is.na(.eri_wizard_prompt_country_code()))
+})
+
+test_that(".eri_wizard_should_mirror_ingest is FALSE outright for a country never registered for hsp-mal", {
+  # uga is registered for rb-expansion (CMR), NOT hsp-mal -- eri_ingest() would abort if the wizard
+  # ever passed mirror_pipeline = "hsp-mal" for it, so this must never even check cutover status.
+  local_mocked_bindings(
+    eri_cutover_status = function(...) stop("must not be called -- uga isn't registered for hsp-mal"),
+    .package = "erifunctions"
+  )
+  expect_false(.eri_wizard_should_mirror_ingest("uga", "malaria", "surveillance", "case"))
+})
+
+test_that(".eri_wizard_should_mirror_ingest checks cutover status for a country that IS registered", {
+  local_mocked_bindings(
+    eri_cutover_status = function(...) list(eligible = FALSE),
+    .package = "erifunctions"
+  )
+  expect_true(.eri_wizard_should_mirror_ingest("dr", "malaria", "surveillance", "case"))
+
+  local_mocked_bindings(
+    eri_cutover_status = function(...) list(eligible = TRUE),
+    .package = "erifunctions"
+  )
+  expect_false(.eri_wizard_should_mirror_ingest("dr", "malaria", "surveillance", "case"))
+})
+
+test_that(".eri_flow_ingest runs ingest -> approve in order with the collected values, and nothing else", {
+  withr::local_options(rlang_interactive = TRUE)
+  calls <- list()
+  record <- function(name, ...) calls[[length(calls) + 1L]] <<- list(name = name, args = list(...))
+
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_pick_or_type = local({
+      i <- 0L
+      function(prompt, known, type_prompt) {
+        i <<- i + 1L
+        c("malaria", "surveillance", "case")[[i]]  # disease, data_source, data_type in call order
+      }
+    }),
+    .eri_prompt_pick_file = function(...) "C:/fake/linelist.csv",
+    .eri_wizard_confirm = function(...) TRUE,
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    .eri_wizard_should_mirror_ingest = function(...) FALSE,
+    eri_ingest = function(path, country, disease, data_source, data_type, data_con, mirror_pipeline) {
+      record("ingest", path = path, country = country, disease = disease,
+             data_source = data_source, data_type = data_type, mirror_pipeline = mirror_pipeline)
+      invisible(NULL)
+    },
+    eri_logs = function(...) tibble::tibble(),  # nothing needs review
+    .eri_prompt_line = function(...) "2024-01",
+    eri_approve = function(country, disease, data_source, period, data_type, azcontainer) {
+      record("approve", country = country, period = period)
+      invisible(NULL)
+    },
+    .package = "erifunctions"
+  )
+
+  expect_invisible(.eri_flow_ingest())
+
+  names_called <- vapply(calls, function(c) c$name, character(1))
+  expect_equal(names_called, c("ingest", "approve"))
+
+  ingest_call <- calls[[1]]$args
+  expect_equal(ingest_call$country, "uga")
+  expect_equal(ingest_call$disease, "malaria")
+  expect_equal(ingest_call$data_source, "surveillance")
+  expect_equal(ingest_call$data_type, "case")
+  expect_null(ingest_call$mirror_pipeline)
+
+  approve_call <- calls[[2]]$args
+  expect_equal(approve_call$country, "uga")
+  expect_equal(approve_call$period, "2024-01")
+})
+
+test_that(".eri_flow_ingest stops cleanly (no approve) when open log entries need review and the DA declines", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    .eri_wizard_prompt_country_code = function(...) "uga",
+    .eri_prompt_pick_or_type = local({
+      i <- 0L
+      function(...) { i <<- i + 1L; c("malaria", "surveillance", "case")[[i]] }
+    }),
+    .eri_prompt_pick_file = function(...) "C:/fake/linelist.csv",
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    .eri_wizard_should_mirror_ingest = function(...) FALSE,
+    eri_ingest = function(...) invisible(NULL),
+    eri_logs = function(...) tibble::tibble(log_path = "uga/malaria/surveillance/case/logs/x.yaml"),
+    # First confirm ("Go ahead?") = TRUE, second ("Approve anyway?") = FALSE.
+    .eri_wizard_confirm = local({
+      i <- 0L
+      function(...) { i <<- i + 1L; i == 1L }
+    }),
+    eri_approve = function(...) stop("must not approve -- DA declined with open flags outstanding"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_ingest())
+})
+
 test_that("eri_do's top menu routes to the CMR flow and exits cleanly", {
   withr::local_options(rlang_interactive = TRUE)
   cmr_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_cmr = function() { cmr_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(1L, 3L)),  # CMR flow, then Exit
+    .eri_prompt_menu = scripted(list(1L, 4L)),  # CMR flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
   expect_true(cmr_ran)
+})
+
+test_that("eri_do's top menu routes to the surveillance ingest flow and exits cleanly", {
+  withr::local_options(rlang_interactive = TRUE)
+  ingest_ran <- FALSE
+  local_mocked_bindings(
+    .eri_flow_ingest = function() { ingest_ran <<- TRUE; invisible(NULL) },
+    .eri_prompt_menu = scripted(list(2L, 4L)),  # ingest flow, then Exit
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do())
+  expect_true(ingest_ran)
 })
 
 test_that("eri_do's top menu routes to the DQ-review shortcut with a picked country/period", {
@@ -283,7 +425,7 @@ test_that("eri_do's top menu routes to the DQ-review shortcut with a picked coun
     .eri_prompt_pick_country = function(...) "uga",
     .eri_wizard_pick_period  = function(...) "202406",
     eri_dq_review = function(country, period) { reviewed <<- c(country, period); invisible(NULL) },
-    .eri_prompt_menu = scripted(list(2L, 3L)),  # DQ review shortcut, then Exit
+    .eri_prompt_menu = scripted(list(3L, 4L)),  # DQ review shortcut, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())

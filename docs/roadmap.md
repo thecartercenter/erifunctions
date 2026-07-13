@@ -446,9 +446,26 @@ consumers (surveillance ingest, ODK) to abstract from. Every mutation stays one 
 scriptable-core call (`eri_upload()`, `eri_stage_cmr()`, `eri_split_cmr()`, and via the DQ loop,
 `eri_cmr_dq_report()`/`eri_dq_flag_resolve()`/`eri_logs_resolve()`/`eri_approve_cmr()`) — `eri_do()`
 collects inputs and calls them, never reimplements pipeline logic, and every one of those functions
-remains fully usable directly in a script or CI. **Phases B (ingest + ODK flows), C (onboarding
-flow, retire/narrow `eri_guide()`, cut the ~26 guide articles to ~11), and D (progress-detection
-polish, deep links) are designed in the consult document but not yet started.**
+remains fully usable directly in a script or CI. **Phase B (ingest flow) shipped as v0.9.29** —
+`.eri_flow_ingest()`, on the same shared helpers (`.eri_prompt_pick_file()`, `.eri_wizard_step()`,
+`.eri_wizard_confirm()`), plus 2 new ones a genuinely open (non-registry-backed) country/disease
+space needed: `.eri_prompt_pick_or_type()` (a pick-list with a typed "Other" escape hatch, for
+values like disease that ADR-0012 deliberately leaves unregistered) and
+`.eri_wizard_prompt_country_code()` (validated free-typed country, since `eri_ingest()` — unlike
+CMR's rb-expansion pipeline — is deliberately not country-locked, so there's no registry to build a
+pick-list from). **ODK was deliberately NOT bundled into the same PR**: ingest's period turned out
+to be free-form text matched against the staged filename (`eri_approve()`'s own documented
+behavior), not CMR's fixed `YYYYMM` convention, and its DQ flags land in the generic `eri_logs()`
+backlog, not `eri_cmr_dq_report()`'s per-sheet shape `eri_dq_review()`'s loop is built for — both
+different enough from CMR to deserve their own careful verification, discovered only by reading
+`eri_approve()`'s real behavior and `da-ingest-guide.Rmd` directly rather than assuming CMR's shape
+generalized. So Phase B's DQ step is a summary + a pointer at the existing scriptable triage tools,
+not a full interactive per-flag walker — smaller than CMR's, and honestly scoped that way in
+NEWS.md rather than overstating parity. This is exactly the "generalize from what a second flow
+actually needs, not from what was guessed" case Phase A's own header comment anticipated. **ODK,
+onboarding (Phase C, alongside retiring/narrowing `eri_guide()` and cutting the ~26 guide articles
+to ~11), and progress-detection polish (Phase D) remain designed in the consult document but not
+yet started.**
 
 ---
 
