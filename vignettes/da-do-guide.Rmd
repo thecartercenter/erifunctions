@@ -75,9 +75,10 @@ eri_do()
 
 ## The top-level menu {#top-menu}
 
-Every prompt in the wizard is a numbered menu, type the number and press Enter, or **`0` to go
-back or cancel** at any point, nothing is written until you reach a final "Go ahead?" confirmation.
-The top menu is five real tasks plus a shortcut into DQ review:
+Most prompts in the wizard are numbered menus, type the number and press Enter, `0` goes back or
+cancels; a few (a country name, a period) are typed instead, blank cancels there. Either way,
+nothing is written until you reach a final "Go ahead?" confirmation, see [Cancelling out](#cancelling)
+for the full convention. The top menu is five real tasks plus a shortcut into DQ review:
 
 ```
 ── What are you trying to do?
@@ -135,9 +136,9 @@ If a period wasn't detected, or you say no, it asks directly (`Reporting period,
 ```
 ── Ready to bring this in
 
-* Country: UGA
-* Month:   202406
-* File:    uga_cmr_2024_06.xlsx
+• Country: UGA
+• Month: 202406
+• File: uga_cmr_2024_06.xlsx
 ℹ I'll upload it, stage it, and split it into per-disease measures. Then we'll review data quality.
 
 ── Go ahead?
@@ -214,10 +215,10 @@ Which country is this data for? (e.g. sdn; blank to cancel): atlantis
 ```
 ── Ready to bring this in
 
-* Country: ATLANTIS
-* Disease: malaria
-* Channel: surveillance / Measure: case
-* File:    atlantis_malaria_2024-01.csv
+• Country: ATLANTIS
+• Disease: malaria
+• Channel: surveillance / Measure: case
+• File: atlantis_malaria_2024-01.csv
 ℹ I'll archive it, check data quality, and stage it for approval.
 
 ── Go ahead?
@@ -234,7 +235,7 @@ shape):
 
 ```
 ! 1 log entry need review before this can be approved.
-ℹ Run eri_logs() to see them, eri_dq_flag_resolve() to triage each flag, then eri_logs_resolve() to close the entry out.
+ℹ Run `eri_logs()` to see them, `eri_dq_flag_resolve()` to triage each flag, then `eri_logs_resolve()` to close the entry out.
 
 ── Approve anyway? (only if you've already reviewed this)
 
@@ -246,7 +247,7 @@ Say no (the safer default unless you've genuinely already reviewed it), and it l
 staged rather than approving:
 
 ```
-ℹ Left staged -- run eri_do() again once you've triaged the flags.
+ℹ Left staged -- run `eri_do()` again once you've triaged the flags.
 ```
 
 Otherwise, it asks for the period (free text matched against the staged filename, no fixed
@@ -287,6 +288,20 @@ then registers:
 ```
 
 ```
+── Which country?
+
+1: DR
+2: HT
+3: ETH
+4: NGA
+5: SDN
+6: SSD
+7: UGA
+8: MAD
+9: TCD
+```
+
+```
 ── Register this form as uga/oncho?
 
 1: Yes
@@ -303,7 +318,7 @@ then registers:
 ```
 ✔ Done. Submissions are synced to research/raw/.
 ℹ Next: quality-check and stage this the same way as a surveillance extract -- see the surveillance ingest guide -- then eri_approve() it in.
-ℹ Run eri_do() again any time to sync new submissions.
+ℹ Run `eri_do()` again any time to sync new submissions.
 ```
 
 This is where the wizard **honestly stops**: there is no single stage-then-approve function for
@@ -346,10 +361,11 @@ Full country name (e.g. Uganda; blank to cancel): Atlantis
 2: French
 ```
 
-Every path previews with a dry run before writing anything, then confirms:
+Every path previews with a dry run before writing anything, then confirms (surveillance and CMR
+each have their own confirm wording; CMR's is shown):
 
 ```
-── Write this schema template and create the Azure folders?
+── Write this CMR schema template and create the Azure folders?
 
 1: Yes
 2: No
