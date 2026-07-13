@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.31</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.32</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Onboarding a new Data Analyst</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.31/vignettes/onboarding.Rmd" class="external-link"><code>vignettes/onboarding.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/onboarding.Rmd" class="external-link"><code>vignettes/onboarding.Rmd</code></a></small>
       <div class="d-none name"><code>onboarding.Rmd</code></div>
     </div>
 
@@ -193,24 +193,34 @@ mean and why <code><a href="../reference/eri_approve.html">eri_approve()</a></co
 <div class="section level2">
 <h2 id="days-24-the-ingestion-spine-do-it-live">Days 2–4, The ingestion spine (do it live)<a class="anchor" aria-label="anchor" href="#days-24-the-ingestion-spine-do-it-live"></a>
 </h2>
-<p>Work these guides in order, on the sandbox, running every chunk. Stop
-at each checkpoint.</p>
+<p>Run <a href="../reference/eri_do.html"><code>eri_do()</code></a> on
+the sandbox for each of these; it’s a guided console wizard, pick your
+country, pick the file (or ODK project/form), confirm the period, no
+function names to memorize. Stop at each checkpoint, then read the
+matching guide for what happened underneath, or for scripting the steps
+yourself.</p>
 <ul class="task-list">
 <li><label><input type="checkbox"><a href="connections-guide.html">Connections guide</a>, connect to all four
 services.</label></li>
-<li><label><input type="checkbox"><a href="da-onboard-guide.html">Onboard a space</a>, stand up a new
-<code>atlantis</code> space (schema + dirs). <em>Checkpoint: you
-scaffolded a space and validated its schema.</em></label></li>
-<li><label><input type="checkbox"><a href="da-ingest-guide.html">Ingest a surveillance dataset</a>, raw → DQ
-→ staged → <strong>approve</strong>. <em>Checkpoint: you approved a
-dataset and saw it in the catalog.</em></label></li>
-<li><label><input type="checkbox"><a href="da-cmr-guide.html">Upload
-&amp; split a CMR</a>, upload → split → approve a monthly CMR.
-<em>Checkpoint: you split a CMR per disease.</em></label></li>
-<li><label><input type="checkbox"><a href="da-odk-guide.html">Work
-with ODK Central</a>, connect → monitor → register → sync → approve.
-<em>Checkpoint: you synced submissions into the
-pipeline.</em></label></li>
+<li><label><input type="checkbox"><code><a href="../reference/eri_do.html">eri_do()</a></code> → “Onboard a
+new country, disease, or data type” → stand up a new
+<code>atlantis</code> space. Then read the <a href="da-onboard-guide.html">onboarding guide</a> and fill in the
+schema’s TODOs. <em>Checkpoint: you scaffolded a space and validated its
+schema.</em></label></li>
+<li><label><input type="checkbox"><code><a href="../reference/eri_do.html">eri_do()</a></code> → “Bring in a
+surveillance dataset” → raw → DQ → staged → <strong>approve</strong>.
+See the <a href="da-ingest-guide.html">ingest guide</a> for what’s
+happening underneath. <em>Checkpoint: you approved a dataset and saw it
+in the catalog.</em></label></li>
+<li><label><input type="checkbox"><code><a href="../reference/eri_do.html">eri_do()</a></code> → “Bring this
+month’s country report (CMR) into the system” → upload → split →
+approve. See the <a href="da-cmr-guide.html">CMR guide</a> for what’s
+happening underneath. <em>Checkpoint: you split a CMR per
+disease.</em></label></li>
+<li><label><input type="checkbox"><code><a href="../reference/eri_do.html">eri_do()</a></code> → “Pull in ODK
+survey submissions” → connect → register → sync. Then read the <a href="da-odk-guide.html">ODK guide</a> for monitoring a survey and
+managing app users, which the wizard doesn’t cover. <em>Checkpoint: you
+synced submissions into the pipeline.</em></label></li>
 <li><label><input type="checkbox"><a href="da-logs-guide.html">Triage
 the log backlog</a>, triage and resolve a log. <em>Checkpoint: you
 closed an item in the backlog.</em></label></li>
@@ -241,10 +251,10 @@ maintained.</label></li>
 supervision and opened one PR.</p>
 </div>
 <div class="section level2">
-<h2 id="competency-checklist-da-mentor-sign-off">Competency checklist (DA + mentor sign off)<a class="anchor" aria-label="anchor" href="#competency-checklist-da-mentor-sign-off"></a>
+<h2 id="competency-checklist">Competency checklist<a class="anchor" aria-label="anchor" href="#competency-checklist"></a>
 </h2>
-<p>A DA is “onboarded” when both of you can tick every box from observed
-work, not a quiz:</p>
+<p>A DA is “onboarded” when every box below reflects observed work, not
+a quiz:</p>
 <ul class="task-list">
 <li><label><input type="checkbox">Connects to Azure + ODK; knows where
 secrets live and why.</label></li>

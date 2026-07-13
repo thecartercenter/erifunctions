@@ -3,6 +3,20 @@
 **Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
 `atlantis`)
 
+> **This is what
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> points you at.** When its surveillance-ingest or ODK flow finds open
+> log entries, it stops and tells you to run
+> [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+> /
+> [`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
+> /
+> [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)
+> – the exact tools this guide walks through – rather than triaging the
+> backlog for you (unlike CMR, whose per-sheet flags have their own
+> guided loop, see the [DQ review
+> guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md)).
+
 Every operation `erifunctions` runs, an ingest, an approval, an ODK
 sync, **leaves a log** in Azure. When something fails, or a data-quality
 check raises issues, that log is the record. This guide is for a **Data

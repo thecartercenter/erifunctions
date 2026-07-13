@@ -78,32 +78,45 @@ is the gate.
 
 ## Days 2–4, The ingestion spine (do it live)
 
-Work these guides in order, on the sandbox, running every chunk. Stop at
-each checkpoint.
+Run
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+on the sandbox for each of these; it’s a guided console wizard, pick
+your country, pick the file (or ODK project/form), confirm the period,
+no function names to memorize. Stop at each checkpoint, then read the
+matching guide for what happened underneath, or for scripting the steps
+yourself.
 
 [Connections
 guide](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md),
 connect to all four services.
 
-[Onboard a
-space](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md),
-stand up a new `atlantis` space (schema + dirs). *Checkpoint: you
-scaffolded a space and validated its schema.*
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+→ “Onboard a new country, disease, or data type” → stand up a new
+`atlantis` space. Then read the [onboarding
+guide](https://thecartercenter.github.io/erifunctions/articles/da-onboard-guide.md)
+and fill in the schema’s TODOs. *Checkpoint: you scaffolded a space and
+validated its schema.*
 
-[Ingest a surveillance
-dataset](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md),
-raw → DQ → staged → **approve**. *Checkpoint: you approved a dataset and
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+→ “Bring in a surveillance dataset” → raw → DQ → staged → **approve**.
+See the [ingest
+guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+for what’s happening underneath. *Checkpoint: you approved a dataset and
 saw it in the catalog.*
 
-[Upload & split a
-CMR](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md),
-upload → split → approve a monthly CMR. *Checkpoint: you split a CMR per
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+→ “Bring this month’s country report (CMR) into the system” → upload →
+split → approve. See the [CMR
+guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
+for what’s happening underneath. *Checkpoint: you split a CMR per
 disease.*
 
-[Work with ODK
-Central](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md),
-connect → monitor → register → sync → approve. *Checkpoint: you synced
-submissions into the pipeline.*
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+→ “Pull in ODK survey submissions” → connect → register → sync. Then
+read the [ODK
+guide](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
+for monitoring a survey and managing app users, which the wizard doesn’t
+cover. *Checkpoint: you synced submissions into the pipeline.*
 
 [Triage the log
 backlog](https://thecartercenter.github.io/erifunctions/articles/da-logs-guide.md),
@@ -136,10 +149,10 @@ are maintained.
 ✅ **Gate:** you completed one real task under supervision and opened
 one PR.
 
-## Competency checklist (DA + mentor sign off)
+## Competency checklist
 
-A DA is “onboarded” when both of you can tick every box from observed
-work, not a quiz:
+A DA is “onboarded” when every box below reflects observed work, not a
+quiz:
 
 Connects to Azure + ODK; knows where secrets live and why.
 

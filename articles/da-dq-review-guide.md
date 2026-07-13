@@ -3,6 +3,16 @@
 **Walkthrough** · ~20 min · needs: Azure · sandbox-safe: yes (runs on
 `atlantis`)
 
+> **This is the screen
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> already puts you on.** Its CMR flow (and the “Review & approve
+> something already staged” menu item) hands off directly into this same
+> [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
+> loop – so if you’re triaging flags inside
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> right now, this guide is the reference for what each menu option (fix
+> in source, mark noted, force-approve) actually does.
+
 The [CMR
 guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
 and the [QC/feedback

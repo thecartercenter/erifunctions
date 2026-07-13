@@ -10,21 +10,31 @@ are for browsing or for when you’re calling the pieces yourself.
 - [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
   **\[experimental\]** : Bring a monthly report into the system,
   interactively (the guided console front door)
+
 - [`eri_guide()`](https://thecartercenter.github.io/erifunctions/reference/eri_guide.md)
-  **\[experimental\]** : Find your task and get its call and guide
-  (interactive)
+  **\[deprecated\]** :
+
+  Look up a task's call and guide (deprecated; use
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  or
+  [`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md))
+
 - [`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)
   **\[experimental\]** : Show the task registry: what are you trying to
   do?
+
 - [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
   **\[experimental\]** : Show the data-addressing model: known sources,
   measures and formats
+
 - [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)
   **\[experimental\]** : Build a canonical blob path in the data/
   container
+
 - [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)
   **\[experimental\]** : Interactively review and resolve a CMR
   workbook's DQ flags, then approve
+
 - [`eri_verbosity()`](https://thecartercenter.github.io/erifunctions/reference/eri_verbosity.md)
   : Control how much erifunctions prints to the console
 

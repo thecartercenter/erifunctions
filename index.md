@@ -21,10 +21,8 @@ Not sure where to start otherwise? **[What are you trying to
 do?](https://thecartercenter.github.io/erifunctions/articles/task-index.md)**
 is a generated index of ~30 common tasks; pick yours and get the call
 and the guide. In the console,
-[`eri_guide()`](https://thecartercenter.github.io/erifunctions/reference/eri_guide.md)
-walks the same list interactively — pick a category, pick a task, run it
-if it’s safe to run with no arguments, or open its guide. Otherwise,
-read **[Getting
+[`eri_task_map()`](https://thecartercenter.github.io/erifunctions/reference/eri_task_map.md)
+prints the same list. Otherwise, read **[Getting
 started](https://thecartercenter.github.io/erifunctions/articles/getting-started.md)**
 first — it’s the one idea every guide assumes.
 

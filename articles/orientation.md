@@ -61,25 +61,26 @@ is the deep reference.
 
 ## Which pipeline for which data?
 
-| You received… | Pipeline |
-|----|----|
-| Monthly CMR Excel | `eri_stage_cmr` → `eri_split_cmr` → `eri_approve` |
-| Surveillance extract | `eri_ingest` (or the primitives) → `eri_approve` |
-| ODK submissions | `eri_odk_register` → `eri_odk_sync` → clean → `eri_approve` |
-| A brand-new space | `eri_onboard_*` first, then one of the above |
-
-Everything ends at
+**Run
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)**:
+a guided console wizard that picks the right functions for a CMR report,
+a surveillance extract, ODK submissions, or standing up a brand-new
+space, and calls them for you. Everything still ends at
 **[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)**
-and the catalog. The [cheat
-sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.md)
-has the full decision tree.
+and the catalog.
 
 ## Your tasks → where they live
 
-- **Load CMR / surveillance** → [CMR
-  guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)
-  · [ingest
-  guide](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md)
+- **Bring in CMR / surveillance / ODK data, or stand up a new space** →
+  run
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md);
+  the
+  [CMR](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md),
+  [ingest](https://thecartercenter.github.io/erifunctions/articles/da-ingest-guide.md),
+  and
+  [ODK](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
+  guides are for understanding what it does underneath, or scripting it
+  yourself.
 - **Process OEPA** → the general pipeline (oncho treatment + prevalence)
 - **QC + analytic products + country feedback** → `run_dq_checks` ·
   `dq_report` · `eri_notify_dq`
