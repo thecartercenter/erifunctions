@@ -566,6 +566,22 @@ assigning to a plain local variable first, caught immediately by the "unrecogniz
 transcript. **This closes out the interactive-wizard course correction end to end — Phases A
 through D are all shipped.**
 
+**Post-ship validation, same session: the `da-fresh-user` subagent ran `eri_do()` live against the
+real `atlantis` sandbox, shipped as v0.9.35.** The same "run it, don't just re-read it" discipline
+`da-dq-review-guide.Rmd` got earlier this session, applied to the whole wizard + its new tour guide
+post-Phase-D. Found real gaps a hand-verified-from-source guide hadn't surfaced: the top menu
+reappearing after every flow was never stated plainly (only implied by contrast); ingest's "Approve
+anyway?" gate checks the whole outstanding backlog for a dataset, not just the file just brought
+in, live-confirmed to fire on a clean ingest because of an unrelated earlier flag; a real grammar
+bug (`cli`'s `{?y/ies}` pluralizes the noun but not the verb — "1 log entry need review" should be
+"needs") that the guide had faithfully reproduced straight from live output; and the "Cancelling
+out" section over-promising that every stopped flow narrates, when an early cancel (nothing staged
+yet) is silent by design. All fixed, plus two copy-edits and an explicit deprecation note on
+`eri_guide()` in `_pkgdown.yml`'s reference group description. What held up well and is worth
+protecting: every menu/prompt/confirmation transcript Dana checked live matched the guide almost
+verbatim — real validation that writing an interactive-function guide from source, then correcting
+with a live render pass, produces an accurate result.
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)

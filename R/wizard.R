@@ -454,7 +454,7 @@
     error = function(e) NULL
   )
   if (!is.null(open_logs) && nrow(open_logs) > 0L) {
-    cli::cli_alert_warning("{nrow(open_logs)} log entr{?y/ies} need review before this can be approved.")
+    cli::cli_alert_warning("{nrow(open_logs)} log entr{?y/ies} in the backlog for this dataset need{?s/} review before this can be approved.")
     cli::cli_bullets(c(
       "i" = "Run {.fn eri_logs} to see them, {.fn eri_dq_flag_resolve} to triage each flag, then {.fn eri_logs_resolve} to close the entry out."
     ))

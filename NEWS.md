@@ -1,3 +1,38 @@
+# erifunctions 0.9.35
+
+## Fixes from a live fresh-user trial of eri_do()
+
+- After Phase D shipped, ran the `da-fresh-user` subagent ("Dana") live against the real `atlantis`
+  sandbox to actually exercise `eri_do()` and `vignettes/da-do-guide.Rmd`, not just re-read them --
+  the same "run it, don't just review it" discipline used for `da-dq-review-guide.Rmd` earlier this
+  session. Found real gaps a source-read alone hadn't surfaced:
+  - **The top-level menu reappears after every flow** (finished or cancelled) -- never stated
+    plainly in the guide, only implied by contrast in the deep-link section. A first-timer seeing
+    the menu again could reasonably wonder if something broke. Added a direct sentence.
+  - **Ingest's "Approve anyway?" gate checks the whole outstanding backlog for that
+    country/disease/channel/measure, not just the file you just brought in** -- live-confirmed a
+    perfectly clean ingest can still trigger it, because of an unrelated flag left over from an
+    earlier ingest into the same dataset. Clarified in both the wizard's own warning message and
+    the guide.
+  - **A real grammar bug**, faithfully reproduced in the guide because it came straight from live
+    output: `"1 log entry need review"` (should be "needs"). `cli`'s `{?y/ies}` pluralizes the noun
+    but not the verb -- fixed with `need{?s/}`.
+  - **The "Cancelling out" section over-promised**: it claimed every stopped flow "tells you so,"
+    but cancelling an early prompt (before anything's been staged/written) is silent by design --
+    nothing to report yet. Reworded to distinguish early (silent) cancels from later ones (which do
+    narrate what was left in place).
+  - Two comma-spliced opening sentences (in `getting-started.Rmd` and `da-do-guide.Rmd` itself)
+    copy-edited for a faster first read.
+  - `_pkgdown.yml`'s "Start here" reference group description now explicitly notes `eri_guide()` is
+    deprecated in favor of `eri_do()`, rather than relying solely on the lifecycle badge on its own
+    page rendering visibly in the group listing (unverified locally -- this machine's local
+    `pkgdown`/`knitr` article rendering segfaults regardless of content).
+- What Dana confirmed held up well, worth noting since it's the actual point of writing a guide
+  from source rather than live capture: every menu/prompt/confirmation transcript she checked live
+  (top menu, CMR country list, disease/channel/measure pick-lists, onboarding menus, `flow=`
+  deep-links, the invalid-flow error, the onboarding overwrite-protection prompt) matched
+  `da-do-guide.Rmd` almost verbatim.
+
 # erifunctions 0.9.34
 
 ## `eri_do(flow=)` deep links, and a real overwrite protection found along the way (Phase D of the interactive-wizard course correction)
