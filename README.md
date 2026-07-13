@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.31 · **Status:** Active development
+**Version:** 0.9.32 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -41,7 +41,7 @@ you work:
 
 - [What are you trying to do?](https://thecartercenter.github.io/erifunctions/articles/task-index.html):
   a generated index of ~31 common tasks — pick yours, get the call and the guide. Prefer the
-  console? `eri_guide()` walks the same list as an interactive menu.
+  console? `eri_task_map()` prints the same list.
 - [Orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html): the big
   picture: the data system, the pipeline, and where your tasks live
 - [DA cheat sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html): the

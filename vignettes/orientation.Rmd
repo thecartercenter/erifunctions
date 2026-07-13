@@ -59,19 +59,16 @@ it warns, it doesn't error. The [data-model card](data-model-card.html) is the d
 
 ## Which pipeline for which data?
 
-| You received… | Pipeline |
-|---------------|----------|
-| Monthly CMR Excel | `eri_stage_cmr` → `eri_split_cmr` → `eri_approve` |
-| Surveillance extract | `eri_ingest` (or the primitives) → `eri_approve` |
-| ODK submissions | `eri_odk_register` → `eri_odk_sync` → clean → `eri_approve` |
-| A brand-new space | `eri_onboard_*` first, then one of the above |
-
-Everything ends at **`eri_approve()`** and the catalog. The [cheat sheet](da-cheatsheet.html) has the
-full decision tree.
+**Run [`eri_do()`](../reference/eri_do.html)**: a guided console wizard that picks the right
+functions for a CMR report, a surveillance extract, ODK submissions, or standing up a brand-new
+space, and calls them for you. Everything still ends at **`eri_approve()`** and the catalog.
 
 ## Your tasks → where they live
 
-- **Load CMR / surveillance** → [CMR guide](da-cmr-guide.html) · [ingest guide](da-ingest-guide.html)
+- **Bring in CMR / surveillance / ODK data, or stand up a new space** → run
+  [`eri_do()`](../reference/eri_do.html); the [CMR](da-cmr-guide.html), [ingest](da-ingest-guide.html),
+  and [ODK](da-odk-guide.html) guides are for understanding what it does underneath, or scripting it
+  yourself.
 - **Process OEPA** → the general pipeline (oncho treatment + prevalence)
 - **QC + analytic products + country feedback** → `run_dq_checks` · `dq_report` · `eri_notify_dq`
 - **Figures / routine reports** → `eri_table` · `eri_map_*` · `eri_pptx_*` · `eri_report_*`

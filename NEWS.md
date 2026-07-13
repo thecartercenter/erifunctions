@@ -1,3 +1,44 @@
+# erifunctions 0.9.32
+
+## `eri_guide()` retired to a static lookup; doc cut turned out much smaller than planned (Phase C.3 of the interactive-wizard course correction)
+
+- **`eri_guide()` is deprecated** (`r lifecycle::badge("deprecated")`, `.Deprecated()` warning on every
+  call). Its menu-driven console wizard could only ever *run* 4 of ~32 tasks; everything else it could
+  only describe, which the vignettes and `eri_task_map()` already do. Rather than delete the exported
+  name outright mid-transition, it's narrowed: `eri_guide(task_id)` still shows that task's call, guide,
+  and reference functions (no menu); called with no argument, it now just prints `eri_task_map()`'s full
+  listing. Deleted with the menu: `.eri_guide_zero_arg()`, `.eri_guide_show_task()`,
+  `.eri_guide_last_branch_id()`/`.eri_guide_set_last_branch_id()` (session memory),
+  `.eri_guide_resolve_branch_choice()` -- none had a purpose once there's no menu to drive.
+- **The documentation-cutting plan turned out to be much smaller than the design consult estimated**,
+  and this is worth explaining rather than force-fitting a number a stale plan guessed at. The consult
+  (written before Phases A/B/C.1/C.2 shipped) assumed 7 DA pipeline guides (`da-cmr-guide`,
+  `da-ingest-guide`, `da-odk-guide`, `da-onboard-guide`, `da-dq-review-guide`, `da-logs-guide`,
+  `da-qc-feedback-guide`) were redundant "walkthroughs `eri_do()` replaces" and proposed folding all 7
+  into one ~10-vignette reference set. In practice: (1) each pipeline guide already got a
+  "prefer to just do it? run `eri_do()`" callout as its own phase shipped, so the redirect the consult
+  wanted was already delivered incrementally, not deferred to this phase; (2) `da-odk-guide` and
+  `da-onboard-guide` cover substantial ground `eri_do()` does NOT automate (monitoring a survey,
+  managing ODK app users, filling in/validating/submitting a schema) -- cutting them would have
+  destroyed real, non-redundant domain knowledge; (3) `da-dq-review-guide` documents the *exact*
+  interactive loop `eri_do()`'s CMR flow hands off into, and `da-logs-guide` documents the *exact*
+  tools `eri_do()` points a DA at for manual backlog triage -- both are reference material for what the
+  wizard is already doing, not competing walkthroughs; (4) `da-qc-feedback-guide` has no wizard overlap
+  at all (offline QC + Teams notification, a different task entirely). The actual redundancy was much
+  narrower: two "quick reference" pages (`da-cheatsheet`, `orientation`) whose "which pipeline do I
+  use?" decision trees purely duplicated `eri_do()`'s own menu, with no other unique content -- both
+  trimmed to a one-line pointer at `eri_do()`, keeping everything else. Also also added the missing
+  wizard-context callouts to `da-dq-review-guide`/`da-logs-guide` (point 3 above). **Net: 0 vignettes
+  deleted** (still 25) -- the consult's own audit (§2) had already flagged 8 real vignettes it never
+  accounted for in its "~26 -> ~11" count, and forcing a cut to hit that stale number would have been
+  solving to a guessed target instead of to genuine redundancy.
+- **`onboarding.Rmd`** (the paced new-DA path): the "ingestion spine" days now point at `eri_do()` as
+  the primary way to do each task, with the existing guides reframed as "what's happening underneath."
+  Also removed the "Competency checklist (DA + mentor sign off)" heading's mentor-sign-off framing (a
+  DA rules complaint raised earlier this session, superseded at the time by the larger course
+  correction -- finally addressed here since this file was already being revised).
+  `pkgdown/index.md`/`README.md`'s `eri_guide()` mentions reworded to `eri_task_map()`.
+
 # erifunctions 0.9.31
 
 ## `eri_do()` now covers onboarding too (Phase C.2 of the interactive-wizard course correction)

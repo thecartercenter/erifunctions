@@ -491,12 +491,38 @@ widened to `^[a-z]{2,15}$` with a regression test locking in the `atlantis` case
 also caught a real scope drift**: the surveillance/CMR sub-flows silently defaulted `language` to
 English, dropping the design consult's explicit "language from a pick-list" call — a real gap for
 ERI's own Francophone countries (Haiti) — fixed with a shared `.eri_wizard_prompt_language()`
-prompt before merge. **Phase C.3
-(retiring/narrowing `eri_guide()`, cutting the ~26 guide articles to ~11) and progress-detection
-polish (Phase D) remain designed in the consult document but not yet started.** Phase C.3 in
-particular carries a different risk profile from A/B/C.1/C.2's purely additive work — deletion and
-doc cuts — and is flagged for a maintainer check-in before starting rather than assumed under a
-"move on" instruction.
+prompt before merge.
+
+**Phase C.3 (retire `eri_guide()`, doc cut) shipped as v0.9.32.** `eri_guide()` is deprecated
+(`.Deprecated()`) and narrowed rather than deleted outright: `eri_guide(task_id)` still shows a
+task's call/guide/reference with no menu, and a no-argument call now just prints `eri_task_map()`'s
+full listing — the menu-driven wizard itself (`.eri_guide_show_task()`, session memory, "run it
+now") is gone, since it could only ever run 4 of ~32 tasks and everything else just described what
+the vignettes already do. Deleting the export outright was considered and rejected: it's a real,
+already-shipped tool with possible script/muscle-memory dependents, so narrowing to a working
+lookup is the gentler transition the consult itself offered as an alternative.
+
+**The documentation cut turned out far smaller than the consult estimated, and re-auditing why
+mattered more than hitting its number.** The consult (written before Phases A/B/C.1/C.2 shipped)
+assumed 7 DA pipeline guides were walkthroughs `eri_do()` fully replaces and proposed folding them
+into one ~10-vignette set (26 → ~11). Re-checking against what actually shipped: each pipeline
+guide already got a "prefer to just do it? run `eri_do()`" callout as its own phase landed, so the
+redirect the consult wanted was delivered incrementally, not deferred here; `da-odk-guide` and
+`da-onboard-guide` cover real ground the wizard doesn't automate (survey monitoring, app-user
+management, filling in/validating/submitting a schema) and cutting them would have destroyed
+non-redundant domain knowledge; `da-dq-review-guide` and `da-logs-guide` document the *exact*
+interactive loop/tools the wizard hands off into or points at, not competing walkthroughs; and
+`da-qc-feedback-guide` has no wizard overlap at all. The real, narrow redundancy was two
+quick-reference pages (`da-cheatsheet`, `orientation`) whose "which pipeline?" decision trees
+purely duplicated `eri_do()`'s menu — both trimmed to a one-line pointer, everything else in them
+kept. Added the missing wizard-context callouts to `da-dq-review-guide`/`da-logs-guide`. **Net: zero
+vignettes deleted** — forcing a cut to match a stale, pre-shipment estimate would have been solving
+to a guessed number rather than to genuine overlap, exactly the CLAUDE.md guardrail against
+designing for a hypothetical rather than a verified need. `onboarding.Rmd`'s ingestion-spine days
+now point at `eri_do()` as the primary path; its "Competency checklist" heading also dropped the
+"DA + mentor sign off" framing (a standalone DA-rules complaint raised earlier in this session,
+addressed here since the file was already being revised). **Phase D (progress-detection polish,
+`eri_do("cmr")` deep links) remains designed in the consult document but not yet started.**
 
 ---
 
