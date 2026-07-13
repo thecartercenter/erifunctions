@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/thecartercenter/erifunctions/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/thecartercenter/erifunctions/blob/v0.9.34/DESCRIPTION)
 
 Kishore N (2026). *erifunctions: ERI team functions*. R package version
 0.9.34, <https://github.com/thecartercenter/erifunctions>.
