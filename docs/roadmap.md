@@ -475,11 +475,24 @@ consult's proposed declarative `flow_map.yaml`/`kind:`-dispatch schema is now a 
 three don't share enough top-level shape to warrant it, only the low-level helper vocabulary
 (`.eri_prompt_pick_country()`, `.eri_wizard_confirm()`, `.eri_wizard_step()`, etc.) is genuinely
 shared — recorded as such in `R/wizard.R`'s own header comment rather than left as a deferred
-question. **Onboarding (Phase C.2, alongside retiring/narrowing `eri_guide()` and cutting the ~26
-guide articles to ~11 in Phase C.3), and progress-detection polish (Phase D) remain designed in the
-consult document but not yet started.** Phase C.3 in particular carries a different risk profile
-from A/B/C.1's purely additive work — deletion and doc cuts — and is flagged for a maintainer
-check-in before starting rather than assumed under a "move on" instruction.
+question. **Phase C.2 (onboarding) shipped as v0.9.31** — `.eri_flow_onboard()` covers all three
+real onboarding shapes from `da-onboard-guide.Rmd`: a surveillance country/disease
+(`eri_onboard_country()`), a CMR country (`eri_onboard_cmr(create_dirs = TRUE)`), and an NTD
+disease's MDA/prevalence schemas (`eri_onboard_disease()`, local-only — no Azure folders at all).
+Each sub-flow dry-runs first, confirms, then writes for real; deliberately stops once the schema
+template is written and the folders exist, per the guide's own golden rule ("onboarding scaffolds;
+it doesn't finish for you") — filling in disease-specific columns, validating, and submitting via
+pull request stay a human step the wizard doesn't fabricate. **A real bug surfaced building this**:
+the shared `.eri_wizard_prompt_country_code()` (also used by Phase B's ingest flow) validated typed
+codes against `^[a-z]{2,4}$`, which would have silently rejected the package's own `atlantis`
+sandbox demo country (8 letters) — exactly the example its own warning message names as valid.
+Onboarding is precisely the flow where a DA types a brand-new code, so this surfaced immediately;
+widened to `^[a-z]{2,15}$` with a regression test locking in the `atlantis` case. **Phase C.3
+(retiring/narrowing `eri_guide()`, cutting the ~26 guide articles to ~11) and progress-detection
+polish (Phase D) remain designed in the consult document but not yet started.** Phase C.3 in
+particular carries a different risk profile from A/B/C.1/C.2's purely additive work — deletion and
+doc cuts — and is flagged for a maintainer check-in before starting rather than assumed under a
+"move on" instruction.
 
 ---
 

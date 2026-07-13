@@ -6,10 +6,12 @@ TCC's Azure-centred data system across countries (Haiti, DR, Uganda, OEPA, …) 
 (malaria, oncho, LF, SCH, STH). You install it, authenticate through your browser, and call
 functions — you don't edit the package.
 
-**Bringing in a monthly country report, a surveillance dataset, or ODK submissions? Run
-`eri_do()`.** It's a guided console wizard — pick your country, pick the file (or the ODK project
-and form), confirm the month, and it walks the whole upload/archive → stage → review → approve
-pipeline for you. No function names to memorize, no Azure path to type by hand.
+**Bringing in a monthly country report, a surveillance dataset, or ODK submissions? Standing up a
+new country or disease? Run `eri_do()`.** It's a guided console wizard — pick your country, pick
+the file (or the ODK project and form), confirm the month, and it walks the whole
+upload/archive → stage → review → approve pipeline for you. It also scaffolds a brand-new
+country/disease space (schema template + Azure folders) when you're onboarding one for the first
+time. No function names to memorize, no Azure path to type by hand.
 
 Not sure where to start otherwise? **[What are you trying to do?](articles/task-index.html)** is a
 generated index of ~30 common tasks; pick yours and get the call and the guide. In the console,

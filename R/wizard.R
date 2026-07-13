@@ -1,4 +1,4 @@
-#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: ingest; Phase C.1: ODK) ####
+#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: ingest; Phase C.1: ODK; Phase C.2: onboarding) ####
 #
 # Design consult: docs/design/interactive-wizard-consult.md. Corrects the docs-site redesign's
 # direction -- that work optimized *discoverability* (can a DA find the right guide); this optimizes
@@ -29,16 +29,26 @@
 # own approve step is a MANUAL eri_write() after ad hoc quality-checking), so completing that gap
 # honestly is real, separate follow-on work, not something to fake here.
 #
-# Onboarding flow, retiring eri_guide(), and the doc cut are Phase C.2/C.3/D, not started.
+# Phase C.2 adds onboarding (.eri_flow_onboard()): scaffolds a NEW country/disease/data-type space
+# via eri_onboard_country()/eri_onboard_cmr()/eri_onboard_disease() -- dry-run preview, confirm,
+# write for real, then stop. Deliberately does NOT walk the DA through filling in the schema's TODO
+# columns, validating, or submitting a PR -- da-onboard-guide.Rmd's own golden rule is "onboarding
+# scaffolds; it doesn't finish for you," and those steps are real domain expertise (which columns
+# this country's data actually has) no wizard should fabricate. The three eri_onboard_*() functions
+# already print their own "Next steps" via cli_inform, so the flow doesn't re-print or paraphrase
+# them -- one copy of that text, not two that can drift.
+#
+# Retiring eri_guide() and the doc cut are Phase C.3/D, not started.
 #
 # Concrete R control flow, not a declarative flow schema. The original consult proposed a
 # `flow_map.yaml`/`kind:`-dispatch engine "once a second/third flow gives it real shape to
-# generalize from" -- now that there are three (CMR: multi-step + a rich DQ loop; ingest: one call +
-# a log-summary DQ step; ODK: discover-then-register-then-sync with no approve step at all), the
-# evidence says otherwise: the three flows don't share enough TOP-LEVEL shape to make a declarative
-# schema worth building -- what's actually shared and reused is the low-level HELPER vocabulary
+# generalize from" -- now that there are four (CMR: multi-step + a rich DQ loop; ingest: one call +
+# a log-summary DQ step; ODK: discover-then-register-then-sync with no approve step at all;
+# onboarding: three genuinely different scaffold shapes behind one menu), the evidence says
+# otherwise: the flows don't share enough TOP-LEVEL shape to make a declarative schema worth
+# building -- what's actually shared and reused is the low-level HELPER vocabulary
 # (.eri_prompt_pick_file(), .eri_wizard_step(), .eri_wizard_confirm(), .eri_prompt_pick_or_type()),
-# not a generic step sequence. That's the right level of reuse; a schema forcing these three into
+# not a generic step sequence. That's the right level of reuse; a schema forcing these flows into
 # one shape would be reuse for its own sake, not because the flows are actually alike.
 
 # Shared disease pick-list for flows whose country/disease space has no backing registry
@@ -309,15 +319,17 @@
 # Surveillance ingest has no country registry the way CMR's rb-expansion pipeline does (eri_ingest()
 # is deliberately not country-locked -- it's what lets the DA guides demo on a fake atlantis
 # country) -- so country is a validated typed prompt, not a pick-list. Re-asks until it looks like a
-# real code (2-4 lowercase letters) or the DA cancels (blank).
+# real code (letters only) or the DA cancels (blank). Bounded 2-15 chars, not 2-4: real codes are
+# short (sdn, uga), but the package's own sandbox demo country is "atlantis" (8 letters) -- a
+# tighter cap would reject the exact case this prompt's own docs point to.
 #' @keywords internal
 .eri_wizard_prompt_country_code <- function() {
   repeat {
     typed <- .eri_prompt_line("Which country is this data for? (e.g. sdn; blank to cancel): ")
     if (!nzchar(trimws(typed))) return(NA_character_)
     code <- tolower(trimws(typed))
-    if (grepl("^[a-z]{2,4}$", code)) return(code)
-    cli::cli_alert_warning("Country codes are 2-4 letters (e.g. {.val sdn}, {.val atlantis}) -- try again.")
+    if (grepl("^[a-z]{2,15}$", code)) return(code)
+    cli::cli_alert_warning("Country codes are letters only (e.g. {.val sdn}, {.val atlantis}) -- try again.")
   }
 }
 
@@ -513,6 +525,128 @@
   invisible(NULL)
 }
 
+#### Phase C.2: onboarding ####
+
+# Onboarding's golden rule (da-onboard-guide.Rmd): "it scaffolds; it doesn't finish for you." The
+# three eri_onboard_*() functions already write their own "Next steps" (open the file, fill in the
+# TODOs, validate, submit via PR) via cli_inform -- the wizard must NOT re-print or paraphrase that,
+# doing so risks the two copies drifting. Its job stops at the mechanical, no-judgment-call part:
+# which kind, which names, dry-run preview, confirm, write for real. Filling in disease-specific
+# schema columns is real domain expertise no wizard should fabricate.
+#' @keywords internal
+.eri_flow_onboard <- function() {
+  cli::cli_h1("Onboard a new country, disease, or data type")
+
+  kind <- .eri_prompt_menu("What are you setting up?", c(
+    "Surveillance country/disease (case or aggregate reporting)",
+    "CMR country (monthly Case Management Report)",
+    "NTD disease (MDA + prevalence schemas, no country folders yet)"
+  ))
+  if (kind == 1L) {
+    .eri_flow_onboard_surveillance()
+  } else if (kind == 2L) {
+    .eri_flow_onboard_cmr()
+  } else if (kind == 3L) {
+    .eri_flow_onboard_disease()
+  }
+
+  invisible(NULL)
+}
+
+# No country/disease registry to pick-list from here -- onboarding's entire purpose is standing up
+# a space for a country/disease that ISN'T registered anywhere yet. Country code and full name are
+# both free-typed; disease reuses the shared pick-list-plus-Other pattern.
+#' @keywords internal
+.eri_flow_onboard_surveillance <- function() {
+  country <- .eri_wizard_prompt_country_code()
+  if (is.na(country)) return(invisible(NULL))
+
+  country_name <- .eri_prompt_line("Full country name (e.g. Uganda; blank to cancel): ")
+  if (!nzchar(trimws(country_name))) return(invisible(NULL))
+
+  disease <- .eri_prompt_pick_or_type(
+    "Which disease?", .KNOWN_DISEASES,
+    "Disease (blank to cancel): "
+  )
+  if (is.na(disease)) return(invisible(NULL))
+
+  preview <- .eri_wizard_step(function() {
+    eri_onboard_country(country, country_name, disease, dry_run = TRUE)
+  })
+  if (!preview$ok) return(invisible(NULL))
+
+  if (!.eri_wizard_confirm("Write this schema template and create the Azure folders?")) {
+    return(invisible(NULL))
+  }
+
+  result <- .eri_wizard_step(function() eri_onboard_country(country, country_name, disease))
+  if (!result$ok) return(invisible(NULL))
+
+  invisible(NULL)
+}
+
+# CMR's Azure folders are opt-in (create_dirs=FALSE by default) -- but the whole point of onboarding
+# through the wizard is to stand up a space that's actually ready to receive a report, so this flow
+# always asks for create_dirs = TRUE. A DA who only wants the local schema template can call
+# eri_onboard_cmr() directly.
+#' @keywords internal
+.eri_flow_onboard_cmr <- function() {
+  country <- .eri_wizard_prompt_country_code()
+  if (is.na(country)) return(invisible(NULL))
+
+  country_name <- .eri_prompt_line("Full country name (e.g. Uganda; blank to cancel): ")
+  if (!nzchar(trimws(country_name))) return(invisible(NULL))
+
+  preview <- .eri_wizard_step(function() {
+    eri_onboard_cmr(country, country_name, create_dirs = TRUE, dry_run = TRUE)
+  })
+  if (!preview$ok) return(invisible(NULL))
+
+  if (!.eri_wizard_confirm("Write this CMR schema template and create the Azure folders?")) {
+    return(invisible(NULL))
+  }
+
+  result <- .eri_wizard_step(function() eri_onboard_cmr(country, country_name, create_dirs = TRUE))
+  if (!result$ok) return(invisible(NULL))
+
+  invisible(NULL)
+}
+
+# Local-only (no Azure folders at all -- eri_onboard_disease()'s own design, since NTD programs
+# don't get a country/disease space until a surveillance or CMR onboard also runs). Argument order
+# is disease-then-country, matching the real function signature exactly (easy to get backwards).
+#' @keywords internal
+.eri_flow_onboard_disease <- function() {
+  disease <- .eri_prompt_pick_or_type(
+    "Which disease?", .KNOWN_DISEASES,
+    "Disease (blank to cancel): "
+  )
+  if (is.na(disease)) return(invisible(NULL))
+
+  country <- .eri_wizard_prompt_country_code()
+  if (is.na(country)) return(invisible(NULL))
+
+  which_types <- .eri_prompt_menu("Which schema(s) do you need?", c(
+    "Both (MDA + prevalence)",
+    "MDA only",
+    "Prevalence only"
+  ))
+  if (which_types == 0L) return(invisible(NULL))
+  data_types <- switch(which_types, c("mda", "prevalence"), "mda", "prevalence")
+
+  preview <- .eri_wizard_step(function() {
+    eri_onboard_disease(disease, country, data_types = data_types, dry_run = TRUE)
+  })
+  if (!preview$ok) return(invisible(NULL))
+
+  if (!.eri_wizard_confirm("Write these schema template(s)?")) return(invisible(NULL))
+
+  result <- .eri_wizard_step(function() eri_onboard_disease(disease, country, data_types = data_types))
+  if (!result$ok) return(invisible(NULL))
+
+  invisible(NULL)
+}
+
 #' Bring a monthly report into the system, interactively (the guided console front door)
 #'
 #' @description
@@ -523,21 +657,25 @@
 #' behalf. Never asks for a function name or an Azure path. `mirror_pipeline` is auto-detected from
 #' [eri_cutover_status()] and never asked about. Every mutation is one already-tested function
 #' ([eri_upload()], [eri_stage_cmr()], [eri_split_cmr()], [eri_ingest()], [eri_approve()],
-#' [eri_odk_register()], [eri_odk_sync()]), and data quality review/approval hands off directly
-#' into the same loop [eri_dq_review()] uses (for CMR) or points at the scriptable triage tools
-#' directly ([eri_logs()], [eri_dq_flag_resolve()], for surveillance ingest) -- nothing here is
-#' reimplemented, and every function this calls stays fully usable directly in a script or CI.
+#' [eri_odk_register()], [eri_odk_sync()], [eri_onboard_country()], [eri_onboard_cmr()],
+#' [eri_onboard_disease()]), and data quality review/approval hands off directly into the same loop
+#' [eri_dq_review()] uses (for CMR) or points at the scriptable triage tools directly ([eri_logs()],
+#' [eri_dq_flag_resolve()], for surveillance ingest) -- nothing here is reimplemented, and every
+#' function this calls stays fully usable directly in a script or CI.
 #'
 #' Currently covers bringing in a monthly CMR report, bringing in a surveillance dataset
-#' (CSV/Excel line-list), and pulling in ODK survey submissions, end to end. ODK sync stops at
-#' `research/raw/` -- there is no automated stage-then-approve path for ODK data yet (the real
-#' guide shows a manual [eri_write()] step), so the wizard is honest about handing off there
-#' rather than fabricating a step the underlying tooling doesn't support. New-program onboarding
-#' is planned as the same framework grows (see `docs/design/interactive-wizard-consult.md`).
+#' (CSV/Excel line-list), pulling in ODK survey submissions, and onboarding a new country, disease,
+#' or data type, end to end. ODK sync stops at `research/raw/` -- there is no automated
+#' stage-then-approve path for ODK data yet (the real guide shows a manual [eri_write()] step) --
+#' and onboarding stops once the schema template is written and Azure folders exist -- filling in
+#' the schema's disease-specific columns, validating it, and submitting it via pull request stay a
+#' human, judgment-driven step (see `vignettes/da-onboard-guide.Rmd`'s "onboarding scaffolds; it
+#' doesn't finish for you"). The wizard is honest about handing off at both points rather than
+#' fabricating steps the underlying tooling doesn't support or shouldn't automate.
 #'
 #' **Interactive only.** In a script or CI, use the scriptable core directly: [eri_upload()],
 #' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()], [eri_ingest()],
-#' [eri_approve()], [eri_odk_sync()].
+#' [eri_approve()], [eri_odk_sync()], [eri_onboard_country()].
 #'
 #' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls.
 #' @examples
@@ -560,10 +698,11 @@ eri_do <- function() {
       "Bring this month's country report (CMR) into the system",
       "Bring in a surveillance dataset (a CSV/Excel line-list)",
       "Pull in ODK survey submissions",
+      "Onboard a new country, disease, or data type",
       "Review & approve something already staged (DQ review)",
       "Exit"
     ))
-    if (choice == 0L || choice == 5L) break
+    if (choice == 0L || choice == 6L) break
 
     if (choice == 1L) {
       .eri_flow_cmr()
@@ -572,6 +711,8 @@ eri_do <- function() {
     } else if (choice == 3L) {
       .eri_flow_odk()
     } else if (choice == 4L) {
+      .eri_flow_onboard()
+    } else if (choice == 5L) {
       country <- .eri_prompt_pick_country(.eri_pipeline_registry[["rb-expansion"]]$country_map,
                                           "Which country?")
       if (!is.null(country)) {

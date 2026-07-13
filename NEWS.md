@@ -1,3 +1,31 @@
+# erifunctions 0.9.31
+
+## `eri_do()` now covers onboarding too (Phase C.2 of the interactive-wizard course correction)
+
+- **`eri_do()`'s top menu gained "Onboard a new country, disease, or data type"**, powered by a new
+  `.eri_flow_onboard()` (`R/wizard.R`) covering all three real onboarding shapes: a surveillance
+  country/disease (`eri_onboard_country()`), a CMR country (`eri_onboard_cmr(create_dirs = TRUE)`),
+  and an NTD disease's MDA/prevalence schemas (`eri_onboard_disease()`, local-only, no Azure
+  folders). Each sub-flow dry-runs first (reusing the real function's own `dry_run = TRUE` preview
+  text), confirms, then writes for real.
+- **Deliberately stops at "the schema template is written and the folders exist."**
+  `da-onboard-guide.Rmd`'s own golden rule is "onboarding scaffolds; it doesn't finish for you" --
+  filling in a schema's disease-specific columns, validating it, and submitting it via pull request
+  are real domain judgment calls no wizard should fabricate. The three `eri_onboard_*()` functions
+  already print their own "Next steps" via `cli_inform()`, so the flow doesn't re-print or
+  paraphrase that text -- one copy, not two that can quietly drift apart.
+- **Real bug found and fixed while building this**: `.eri_wizard_prompt_country_code()` (shared with
+  Phase B's ingest flow) validated typed country codes against `^[a-z]{2,4}$` -- but the package's
+  own sandbox demo country, `atlantis` (8 letters), is exactly the example its own warning message
+  names as valid, and would have been silently rejected. Onboarding is precisely the flow where a
+  DA types a brand-new code, so this surfaced immediately; widened to `^[a-z]{2,15}$` and added a
+  regression test locking in the `atlantis` case.
+- Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at the top of
+  `vignettes/da-onboard-guide.Rmd` pointing at `eri_do()`.
+- **`tests/testthat/test-wizard.R`** (105 tests, +19 over Phase C.1): routing across the three
+  sub-flows, each sub-flow's dry-run -> confirm -> real-write order, decline-to-confirm and
+  cancel-on-blank-input paths, and the NTD flow's menu-choice -> `data_types` vector mapping.
+
 # erifunctions 0.9.30
 
 ## `eri_do()` now covers ODK sync too (Phase C.1 of the interactive-wizard course correction)
