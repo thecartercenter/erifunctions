@@ -83,6 +83,49 @@ test_that(".eri_derive_cmr_destination matches the real rb-expansion registry en
   expect_equal(dest, "health-rb-country-expansion-dev/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx")
 })
 
+test_that(".eri_prompt_pick_file falls back to a typed path when the dialog is unavailable/cancelled", {
+  # .eri_wizard_raw_file_dialog() -- NOT file.choose()/rstudioapi::selectFile() directly -- is
+  # mocked here on purpose: those are real, blocking GUI calls that can't be safely intercepted
+  # via local_mocked_bindings() (base-package locking), so no test may ever let one run for real.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writeLines("x", tmp)
+  local_mocked_bindings(
+    .eri_wizard_raw_file_dialog = function(...) NULL,
+    .eri_prompt_line = function(...) tmp,
+    .package = "erifunctions"
+  )
+  expect_equal(.eri_prompt_pick_file("Where is the file?"), tmp)
+})
+
+test_that(".eri_prompt_pick_file returns NULL when the DA cancels the typed-path fallback", {
+  local_mocked_bindings(
+    .eri_wizard_raw_file_dialog = function(...) NULL,
+    .eri_prompt_line = function(...) "",
+    .package = "erifunctions"
+  )
+  expect_null(.eri_prompt_pick_file("Where is the file?"))
+})
+
+test_that(".eri_prompt_pick_file re-asks when the picked/typed path doesn't exist, and succeeds on the next real one", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writeLines("x", tmp)
+  attempt <- scripted(list("C:/does/not/exist.xlsx", tmp))
+  local_mocked_bindings(
+    .eri_wizard_raw_file_dialog = function(...) NULL,
+    .eri_prompt_line = function(...) attempt(),
+    .package = "erifunctions"
+  )
+  expect_equal(.eri_prompt_pick_file("Where is the file?"), tmp)
+})
+
+test_that(".eri_wizard_detect_cmr_progress returns NULL (not an error) when eri_cmr_last_plan() has nothing recorded", {
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) stop("no plan recorded for this period"),
+    .package = "erifunctions"
+  )
+  expect_null(.eri_wizard_detect_cmr_progress("uga", "202406", structure(list(), class = "mock_data_con")))
+})
+
 test_that(".eri_wizard_should_mirror_cmr mirrors when any constituent stream isn't yet cutover-eligible", {
   plan <- tibble::tibble(disease = c("oncho", "sch"), data_type = c("treatment", "treatment"))
   local_mocked_bindings(
@@ -130,7 +173,7 @@ test_that(".eri_flow_cmr runs upload -> stage -> split -> DQ-review-loop in orde
       record("upload", local_path = local_path, file_loc = file_loc)
       invisible(NULL)
     },
-    eri_stage_cmr = function(country, period, data_con) {
+    eri_stage_cmr = function(country, period, data_con, ...) {
       record("stage", country = country, period = period)
       invisible(NULL)
     },
@@ -191,6 +234,7 @@ test_that(".eri_flow_cmr stops cleanly when the DA declines the final 'go ahead'
     .eri_wizard_pick_period  = function(...) "202406",
     .eri_wizard_detect_cmr_progress = function(...) NULL,
     .eri_wizard_confirm      = function(...) FALSE,  # declines "Go ahead?"
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
     eri_upload = function(...) stop("must not be called -- DA declined before any mutation"),
     .package = "erifunctions"
   )
@@ -230,6 +274,20 @@ test_that("eri_do's top menu routes to the CMR flow and exits cleanly", {
   )
   expect_invisible(eri_do())
   expect_true(cmr_ran)
+})
+
+test_that("eri_do's top menu routes to the DQ-review shortcut with a picked country/period", {
+  withr::local_options(rlang_interactive = TRUE)
+  reviewed <- NULL
+  local_mocked_bindings(
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_wizard_pick_period  = function(...) "202406",
+    eri_dq_review = function(country, period) { reviewed <<- c(country, period); invisible(NULL) },
+    .eri_prompt_menu = scripted(list(2L, 3L)),  # DQ review shortcut, then Exit
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do())
+  expect_equal(reviewed, c("uga", "202406"))
 })
 
 test_that("eri_do exits immediately from the top menu with no navigation", {

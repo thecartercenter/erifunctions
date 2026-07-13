@@ -36,19 +36,29 @@
   codes[[choice]]
 }
 
-# A local file picker: rstudioapi::selectFile() when available (works over a remote RStudio
-# Server session too), else base R's file.choose() (a native OS dialog, works in a bare Rscript
-# console on Windows/macOS), else a validated typed path as the last resort (headless Linux with
-# no GUI). Re-asks if the picked/typed path doesn't exist. Returns NULL on cancel.
+# The actual OS-level file dialog attempt (rstudioapi::selectFile() when available -- works over a
+# remote RStudio Server session too -- else base R's file.choose(), a native OS dialog). Isolated
+# into its own tiny function so tests can mock JUST this piece: file.choose()/rstudioapi::selectFile()
+# are real, blocking, interactive GUI calls that base-package locking makes impossible to safely
+# mock via local_mocked_bindings() -- a test that let one run for real in headless CI would either
+# error unpredictably or hang waiting for a dialog that can never appear. Returns a path string, or
+# NULL if unavailable/cancelled.
+#' @keywords internal
+.eri_wizard_raw_file_dialog <- function(prompt) {
+  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+    tryCatch(rstudioapi::selectFile(caption = prompt), error = function(e) NULL)
+  } else {
+    tryCatch(file.choose(), error = function(e) NULL)
+  }
+}
+
+# A local file picker built on .eri_wizard_raw_file_dialog(), falling back to a validated typed
+# path as the last resort (headless Linux with no GUI, or the dialog was cancelled). Re-asks if the
+# picked/typed path doesn't exist. Returns NULL on cancel.
 #' @keywords internal
 .eri_prompt_pick_file <- function(prompt) {
   cli::cli_alert_info(prompt)
-  path <- NULL
-  if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
-    path <- tryCatch(rstudioapi::selectFile(caption = prompt), error = function(e) NULL)
-  } else {
-    path <- tryCatch(file.choose(), error = function(e) NULL)
-  }
+  path <- .eri_wizard_raw_file_dialog(prompt)
   if (is.null(path) || !nzchar(path)) {
     path <- .eri_prompt_line("Or type/paste the full path to the file (blank to cancel): ")
     if (!nzchar(trimws(path))) return(NULL)
@@ -202,13 +212,21 @@
   up <- .eri_wizard_step(function() eri_upload(local_path, dest, azcontainer = projects_con))
   if (!up$ok) return(invisible(NULL))
 
-  st <- .eri_wizard_step(function() eri_stage_cmr(country, period, data_con = data_con))
+  # Thread the SAME projects_con/data_con opened above through every remaining call -- otherwise
+  # each one opens its own default connection, extra live-Azure round-trips a DA sitting at the
+  # wizard shouldn't pay for.
+  st <- .eri_wizard_step(function() {
+    eri_stage_cmr(country, period, projects_con = projects_con, data_con = data_con)
+  })
   if (!st$ok) return(invisible(NULL))
 
   # Dry-run first: the routing plan (which diseases/measures this workbook feeds) is only known by
   # actually reading it, and the mirror decision needs that plan -- so it can't be made before this
   # point. Nothing is written by the dry run.
-  preview <- .eri_wizard_step(function() eri_split_cmr(local_path, country, period = period, dry_run = TRUE))
+  preview <- .eri_wizard_step(function() {
+    eri_split_cmr(local_path, country, period = period, data_con = data_con,
+                  projects_con = projects_con, dry_run = TRUE)
+  })
   if (!preview$ok) return(invisible(NULL))
   if (isTRUE(.eri_wizard_should_mirror_cmr(country, preview$value))) {
     cli::cli_alert_info("This country is still in the parallel run, so I'll also send the raw file to the legacy pipeline.")
@@ -219,7 +237,7 @@
 
   sp <- .eri_wizard_step(function() {
     eri_split_cmr(local_path, country, period = period, data_con = data_con,
-                  mirror_pipeline = mirror_pipeline)
+                  projects_con = projects_con, mirror_pipeline = mirror_pipeline)
   })
   if (!sp$ok) return(invisible(NULL))
   plan <- sp$value

@@ -32,7 +32,7 @@
   that for a single consumer (Phase A has exactly one flow) would be exactly the premature
   abstraction this whole redesign effort has repeatedly avoided. Deferred until Phase B gives it
   two more real flows (surveillance ingest, ODK) to generalize from.
-- **`tests/testthat/test-wizard.R`** (40 tests): every helper unit-tested directly (country
+- **`tests/testthat/test-wizard.R`** (46 tests): every helper unit-tested directly (country
   picker, file picker fallback chain, period detection matching `eri_split_cmr()`'s own regex
   exactly, path derivation against the real pipeline registry, mirror auto-detection including the
   error-defaults-to-mirror case), plus a full flow integration test asserting the real core
@@ -42,6 +42,19 @@
 - Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at the top of
   `vignettes/da-cmr-guide.Rmd` pointing at `eri_do()` as the easier path — the full guide-cutting
   pass (~26 articles → ~11) is Phase C, not done here.
+- **A review pass caught and fixed several real gaps before merge**: `eri_dq_review()`'s own
+  `@returns` doc still said "invisibly, `NULL`" after the loop extraction, when it now returns the
+  exit status (a real doc/behavior mismatch, fixed). `.eri_flow_cmr()` opened `projects_con` for the
+  upload step but didn't thread it (or `data_con`) through to `eri_stage_cmr()`/the dry-run
+  `eri_split_cmr()` call, so each opened its own extra live-Azure connection — now threaded
+  throughout. `.eri_prompt_pick_file()` called `file.choose()`/`rstudioapi::selectFile()` inline,
+  which can't be safely mocked (base-package locking) — any test of its re-ask/fallback logic would
+  have risked a real, blocking GUI dialog in headless CI; extracted into
+  `.eri_wizard_raw_file_dialog()` so tests can mock just that piece, and added the tests. The top
+  menu's "review something already staged" shortcut had no test at all; added one. The CMR guide's
+  new callout used `.eri-path-nav`, a CSS class documented for strictly-ordered-path footers (this
+  guide isn't part of one) — switched to a plain blockquote matching the guide's own existing
+  callout convention instead.
 
 # erifunctions 0.9.27
 

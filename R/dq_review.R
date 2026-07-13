@@ -299,8 +299,11 @@
 #' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] / [eri_cmr_last_plan()]. `NULL`
 #'   (default) looks it up via [eri_cmr_last_plan()].
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
-#' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls, which is
-#'   where the real return values (approvals, resolved flags, submitted tickets) live.
+#' @returns Invisibly, one of `"approved"`, `"force_approved"`, or `"exited"` -- how the session
+#'   ended, for a caller like [eri_do()] that hands off into this same loop and needs to know
+#'   whether to print its own closing message. Every effect happens through the scriptable core it
+#'   calls, which is where the real return values (approvals, resolved flags, submitted tickets)
+#'   live.
 #' @examples
 #' \dontrun{
 #' eri_dq_review("sdn", "202605")
