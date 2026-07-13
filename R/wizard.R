@@ -41,6 +41,11 @@
 # not a generic step sequence. That's the right level of reuse; a schema forcing these three into
 # one shape would be reuse for its own sake, not because the flows are actually alike.
 
+# Shared disease pick-list for flows whose country/disease space has no backing registry
+# (ADR-0012 deliberately leaves disease unregistered). One constant so the ingest and ODK flows
+# can't silently diverge from each other.
+.KNOWN_DISEASES <- c("malaria", "oncho", "lf", "sch", "sth")
+
 # Builds a numbered pick-list from a named country_map (code = display name is backwards here --
 # `.eri_pipeline_registry[[...]]$country_map` maps OUR code to the registry's own downstream code,
 # so the DISPLAY uses names(country_map), the pick-list choice IS the code) and returns the picked
@@ -347,7 +352,7 @@
   if (is.na(country)) return(invisible(NULL))
 
   disease <- .eri_prompt_pick_or_type(
-    "Which disease?", c("malaria", "oncho", "lf", "sch", "sth"),
+    "Which disease?", .KNOWN_DISEASES,
     "Disease (blank to cancel): "
   )
   if (is.na(disease)) return(invisible(NULL))
@@ -468,7 +473,8 @@
   data_con   <- .eri_logs_con(NULL)
   registered <- tryCatch(eri_odk_list_registered(data_con = data_con), error = function(e) NULL)
   already    <- !is.null(registered) && nrow(registered) > 0L &&
-    any(registered$project_id == project_id & registered$form_id == form_id)
+    any(registered$project_id == project_id & registered$form_id == form_id &
+          registered$server_url == con$url)
 
   if (!isTRUE(already)) {
     cli::cli_alert_info("This form isn't registered yet -- I need a country and disease to file it under.")
@@ -478,10 +484,14 @@
     if (is.null(country)) return(invisible(NULL))
 
     disease <- .eri_prompt_pick_or_type(
-      "Which disease?", c("malaria", "oncho", "lf", "sch", "sth"),
+      "Which disease?", .KNOWN_DISEASES,
       "Disease (blank to cancel): "
     )
     if (is.na(disease)) return(invisible(NULL))
+
+    if (!.eri_wizard_confirm(sprintf("Register this form as %s/%s?", country, disease))) {
+      return(invisible(NULL))
+    }
 
     reg <- .eri_wizard_step(function() {
       eri_odk_register(project_id, form_id, country, disease,

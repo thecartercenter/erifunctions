@@ -469,7 +469,8 @@ test_that(".eri_flow_odk skips registration when the form is already registered"
     .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
     eri_odk_list_registered = function(...) {
       registered_check <<- TRUE
-      tibble::tibble(project_id = 11L, form_id = "eri_test_river_prospection")
+      tibble::tibble(project_id = 11L, form_id = "eri_test_river_prospection",
+                     server_url = "https://odk.example.org/")
     },
     eri_odk_register = function(...) stop("must not register -- already registered"),
     .eri_wizard_confirm = function(...) TRUE,
@@ -478,6 +479,30 @@ test_that(".eri_flow_odk skips registration when the form is already registered"
   )
   expect_invisible(.eri_flow_odk())
   expect_true(registered_check)
+})
+
+test_that(".eri_flow_odk does not register when the DA declines the confirm prompt", {
+  withr::local_options(rlang_interactive = TRUE)
+  register_called <- FALSE
+  sync_called <- FALSE
+  local_mocked_bindings(
+    init_odk_connection = function(...) structure(list(url = "https://odk.example.org/"), class = "odk_connection"),
+    list_odk_projects = function(...) tibble::tibble(project_id = 11L, project = "testing"),
+    list_odk_forms = function(...) tibble::tibble(xmlFormId = "eri_test_river_prospection", name = "Test Form"),
+    .eri_prompt_menu = scripted(list(1L, 1L)),
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    eri_odk_list_registered = function(...) tibble::tibble(project_id = integer(), form_id = character(),
+                                                            server_url = character()),
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    eri_odk_register = function(...) { register_called <<- TRUE; invisible(NULL) },
+    .eri_wizard_confirm = function(...) FALSE,
+    eri_odk_sync = function(...) { sync_called <<- TRUE; invisible(NULL) },
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_odk())
+  expect_false(register_called)
+  expect_false(sync_called)
 })
 
 test_that(".eri_flow_odk stops cleanly (no sync) when the connection itself fails", {
