@@ -1,3 +1,33 @@
+# erifunctions 0.9.30
+
+## `eri_do()` now covers ODK sync too (Phase C.1 of the interactive-wizard course correction)
+
+- **`eri_do()`'s top menu gained "Pull in ODK survey submissions"**, powered by a new
+  `.eri_flow_odk()` (`R/wizard.R`): connect, pick a project and form from what's actually visible
+  on the account (no memorizing project/form IDs), register the form if it isn't already (asking
+  only for country and disease — the server URL comes from the live connection, never asked), then
+  sync. Built on the real `init_odk_connection()` / `list_odk_projects()` / `list_odk_forms()` /
+  `eri_odk_register()` / `eri_odk_sync()` / `eri_odk_list_registered()` functions — nothing
+  reimplemented.
+- **Deliberately stops at `research/raw/`.** Read `da-odk-guide.Rmd` in full before designing this:
+  unlike CMR and surveillance ingest, there is no automated stage-then-approve path for ODK data —
+  the real guide shows a manual `eri_write()` step after ad hoc quality-checking. Rather than
+  fabricate an approve step the underlying tooling doesn't support, the flow is honest about
+  handing off there, with a pointer at the surveillance ingest guide and `eri_approve()` for the
+  next step.
+- **Confirms the header-comment thesis from Phase B**: with CMR, ingest, and now ODK all built,
+  the three flows genuinely do not share enough top-level shape to justify the design consult's
+  proposed declarative `flow_map.yaml`/`kind:`-dispatch schema — only the low-level helper
+  vocabulary (`.eri_prompt_pick_country()`, `.eri_wizard_confirm()`, `.eri_wizard_step()`, etc.) is
+  actually shared. `R/wizard.R`'s header comment now records this as a settled, evidence-based
+  conclusion rather than a deferred question.
+- Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at the top of
+  `vignettes/da-odk-guide.Rmd` pointing at `eri_do()`.
+- **`tests/testthat/test-wizard.R`** (83 tests, +16 over Phase B): the full connect → discover →
+  register → sync path, the already-registered short-circuit (no redundant registration call), and
+  two clean-failure paths (connection fails, no visible projects) — every live-ODK-touching function
+  reachable on each path mocked directly, per this session's test-mock-safety discipline.
+
 # erifunctions 0.9.29
 
 ## `eri_do()` now covers surveillance ingest too (Phase B of the interactive-wizard course correction)

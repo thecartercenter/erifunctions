@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.29 · **Status:** Active development
+**Version:** 0.9.30 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -23,10 +23,10 @@ reference, and the project roadmap. This README is the quick orientation.
 
 ## Guides
 
-**Bringing in a monthly country report or a surveillance dataset?** Run `eri_do()` — a guided
-console wizard that walks the whole upload/archive → stage → review → approve pipeline through a
-few prompts (which country, which file, confirm the period). No function names to memorize, no
-Azure path to type by hand.
+**Bringing in a monthly country report, a surveillance dataset, or ODK submissions?** Run
+`eri_do()` — a guided console wizard that walks the whole upload/archive → stage → review → approve
+pipeline through a few prompts (which country, which file or ODK form, confirm the period). No
+function names to memorize, no Azure path to type by hand.
 
 These copy-paste, start-to-finish walkthroughs are the fastest way to learn the system. Read them
 on the [documentation site](https://thecartercenter.github.io/erifunctions/articles/), which groups

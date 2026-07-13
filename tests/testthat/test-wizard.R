@@ -394,12 +394,144 @@ test_that(".eri_flow_ingest stops cleanly (no approve) when open log entries nee
   expect_invisible(.eri_flow_ingest())
 })
 
+#### Phase C.1: ODK ####
+
+test_that(".eri_flow_odk connects -> discovers -> registers -> syncs in order, and nothing else", {
+  withr::local_options(rlang_interactive = TRUE)
+  calls <- list()
+  record <- function(name, ...) calls[[length(calls) + 1L]] <<- list(name = name, args = list(...))
+  mock_con <- structure(list(url = "https://odk.example.org/"), class = "odk_connection")
+
+  local_mocked_bindings(
+    init_odk_connection = function(...) { record("connect"); mock_con },
+    list_odk_projects = function(con) {
+      record("list_projects")
+      tibble::tibble(project_id = c(5L, 11L), project = c("Uganda", "testing"))
+    },
+    .eri_prompt_menu = local({
+      i <- 0L
+      function(title, choices) {
+        i <<- i + 1L
+        # 1st menu call: pick project "testing" (index 2); 2nd: pick the only form; the rest are
+        # handled by mocking .eri_wizard_confirm() directly below, not via this generic menu mock.
+        if (i == 1L) 2L else 1L
+      }
+    }),
+    list_odk_forms = function(con, project_id) {
+      record("list_forms", project_id = project_id)
+      tibble::tibble(xmlFormId = "eri_test_river_prospection", name = "ERI Test, River Prospection")
+    },
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    eri_odk_list_registered = function(...) tibble::tibble(project_id = integer(), form_id = character()),
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    eri_odk_register = function(project_id, form_id, country, disease, server_url, con, data_con) {
+      record("register", project_id = project_id, form_id = form_id, country = country,
+             disease = disease, server_url = server_url)
+      invisible(NULL)
+    },
+    .eri_wizard_confirm = function(...) TRUE,
+    eri_odk_sync = function(project_id, form_id, con, data_con) {
+      record("sync", project_id = project_id, form_id = form_id)
+      invisible(NULL)
+    },
+    .package = "erifunctions"
+  )
+
+  expect_invisible(.eri_flow_odk())
+
+  names_called <- vapply(calls, function(c) c$name, character(1))
+  expect_equal(names_called, c("connect", "list_projects", "list_forms", "register", "sync"))
+
+  list_forms_call <- calls[[3]]$args
+  expect_equal(list_forms_call$project_id, 11L)  # the SECOND project ("testing"), matching menu choice 2L
+
+  register_call <- calls[[4]]$args
+  expect_equal(register_call$project_id, 11L)
+  expect_equal(register_call$form_id, "eri_test_river_prospection")
+  expect_equal(register_call$country, "uga")
+  expect_equal(register_call$disease, "malaria")
+  expect_equal(register_call$server_url, "https://odk.example.org/")  # from con$url, never asked
+
+  sync_call <- calls[[5]]$args
+  expect_equal(sync_call$project_id, 11L)
+  expect_equal(sync_call$form_id, "eri_test_river_prospection")
+})
+
+test_that(".eri_flow_odk skips registration when the form is already registered", {
+  withr::local_options(rlang_interactive = TRUE)
+  registered_check <- FALSE
+  local_mocked_bindings(
+    init_odk_connection = function(...) structure(list(url = "https://odk.example.org/"), class = "odk_connection"),
+    list_odk_projects = function(...) tibble::tibble(project_id = 11L, project = "testing"),
+    list_odk_forms = function(...) tibble::tibble(xmlFormId = "eri_test_river_prospection", name = "Test Form"),
+    .eri_prompt_menu = scripted(list(1L, 1L)),
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    eri_odk_list_registered = function(...) {
+      registered_check <<- TRUE
+      tibble::tibble(project_id = 11L, form_id = "eri_test_river_prospection",
+                     server_url = "https://odk.example.org/")
+    },
+    eri_odk_register = function(...) stop("must not register -- already registered"),
+    .eri_wizard_confirm = function(...) TRUE,
+    eri_odk_sync = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_odk())
+  expect_true(registered_check)
+})
+
+test_that(".eri_flow_odk does not register when the DA declines the confirm prompt", {
+  withr::local_options(rlang_interactive = TRUE)
+  register_called <- FALSE
+  sync_called <- FALSE
+  local_mocked_bindings(
+    init_odk_connection = function(...) structure(list(url = "https://odk.example.org/"), class = "odk_connection"),
+    list_odk_projects = function(...) tibble::tibble(project_id = 11L, project = "testing"),
+    list_odk_forms = function(...) tibble::tibble(xmlFormId = "eri_test_river_prospection", name = "Test Form"),
+    .eri_prompt_menu = scripted(list(1L, 1L)),
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    eri_odk_list_registered = function(...) tibble::tibble(project_id = integer(), form_id = character(),
+                                                            server_url = character()),
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_or_type = function(...) "malaria",
+    eri_odk_register = function(...) { register_called <<- TRUE; invisible(NULL) },
+    .eri_wizard_confirm = function(...) FALSE,
+    eri_odk_sync = function(...) { sync_called <<- TRUE; invisible(NULL) },
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_odk())
+  expect_false(register_called)
+  expect_false(sync_called)
+})
+
+test_that(".eri_flow_odk stops cleanly (no sync) when the connection itself fails", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    init_odk_connection = function(...) stop("ODK username is required."),
+    eri_odk_sync = function(...) stop("must not be called -- connection failed"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_odk())
+})
+
+test_that(".eri_flow_odk stops cleanly when there are no visible projects", {
+  withr::local_options(rlang_interactive = TRUE)
+  local_mocked_bindings(
+    init_odk_connection = function(...) structure(list(url = "https://odk.example.org/"), class = "odk_connection"),
+    list_odk_projects = function(...) tibble::tibble(project_id = integer(), project = character()),
+    list_odk_forms = function(...) stop("must not be called -- no projects to pick from"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_odk())
+})
+
 test_that("eri_do's top menu routes to the CMR flow and exits cleanly", {
   withr::local_options(rlang_interactive = TRUE)
   cmr_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_cmr = function() { cmr_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(1L, 4L)),  # CMR flow, then Exit
+    .eri_prompt_menu = scripted(list(1L, 5L)),  # CMR flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
@@ -411,11 +543,23 @@ test_that("eri_do's top menu routes to the surveillance ingest flow and exits cl
   ingest_ran <- FALSE
   local_mocked_bindings(
     .eri_flow_ingest = function() { ingest_ran <<- TRUE; invisible(NULL) },
-    .eri_prompt_menu = scripted(list(2L, 4L)),  # ingest flow, then Exit
+    .eri_prompt_menu = scripted(list(2L, 5L)),  # ingest flow, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())
   expect_true(ingest_ran)
+})
+
+test_that("eri_do's top menu routes to the ODK flow and exits cleanly", {
+  withr::local_options(rlang_interactive = TRUE)
+  odk_ran <- FALSE
+  local_mocked_bindings(
+    .eri_flow_odk = function() { odk_ran <<- TRUE; invisible(NULL) },
+    .eri_prompt_menu = scripted(list(3L, 5L)),  # ODK flow, then Exit
+    .package = "erifunctions"
+  )
+  expect_invisible(eri_do())
+  expect_true(odk_ran)
 })
 
 test_that("eri_do's top menu routes to the DQ-review shortcut with a picked country/period", {
@@ -425,7 +569,7 @@ test_that("eri_do's top menu routes to the DQ-review shortcut with a picked coun
     .eri_prompt_pick_country = function(...) "uga",
     .eri_wizard_pick_period  = function(...) "202406",
     eri_dq_review = function(country, period) { reviewed <<- c(country, period); invisible(NULL) },
-    .eri_prompt_menu = scripted(list(3L, 4L)),  # DQ review shortcut, then Exit
+    .eri_prompt_menu = scripted(list(4L, 5L)),  # DQ review shortcut, then Exit
     .package = "erifunctions"
   )
   expect_invisible(eri_do())

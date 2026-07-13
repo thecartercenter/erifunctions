@@ -1,4 +1,4 @@
-#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: surveillance ingest) ####
+#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: ingest; Phase C.1: ODK) ####
 #
 # Design consult: docs/design/interactive-wizard-consult.md. Corrects the docs-site redesign's
 # direction -- that work optimized *discoverability* (can a DA find the right guide); this optimizes
@@ -22,12 +22,29 @@
 # (eri_logs()/eri_dq_flag_resolve()/eri_logs_resolve()), not a full interactive per-flag walker --
 # that's real, but smaller, follow-on work, not built here.
 #
-# ODK and onboarding flows, retiring eri_guide(), and the doc cut are Phase C/D, not started.
+# Phase C.1 adds ODK (.eri_flow_odk()): connect, discover the project/form (a DA rarely knows the
+# numeric project id or exact xmlFormId by heart), register if not already, sync. This flow stops at
+# "submissions are in research/raw/" rather than reaching all the way to eri_approve() the way
+# CMR/ingest do -- there is no single stage-then-approve function for ODK data (da-odk-guide.Rmd's
+# own approve step is a MANUAL eri_write() after ad hoc quality-checking), so completing that gap
+# honestly is real, separate follow-on work, not something to fake here.
 #
-# Concrete R control flow, not a declarative flow schema (a `flow_map.yaml`/`kind:`-dispatch engine
-# was in the original consult's design, but building a mini-DSL for a single consumer was the
-# premature abstraction this whole redesign has repeatedly avoided elsewhere -- deferred until a
-# third flow gives it enough real shape to generalize from correctly, not guessed at from two.)
+# Onboarding flow, retiring eri_guide(), and the doc cut are Phase C.2/C.3/D, not started.
+#
+# Concrete R control flow, not a declarative flow schema. The original consult proposed a
+# `flow_map.yaml`/`kind:`-dispatch engine "once a second/third flow gives it real shape to
+# generalize from" -- now that there are three (CMR: multi-step + a rich DQ loop; ingest: one call +
+# a log-summary DQ step; ODK: discover-then-register-then-sync with no approve step at all), the
+# evidence says otherwise: the three flows don't share enough TOP-LEVEL shape to make a declarative
+# schema worth building -- what's actually shared and reused is the low-level HELPER vocabulary
+# (.eri_prompt_pick_file(), .eri_wizard_step(), .eri_wizard_confirm(), .eri_prompt_pick_or_type()),
+# not a generic step sequence. That's the right level of reuse; a schema forcing these three into
+# one shape would be reuse for its own sake, not because the flows are actually alike.
+
+# Shared disease pick-list for flows whose country/disease space has no backing registry
+# (ADR-0012 deliberately leaves disease unregistered). One constant so the ingest and ODK flows
+# can't silently diverge from each other.
+.KNOWN_DISEASES <- c("malaria", "oncho", "lf", "sch", "sth")
 
 # Builds a numbered pick-list from a named country_map (code = display name is backwards here --
 # `.eri_pipeline_registry[[...]]$country_map` maps OUR code to the registry's own downstream code,
@@ -335,7 +352,7 @@
   if (is.na(country)) return(invisible(NULL))
 
   disease <- .eri_prompt_pick_or_type(
-    "Which disease?", c("malaria", "oncho", "lf", "sch", "sth"),
+    "Which disease?", .KNOWN_DISEASES,
     "Disease (blank to cancel): "
   )
   if (is.na(disease)) return(invisible(NULL))
@@ -417,6 +434,85 @@
   invisible(NULL)
 }
 
+#### Phase C.1: ODK Central ####
+
+# The ODK flow: connect, discover the project/form (a DA rarely knows the numeric project id or
+# exact xmlFormId by heart -- list_odk_projects()/list_odk_forms() turn that into two pick-lists),
+# register if this form isn't already tracked (using con$url as server_url -- init_odk_connection()
+# already has it, no need to ask again -- and .KNOWN_COUNTRY_CODES, R/odk_registry.R's own
+# registration-validation list, as the country pick-list -- ODK registration is genuinely
+# country-locked, unlike ingest), then sync. Stops there: there is no single stage-then-approve
+# function for ODK data (da-odk-guide.Rmd's own next step is a manual eri_write() after ad hoc
+# quality-checking), so this flow honestly ends at "synced to raw/," not a fabricated approve step.
+#' @keywords internal
+.eri_flow_odk <- function() {
+  cli::cli_h1("Pull in ODK survey submissions")
+
+  con_result <- .eri_wizard_step(function() init_odk_connection())
+  if (!con_result$ok) return(invisible(NULL))
+  con <- con_result$value
+
+  projects <- .eri_wizard_step(function() list_odk_projects(con = con))
+  if (!projects$ok || nrow(projects$value) == 0L) {
+    cli::cli_alert_warning("No ODK projects visible with this account.")
+    return(invisible(NULL))
+  }
+  project_choice <- .eri_prompt_menu("Which ODK project?", projects$value$project)
+  if (project_choice == 0L) return(invisible(NULL))
+  project_id <- projects$value$project_id[[project_choice]]
+
+  forms <- .eri_wizard_step(function() list_odk_forms(con = con, project_id = project_id))
+  if (!forms$ok || nrow(forms$value) == 0L) {
+    cli::cli_alert_warning("No forms found in that project.")
+    return(invisible(NULL))
+  }
+  form_choice <- .eri_prompt_menu("Which form?", forms$value$name)
+  if (form_choice == 0L) return(invisible(NULL))
+  form_id <- forms$value$xmlFormId[[form_choice]]
+
+  data_con   <- .eri_logs_con(NULL)
+  registered <- tryCatch(eri_odk_list_registered(data_con = data_con), error = function(e) NULL)
+  already    <- !is.null(registered) && nrow(registered) > 0L &&
+    any(registered$project_id == project_id & registered$form_id == form_id &
+          registered$server_url == con$url)
+
+  if (!isTRUE(already)) {
+    cli::cli_alert_info("This form isn't registered yet -- I need a country and disease to file it under.")
+    country_map <- .KNOWN_COUNTRY_CODES
+    names(country_map) <- .KNOWN_COUNTRY_CODES
+    country <- .eri_prompt_pick_country(country_map, "Which country?")
+    if (is.null(country)) return(invisible(NULL))
+
+    disease <- .eri_prompt_pick_or_type(
+      "Which disease?", .KNOWN_DISEASES,
+      "Disease (blank to cancel): "
+    )
+    if (is.na(disease)) return(invisible(NULL))
+
+    if (!.eri_wizard_confirm(sprintf("Register this form as %s/%s?", country, disease))) {
+      return(invisible(NULL))
+    }
+
+    reg <- .eri_wizard_step(function() {
+      eri_odk_register(project_id, form_id, country, disease,
+                       server_url = con$url, con = con, data_con = data_con)
+    })
+    if (!reg$ok) return(invisible(NULL))
+  }
+
+  if (!.eri_wizard_confirm("Sync submissions now?")) return(invisible(NULL))
+
+  sy <- .eri_wizard_step(function() eri_odk_sync(project_id, form_id, con = con, data_con = data_con))
+  if (!sy$ok) return(invisible(NULL))
+
+  cli::cli_alert_success("Done. Submissions are synced to research/raw/.")
+  cli::cli_bullets(c(
+    "i" = "Next: quality-check and stage this the same way as a surveillance extract -- see the surveillance ingest guide -- then eri_approve() it in.",
+    "i" = "Run {.fn eri_do} again any time to sync new submissions."
+  ))
+  invisible(NULL)
+}
+
 #' Bring a monthly report into the system, interactively (the guided console front door)
 #'
 #' @description
@@ -426,19 +522,22 @@
 #' country, which file, which reporting period -- and calls the existing scriptable core on their
 #' behalf. Never asks for a function name or an Azure path. `mirror_pipeline` is auto-detected from
 #' [eri_cutover_status()] and never asked about. Every mutation is one already-tested function
-#' ([eri_upload()], [eri_stage_cmr()], [eri_split_cmr()], [eri_ingest()], [eri_approve()]), and
-#' data quality review/approval hands off directly into the same loop [eri_dq_review()] uses (for
-#' CMR) or points at the scriptable triage tools directly ([eri_logs()], [eri_dq_flag_resolve()],
-#' for surveillance ingest) -- nothing here is reimplemented, and every function this calls stays
-#' fully usable directly in a script or CI.
+#' ([eri_upload()], [eri_stage_cmr()], [eri_split_cmr()], [eri_ingest()], [eri_approve()],
+#' [eri_odk_register()], [eri_odk_sync()]), and data quality review/approval hands off directly
+#' into the same loop [eri_dq_review()] uses (for CMR) or points at the scriptable triage tools
+#' directly ([eri_logs()], [eri_dq_flag_resolve()], for surveillance ingest) -- nothing here is
+#' reimplemented, and every function this calls stays fully usable directly in a script or CI.
 #'
-#' Currently covers bringing in a monthly CMR report, and bringing in a surveillance dataset
-#' (CSV/Excel line-list), end to end. ODK sync and new-program onboarding are planned as the same
-#' framework grows (see `docs/design/interactive-wizard-consult.md`).
+#' Currently covers bringing in a monthly CMR report, bringing in a surveillance dataset
+#' (CSV/Excel line-list), and pulling in ODK survey submissions, end to end. ODK sync stops at
+#' `research/raw/` -- there is no automated stage-then-approve path for ODK data yet (the real
+#' guide shows a manual [eri_write()] step), so the wizard is honest about handing off there
+#' rather than fabricating a step the underlying tooling doesn't support. New-program onboarding
+#' is planned as the same framework grows (see `docs/design/interactive-wizard-consult.md`).
 #'
 #' **Interactive only.** In a script or CI, use the scriptable core directly: [eri_upload()],
 #' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()], [eri_ingest()],
-#' [eri_approve()].
+#' [eri_approve()], [eri_odk_sync()].
 #'
 #' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls.
 #' @examples
@@ -460,16 +559,19 @@ eri_do <- function() {
     choice <- .eri_prompt_menu("What are you trying to do?", c(
       "Bring this month's country report (CMR) into the system",
       "Bring in a surveillance dataset (a CSV/Excel line-list)",
+      "Pull in ODK survey submissions",
       "Review & approve something already staged (DQ review)",
       "Exit"
     ))
-    if (choice == 0L || choice == 4L) break
+    if (choice == 0L || choice == 5L) break
 
     if (choice == 1L) {
       .eri_flow_cmr()
     } else if (choice == 2L) {
       .eri_flow_ingest()
     } else if (choice == 3L) {
+      .eri_flow_odk()
+    } else if (choice == 4L) {
       country <- .eri_prompt_pick_country(.eri_pipeline_registry[["rb-expansion"]]$country_map,
                                           "Which country?")
       if (!is.null(country)) {
