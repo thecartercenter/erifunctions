@@ -7,12 +7,13 @@ data system across countries (Haiti, DR, Uganda, OEPA, …) and diseases
 (malaria, oncho, LF, SCH, STH). You install it, authenticate through
 your browser, and call functions — you don’t edit the package.
 
-**Bringing in a monthly country report or a surveillance dataset? Run
+**Bringing in a monthly country report, a surveillance dataset, or ODK
+submissions? Run
 [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md).**
-It’s a guided console wizard — pick your country, pick the file, confirm
-the month, and it walks the whole upload/archive → stage → review →
-approve pipeline for you. No function names to memorize, no Azure path
-to type by hand.
+It’s a guided console wizard — pick your country, pick the file (or the
+ODK project and form), confirm the month, and it walks the whole
+upload/archive → stage → review → approve pipeline for you. No function
+names to memorize, no Azure path to type by hand.
 
 Not sure where to start otherwise? **[What are you trying to
 do?](https://thecartercenter.github.io/erifunctions/articles/task-index.md)**

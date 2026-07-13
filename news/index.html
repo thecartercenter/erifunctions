@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.29/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.30" id="erifunctions-0930">erifunctions 0.9.30<a class="anchor" aria-label="anchor" href="#erifunctions-0930"></a></h2>
+<div class="section level3">
+<h3 id="eri_do-now-covers-odk-sync-too-phase-c1-of-the-interactive-wizard-course-correction-0-9-30">
+<code>eri_do()</code> now covers ODK sync too (Phase C.1 of the interactive-wizard course correction)<a class="anchor" aria-label="anchor" href="#eri_do-now-covers-odk-sync-too-phase-c1-of-the-interactive-wizard-course-correction-0-9-30"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_do.html">eri_do()</a></code>’s top menu gained “Pull in ODK survey submissions”</strong>, powered by a new <code>.eri_flow_odk()</code> (<code>R/wizard.R</code>): connect, pick a project and form from what’s actually visible on the account (no memorizing project/form IDs), register the form if it isn’t already (asking only for country and disease — the server URL comes from the live connection, never asked), then sync. Built on the real <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code> / <code><a href="../reference/list_odk_projects.html">list_odk_projects()</a></code> / <code><a href="../reference/list_odk_forms.html">list_odk_forms()</a></code> / <code><a href="../reference/eri_odk_register.html">eri_odk_register()</a></code> / <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> / <code><a href="../reference/eri_odk_list_registered.html">eri_odk_list_registered()</a></code> functions — nothing reimplemented.</li>
+<li>
+<strong>Deliberately stops at <code>research/raw/</code>.</strong> Read <code>da-odk-guide.Rmd</code> in full before designing this: unlike CMR and surveillance ingest, there is no automated stage-then-approve path for ODK data — the real guide shows a manual <code><a href="../reference/eri_write.html">eri_write()</a></code> step after ad hoc quality-checking. Rather than fabricate an approve step the underlying tooling doesn’t support, the flow is honest about handing off there, with a pointer at the surveillance ingest guide and <code><a href="../reference/eri_approve.html">eri_approve()</a></code> for the next step.</li>
+<li>
+<strong>Confirms the header-comment thesis from Phase B</strong>: with CMR, ingest, and now ODK all built, the three flows genuinely do not share enough top-level shape to justify the design consult’s proposed declarative <code>flow_map.yaml</code>/<code>kind:</code>-dispatch schema — only the low-level helper vocabulary (<code>.eri_prompt_pick_country()</code>, <code>.eri_wizard_confirm()</code>, <code>.eri_wizard_step()</code>, etc.) is actually shared. <code>R/wizard.R</code>’s header comment now records this as a settled, evidence-based conclusion rather than a deferred question.</li>
+<li>Cross-linked from <code>pkgdown/index.md</code>, <code>README.md</code>, and a callout at the top of <code>vignettes/da-odk-guide.Rmd</code> pointing at <code><a href="../reference/eri_do.html">eri_do()</a></code>.</li>
+<li>
+<strong><code>tests/testthat/test-wizard.R</code></strong> (83 tests, +16 over Phase B): the full connect → discover → register → sync path, the already-registered short-circuit (no redundant registration call), and two clean-failure paths (connection fails, no visible projects) — every live-ODK-touching function reachable on each path mocked directly, per this session’s test-mock-safety discipline.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.29" id="erifunctions-0929">erifunctions 0.9.29<a class="anchor" aria-label="anchor" href="#erifunctions-0929"></a></h2>
 <div class="section level3">

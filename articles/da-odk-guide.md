@@ -3,6 +3,16 @@
 **Walkthrough** · ~40 min · needs: Azure + ODK · sandbox-safe: no (uses
 a real country’s ODK project)
 
+> **Just need to pull in this month’s submissions?** Run
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> in the console and pick “pull in ODK survey submissions” — it
+> connects, lets you pick the project and form from what’s actually
+> visible on your account, registers it if needed, and syncs, no
+> project/form IDs to memorize. It stops once submissions land in
+> `research/raw/`; this guide is still where you learn the parts the
+> wizard doesn’t cover — standing up a form, monitoring it, managing who
+> collects on it, and quality-checking + staging what comes back.
+
 **ODK Central** is where field data is born, survey teams collect
 submissions on phones, and they land on an ODK Central server. This is a
 hands-on walkthrough for a **Data Analyst (DA)** of the whole loop:

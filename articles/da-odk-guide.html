@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,7 +105,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Working with ODK Central: connect, monitor, and pull form data (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.29/vignettes/da-odk-guide.Rmd" class="external-link"><code>vignettes/da-odk-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-odk-guide.Rmd" class="external-link"><code>vignettes/da-odk-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-odk-guide.Rmd</code></div>
     </div>
 
@@ -116,6 +116,17 @@
 sandbox-safe: <span class="eri-sandbox-no">no</span> (uses a real
 country’s ODK project)</p>
 </div>
+<blockquote>
+<p><strong>Just need to pull in this month’s submissions?</strong> Run
+<a href="../reference/eri_do.html"><code>eri_do()</code></a> in the
+console and pick “pull in ODK survey submissions” — it connects, lets
+you pick the project and form from what’s actually visible on your
+account, registers it if needed, and syncs, no project/form IDs to
+memorize. It stops once submissions land in <code>research/raw/</code>;
+this guide is still where you learn the parts the wizard doesn’t cover —
+standing up a form, monitoring it, managing who collects on it, and
+quality-checking + staging what comes back.</p>
+</blockquote>
 <p><strong>ODK Central</strong> is where field data is born, survey
 teams collect submissions on phones, and they land on an ODK Central
 server. This is a hands-on walkthrough for a <strong>Data Analyst
