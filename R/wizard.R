@@ -1,4 +1,4 @@
-#### eri_do — the unified interactive pipeline wizard (Phase A: CMR) ####
+#### eri_do — the unified interactive pipeline wizard (Phase A: CMR; Phase B: surveillance ingest) ####
 #
 # Design consult: docs/design/interactive-wizard-consult.md. Corrects the docs-site redesign's
 # direction -- that work optimized *discoverability* (can a DA find the right guide); this optimizes
@@ -7,19 +7,27 @@
 # logic and it is never the only way in -- every function it calls stays fully usable directly, in
 # a script or CI.
 #
-# Phase A ships one flow (CMR) end to end, proving the framework: pick a country, pick a local
+# Phase A shipped the CMR flow end to end, proving the framework: pick a country, pick a local
 # file, confirm the month, watch upload -> stage -> split happen, then hand off directly into
 # eri_dq_review()'s existing loop (extracted as .eri_dq_review_loop(), R/dq_review.R) for triage and
-# approval. Later phases add surveillance ingest / ODK / onboarding flows on the same helpers
-# (.eri_prompt_pick_country(), .eri_prompt_pick_file(), .eri_wizard_step(), ...), and retire
-# eri_guide()'s interactive wizard once every flow has a real home here -- not yet, this phase only
-# adds a flow, it does not remove anything.
+# approval.
+#
+# Phase B adds surveillance ingest (.eri_flow_ingest()) on the same shared helpers
+# (.eri_prompt_pick_country(), .eri_prompt_pick_file(), .eri_wizard_step(), ...) -- but NOT ODK,
+# deliberately deferred: ingest's period is free-form text embedded in the staged filename (no fixed
+# YYYYMM convention the way CMR has), and its DQ flags land in the generic eri_logs() backlog, not
+# eri_cmr_dq_report()'s per-sheet shape eri_dq_review()'s loop is built for -- genuinely different
+# enough to need its own careful treatment rather than being rushed in alongside a third flow. Its
+# DQ step is therefore a summary + pointer at the existing scriptable triage tools
+# (eri_logs()/eri_dq_flag_resolve()/eri_logs_resolve()), not a full interactive per-flag walker --
+# that's real, but smaller, follow-on work, not built here.
+#
+# ODK and onboarding flows, retiring eri_guide(), and the doc cut are Phase C/D, not started.
 #
 # Concrete R control flow, not a declarative flow schema (a `flow_map.yaml`/`kind:`-dispatch engine
-# was in the original consult's design, but building a mini-DSL for a single consumer -- Phase A has
-# exactly one flow -- is the premature abstraction this whole redesign has repeatedly avoided
-# elsewhere. Once Phase B adds ingest/ODK as a second and third real consumer of the same shape,
-# that's the point to extract a shared schema from what actually repeats, not before.)
+# was in the original consult's design, but building a mini-DSL for a single consumer was the
+# premature abstraction this whole redesign has repeatedly avoided elsewhere -- deferred until a
+# third flow gives it enough real shape to generalize from correctly, not guessed at from two.)
 
 # Builds a numbered pick-list from a named country_map (code = display name is backwards here --
 # `.eri_pipeline_registry[[...]]$country_map` maps OUR code to the registry's own downstream code,
@@ -264,25 +272,173 @@
   }
 }
 
+#### Phase B: surveillance ingest ####
+
+# A pick-list with a trailing "Other (type it)" escape hatch, for open-ended-but-usually-known
+# values (e.g. disease, which ADR-0012's data model deliberately does NOT register -- only
+# data_source/data_type/format/layer are; disease stays free text so onboarding a new one is a data
+# change, not a code change). Returns NA on cancel/ESC at either step.
+#' @keywords internal
+.eri_prompt_pick_or_type <- function(prompt, known, type_prompt) {
+  choice <- .eri_prompt_menu(prompt, c(known, "Other (type it)"))
+  if (choice == 0L) return(NA_character_)
+  if (choice == length(known) + 1L) {
+    typed <- .eri_prompt_line(type_prompt)
+    return(if (nzchar(trimws(typed))) tolower(trimws(typed)) else NA_character_)
+  }
+  known[[choice]]
+}
+
+# Surveillance ingest has no country registry the way CMR's rb-expansion pipeline does (eri_ingest()
+# is deliberately not country-locked -- it's what lets the DA guides demo on a fake atlantis
+# country) -- so country is a validated typed prompt, not a pick-list. Re-asks until it looks like a
+# real code (2-4 lowercase letters) or the DA cancels (blank).
+#' @keywords internal
+.eri_wizard_prompt_country_code <- function() {
+  repeat {
+    typed <- .eri_prompt_line("Which country is this data for? (e.g. sdn; blank to cancel): ")
+    if (!nzchar(trimws(typed))) return(NA_character_)
+    code <- tolower(trimws(typed))
+    if (grepl("^[a-z]{2,4}$", code)) return(code)
+    cli::cli_alert_warning("Country codes are 2-4 letters (e.g. {.val sdn}, {.val atlantis}) -- try again.")
+  }
+}
+
+# Same auto-detection posture as .eri_wizard_should_mirror_cmr(), for the general ingest pipeline's
+# legacy mirror ("hsp-mal", currently registered for dr/ht only -- see .eri_pipeline_registry).
+# Returns FALSE outright for a country that was never registered for this mirror at all (most
+# countries), since eri_ingest() itself would abort passing mirror_pipeline for an unregistered
+# country -- the wizard must never construct a call it knows will fail.
+#' @keywords internal
+.eri_wizard_should_mirror_ingest <- function(country, disease, data_source, data_type) {
+  reg <- .eri_pipeline_registry[["hsp-mal"]]
+  if (is.null(reg$country_map[[country]])) return(FALSE)
+  st <- tryCatch(
+    suppressMessages(eri_cutover_status(country, disease, data_source, data_type)),
+    error = function(e) list(eligible = FALSE)
+  )
+  !isTRUE(st$eligible)
+}
+
+# The surveillance ingest flow: collect country/disease/channel/measure/file, confirm, then one
+# eri_ingest() call does raw-archive + DQ-check + stage (unlike CMR's multi-step
+# upload/stage/split -- eri_ingest() is a single call by design). Any DQ flags it logged are
+# summarized with a pointer at the existing scriptable triage tools (eri_logs()/
+# eri_dq_flag_resolve()/eri_logs_resolve()) rather than a full interactive walker -- see the file
+# header for why that's deliberately smaller than the CMR flow's DQ stage. Approval's period is
+# free text (eri_approve() matches it against the staged filename, no fixed convention to detect).
+#' @keywords internal
+.eri_flow_ingest <- function() {
+  cli::cli_h1("Bring in a surveillance dataset")
+
+  country <- .eri_wizard_prompt_country_code()
+  if (is.na(country)) return(invisible(NULL))
+
+  disease <- .eri_prompt_pick_or_type(
+    "Which disease?", c("malaria", "oncho", "lf", "sch", "sth"),
+    "Disease (blank to cancel): "
+  )
+  if (is.na(disease)) return(invisible(NULL))
+
+  dm <- .eri_data_model()
+  data_source <- .eri_prompt_pick_or_type(
+    "How did this data arrive?",
+    # cmr/odk are transitional read-only tokens (ADR-0012) -- never offered for a new write.
+    setdiff(names(dm$data_sources), c("cmr", "odk")),
+    "Channel (blank to cancel): "
+  )
+  if (is.na(data_source)) return(invisible(NULL))
+
+  data_type <- .eri_prompt_pick_or_type(
+    "What does each row count?", names(dm$data_types),
+    "Measure (blank to cancel): "
+  )
+  if (is.na(data_type)) return(invisible(NULL))
+
+  local_path <- .eri_prompt_pick_file("Where is the file on your computer?")
+  if (is.null(local_path)) return(invisible(NULL))
+
+  cli::cli_h3("Ready to bring this in")
+  cli::cli_bullets(c(
+    "*" = "Country: {.strong {toupper(country)}}",
+    "*" = "Disease: {.strong {disease}}",
+    "*" = "Channel: {.strong {data_source}} / Measure: {.strong {data_type}}",
+    "*" = "File:    {.strong {basename(local_path)}}"
+  ))
+  cli::cli_alert_info("I'll archive it, check data quality, and stage it for approval.")
+  if (!.eri_wizard_confirm("Go ahead?")) return(invisible(NULL))
+
+  data_con <- .eri_logs_con(NULL)
+  mirror_pipeline <- if (isTRUE(.eri_wizard_should_mirror_ingest(country, disease, data_source, data_type))) {
+    cli::cli_alert_info("This country is still in the parallel run, so I'll also send the raw file to the legacy pipeline.")
+    "hsp-mal"
+  } else {
+    NULL
+  }
+
+  ing <- .eri_wizard_step(function() {
+    eri_ingest(local_path, country, disease, data_source = data_source, data_type = data_type,
+              data_con = data_con, mirror_pipeline = mirror_pipeline)
+  })
+  if (!ing$ok) return(invisible(NULL))
+
+  open_logs <- tryCatch(
+    eri_logs(country, disease, data_source, data_type, status = "needs_review", data_con = data_con),
+    error = function(e) NULL
+  )
+  if (!is.null(open_logs) && nrow(open_logs) > 0L) {
+    cli::cli_alert_warning("{nrow(open_logs)} log entr{?y/ies} need review before this can be approved.")
+    cli::cli_bullets(c(
+      "i" = "Run {.fn eri_logs} to see them, {.fn eri_dq_flag_resolve} to triage each flag, then {.fn eri_logs_resolve} to close the entry out."
+    ))
+    if (!.eri_wizard_confirm("Approve anyway? (only if you've already reviewed this)")) {
+      cli::cli_alert_info("Left staged -- run {.fn eri_do} again once you've triaged the flags.")
+      return(invisible(NULL))
+    }
+  }
+
+  period <- .eri_prompt_line(
+    "What period identifies this data? (used to find the staged file, e.g. '2024-01'; blank to cancel): "
+  )
+  if (!nzchar(trimws(period))) {
+    cli::cli_alert_info("Left staged -- run {.fn eri_do} again any time to finish approving it.")
+    return(invisible(NULL))
+  }
+
+  ap <- .eri_wizard_step(function() {
+    eri_approve(country, disease, data_source, period, data_type = data_type, azcontainer = data_con)
+  })
+  if (ap$ok) {
+    cli::cli_alert_success("Done. This dataset is approved and in the catalog.")
+    cli::cli_bullets(c(
+      "i" = "Query it with {.fn eri_query} or see it in {.code eri_catalog_query(country = \"{country}\")}."
+    ))
+  }
+  invisible(NULL)
+}
+
 #' Bring a monthly report into the system, interactively (the guided console front door)
 #'
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
 #' A menu-driven wizard that carries a Data Analyst through an entire pipeline run -- which
-#' country, which file, which month -- and calls the existing scriptable core on their behalf.
-#' Never asks for a function name or an Azure path. `mirror_pipeline` is auto-detected from
+#' country, which file, which reporting period -- and calls the existing scriptable core on their
+#' behalf. Never asks for a function name or an Azure path. `mirror_pipeline` is auto-detected from
 #' [eri_cutover_status()] and never asked about. Every mutation is one already-tested function
-#' ([eri_upload()], [eri_stage_cmr()], [eri_split_cmr()]), and data quality review/approval hands
-#' off directly into the same loop [eri_dq_review()] uses -- nothing here is reimplemented, and
-#' every function this calls stays fully usable directly in a script or CI.
+#' ([eri_upload()], [eri_stage_cmr()], [eri_split_cmr()], [eri_ingest()], [eri_approve()]), and
+#' data quality review/approval hands off directly into the same loop [eri_dq_review()] uses (for
+#' CMR) or points at the scriptable triage tools directly ([eri_logs()], [eri_dq_flag_resolve()],
+#' for surveillance ingest) -- nothing here is reimplemented, and every function this calls stays
+#' fully usable directly in a script or CI.
 #'
-#' Currently covers bringing in a monthly CMR report end to end. Surveillance ingest, ODK sync, and
-#' new-program onboarding are planned as the same framework grows (see
-#' `docs/design/interactive-wizard-consult.md`).
+#' Currently covers bringing in a monthly CMR report, and bringing in a surveillance dataset
+#' (CSV/Excel line-list), end to end. ODK sync and new-program onboarding are planned as the same
+#' framework grows (see `docs/design/interactive-wizard-consult.md`).
 #'
 #' **Interactive only.** In a script or CI, use the scriptable core directly: [eri_upload()],
-#' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()].
+#' [eri_stage_cmr()], [eri_split_cmr()], [eri_cmr_dq_report()], [eri_approve_cmr()], [eri_ingest()],
+#' [eri_approve()].
 #'
 #' @returns Invisibly, `NULL`. Every effect happens through the scriptable core it calls.
 #' @examples
@@ -303,14 +459,17 @@ eri_do <- function() {
   repeat {
     choice <- .eri_prompt_menu("What are you trying to do?", c(
       "Bring this month's country report (CMR) into the system",
+      "Bring in a surveillance dataset (a CSV/Excel line-list)",
       "Review & approve something already staged (DQ review)",
       "Exit"
     ))
-    if (choice == 0L || choice == 3L) break
+    if (choice == 0L || choice == 4L) break
 
     if (choice == 1L) {
       .eri_flow_cmr()
     } else if (choice == 2L) {
+      .eri_flow_ingest()
+    } else if (choice == 3L) {
       country <- .eri_prompt_pick_country(.eri_pipeline_registry[["rb-expansion"]]$country_map,
                                           "Which country?")
       if (!is.null(country)) {
