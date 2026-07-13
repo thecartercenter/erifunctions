@@ -20,9 +20,10 @@ knitr::opts_chunk$set(
 :::
 
 > **This is the screen [`eri_do()`](../reference/eri_do.html) already puts you on.** Its CMR flow
-> (and the "Review & approve something already staged" menu item) hands off directly into this same
-> `eri_dq_review()` loop -- so if you're triaging flags inside `eri_do()` right now, this guide is
-> the reference for what each menu option (fix in source, mark noted, force-approve) actually does.
+> (and the "Review & approve something already staged" menu item, see the
+> [eri_do() tour](da-do-guide.html)) hands off directly into this same `eri_dq_review()` loop -- so
+> if you're triaging flags inside `eri_do()` right now, this guide is the reference for what each
+> menu option (fix in source, mark noted, force-approve) actually does.
 
 The [CMR guide](da-cmr-guide.html) and the [QC/feedback guide](da-qc-feedback-guide.html) both walk
 the DQ pipeline as a **sequence of functions you call yourself**: check, resolve each flag, close out

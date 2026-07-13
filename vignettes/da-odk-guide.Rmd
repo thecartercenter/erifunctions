@@ -22,9 +22,10 @@ knitr::opts_chunk$set(
 > **Just need to pull in this month's submissions?** Run [`eri_do()`](../reference/eri_do.html) in
 > the console and pick "pull in ODK survey submissions" — it connects, lets you pick the project
 > and form from what's actually visible on your account, registers it if needed, and syncs, no
-> project/form IDs to memorize. It stops once submissions land in `research/raw/`; this guide is
-> still where you learn the parts the wizard doesn't cover — standing up a form, monitoring it,
-> managing who collects on it, and quality-checking + staging what comes back.
+> project/form IDs to memorize (see the [eri_do() tour](da-do-guide.html) for what its menu looks
+> like). It stops once submissions land in `research/raw/`; this guide is still where you learn the
+> parts the wizard doesn't cover — standing up a form, monitoring it, managing who collects on it,
+> and quality-checking + staging what comes back.
 
 **ODK Central** is where field data is born, survey teams collect submissions on phones, and they
 land on an ODK Central server. This is a hands-on walkthrough for a **Data Analyst (DA)** of the whole

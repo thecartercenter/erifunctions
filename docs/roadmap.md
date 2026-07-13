@@ -524,6 +524,19 @@ now point at `eri_do()` as the primary path; its "Competency checklist" heading 
 addressed here since the file was already being revised). **Phase D (progress-detection polish,
 `eri_do("cmr")` deep links) remains designed in the consult document but not yet started.**
 
+**Follow-up, same session: `vignettes/da-do-guide.Rmd` shipped as v0.9.33.** A gap noticed only
+after Phase C.3 closed the loop: each of the four flows got its own "prefer to just do it? run
+`eri_do()`" callout in its pipeline guide as it shipped, but nothing ever documented the wizard's
+own menu as a whole, a tour of `eri_do()` itself, the way `eri_dq_review()` has
+`da-dq-review-guide.Rmd`. New guide walks the top-level menu and all five paths (CMR, ingest, ODK,
+onboarding, DQ-review shortcut) with their real prompts, verified directly against `R/wizard.R`'s
+source since `eri_do()` is interactive-only and none of it could be executed inside the document
+(illustrated, not live-captured, the same honest convention `da-cmr-guide.Rmd`/`da-odk-guide.Rmd`
+already use). Deliberately stays a tour, not a redo of the domain-knowledge walkthroughs — each
+section points at its pipeline's own guide for real captured output and depth. Cross-linked from
+`_pkgdown.yml`, `docs/guides.md`, `getting-started.Rmd`, and every existing pipeline guide's own
+`eri_do()` callout.
+
 ---
 
 ## Phase 4: ODK live pilot (Uganda survey)

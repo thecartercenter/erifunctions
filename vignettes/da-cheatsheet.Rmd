@@ -41,8 +41,9 @@ data/ {country} / {disease} / {data_source} / {data_type} / {layer} / file
 
 **Run [`eri_do()`](../reference/eri_do.html)** and pick from its menu (CMR / surveillance ingest /
 ODK / onboard a new space / review something staged) -- it picks the right functions and calls them
-for you, in order, so you don't have to hold this decision tree in your head. The table below is for
-when you're scripting the steps yourself, not deciding which pipeline to reach for.
+for you, in order, so you don't have to hold this decision tree in your head (see the
+[eri_do() tour](da-do-guide.html)). The table below is for when you're scripting the steps
+yourself, not deciding which pipeline to reach for.
 
 **The general primitive pipeline** (works on any data, incl. the practice sandbox):
 
