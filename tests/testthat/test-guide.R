@@ -1,17 +1,7 @@
 #### Tests for eri_guide() and its internal helpers ####
-
-# Returns a function that yields the next element of `responses` on each call,
-# ignoring its arguments -- the standard "scripted decision sequence" pattern
-# already used for eri_dq_review() (test-dq_review.R), reused here to script
-# .eri_prompt_menu() for eri_guide()'s own menu loop.
-scripted <- function(responses) {
-  i <- 0L
-  function(...) {
-    i <<- i + 1L
-    if (i > length(responses)) stop("scripted responses exhausted at call ", i)
-    responses[[i]]
-  }
-}
+#
+# scripted() (the interactive-menu mocking helper) lives in helper-scripted.R, shared with
+# test-dq_review.R.
 
 test_that("eri_guide refuses to run non-interactively", {
   expect_error(eri_guide(), "interactive-only")

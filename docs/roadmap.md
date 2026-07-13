@@ -408,7 +408,7 @@ signature, not just that it parses) found two real, pre-existing bugs: `start_pr
 `eri_spatial_pop(boundaries)` used a parameter name that doesn't exist on the real function
 (`shapefile`) — both fixed, and `test-task-map.R` gained a permanent check for this whole class of
 bug. A roxygen title/`@family` audit (via `roxygen2::parse_package()`, not eyeballing) checked all
-156 exported functions' titles and found exactly one real issue (fixed); added `@family` tags to 25
+157 exported functions' titles and found exactly one real issue (fixed); added `@family` tags to 25
 functions across 3 tight, already-vetted clusters (CMR pipeline, DQ schema override, ODK Central) —
 a first pass, not an exhaustive sweep, since `_pkgdown.yml`'s reference index already covers
 cross-function discovery at the browse level. **A serious near-miss surfaced and fixed before

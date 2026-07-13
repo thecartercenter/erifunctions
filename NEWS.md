@@ -18,7 +18,7 @@
   `test-task-map.R` gained a permanent check: every `call:` template must represent every required
   argument of its own referenced function, not just parse as valid R.
 - **A roxygen title/`@family` audit** (via `roxygen2::parse_package()`, not eyeballing): checked
-  all 156 exported functions' titles for sentence case and no trailing period — found exactly one
+  all 157 exported functions' titles for sentence case and no trailing period — found exactly one
   real issue (`erifunctions_io()`'s all-lowercase, fragment-style title; the 4 flagged S3
   print/summary methods are conventionally undocumented and not a real gap). Added `@family` tags
   to 25 functions across 3 tight, already-vetted clusters (CMR pipeline, DQ schema override, ODK
@@ -40,10 +40,9 @@
   against live infrastructure from what was meant to be an offline unit test. Fixed the test bug
   (build the `scripted()` closure once, outside the mock wrapper) and a second, related
   infinite-loop bug it exposed in a different new test (a mock that never returned an "Exit"
-  choice for the top-level menu). See the "branch first"-style lesson in memory: any test that
-  drives an interactive loop via a mocked prompt must be checked for a route where the mock can
-  never terminate the loop, since offline test code that accidentally reaches an un-mocked
-  live-integration function will actually run it.
+  choice for the top-level menu). Lesson: any test that drives an interactive loop via a mocked
+  prompt has to be traced for every route the mock can take, not just the intended one — offline
+  test code that accidentally reaches an un-mocked live-integration function will actually run it.
 
 # erifunctions 0.9.25
 
