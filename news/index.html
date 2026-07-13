@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.28/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.29" id="erifunctions-0929">erifunctions 0.9.29<a class="anchor" aria-label="anchor" href="#erifunctions-0929"></a></h2>
+<div class="section level3">
+<h3 id="eri_do-now-covers-surveillance-ingest-too-phase-b-of-the-interactive-wizard-course-correction-0-9-29">
+<code>eri_do()</code> now covers surveillance ingest too (Phase B of the interactive-wizard course correction)<a class="anchor" aria-label="anchor" href="#eri_do-now-covers-surveillance-ingest-too-phase-b-of-the-interactive-wizard-course-correction-0-9-29"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_do.html">eri_do()</a></code>’s top menu gained “Bring in a surveillance dataset”</strong>, powered by a new <code>.eri_flow_ingest()</code> (<code>R/wizard.R</code>) on the same shared helpers as the CMR flow: pick the file with a native dialog, confirm the reporting period, and one <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> call does raw-archive + DQ-check + stage (unlike CMR’s multi-step upload/stage/split, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is a single call by design). <code>mirror_pipeline</code> is auto-detected the same way as CMR’s flow — via <code><a href="../reference/eri_cutover_status.html">eri_cutover_status()</a></code>, and only even considered for a country actually registered for the <code>hsp-mal</code> legacy mirror (most aren’t, and the wizard checks that first rather than ever constructing a call it knows <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> would reject).</li>
+<li>
+<strong>Two new reusable helpers</strong>, needed because ingest’s country/disease have no backing registry the way CMR’s <code>rb-expansion</code> pipeline does: <code>.eri_prompt_pick_or_type()</code> (a pick-list with a typed “Other” escape hatch — used for disease, which ADR-0012’s data model deliberately leaves unregistered) and <code>.eri_wizard_prompt_country_code()</code> (a validated free-typed country code, since <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code> is deliberately not country-locked — that’s what lets the DA guides demo safely on the made-up <code>atlantis</code> country).</li>
+<li>
+<strong>Deliberately did NOT ship ODK in the same PR.</strong> Two things turned out to be genuinely different from CMR, not just superficially: ingest’s approval period is free text matched against the staged filename (<code><a href="../reference/eri_approve.html">eri_approve()</a></code>’s own documented behavior — no fixed <code>YYYYMM</code> convention to detect), and its DQ flags land in the generic <code><a href="../reference/eri_logs.html">eri_logs()</a></code> backlog, not <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>’s per-sheet shape <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s loop is built for. So this flow’s DQ step is a summary of any open log entries plus a pointer at the existing scriptable triage tools (<code><a href="../reference/eri_logs.html">eri_logs()</a></code>/<code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code>/<code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>), not a full interactive per-flag walker — smaller than CMR’s DQ stage, and stated that way here rather than overstating parity. Building that properly, and ODK’s own registration workflow, are real follow-on work, not rushed in alongside this.</li>
+<li>Cross-linked from <code>pkgdown/index.md</code>, <code>README.md</code>, and a callout at the top of <code>vignettes/da-ingest-guide.Rmd</code> pointing at <code><a href="../reference/eri_do.html">eri_do()</a></code>.</li>
+<li>
+<strong><code>tests/testthat/test-wizard.R</code></strong> (67 tests, +21 over Phase A): every new helper unit-tested directly (including the “never even check cutover status for a country that was never registered for the mirror at all” case), a full flow integration test, and a real failure-mode test (DA declines to approve with open DQ log entries outstanding).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.28" id="erifunctions-0928">erifunctions 0.9.28<a class="anchor" aria-label="anchor" href="#erifunctions-0928"></a></h2>
 <div class="section level3">

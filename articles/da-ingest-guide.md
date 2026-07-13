@@ -3,6 +3,14 @@
 **Walkthrough** · ~35 min · needs: Azure · sandbox-safe: yes (runs on
 `atlantis`)
 
+> **Prefer to just do it?** Run
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> in the console and pick “bring in a surveillance dataset” — it walks
+> the whole archive → check → stage → approve pipeline below through a
+> few prompts (which country, which disease, which file), no function
+> names to memorize. This guide is for understanding what’s happening
+> underneath, or for scripting the steps yourself.
+
 This is a hands-on, **start-to-finish walkthrough** of getting a
 surveillance dataset into the Carter Center data system, the daily work
 of a **Data Analyst (DA)**. It is written for domain experts who are

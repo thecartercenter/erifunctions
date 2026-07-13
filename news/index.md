@@ -1,5 +1,63 @@
 # Changelog
 
+## erifunctions 0.9.29
+
+### `eri_do()` now covers surveillance ingest too (Phase B of the interactive-wizard course correction)
+
+- **[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)’s
+  top menu gained “Bring in a surveillance dataset”**, powered by a new
+  `.eri_flow_ingest()` (`R/wizard.R`) on the same shared helpers as the
+  CMR flow: pick the file with a native dialog, confirm the reporting
+  period, and one
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  call does raw-archive + DQ-check + stage (unlike CMR’s multi-step
+  upload/stage/split,
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  is a single call by design). `mirror_pipeline` is auto-detected the
+  same way as CMR’s flow — via
+  [`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md),
+  and only even considered for a country actually registered for the
+  `hsp-mal` legacy mirror (most aren’t, and the wizard checks that first
+  rather than ever constructing a call it knows
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  would reject).
+- **Two new reusable helpers**, needed because ingest’s country/disease
+  have no backing registry the way CMR’s `rb-expansion` pipeline does:
+  `.eri_prompt_pick_or_type()` (a pick-list with a typed “Other” escape
+  hatch — used for disease, which ADR-0012’s data model deliberately
+  leaves unregistered) and `.eri_wizard_prompt_country_code()` (a
+  validated free-typed country code, since
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md)
+  is deliberately not country-locked — that’s what lets the DA guides
+  demo safely on the made-up `atlantis` country).
+- **Deliberately did NOT ship ODK in the same PR.** Two things turned
+  out to be genuinely different from CMR, not just superficially:
+  ingest’s approval period is free text matched against the staged
+  filename
+  ([`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)’s
+  own documented behavior — no fixed `YYYYMM` convention to detect), and
+  its DQ flags land in the generic
+  [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
+  backlog, not
+  [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)’s
+  per-sheet shape
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
+  loop is built for. So this flow’s DQ step is a summary of any open log
+  entries plus a pointer at the existing scriptable triage tools
+  ([`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)/[`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)/[`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md)),
+  not a full interactive per-flag walker — smaller than CMR’s DQ stage,
+  and stated that way here rather than overstating parity. Building that
+  properly, and ODK’s own registration workflow, are real follow-on
+  work, not rushed in alongside this.
+- Cross-linked from `pkgdown/index.md`, `README.md`, and a callout at
+  the top of `vignettes/da-ingest-guide.Rmd` pointing at
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md).
+- **`tests/testthat/test-wizard.R`** (67 tests, +21 over Phase A): every
+  new helper unit-tested directly (including the “never even check
+  cutover status for a country that was never registered for the mirror
+  at all” case), a full flow integration test, and a real failure-mode
+  test (DA declines to approve with open DQ log entries outstanding).
+
 ## erifunctions 0.9.28
 
 ### `eri_do()`: a guided console wizard that runs the CMR pipeline for you (Phase A of the interactive-wizard course correction)
