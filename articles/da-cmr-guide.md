@@ -3,6 +3,15 @@
 **Walkthrough** · ~25 min · needs: Azure · sandbox-safe: no
 (stage/approve need a real registered country)
 
+> **Prefer to just do it?** Run
+> [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+> in the console and pick “bring this month’s country report in” — it
+> walks the whole upload → stage → split → review → approve pipeline
+> below through a few prompts (which country, which file, confirm the
+> month), no function names to memorize and no Azure path to type by
+> hand. This guide is for understanding what’s happening underneath, or
+> for scripting the steps yourself.
+
 Every month, country programmes file a **Case Management Report (CMR)**,
 a filled Excel template of treatment, training, and survey numbers. This
 guide, for a **Data Analyst**, walks the monthly job: take that incoming

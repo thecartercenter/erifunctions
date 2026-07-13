@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -70,9 +70,31 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.27/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.28" id="erifunctions-0928">erifunctions 0.9.28<a class="anchor" aria-label="anchor" href="#erifunctions-0928"></a></h2>
+<div class="section level3">
+<h3 id="eri_do-a-guided-console-wizard-that-runs-the-cmr-pipeline-for-you-phase-a-of-the-interactive-wizard-course-correction-0-9-28">
+<code>eri_do()</code>: a guided console wizard that runs the CMR pipeline for you (Phase A of the interactive-wizard course correction)<a class="anchor" aria-label="anchor" href="#eri_do-a-guided-console-wizard-that-runs-the-cmr-pipeline-for-you-phase-a-of-the-interactive-wizard-course-correction-0-9-28"></a></h3>
+<ul><li>
+<strong>Added <code><a href="../reference/eri_do.html">eri_do()</a></code></strong> (<code>R/wizard.R</code>), a menu-driven wizard that carries a Data Analyst through bringing a monthly country report (CMR) into the system end to end: pick a country from a pick-list (never typed), pick the local file with a native file dialog (<code><a href="https://rstudio.github.io/rstudioapi/reference/file-dialogs.html" class="external-link">rstudioapi::selectFile()</a></code>/<code><a href="https://rdrr.io/r/base/file.choose.html" class="external-link">file.choose()</a></code>, never a hand-constructed Azure path), confirm the filename-detected reporting month, then watch upload → stage → split happen automatically, handing off directly into the same review-and-approve loop <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> already uses. No function names to memorize.</li>
+<li>
+<strong>This is a direct course correction</strong>, not an extension of the docs-site redesign above. That work optimized <em>discoverability</em> (can a DA find the right guide); the actual ask, stated explicitly, was <em>execution simplicity</em> (can a DA do the job without learning the tool). A design consult (commissioned this session, full document at <code>docs/design/interactive-wizard-consult.md</code>) verified the real fix is smaller than it first looked: the “9-function ordeal” DAs faced was inflated — 2 steps are read-only inspection and the last 4 are already one function (<code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>) — so the genuinely new work is just the front half (upload → stage → split), then handing off to what already works.</li>
+<li>
+<strong><code>mirror_pipeline</code> is now auto-detected, never asked about.</strong> <code><a href="../reference/eri_do.html">eri_do()</a></code> checks <code>eri_cutover_status()$eligible</code> for every disease/measure this workbook feeds and mirrors to the legacy pipeline only for streams that haven’t yet proven 3-period parity (ADR-0015) — a DA never sees or decides this flag. An unrecorded/errored stream defaults to mirroring, the safe direction.</li>
+<li>
+<strong><code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s main loop is now <code>.eri_dq_review_loop()</code></strong>, extracted so <code><a href="../reference/eri_do.html">eri_do()</a></code> can hand off directly into it (with the plan it just built, no extra lookup) instead of duplicating the check → fix → re-check → approve control flow. <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> itself is unchanged — same signature, same console behavior — and now also returns (invisibly) whether the session ended <code>"approved"</code>, <code>"force_approved"</code>, or <code>"exited"</code>, which <code><a href="../reference/eri_do.html">eri_do()</a></code> uses to decide whether to print its own closing message.</li>
+<li>
+<strong>Deliberately concrete R, not a declarative flow schema.</strong> The consult’s own design proposed a <code>flow_map.yaml</code>/<code>kind:</code>-dispatch engine generalizing across pipelines from the start — building that for a single consumer (Phase A has exactly one flow) would be exactly the premature abstraction this whole redesign effort has repeatedly avoided. Deferred until Phase B gives it two more real flows (surveillance ingest, ODK) to generalize from.</li>
+<li>
+<strong><code>tests/testthat/test-wizard.R</code></strong> (46 tests): every helper unit-tested directly (country picker, file picker fallback chain, period detection matching <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>’s own regex exactly, path derivation against the real pipeline registry, mirror auto-detection including the error-defaults-to-mirror case), plus a full flow integration test asserting the real core functions are called in the right order with the derived path/period/mirror flag — and cancel/ decline/resume-in-progress paths, so a DA backing out or an interrupted session doesn’t silently do the wrong thing.</li>
+<li>Cross-linked from <code>pkgdown/index.md</code>, <code>README.md</code>, and a callout at the top of <code>vignettes/da-cmr-guide.Rmd</code> pointing at <code><a href="../reference/eri_do.html">eri_do()</a></code> as the easier path — the full guide-cutting pass (~26 articles → ~11) is Phase C, not done here.</li>
+<li>
+<strong>A review pass caught and fixed several real gaps before merge</strong>: <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s own <code>@returns</code> doc still said “invisibly, <code>NULL</code>” after the loop extraction, when it now returns the exit status (a real doc/behavior mismatch, fixed). <code>.eri_flow_cmr()</code> opened <code>projects_con</code> for the upload step but didn’t thread it (or <code>data_con</code>) through to <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code>/the dry-run <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> call, so each opened its own extra live-Azure connection — now threaded throughout. <code>.eri_prompt_pick_file()</code> called <code><a href="https://rdrr.io/r/base/file.choose.html" class="external-link">file.choose()</a></code>/<code><a href="https://rstudio.github.io/rstudioapi/reference/file-dialogs.html" class="external-link">rstudioapi::selectFile()</a></code> inline, which can’t be safely mocked (base-package locking) — any test of its re-ask/fallback logic would have risked a real, blocking GUI dialog in headless CI; extracted into <code>.eri_wizard_raw_file_dialog()</code> so tests can mock just that piece, and added the tests. The top menu’s “review something already staged” shortcut had no test at all; added one. The CMR guide’s new callout used <code>.eri-path-nav</code>, a CSS class documented for strictly-ordered-path footers (this guide isn’t part of one) — switched to a plain blockquote matching the guide’s own existing callout convention instead.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.27" id="erifunctions-0927">erifunctions 0.9.27<a class="anchor" aria-label="anchor" href="#erifunctions-0927"></a></h2>
 <div class="section level3">

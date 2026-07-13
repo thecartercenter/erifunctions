@@ -7,7 +7,14 @@ data system across countries (Haiti, DR, Uganda, OEPA, …) and diseases
 (malaria, oncho, LF, SCH, STH). You install it, authenticate through
 your browser, and call functions — you don’t edit the package.
 
-Not sure where to start? **[What are you trying to
+**Bringing in a monthly country report? Run
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md).**
+It’s a guided console wizard — pick your country, pick the file, confirm
+the month, and it walks the whole upload → stage → split → review →
+approve pipeline for you. No function names to memorize, no Azure path
+to type by hand.
+
+Not sure where to start otherwise? **[What are you trying to
 do?](https://thecartercenter.github.io/erifunctions/articles/task-index.md)**
 is a generated index of ~30 common tasks; pick yours and get the call
 and the guide. In the console,
@@ -107,8 +114,13 @@ repository](https://github.com/thecartercenter/erifunctions).
 ## Start here
 
 Run these first, and reach for them whenever you’re not sure what to
-call next.
+call next. eri_do() is the guided front door – pick a country and a
+file, answer a few prompts, and it runs the pipeline for you; the rest
+are for browsing or for when you’re calling the pieces yourself.
 
+- [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  **\[experimental\]** : Bring a monthly report into the system,
+  interactively (the guided console front door)
 - [`eri_guide()`](https://thecartercenter.github.io/erifunctions/reference/eri_guide.md)
   **\[experimental\]** : Find your task and get its call and guide
   (interactive)

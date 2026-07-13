@@ -3,8 +3,13 @@
 ## Start here
 
 Run these first, and reach for them whenever you’re not sure what to
-call next.
+call next. eri_do() is the guided front door – pick a country and a
+file, answer a few prompts, and it runs the pipeline for you; the rest
+are for browsing or for when you’re calling the pieces yourself.
 
+- [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  **\[experimental\]** : Bring a monthly report into the system,
+  interactively (the guided console front door)
 - [`eri_guide()`](https://thecartercenter.github.io/erifunctions/reference/eri_guide.md)
   **\[experimental\]** : Find your task and get its call and guide
   (interactive)

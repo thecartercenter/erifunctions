@@ -70,9 +70,13 @@ eri_dq_review(country, period, plan = NULL, data_con = NULL)
 
 ## Value
 
-Invisibly, `NULL`. Every effect happens through the scriptable core it
-calls, which is where the real return values (approvals, resolved flags,
-submitted tickets) live.
+Invisibly, one of `"approved"`, `"force_approved"`, or `"exited"` – how
+the session ended, for a caller like
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+that hands off into this same loop and needs to know whether to print
+its own closing message. Every effect happens through the scriptable
+core it calls, which is where the real return values (approvals,
+resolved flags, submitted tickets) live.
 
 ## See also
 
