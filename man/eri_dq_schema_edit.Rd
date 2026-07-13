@@ -51,3 +51,12 @@ file.edit(path)  # or rstudioapi::navigateToFile(path)
 # ... load_dq_schema() now returns this override until eri_dq_schema_reset() ...
 }
 }
+\seealso{
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_path}()},
+\code{\link{eri_dq_schema_reset}()},
+\code{\link{eri_dq_schema_status}()},
+\code{\link{eri_dq_schema_submit}()},
+\code{\link{load_dq_schema}()}
+}
+\concept{DQ schema functions}

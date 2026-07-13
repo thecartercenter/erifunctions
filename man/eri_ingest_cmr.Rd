@@ -52,3 +52,12 @@ df <- eri_ingest_cmr("data/uga_2024_01.xlsx", sheet = "RB Treatment", country = 
 df <- eri_ingest_cmr("data/tcd_2024_01.xlsx", sheet = "rb_treatment", country = "tcd")
 }
 }
+\seealso{
+Other CMR pipeline functions: 
+\code{\link{eri_approve_cmr}()},
+\code{\link{eri_cmr_dq_report}()},
+\code{\link{eri_cmr_last_plan}()},
+\code{\link{eri_split_cmr}()},
+\code{\link{eri_stage_cmr}()}
+}
+\concept{CMR pipeline functions}

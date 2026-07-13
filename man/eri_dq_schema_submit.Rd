@@ -64,4 +64,12 @@ eri_dq_schema_submit("sdn", "oncho", "programmatic", "treatment",
 \seealso{
 \code{\link[=eri_dq_schema_edit]{eri_dq_schema_edit()}} to create the override being submitted,
 \code{\link[=eri_feedback]{eri_feedback()}} for the general ticket log.
+
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_edit}()},
+\code{\link{eri_dq_schema_path}()},
+\code{\link{eri_dq_schema_reset}()},
+\code{\link{eri_dq_schema_status}()},
+\code{\link{load_dq_schema}()}
 }
+\concept{DQ schema functions}

@@ -34,3 +34,12 @@ checking status never itself retires a stale override.
 eri_dq_schema_status()
 }
 }
+\seealso{
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_edit}()},
+\code{\link{eri_dq_schema_path}()},
+\code{\link{eri_dq_schema_reset}()},
+\code{\link{eri_dq_schema_submit}()},
+\code{\link{load_dq_schema}()}
+}
+\concept{DQ schema functions}

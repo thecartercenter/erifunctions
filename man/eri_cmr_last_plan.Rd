@@ -40,3 +40,12 @@ from partial/corrective files rather than a full re-upload.
 plan <- eri_cmr_last_plan("sdn", "202605")
 }
 }
+\seealso{
+Other CMR pipeline functions: 
+\code{\link{eri_approve_cmr}()},
+\code{\link{eri_cmr_dq_report}()},
+\code{\link{eri_ingest_cmr}()},
+\code{\link{eri_split_cmr}()},
+\code{\link{eri_stage_cmr}()}
+}
+\concept{CMR pipeline functions}

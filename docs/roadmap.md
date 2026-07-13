@@ -393,8 +393,32 @@ those are deliberately left unhooked rather than forced, matching the same "don'
 call already made for `eri_guide()`'s run guardrail in Phase 5. `test-task-map.R` gained 3 new
 integrity checks (`epilogue_after:` must be in the leaf's own `reference:` list, must have a
 `next:` to point to, and must be unique across the tree) plus 3 runtime tests exercising
-`.eri_task_epilogue()` directly. (7) wizard depth (preflight checks, session memory,
-deep links) + a roxygen `@family`/title-audit pass, and (8) an evidence-gated,
+`.eri_task_epilogue()` directly. (7) wizard depth + doc audit — **shipped**: `eri_guide()` gained a
+`task_id` deep link (`eri_guide("check_cmr")` jumps straight to a task's detail screen) and session
+memory (remembers the last-visited category via the same `getOption()`/`options()` convention as
+`eri_verbosity()`, offers to "Continue in ..." it next time). "Preflight checks" scoped
+conservatively rather than built speculatively: real per-function argument collection (letting more
+than the 4 zero-arg tasks run from the wizard) stays out of scope, since most leaves mix simple
+strings with real R objects (a data frame, an sf shapefile) a console prompt can't safely fabricate
+— "Run it now"'s existing `tryCatch`-and-report (Phase 5) is treated as the guardrail against a
+live call failing, rather than inventing a new per-arg-type schema for uncertain benefit. A registry
+accuracy sweep (checking every `call:` template's required arguments against the real function
+signature, not just that it parses) found two real, pre-existing bugs: `start_project`'s
+`eri_research_init(project_name)` dropped 3 required arguments, and `population_totals`'s
+`eri_spatial_pop(boundaries)` used a parameter name that doesn't exist on the real function
+(`shapefile`) — both fixed, and `test-task-map.R` gained a permanent check for this whole class of
+bug. A roxygen title/`@family` audit (via `roxygen2::parse_package()`, not eyeballing) checked all
+156 exported functions' titles and found exactly one real issue (fixed); added `@family` tags to 25
+functions across 3 tight, already-vetted clusters (CMR pipeline, DQ schema override, ODK Central) —
+a first pass, not an exhaustive sweep, since `_pkgdown.yml`'s reference index already covers
+cross-function discovery at the browse level. **A serious near-miss surfaced and fixed before
+merge**: a bug in a *test* (a `scripted()` mock closure re-created fresh inside its own wrapper, so
+it never advanced past its first response) sent `eri_guide()`'s menu loop into an infinite "Run it
+now" loop on a zero-argument task whose call is `get_azure_storage_connection()` — real, and it hit
+the live `eridev` Azure tenant repeatedly until the runaway process was killed (no data written; a
+read-only auth handshake, but real API calls against live infrastructure from what was meant to be
+an offline test). Fixed the test bug and a second, related infinite-loop bug it exposed (a mock
+that never returned an "Exit" choice for the top-level menu). And (8) an evidence-gated,
 deliberately-deferred client-side decision-tree wizard on the site itself — not yet started.
 
 ---

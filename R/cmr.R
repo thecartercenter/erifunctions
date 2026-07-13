@@ -91,6 +91,7 @@ load_cmr_schema <- function(country) {
 #' # French template — canonical slug resolved via schema
 #' df <- eri_ingest_cmr("data/tcd_2024_01.xlsx", sheet = "rb_treatment", country = "tcd")
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_ingest_cmr <- function(path, sheet, country = NULL) {
   if (!file.exists(path)) {
@@ -275,6 +276,7 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #' # actually removing the superseded original (default only warns)
 #' eri_split_cmr("202605_ssd_report_fixed.xlsx", "ssd", supersede_staged = TRUE)
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_split_cmr <- function(path, country, data_con = NULL,
                           overwrite = FALSE, dry_run = FALSE,
@@ -661,6 +663,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
 #' \dontrun{
 #' plan <- eri_cmr_last_plan("sdn", "202605")
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_cmr_last_plan <- function(country, period, data_con = NULL) {
   data_con <- .eri_logs_con(data_con)
@@ -769,6 +772,7 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #' eri_approve_cmr("sdn", "202605", force = TRUE,
 #'                  justification = "Known template quirk in RB Treatment; confirmed with country lead.")
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
                             force = FALSE, justification = NULL) {
@@ -958,6 +962,7 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #' flags[flags$status == "open", ]
 #' eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected upstream")
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, data_con = NULL) {
   data_con <- .eri_logs_con(data_con)
@@ -1072,6 +1077,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
 #' eri_stage_cmr("uga", "202603")
 #' eri_stage_cmr("nga")  # auto-selects most recent period
 #' }
+#' @family CMR pipeline functions
 #' @export
 eri_stage_cmr <- function(country,
                            period       = NULL,

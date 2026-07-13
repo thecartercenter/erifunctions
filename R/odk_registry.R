@@ -64,6 +64,7 @@
 #'   server_url = "https://odk.example.org"
 #' )
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_register <- function(
     project_id,
@@ -182,6 +183,7 @@ eri_odk_register <- function(
 #' \dontrun{
 #' eri_odk_deregister(project_id = 7, form_id = "RiverProspection")
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_deregister <- function(
     project_id,
@@ -281,6 +283,7 @@ eri_odk_deregister <- function(
 #' # Tear down a sandbox registration completely
 #' eri_odk_purge(project_id = 99999, form_id = "eri_test_river_prospection")
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_purge <- function(
     project_id,
@@ -356,6 +359,7 @@ eri_odk_purge <- function(
 #' \dontrun{
 #' eri_odk_list_registered()
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_list_registered <- function(data_con = NULL) {
   data_con <- .odk_data_con(data_con)

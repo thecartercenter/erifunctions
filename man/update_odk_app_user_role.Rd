@@ -41,3 +41,19 @@ Named list (for \code{"create"}) or logical (for all others)
 \description{
 Create, delete, assign, or revoke an ODK app user role
 }
+\seealso{
+Other ODK Central functions: 
+\code{\link{download_form_attachments}()},
+\code{\link{download_odk_form}()},
+\code{\link{eri_odk_bulk_users}()},
+\code{\link{eri_odk_deregister}()},
+\code{\link{eri_odk_list_registered}()},
+\code{\link{eri_odk_purge}()},
+\code{\link{eri_odk_register}()},
+\code{\link{eri_odk_sync}()},
+\code{\link{eri_odk_upload}()},
+\code{\link{list_all_odk_app_users}()},
+\code{\link{list_odk_forms}()},
+\code{\link{list_odk_projects}()}
+}
+\concept{ODK Central functions}

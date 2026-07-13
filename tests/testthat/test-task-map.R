@@ -77,6 +77,37 @@ test_that("every `call:` template parses as valid R", {
   }
 })
 
+test_that("every `call:` template represents every required argument of its own function", {
+  # A parseable call can still omit a REQUIRED argument (no default) and just look abbreviated --
+  # this caught two real cases: start_project's eri_research_init(project_name) dropped 3 required
+  # args, and population_totals's eri_spatial_pop(boundaries) used the wrong name entirely (real
+  # param is `shapefile`). Optional args (with a default) may still be omitted, per the registry's
+  # own documented convention -- only required ones are checked here.
+  tree <- .eri_task_map()
+  for (branch in tree) {
+    for (leaf in branch$children) {
+      call_expr <- str2lang(leaf$call)
+      fn_name   <- as.character(call_expr[[1]])
+      # Positional arg tokens as written in the call template (not match.arg'd -- this is
+      # illustrative text a user reads, not something actually invoked).
+      call_arg_syms <- vapply(as.list(call_expr)[-1], function(a) as.character(a), character(1))
+
+      fn <- get(fn_name, envir = asNamespace("erifunctions"))
+      f  <- formals(fn)
+      required <- setdiff(
+        names(f)[vapply(f, function(d) identical(d, quote(expr = )), logical(1))],
+        "..."  # dots are never spelled out in a call template
+      )
+
+      missing <- setdiff(required, call_arg_syms)
+      expect_length(missing, 0L)
+      if (length(missing) > 0) {
+        cli::cli_inform("{leaf$id}: {.fn {fn_name}} call is missing required arg(s) {.val {missing}}")
+      }
+    }
+  }
+})
+
 test_that("every `next:` id resolves to a real task id in the tree", {
   tree <- .eri_task_map()
   ids <- unlist(lapply(tree, function(b) vapply(b$children, function(l) l$id, character(1))))

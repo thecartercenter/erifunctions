@@ -32,6 +32,7 @@
 #' eri_odk_sync(project_id = 7, form_id = "RiverProspection",
 #'              con = con, data_con = data_con)
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_sync <- function(
     project_id,

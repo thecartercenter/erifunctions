@@ -47,3 +47,12 @@ path <- eri_dq_schema_path("atlantis", "oncho", "programmatic", "treatment")
 file.edit(path)  # or rstudioapi::navigateToFile(path)
 }
 }
+\seealso{
+Other DQ schema functions: 
+\code{\link{eri_dq_schema_edit}()},
+\code{\link{eri_dq_schema_reset}()},
+\code{\link{eri_dq_schema_status}()},
+\code{\link{eri_dq_schema_submit}()},
+\code{\link{load_dq_schema}()}
+}
+\concept{DQ schema functions}

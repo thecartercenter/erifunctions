@@ -1,3 +1,50 @@
+# erifunctions 0.9.26
+
+## `eri_guide()` remembers where you were, jumps straight to a task, and a documentation audit (docs site redesign, phase 7)
+
+- **`eri_guide()` gained a `task_id` argument**: `eri_guide("check_cmr")` jumps straight to that
+  task's detail screen, skipping the category/task menus — a deep link for anyone who already
+  knows what they're looking for (from a script, a colleague's note, or a future epilogue hint).
+  Unknown ids abort with a clear message pointing at `eri_task_map()`.
+- **`eri_guide()` now remembers the last category you visited this session** and offers to
+  "Continue in ..." it at the top of the menu next time, instead of always starting from the top.
+  Uses the same `getOption()`/`options()` session-state convention as `eri_verbosity()`
+  (`R/console.R`), not a new package-environment pattern — resets with a fresh R session.
+- **A registry accuracy sweep found two real bugs the existing tests couldn't catch**: `call:`
+  templates that *parse* as R can still silently omit a *required* argument. `start_project`'s
+  `eri_research_init(project_name)` dropped 3 required arguments (`country`, `disease`,
+  `description`); `population_totals`'s `eri_spatial_pop(boundaries)` used a parameter name
+  (`boundaries`) that doesn't exist on the real function (`shapefile`). Both fixed, and
+  `test-task-map.R` gained a permanent check: every `call:` template must represent every required
+  argument of its own referenced function, not just parse as valid R.
+- **A roxygen title/`@family` audit** (via `roxygen2::parse_package()`, not eyeballing): checked
+  all 156 exported functions' titles for sentence case and no trailing period — found exactly one
+  real issue (`erifunctions_io()`'s all-lowercase, fragment-style title; the 4 flagged S3
+  print/summary methods are conventionally undocumented and not a real gap). Added `@family` tags
+  to 25 functions across 3 tight, already-vetted clusters (CMR pipeline, DQ schema override, ODK
+  Central) — a first pass, not an exhaustive 150-function sweep; `_pkgdown.yml`'s reference index
+  already covers cross-function discovery at the browse level, so `@family`'s marginal value here
+  is the "See Also" block on an individual function's own help page, not a replacement for it.
+- **"Preflight checks" scoped conservatively**: real per-function argument collection (so more
+  tasks could run from the wizard) stays out of scope — most leaves mix simple strings with real R
+  objects (a data frame, an sf shapefile) a console prompt can't safely fabricate, and a smart
+  per-arg-type schema to distinguish them would be new complexity for uncertain benefit.
+  "Run it now"'s existing `tryCatch`-and-report (Phase 5) is treated as the guardrail against a
+  live call failing.
+- **A serious near-miss, caught and fixed before merge**: a bug in a *test* (a `scripted()` mock
+  closure re-created fresh inside its own wrapper function, so it always returned the same first
+  response instead of advancing) sent `eri_guide()`'s menu loop into an infinite "Run it now" loop
+  on a zero-argument task whose call is `get_azure_storage_connection()` — which is real, and hit
+  the live `eridev` Azure tenant repeatedly until the runaway process was killed. No data was
+  written (the call is a read-only auth/connection handshake), but it burned real API calls
+  against live infrastructure from what was meant to be an offline unit test. Fixed the test bug
+  (build the `scripted()` closure once, outside the mock wrapper) and a second, related
+  infinite-loop bug it exposed in a different new test (a mock that never returned an "Exit"
+  choice for the top-level menu). See the "branch first"-style lesson in memory: any test that
+  drives an interactive loop via a mocked prompt must be checked for a route where the mock can
+  never terminate the loop, since offline test code that accidentally reaches an un-mocked
+  live-integration function will actually run it.
+
 # erifunctions 0.9.25
 
 ## Pipeline functions now hint at the next step, sourced from the task registry (docs site redesign, phase 6)

@@ -107,6 +107,7 @@
 #' eri_odk_bulk_users("users.csv", dry_run = TRUE)
 #' eri_odk_bulk_users("users.csv")
 #' }
+#' @family ODK Central functions
 #' @export
 eri_odk_bulk_users <- function(csv_path, con = NULL, dry_run = FALSE) {
   if (!file.exists(csv_path))

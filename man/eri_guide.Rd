@@ -4,7 +4,11 @@
 \alias{eri_guide}
 \title{Find your task and get its call and guide (interactive)}
 \usage{
-eri_guide()
+eri_guide(task_id = NULL)
+}
+\arguments{
+\item{task_id}{\code{chr} or \code{NULL} A task id to jump straight to its detail screen, skipping the
+category/task menus. \code{NULL} (default) starts at the top-level category menu.}
 }
 \value{
 Invisibly, \code{NULL}. "Run it now" prints its visibly-returned result the same way typing
@@ -23,6 +27,10 @@ guide (if any), and the reference functions it touches. A zero-argument task (e.
 everything else -- which needs real argument values this wizard has no safe way to fabricate --
 can only be shown, with its guide opened for the full walkthrough.
 
+The wizard remembers the last category you visited this session and offers to resume there.
+Pass a task id to jump straight to its detail screen instead of navigating the menus (see
+\code{\link[=eri_task_map]{eri_task_map()}}'s \code{id} column, or the generated task-index article, for valid ids).
+
 Prefer the generated \href{../articles/task-index.html}{task-index article} or \code{\link[=eri_task_map]{eri_task_map()}} when
 you don't need the back-and-forth of a menu.
 
@@ -31,6 +39,7 @@ you don't need the back-and-forth of a menu.
 \examples{
 \dontrun{
 eri_guide()
+eri_guide("check_cmr")  # jump straight to a known task
 }
 }
 \seealso{
