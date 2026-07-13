@@ -27,11 +27,13 @@
   at all (offline QC + Teams notification, a different task entirely). The actual redundancy was much
   narrower: two "quick reference" pages (`da-cheatsheet`, `orientation`) whose "which pipeline do I
   use?" decision trees purely duplicated `eri_do()`'s own menu, with no other unique content -- both
-  trimmed to a one-line pointer at `eri_do()`, keeping everything else. Also also added the missing
+  trimmed to a one-line pointer at `eri_do()`, keeping everything else. Also added the missing
   wizard-context callouts to `da-dq-review-guide`/`da-logs-guide` (point 3 above). **Net: 0 vignettes
-  deleted** (still 25) -- the consult's own audit (§2) had already flagged 8 real vignettes it never
-  accounted for in its "~26 -> ~11" count, and forcing a cut to hit that stale number would have been
-  solving to a guessed target instead of to genuine redundancy.
+  deleted** (still 25) -- this re-audit found 8 real vignettes the consult's own plan never mentions
+  at all (`da-adhoc-guide`, `da-cheatsheet`, `da-reporting-guide`, `da-survey-report-guide`,
+  `dq-pipeline`, `epi-dq-guide`, `orientation`, `sharepoint-workflow`), meaning its "~26 -> ~11" count
+  was already built on an incomplete picture -- forcing a cut to hit that stale number would have
+  been solving to a guessed target instead of to genuine redundancy.
 - **`onboarding.Rmd`** (the paced new-DA path): the "ingestion spine" days now point at `eri_do()` as
   the primary way to do each task, with the existing guides reframed as "what's happening underneath."
   Also removed the "Competency checklist (DA + mentor sign off)" heading's mentor-sign-off framing (a

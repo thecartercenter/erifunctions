@@ -7,7 +7,9 @@
 #
 # This is the shared source three surfaces render from, so they can never disagree:
 #   - a generated static article (vignettes/task-index.Rmd, this phase)
-#   - the future eri_guide() console wizard (phase 5)
+#   - eri_task_map() and the deprecated eri_guide(task_id=)'s static lookup (R/task_registry.R,
+#     R/guide.R -- eri_guide()'s own menu-driven console wizard from phase 5 was retired in the
+#     interactive-wizard course correction's Phase C.3, in favor of eri_do())
 #   - "next step" epilogues on pipeline functions (phase 6)
 # tests/testthat/test-task-map.R checks every reference/guide/call/next value here is
 # real -- an unverifiable claim in this file is a test failure, not a stale doc.

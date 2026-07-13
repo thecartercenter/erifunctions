@@ -38,7 +38,10 @@
 # already print their own "Next steps" via cli_inform, so the flow doesn't re-print or paraphrase
 # them -- one copy of that text, not two that can drift.
 #
-# Retiring eri_guide() and the doc cut are Phase C.3/D, not started.
+# Phase C.3 retired eri_guide() (deprecated + narrowed to a static lookup, R/guide.R) and re-audited
+# the doc cut against what actually shipped in A-C.2, finding it much narrower than the consult
+# estimated -- see docs/roadmap.md's Phase C.3 entry. Progress-detection polish is Phase D, not
+# started.
 #
 # Concrete R control flow, not a declarative flow schema. The original consult proposed a
 # `flow_map.yaml`/`kind:`-dispatch engine "once a second/third flow gives it real shape to
