@@ -1,6 +1,4 @@
-<img src="man/figures/logo.png" align="right" height="120" alt="erifunctions logo" />
-
-# erifunctions
+# erifunctions <img src="man/figures/logo.png" align="right" height="120" alt="erifunctions logo" />
 
 Standardized data tools for the Epidemiology, Research and Innovation (ERI) team at The Carter
 Center's NTD and malaria programs — the way **Data Analysts** and **Epidemiologists** work with
