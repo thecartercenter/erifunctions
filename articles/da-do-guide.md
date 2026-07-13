@@ -73,6 +73,21 @@ if you hit that error unexpectedly):
 eri_do()
 ```
 
+Always do the same task? Skip the top menu with `flow`:
+
+``` r
+
+eri_do("cmr")      # -> straight to the CMR flow
+eri_do("ingest")   # -> straight to surveillance ingest
+eri_do("odk")      # -> straight to ODK sync
+eri_do("onboard")  # -> straight to onboarding
+eri_do("review")   # -> straight to the DQ-review shortcut
+```
+
+Runs that one flow once and returns, it doesn’t loop back into the menu
+afterward. An unrecognized name errors immediately, rather than silently
+falling through to the menu.
+
 ## The top-level menu
 
 Most prompts in the wizard are numbered menus, type the number and press
@@ -337,6 +352,17 @@ confirms (surveillance and CMR each have their own confirm wording;
 CMR’s is shown):
 
     ── Write this CMR schema template and create the Azure folders?
+
+    1: Yes
+    2: No
+
+Already onboarded this country and started filling in the TODOs? The
+wizard checks for the local schema file before writing and warns rather
+than silently overwriting your edits:
+
+    ! Already exists here: 'atlantis_cmr_schema.yaml'
+
+    ── Overwrite with a fresh template? Any edits already made will be lost.
 
     1: Yes
     2: No

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.33</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.34</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,28 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.33/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.34" id="erifunctions-0934">erifunctions 0.9.34<a class="anchor" aria-label="anchor" href="#erifunctions-0934"></a></h2>
+<div class="section level3">
+<h3 id="eri_doflow-deep-links-and-a-real-overwrite-protection-found-along-the-way-phase-d-of-the-interactive-wizard-course-correction-0-9-34">
+<code>eri_do(flow=)</code> deep links, and a real overwrite protection found along the way (Phase D of the interactive-wizard course correction)<a class="anchor" aria-label="anchor" href="#eri_doflow-deep-links-and-a-real-overwrite-protection-found-along-the-way-phase-d-of-the-interactive-wizard-course-correction-0-9-34"></a></h3>
+<ul><li>
+<strong><code>eri_do(flow = NULL)</code></strong>: pass <code>"cmr"</code>, <code>"ingest"</code>, <code>"odk"</code>, <code>"onboard"</code>, or <code>"review"</code> to jump straight into that flow, skipping the top-level menu – runs it once and returns, rather than looping back into the menu. An unrecognized name errors immediately rather than silently falling through. One shared dispatch table (<code>.ERI_DO_FLOWS</code>/<code>.eri_do_run_flow()</code>) backs both the menu and the deep-link, so they can’t quietly diverge.</li>
+<li>
+<strong>Re-audited the design consult’s one-line Phase D scope</strong> (“progress-detection polish, <code>eri_do('cmr')</code> deep-links, feedback-on-confusing-flag”) against what actually exists, the same discipline Phase C.3 applied to the doc-cutting plan. “Feedback-on-confusing-flag” is already served for the CMR flow and the <code>"review"</code> shortcut, both of which hand off into <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s loop where <code><a href="../reference/eri_dq_schema_submit.html">eri_dq_schema_submit()</a></code> is already wired in – ingest/ODK have no DQ-flag-schema step inside the wizard at all by their own earlier-phase design, so for those two it means “reachable by calling the function directly,” not “exposed inside the wizard.” No new wizard-specific hook added either way. Extending CMR’s resume-detection pattern to ingest/ODK turned out not to be real polish either: ingest’s period is free text with no fixed key until <code><a href="../reference/eri_approve.html">eri_approve()</a></code> is actually called (a resume check would need new, fragile core logic just to guess at what would be approved), and ODK’s <code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> has no partial-sync state to resume from at all (it re-downloads and overwrites every submission on every call) – its “already registered” check is the only persistent state there is, and it already does the right thing.</li>
+<li>
+<strong>A genuine, previously-undiscovered gap surfaced investigating “progress-detection” instead</strong>: <code><a href="../reference/eri_onboard_country.html">eri_onboard_country()</a></code>/<code><a href="../reference/eri_onboard_cmr.html">eri_onboard_cmr()</a></code>/<code><a href="../reference/eri_onboard_disease.html">eri_onboard_disease()</a></code> all unconditionally overwrite an existing local schema file with a fresh blank template – real data loss for a DA who re-runs onboarding after already filling in the TODO sections. Added <code>.eri_wizard_confirm_onboard_write()</code> (a <code><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists()</a></code> check before the real write, no new core function needed) to all three onboarding sub-flows: it warns and asks a different, explicit confirm (“Overwrite with a fresh template? Any edits already made will be lost.”) when a target file already exists, instead of the normal “write this?” prompt.</li>
+<li>
+<strong>A real bug caught by the test suite, not review</strong>: the initial <code>flow=</code> validation error used <code>{.val {.ERI_DO_FLOWS}}</code> in a <code><a href="https://cli.r-lib.org/reference/cli_abort.html" class="external-link">cli::cli_abort()</a></code> call, which errors in current <code>cli</code> versions because an interpolated expression starting with <code>.</code> is reserved for cli styles – fixed by assigning to a plain local variable first. Caught immediately by the new “unrecognized flow name” test, not by manual inspection.</li>
+<li>
+<code>vignettes/da-do-guide.Rmd</code> updated with the <code>flow=</code> deep-link examples and the overwrite-protection transcript.</li>
+<li>
+<strong><code>tests/testthat/test-wizard.R</code></strong> (134 tests, +21): every <code>flow=</code> value routes correctly and skips the top menu, case/whitespace-insensitivity, the unrecognized-name error, and the overwrite check for each of the three onboarding sub-flows (no-existing-file, existing-file-confirm, existing-file-decline).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.33" id="erifunctions-0933">erifunctions 0.9.33<a class="anchor" aria-label="anchor" href="#erifunctions-0933"></a></h2>
 <div class="section level3">

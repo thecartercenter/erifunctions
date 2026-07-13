@@ -58,8 +58,18 @@ directly:
 ## Usage
 
 ``` r
-eri_do()
+eri_do(flow = NULL)
 ```
+
+## Arguments
+
+- flow:
+
+  `chr` or `NULL` A flow to jump straight into, skipping the top-level
+  menu: `"cmr"`, `"ingest"`, `"odk"`, `"onboard"`, or `"review"` (the
+  DQ-review shortcut). Runs that one flow once and returns, it does not
+  loop back into the menu afterward. `NULL` (default) shows the menu and
+  loops until you exit.
 
 ## Value
 
@@ -78,5 +88,6 @@ for the mirroring criterion this checks automatically.
 ``` r
 if (FALSE) { # \dontrun{
 eri_do()
+eri_do("cmr")  # jump straight to the CMR flow, skipping the menu
 } # }
 ```
