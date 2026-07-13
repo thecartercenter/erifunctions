@@ -67,7 +67,9 @@ a guided console wizard that picks the right functions for a CMR report,
 a surveillance extract, ODK submissions, or standing up a brand-new
 space, and calls them for you. Everything still ends at
 **[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)**
-and the catalog.
+and the catalog. See the [eri_do()
+tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+for what its menu looks like.
 
 ## Your tasks → where they live
 

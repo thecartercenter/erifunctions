@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -25,6 +25,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
     <li><a class="dropdown-item" href="../articles/task-index.html">What are you trying to do?</a></li>
+    <li><a class="dropdown-item" href="../articles/da-do-guide.html">eri_do(): a tour of the guided console wizard (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
     <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
     <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
@@ -70,9 +71,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.32/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.33" id="erifunctions-0933">erifunctions 0.9.33<a class="anchor" aria-label="anchor" href="#erifunctions-0933"></a></h2>
+<div class="section level3">
+<h3 id="new-guide-a-tour-of-eri_do-itself-0-9-33">New guide: a tour of <code>eri_do()</code> itself<a class="anchor" aria-label="anchor" href="#new-guide-a-tour-of-eri_do-itself-0-9-33"></a></h3>
+<ul><li>
+<strong><code>vignettes/da-do-guide.Rmd</code></strong>: the interactive-wizard course correction (Phases A-C.3) built four flows into <code><a href="../reference/eri_do.html">eri_do()</a></code> incrementally, each getting a “prefer to just do it?” callout in its own pipeline guide, but nothing ever documented the wizard’s own menu as a whole. This new guide is that missing piece: the top-level menu, then each of the five paths (CMR, surveillance ingest, ODK, onboarding, and the DQ-review shortcut) with its actual prompts and decision points, verified directly against <code>R/wizard.R</code>’s source (every menu title, confirmation prompt, and message string checked against the real code, the same accuracy discipline the guide-authoring recipe calls for). It deliberately stays a <em>tour</em>, not a redo of the domain-knowledge walkthroughs, each section points at its pipeline’s own guide (CMR, ingest, ODK, onboarding, DQ review) for the real captured output and field-level detail this one skips.</li>
+<li>
+<code><a href="../reference/eri_do.html">eri_do()</a></code> is interactive-only and refuses to run from a script, so none of this guide’s transcripts could be executed inside the document the way an ordinary function call could; every one is illustrated rather than live-captured, the same honest convention <code>da-cmr-guide.Rmd</code> and <code>da-odk-guide.Rmd</code> already use for their own non-sandbox-safe steps, and stated as such up front.</li>
+<li>Cross-linked from <code>_pkgdown.yml</code> (new “Quick reference &amp; onboarding” entry), <code>docs/guides.md</code>, <code>getting-started.Rmd</code>, and every existing pipeline guide’s own <code><a href="../reference/eri_do.html">eri_do()</a></code> callout (<code>da-cmr-guide</code>, <code>da-ingest-guide</code>, <code>da-odk-guide</code>, <code>da-onboard-guide</code>, <code>da-dq-review-guide</code>, <code>da-logs-guide</code>, <code>da-cheatsheet</code>, <code>orientation</code>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.32" id="erifunctions-0932">erifunctions 0.9.32<a class="anchor" aria-label="anchor" href="#erifunctions-0932"></a></h2>
 <div class="section level3">

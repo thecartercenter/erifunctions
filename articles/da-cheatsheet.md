@@ -44,8 +44,10 @@ never hand-type it.
 and pick from its menu (CMR / surveillance ingest / ODK / onboard a new
 space / review something staged) – it picks the right functions and
 calls them for you, in order, so you don’t have to hold this decision
-tree in your head. The table below is for when you’re scripting the
-steps yourself, not deciding which pipeline to reach for.
+tree in your head (see the [eri_do()
+tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)).
+The table below is for when you’re scripting the steps yourself, not
+deciding which pipeline to reach for.
 
 **The general primitive pipeline** (works on any data, incl. the
 practice sandbox):

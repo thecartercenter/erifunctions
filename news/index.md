@@ -1,5 +1,39 @@
 # Changelog
 
+## erifunctions 0.9.33
+
+### New guide: a tour of `eri_do()` itself
+
+- **`vignettes/da-do-guide.Rmd`**: the interactive-wizard course
+  correction (Phases A-C.3) built four flows into
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  incrementally, each getting a “prefer to just do it?” callout in its
+  own pipeline guide, but nothing ever documented the wizard’s own menu
+  as a whole. This new guide is that missing piece: the top-level menu,
+  then each of the five paths (CMR, surveillance ingest, ODK,
+  onboarding, and the DQ-review shortcut) with its actual prompts and
+  decision points, verified directly against `R/wizard.R`’s source
+  (every menu title, confirmation prompt, and message string checked
+  against the real code, the same accuracy discipline the
+  guide-authoring recipe calls for). It deliberately stays a *tour*, not
+  a redo of the domain-knowledge walkthroughs, each section points at
+  its pipeline’s own guide (CMR, ingest, ODK, onboarding, DQ review) for
+  the real captured output and field-level detail this one skips.
+- [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  is interactive-only and refuses to run from a script, so none of this
+  guide’s transcripts could be executed inside the document the way an
+  ordinary function call could; every one is illustrated rather than
+  live-captured, the same honest convention `da-cmr-guide.Rmd` and
+  `da-odk-guide.Rmd` already use for their own non-sandbox-safe steps,
+  and stated as such up front.
+- Cross-linked from `_pkgdown.yml` (new “Quick reference & onboarding”
+  entry), `docs/guides.md`, `getting-started.Rmd`, and every existing
+  pipeline guide’s own
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  callout (`da-cmr-guide`, `da-ingest-guide`, `da-odk-guide`,
+  `da-onboard-guide`, `da-dq-review-guide`, `da-logs-guide`,
+  `da-cheatsheet`, `orientation`).
+
 ## erifunctions 0.9.32
 
 ### `eri_guide()` retired to a static lookup; doc cut turned out much smaller than planned (Phase C.3 of the interactive-wizard course correction)

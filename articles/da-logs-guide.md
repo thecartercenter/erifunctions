@@ -16,6 +16,9 @@
 > backlog for you (unlike CMR, whose per-sheet flags have their own
 > guided loop, see the [DQ review
 > guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.md)).
+> See the [eri_do()
+> tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+> for what its menu looks like.
 
 Every operation `erifunctions` runs, an ingest, an approval, an ODK
 sync, **leaves a log** in Azure. When something fails, or a data-quality

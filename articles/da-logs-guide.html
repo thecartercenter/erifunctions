@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
     <li><a class="dropdown-item" href="../articles/task-index.html">What are you trying to do?</a></li>
+    <li><a class="dropdown-item" href="../articles/da-do-guide.html">eri_do(): a tour of the guided console wizard (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
     <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
     <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
@@ -105,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging the error &amp; data-quality log backlog (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.32/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-logs-guide.Rmd" class="external-link"><code>vignettes/da-logs-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-logs-guide.Rmd</code></div>
     </div>
 
@@ -123,8 +124,9 @@ entries, it stops and tells you to run <code><a href="../reference/eri_logs.html
 <code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> / <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code> –
 the exact tools this guide walks through – rather than triaging the
 backlog for you (unlike CMR, whose per-sheet flags have their own guided
-loop, see the <a href="da-dq-review-guide.html">DQ review
-guide</a>).</p>
+loop, see the <a href="da-dq-review-guide.html">DQ review guide</a>).
+See the <a href="da-do-guide.html">eri_do() tour</a> for what its menu
+looks like.</p>
 </blockquote>
 <p>Every operation <code>erifunctions</code> runs, an ingest, an
 approval, an ODK sync, <strong>leaves a log</strong> in Azure. When

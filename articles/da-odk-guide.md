@@ -8,7 +8,9 @@ a real country’s ODK project)
 > in the console and pick “pull in ODK survey submissions” — it
 > connects, lets you pick the project and form from what’s actually
 > visible on your account, registers it if needed, and syncs, no
-> project/form IDs to memorize. It stops once submissions land in
+> project/form IDs to memorize (see the [eri_do()
+> tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+> for what its menu looks like). It stops once submissions land in
 > `research/raw/`; this guide is still where you learn the parts the
 > wizard doesn’t cover — standing up a form, monitoring it, managing who
 > collects on it, and quality-checking + staging what comes back.

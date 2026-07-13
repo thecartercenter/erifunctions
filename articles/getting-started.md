@@ -78,7 +78,12 @@ and keep the [**DA cheat
 sheet**](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.md)
 and the [data-model
 card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.md)
-open as you work.
+open as you work. Once you’re connected,
+**[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)**
+is a guided console wizard that runs each pipeline below for you,
+decisions instead of function names, see the [eri_do()
+tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+for what its menu looks like.
 
 1.  [Connecting to the
     services](https://thecartercenter.github.io/erifunctions/articles/connections-guide.md)

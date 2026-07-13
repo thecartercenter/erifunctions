@@ -8,8 +8,10 @@
 > in the console and pick “bring in a surveillance dataset” — it walks
 > the whole archive → check → stage → approve pipeline below through a
 > few prompts (which country, which disease, which file), no function
-> names to memorize. This guide is for understanding what’s happening
-> underneath, or for scripting the steps yourself.
+> names to memorize. See the [eri_do()
+> tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+> for what its menu looks like. This guide is for understanding what’s
+> happening underneath, or for scripting the steps yourself.
 
 This is a hands-on, **start-to-finish walkthrough** of getting a
 surveillance dataset into the Carter Center data system, the daily work

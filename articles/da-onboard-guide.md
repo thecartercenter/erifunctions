@@ -7,10 +7,12 @@
 > [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
 > in the console and pick “onboard a new country, disease, or data type”
 > — it walks you through the dry-run preview and writes the schema
-> template + Azure folders for you. It stops there: filling in the
-> schema’s disease-specific columns, validating it, and submitting it
-> via pull request are still yours to do, and this guide is where you
-> learn that part.
+> template + Azure folders for you (see the [eri_do()
+> tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+> for what its menu looks like). It stops there: filling in the schema’s
+> disease-specific columns, validating it, and submitting it via pull
+> request are still yours to do, and this guide is where you learn that
+> part.
 
 Before any data can flow through `erifunctions`, the **space for it has
 to exist**: a data-quality schema that describes the data, and the

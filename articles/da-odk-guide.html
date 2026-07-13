@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
     <li><a class="dropdown-item" href="../articles/task-index.html">What are you trying to do?</a></li>
+    <li><a class="dropdown-item" href="../articles/da-do-guide.html">eri_do(): a tour of the guided console wizard (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
     <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
     <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
@@ -105,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Working with ODK Central: connect, monitor, and pull form data (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.32/vignettes/da-odk-guide.Rmd" class="external-link"><code>vignettes/da-odk-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-odk-guide.Rmd" class="external-link"><code>vignettes/da-odk-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-odk-guide.Rmd</code></div>
     </div>
 
@@ -122,10 +123,12 @@ country’s ODK project)</p>
 console and pick “pull in ODK survey submissions” — it connects, lets
 you pick the project and form from what’s actually visible on your
 account, registers it if needed, and syncs, no project/form IDs to
-memorize. It stops once submissions land in <code>research/raw/</code>;
-this guide is still where you learn the parts the wizard doesn’t cover —
-standing up a form, monitoring it, managing who collects on it, and
-quality-checking + staging what comes back.</p>
+memorize (see the <a href="da-do-guide.html">eri_do() tour</a> for what
+its menu looks like). It stops once submissions land in
+<code>research/raw/</code>; this guide is still where you learn the
+parts the wizard doesn’t cover — standing up a form, monitoring it,
+managing who collects on it, and quality-checking + staging what comes
+back.</p>
 </blockquote>
 <p><strong>ODK Central</strong> is where field data is born, survey
 teams collect submissions on phones, and they land on an ODK Central

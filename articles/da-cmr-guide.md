@@ -9,8 +9,10 @@
 > walks the whole upload → stage → split → review → approve pipeline
 > below through a few prompts (which country, which file, confirm the
 > month), no function names to memorize and no Azure path to type by
-> hand. This guide is for understanding what’s happening underneath, or
-> for scripting the steps yourself.
+> hand. See the [eri_do()
+> tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.md)
+> for what its menu looks like. This guide is for understanding what’s
+> happening underneath, or for scripting the steps yourself.
 
 Every month, country programmes file a **Case Management Report (CMR)**,
 a filled Excel template of treatment, training, and survey numbers. This

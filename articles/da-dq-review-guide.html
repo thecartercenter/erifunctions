@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.32</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.33</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,7 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Quick reference</h6></li>
     <li><a class="dropdown-item" href="../articles/task-index.html">What are you trying to do?</a></li>
+    <li><a class="dropdown-item" href="../articles/da-do-guide.html">eri_do(): a tour of the guided console wizard (for data analysts)</a></li>
     <li><a class="dropdown-item" href="../articles/orientation.html">Orientation: the data system at a glance</a></li>
     <li><a class="dropdown-item" href="../articles/onboarding.html">Onboarding a new Data Analyst</a></li>
     <li><a class="dropdown-item" href="../articles/da-cheatsheet.html">Data Analyst cheat sheet</a></li>
@@ -105,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging and handing back DQ flags, interactively (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.32/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-dq-review-guide.Rmd</code></div>
     </div>
 
@@ -119,11 +120,11 @@
 <blockquote>
 <p><strong>This is the screen <a href="../reference/eri_do.html"><code>eri_do()</code></a> already puts
 you on.</strong> Its CMR flow (and the “Review &amp; approve something
-already staged” menu item) hands off directly into this same
-<code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code> loop – so if you’re triaging flags inside
-<code><a href="../reference/eri_do.html">eri_do()</a></code> right now, this guide is the reference for what
-each menu option (fix in source, mark noted, force-approve) actually
-does.</p>
+already staged” menu item, see the <a href="da-do-guide.html">eri_do()
+tour</a>) hands off directly into this same <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>
+loop – so if you’re triaging flags inside <code><a href="../reference/eri_do.html">eri_do()</a></code> right
+now, this guide is the reference for what each menu option (fix in
+source, mark noted, force-approve) actually does.</p>
 </blockquote>
 <p>The <a href="da-cmr-guide.html">CMR guide</a> and the <a href="da-qc-feedback-guide.html">QC/feedback guide</a> both walk the DQ
 pipeline as a <strong>sequence of functions you call yourself</strong>:
