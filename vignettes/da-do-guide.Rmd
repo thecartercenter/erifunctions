@@ -1,0 +1,442 @@
+---
+title: "eri_do(): a tour of the guided console wizard (for data analysts)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{eri_do(): a tour of the guided console wizard (for data analysts)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = FALSE
+)
+```
+
+::: {.eri-guide-meta}
+**Desk reference** &middot; ~15 min &middot; needs: n/a to read, Azure/ODK to actually run &middot; sandbox-safe: [yes]{.eri-sandbox-yes} (illustrated on `atlantis`)
+:::
+
+`eri_do()` is the guided console wizard: run it, pick what you're doing from a menu, and answer a
+few prompts, names you already know, files you already have, yes/no decisions, never a function
+name or an Azure path. This is a **tour of the wizard itself**: what its menu looks like, what each
+of its five paths asks you, and where they hand off. It is not a substitute for the role guides,
+each pipeline still has its own guide for the domain knowledge (field codes, schema authoring, ODK
+app-user management) and real captured output that a short tour like this doesn't cover.
+
+> **A note on the transcripts below.** `eri_do()` is interactive-only, it refuses to run from a
+> script, so none of it can execute inside this document the way an ordinary function call could.
+> Every menu prompt and message shown here is verified directly against `eri_do()`'s own source
+> (`R/wizard.R`), not run live, the same honest convention the [CMR guide](da-cmr-guide.html) and
+> [ODK guide](da-odk-guide.html) already use for their non-sandbox-safe steps.
+
+## Why this exists
+
+Earlier, bringing in a monthly report meant memorizing an ordered sequence of function calls and
+hand-constructing an Azure path, more to learn than the actual job, which analysts already did by
+hand for years. `eri_do()` is the fix: **one guided front door**, decisions instead of syntax. It
+never reimplements pipeline logic, every step is one already-tested function
+([`eri_upload()`](../reference/eri_upload.html), [`eri_ingest()`](../reference/eri_ingest.html),
+[`eri_odk_sync()`](../reference/eri_odk_sync.html), [`eri_onboard_country()`](../reference/eri_onboard_country.html),
+and friends), so it is never the *only* way in. Every one of those functions stays fully usable
+directly, in a script, in CI, or from the console yourself.
+
+```{=html}
+<div class="mermaid">
+flowchart TD
+    A["eri_do()"] --> B{"What are you trying to do?"}
+    B --> C["Bring in this month's CMR"]
+    B --> D["Bring in a surveillance dataset"]
+    B --> E["Pull in ODK submissions"]
+    B --> F["Onboard a new space"]
+    B --> G["Review something already staged"]
+    C --> H["upload -> stage -> split -> DQ review -> approve"]
+    D --> I["archive + DQ + stage (one call) -> approve"]
+    E --> J["connect -> register -> sync -> research/raw/"]
+    F --> K["dry-run preview -> confirm -> write schema + folders"]
+    G --> L["hands off into eri_dq_review()"]
+</div>
+```
+
+## Before you start {#before-you-start}
+
+```{r library}
+library(erifunctions)
+```
+
+Just run it from a live R console or RStudio, `eri_do()` refuses to run from `Rscript` or CI (see
+[Troubleshooting](troubleshooting.html) if you hit that error unexpectedly):
+
+```{r launch}
+eri_do()
+```
+
+## The top-level menu {#top-menu}
+
+Most prompts in the wizard are numbered menus, type the number and press Enter, `0` goes back or
+cancels; a few (a country name, a period) are typed instead, blank cancels there. Either way,
+nothing is written until you reach a final "Go ahead?" confirmation, see [Cancelling out](#cancelling)
+for the full convention. The top menu is five real tasks plus a shortcut into DQ review:
+
+```
+── What are you trying to do?
+
+1: Bring this month's country report (CMR) into the system
+2: Bring in a surveillance dataset (a CSV/Excel line-list)
+3: Pull in ODK survey submissions
+4: Onboard a new country, disease, or data type
+5: Review & approve something already staged (DQ review)
+6: Exit
+```
+
+Pick a number, or `6` (or `0`) to leave the wizard entirely. The rest of this guide walks each
+path.
+
+## 1. Bring this month's country report (CMR) {#cmr}
+
+```
+── Bring this month's country report into the system ────────────────────────────
+```
+
+Picks up right where a country's monthly Excel report needs to go: which country (a pick-list of
+every registered RB-expansion country, never typed), which file (your OS's native file picker),
+then it reads the filename for the reporting month and asks you to confirm rather than typing it:
+
+```
+── Which country filed the report?
+
+1: ETH
+2: NGA
+3: SDN
+4: SSD
+5: UGA
+6: MAD
+7: TCD
+```
+
+```
+ℹ Where is the filled Excel on your computer?
+```
+
+An OS file dialog opens next (RStudio's own picker, or the plain OS one). No dialog available
+(e.g. a headless session)? It falls back to a typed path instead.
+
+```
+── I read the period as 202406 from the file. Is that the reporting month?
+
+1: Yes
+2: No
+```
+
+If a period wasn't detected, or you say no, it asks directly (`Reporting period, as YYYYMM (e.g.
+202406; blank to cancel)`). Then a summary and one confirmation before anything is written:
+
+```
+── Ready to bring this in
+
+• Country: UGA
+• Month: 202406
+• File: uga_cmr_2024_06.xlsx
+ℹ I'll upload it, stage it, and split it into per-disease measures. Then we'll review data quality.
+
+── Go ahead?
+
+1: Yes
+2: No
+```
+
+Say yes, and it uploads, stages, and splits the workbook per disease/measure, all in one run,
+auto-detecting whether this country's data also needs mirroring to the legacy pipeline (never
+asked, see [`eri_cutover_status()`](../reference/eri_cutover_status.html)). Then it hands off
+directly into the same DQ review screen [§5's shortcut](#dq-shortcut) uses, work through any flags,
+and it approves for you once everything is clean. If UGA/202406 was already split in an earlier
+session, it offers to skip straight to reviewing it instead of starting over.
+
+**The [CMR guide](da-cmr-guide.html)** has the domain knowledge this tour skips: what the field-code
+row looks like, why `rblf`/`cmr` is a transitional staging code (not the canonical per-disease
+home), and the force-approve escape hatch for a flag that will never resolve cleanly.
+
+## 2. Bring in a surveillance dataset {#ingest}
+
+```
+── Bring in a surveillance dataset ───────────────────────────────────────────────
+```
+
+Unlike CMR, ingest isn't locked to a registered country list, so country is a typed, validated
+code (`sdn`, or the `atlantis` sandbox) rather than a pick-list. Disease, channel (`data_source`),
+and measure (`data_type`) are each a pick-list with a typed "Other" escape hatch, since new
+combinations are a normal, expected gap, not an error:
+
+```
+Which country is this data for? (e.g. sdn; blank to cancel): atlantis
+```
+
+```
+── Which disease?
+
+1: malaria
+2: oncho
+3: lf
+4: sch
+5: sth
+6: Other (type it)
+```
+
+```
+── How did this data arrive?
+
+1: surveillance
+2: programmatic
+3: research
+4: Other (type it)
+```
+
+```
+── What does each row count?
+
+1: case
+2: aggregate
+3: treatment
+4: mmdp
+5: training
+6: survey
+7: tas
+8: prevalence
+9: entomology
+10: Other (type it)
+```
+
+```
+ℹ Where is the file on your computer?
+```
+
+```
+── Ready to bring this in
+
+• Country: ATLANTIS
+• Disease: malaria
+• Channel: surveillance / Measure: case
+• File: atlantis_malaria_2024-01.csv
+ℹ I'll archive it, check data quality, and stage it for approval.
+
+── Go ahead?
+
+1: Yes
+2: No
+```
+
+One call, [`eri_ingest()`](../reference/eri_ingest.html), does the archive + DQ-check + stage in a
+single shot, unlike CMR's multi-step upload/stage/split. If it finds open log entries afterward, it
+tells you and asks whether to approve anyway, rather than triaging them for you (surveillance's DQ
+flags land in the general [`eri_logs()`](../reference/eri_logs.html) backlog, not CMR's per-sheet
+shape):
+
+```
+! 1 log entry need review before this can be approved.
+ℹ Run `eri_logs()` to see them, `eri_dq_flag_resolve()` to triage each flag, then `eri_logs_resolve()` to close the entry out.
+
+── Approve anyway? (only if you've already reviewed this)
+
+1: Yes
+2: No
+```
+
+Say no (the safer default unless you've genuinely already reviewed it), and it leaves the data
+staged rather than approving:
+
+```
+ℹ Left staged -- run `eri_do()` again once you've triaged the flags.
+```
+
+Otherwise, it asks for the period (free text matched against the staged filename, no fixed
+convention the way CMR has one) and approves.
+
+**The [ingest guide](da-ingest-guide.html)** walks the same pipeline by hand, including a full
+worked example of a schema catching real problems (an impossible age, an unrecognized district) and
+the corrections/flags distinction that drives it.
+
+## 3. Pull in ODK survey submissions {#odk}
+
+```
+── Pull in ODK survey submissions ────────────────────────────────────────────────
+```
+
+Connects, then turns "which project" and "which form" into pick-lists built from what's actually
+visible on your account, never a numeric project id or exact form id typed from memory:
+
+```
+── Which ODK project?
+
+1: Uganda
+2: testing
+```
+
+```
+── Which form?
+
+1: ERI Test, River Prospection
+```
+
+If this form isn't registered yet, it asks for country (a pick-list of known ERI countries) and
+disease, the server URL comes from the connection you already made, never asked again, confirms,
+then registers:
+
+```
+ℹ This form isn't registered yet -- I need a country and disease to file it under.
+```
+
+```
+── Which country?
+
+1: DR
+2: HT
+3: ETH
+4: NGA
+5: SDN
+6: SSD
+7: UGA
+8: MAD
+9: TCD
+```
+
+```
+── Register this form as uga/oncho?
+
+1: Yes
+2: No
+```
+
+```
+── Sync submissions now?
+
+1: Yes
+2: No
+```
+
+```
+✔ Done. Submissions are synced to research/raw/.
+ℹ Next: quality-check and stage this the same way as a surveillance extract -- see the surveillance ingest guide -- then eri_approve() it in.
+ℹ Run `eri_do()` again any time to sync new submissions.
+```
+
+This is where the wizard **honestly stops**: there is no single stage-then-approve function for
+ODK data, the real guide's own next step is a manual [`eri_write()`](../reference/eri_write.html)
+after ad hoc quality-checking, so rather than fabricate an approve step the tooling doesn't
+support, it hands off here.
+
+**The [ODK guide](da-odk-guide.html)** covers everything the wizard doesn't: standing up a form,
+monitoring a survey, and managing who can collect on it.
+
+## 4. Onboard a new country, disease, or data type {#onboard}
+
+```
+── Onboard a new country, disease, or data type ──────────────────────────────────
+```
+
+Three genuinely different shapes behind one menu, a surveillance space, a CMR space, or an NTD
+disease's schemas:
+
+```
+── What are you setting up?
+
+1: Surveillance country/disease (case or aggregate reporting)
+2: CMR country (monthly Case Management Report)
+3: NTD disease (MDA + prevalence schemas, no country folders yet)
+```
+
+Picking **surveillance** or **CMR** asks for a country code (typed, since onboarding's whole point
+is a country nothing else has registered yet), the full country name, disease (surveillance only),
+and a schema-comment language:
+
+```
+Full country name (e.g. Uganda; blank to cancel): Atlantis
+```
+
+```
+── Schema comments in which language?
+
+1: English
+2: French
+```
+
+Every path previews with a dry run before writing anything, then confirms (surveillance and CMR
+each have their own confirm wording; CMR's is shown):
+
+```
+── Write this CMR schema template and create the Azure folders?
+
+1: Yes
+2: No
+```
+
+Picking **NTD disease** skips the Azure folders entirely (local-only, by
+[`eri_onboard_disease()`](../reference/eri_onboard_disease.html)'s own design) and asks which
+schema(s) you need:
+
+```
+── Which schema(s) do you need?
+
+1: Both (MDA + prevalence)
+2: MDA only
+3: Prevalence only
+```
+
+Say yes, and the wizard stops right where it should: the schema template is written (and, for
+surveillance/CMR, the Azure folders exist), but filling in the disease-specific columns, validating
+the schema, and submitting it via pull request are real domain judgment calls, no wizard should
+fabricate those for you.
+
+**The [onboarding guide](da-onboard-guide.html)** picks up from exactly there: what the template
+looks like, how to fill in the `TODO` sections, and how to validate and submit it.
+
+## 5. Review & approve something already staged {#dq-shortcut}
+
+The fifth menu item is a shortcut, not its own flow: pick a country and a period, and it hands you
+straight into [`eri_dq_review()`](../reference/eri_dq_review.html), the same guided menu the CMR
+flow above ends in.
+
+```
+── Which country?
+
+1: ETH
+2: NGA
+3: SDN
+4: SSD
+5: UGA
+6: MAD
+7: TCD
+```
+
+```
+Reporting period, as YYYYMM (e.g. 202406; blank to cancel):
+```
+
+**The [DQ review guide](da-dq-review-guide.html)** is the reference for this whole screen, what
+each option (fix in source, adjust the schema, mark not important, mark noted, force-approve) does
+and why.
+
+## Cancelling out {#cancelling}
+
+Every prompt in the wizard shares one convention: **`0`, or blank on a typed prompt, backs out**.
+Nothing is written until you reach a flow's own "Go ahead?"/"Write this...?" confirmation, so you
+can explore any menu, back out at any point, and re-run `eri_do()` later with nothing left half
+done. A flow that stops partway (declined a confirmation, or the DA cancelled) leaves whatever was
+already written in place and tells you so, run `eri_do()` again any time to pick up where you left
+off.
+
+## What's next
+
+- **Pick the pipeline for your actual task**: [CMR](da-cmr-guide.html) ·
+  [surveillance ingest](da-ingest-guide.html) · [ODK](da-odk-guide.html) ·
+  [onboarding](da-onboard-guide.html) · [DQ review](da-dq-review-guide.html).
+- **New here?** Start with [Getting started](getting-started.html) and the
+  [connections guide](connections-guide.html) before running `eri_do()` for real.
+- **Scripting or CI?** `eri_do()` is interactive-only by design, use the scriptable core it calls
+  directly: [`eri_upload()`](../reference/eri_upload.html), [`eri_ingest()`](../reference/eri_ingest.html),
+  [`eri_odk_sync()`](../reference/eri_odk_sync.html), [`eri_onboard_country()`](../reference/eri_onboard_country.html),
+  and the rest of the [pipeline reference](../reference/index.html).
+
+See the [guide index](https://github.com/thecartercenter/erifunctions/blob/main/docs/guides.md) for
+the full set of guides.

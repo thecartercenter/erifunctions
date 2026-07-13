@@ -23,7 +23,8 @@ knitr::opts_chunk$set(
 > or ODK flow finds open log entries, it stops and tells you to run `eri_logs()` /
 > `eri_dq_flag_resolve()` / `eri_logs_resolve()` -- the exact tools this guide walks through -- rather
 > than triaging the backlog for you (unlike CMR, whose per-sheet flags have their own guided loop,
-> see the [DQ review guide](da-dq-review-guide.html)).
+> see the [DQ review guide](da-dq-review-guide.html)). See the [eri_do() tour](da-do-guide.html) for
+> what its menu looks like.
 
 Every operation `erifunctions` runs, an ingest, an approval, an ODK sync, **leaves a log** in
 Azure. When something fails, or a data-quality check raises issues, that log is the record. This guide

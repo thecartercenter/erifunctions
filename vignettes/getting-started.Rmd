@@ -80,7 +80,9 @@ The guides are short, copy-paste, run-it-live walkthroughs on safe sandbox data.
 
 For the paced version of this with checkpoints, follow the [**onboarding path**](onboarding.html), and
 keep the [**DA cheat sheet**](da-cheatsheet.html) and the [data-model card](data-model-card.html) open as
-you work.
+you work. Once you're connected, **[`eri_do()`](../reference/eri_do.html)** is a guided console
+wizard that runs each pipeline below for you, decisions instead of function names, see the
+[eri_do() tour](da-do-guide.html) for what its menu looks like.
 
 1. [Connecting to the services](connections-guide.html)
 2. [Onboarding a new country / disease / data type](da-onboard-guide.html): stand up the space

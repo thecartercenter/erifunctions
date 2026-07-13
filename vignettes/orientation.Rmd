@@ -61,7 +61,8 @@ it warns, it doesn't error. The [data-model card](data-model-card.html) is the d
 
 **Run [`eri_do()`](../reference/eri_do.html)**: a guided console wizard that picks the right
 functions for a CMR report, a surveillance extract, ODK submissions, or standing up a brand-new
-space, and calls them for you. Everything still ends at **`eri_approve()`** and the catalog.
+space, and calls them for you. Everything still ends at **`eri_approve()`** and the catalog. See
+the [eri_do() tour](da-do-guide.html) for what its menu looks like.
 
 ## Your tasks → where they live
 

@@ -18,6 +18,8 @@ This page is the **menu and the backlog**: what exists today, and what is still 
 
 **New Data Analysts:** follow the paced **[onboarding path](https://thecartercenter.github.io/erifunctions/articles/onboarding.html)**
 (Week 0 → Week 2), and keep the quick-reference articles open, the
+**[eri_do() tour](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.html)** (the
+guided console wizard that runs the pipelines below for you),
 [orientation](https://thecartercenter.github.io/erifunctions/articles/orientation.html),
 [DA cheat sheet](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html),
 [data-model card](https://thecartercenter.github.io/erifunctions/articles/data-model-card.html), and
@@ -53,6 +55,7 @@ Grouped the same way as the [documentation site's Articles menu](https://thecart
 
 | Task | Guide | Status |
 |------|-------|--------|
+| A tour of the eri_do() console wizard (menu by menu) | [`da-do-guide`](https://thecartercenter.github.io/erifunctions/articles/da-do-guide.html) | ✅ Shipped |
 | The big picture (data system, pipeline, where tasks live) | [`orientation`](https://thecartercenter.github.io/erifunctions/articles/orientation.html) | ✅ Shipped |
 | Paced new-analyst path (Week 0 → Week 2 + competency checklist) | [`onboarding`](https://thecartercenter.github.io/erifunctions/articles/onboarding.html) | ✅ Shipped |
 | One-page cheat sheet (functions, path, "which pipeline?") | [`da-cheatsheet`](https://thecartercenter.github.io/erifunctions/articles/da-cheatsheet.html) | ✅ Shipped |
