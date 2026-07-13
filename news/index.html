@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,29 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.34/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.35" id="erifunctions-0935">erifunctions 0.9.35<a class="anchor" aria-label="anchor" href="#erifunctions-0935"></a></h2>
+<div class="section level3">
+<h3 id="fixes-from-a-live-fresh-user-trial-of-eri_do-0-9-35">Fixes from a live fresh-user trial of eri_do()<a class="anchor" aria-label="anchor" href="#fixes-from-a-live-fresh-user-trial-of-eri_do-0-9-35"></a></h3>
+<ul><li>After Phase D shipped, ran the <code>da-fresh-user</code> subagent (“Dana”) live against the real <code>atlantis</code> sandbox to actually exercise <code><a href="../reference/eri_do.html">eri_do()</a></code> and <code>vignettes/da-do-guide.Rmd</code>, not just re-read them – the same “run it, don’t just review it” discipline used for <code>da-dq-review-guide.Rmd</code> earlier this session. Found real gaps a source-read alone hadn’t surfaced:
+<ul><li>
+<strong>The top-level menu reappears after every flow</strong> (finished or cancelled) – never stated plainly in the guide, only implied by contrast in the deep-link section. A first-timer seeing the menu again could reasonably wonder if something broke. Added a direct sentence.</li>
+<li>
+<strong>Ingest’s “Approve anyway?” gate checks the whole outstanding backlog for that country/disease/channel/measure, not just the file you just brought in</strong> – live-confirmed a perfectly clean ingest can still trigger it, because of an unrelated flag left over from an earlier ingest into the same dataset. Clarified in both the wizard’s own warning message and the guide.</li>
+<li>
+<strong>A real grammar bug</strong>, faithfully reproduced in the guide because it came straight from live output: <code>"1 log entry need review"</code> (should be “needs”). <code>cli</code>’s <code>{?y/ies}</code> pluralizes the noun but not the verb – fixed with <code>need{?s/}</code>.</li>
+<li>
+<strong>The “Cancelling out” section over-promised</strong>: it claimed every stopped flow “tells you so,” but cancelling an early prompt (before anything’s been staged/written) is silent by design – nothing to report yet. Reworded to distinguish early (silent) cancels from later ones (which do narrate what was left in place).</li>
+<li>Two comma-spliced opening sentences (in <code>getting-started.Rmd</code> and <code>da-do-guide.Rmd</code> itself) copy-edited for a faster first read.</li>
+<li>
+<code>_pkgdown.yml</code>’s “Start here” reference group description now explicitly notes <code><a href="../reference/eri_guide.html">eri_guide()</a></code> is deprecated in favor of <code><a href="../reference/eri_do.html">eri_do()</a></code>, rather than relying solely on the lifecycle badge on its own page rendering visibly in the group listing (unverified locally – this machine’s local <code>pkgdown</code>/<code>knitr</code> article rendering segfaults regardless of content).</li>
+</ul></li>
+<li>What Dana confirmed held up well, worth noting since it’s the actual point of writing a guide from source rather than live capture: every menu/prompt/confirmation transcript she checked live (top menu, CMR country list, disease/channel/measure pick-lists, onboarding menus, <code>flow=</code> deep-links, the invalid-flow error, the onboarding overwrite-protection prompt) matched <code>da-do-guide.Rmd</code> almost verbatim.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.34" id="erifunctions-0934">erifunctions 0.9.34<a class="anchor" aria-label="anchor" href="#erifunctions-0934"></a></h2>
 <div class="section level3">

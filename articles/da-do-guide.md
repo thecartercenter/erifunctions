@@ -5,11 +5,11 @@ run · sandbox-safe: yes (illustrated on `atlantis`)
 
 [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
 is the guided console wizard: run it, pick what you’re doing from a
-menu, and answer a few prompts, names you already know, files you
-already have, yes/no decisions, never a function name or an Azure path.
+menu, and answer a few prompts – names you already know, files you
+already have, yes/no decisions – never a function name or an Azure path.
 This is a **tour of the wizard itself**: what its menu looks like, what
 each of its five paths asks you, and where they hand off. It is not a
-substitute for the role guides, each pipeline still has its own guide
+substitute for the role guides – each pipeline still has its own guide
 for the domain knowledge (field codes, schema authoring, ODK app-user
 management) and real captured output that a short tour like this doesn’t
 cover.
@@ -106,8 +106,11 @@ tasks plus a shortcut into DQ review:
     5: Review & approve something already staged (DQ review)
     6: Exit
 
-Pick a number, or `6` (or `0`) to leave the wizard entirely. The rest of
-this guide walks each path.
+Pick a number, or `6` (or `0`) to leave the wizard entirely. **This menu
+reappears after every flow** – whether it finished, or you cancelled
+partway through – so seeing it again isn’t a sign anything went wrong;
+pick `6`/`0` again when you’re actually done. The rest of this guide
+walks each path.
 
 ## 1. Bring this month’s country report (CMR)
 
@@ -232,13 +235,16 @@ since new combinations are a normal, expected gap, not an error:
 One call,
 [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
 does the archive + DQ-check + stage in a single shot, unlike CMR’s
-multi-step upload/stage/split. If it finds open log entries afterward,
-it tells you and asks whether to approve anyway, rather than triaging
-them for you (surveillance’s DQ flags land in the general
+multi-step upload/stage/split. Before approving, it checks the **whole**
+outstanding backlog for this country/disease/channel/measure, not just
+what you just brought in – so this can fire even on a perfectly clean
+file, if an earlier ingest into the same dataset left something
+unresolved. It tells you and asks whether to approve anyway, rather than
+triaging for you (surveillance’s DQ flags land in the general
 [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md)
 backlog, not CMR’s per-sheet shape):
 
-    ! 1 log entry need review before this can be approved.
+    ! 1 log entry in the backlog for this dataset needs review before this can be approved.
     ℹ Run `eri_logs()` to see them, `eri_dq_flag_resolve()` to triage each flag, then `eri_logs_resolve()` to close the entry out.
 
     ── Approve anyway? (only if you've already reviewed this)
@@ -420,11 +426,14 @@ typed prompt, backs out**. Nothing is written until you reach a flow’s
 own “Go ahead?”/“Write this…?” confirmation, so you can explore any
 menu, back out at any point, and re-run
 [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
-later with nothing left half done. A flow that stops partway (declined a
-confirmation, or the DA cancelled) leaves whatever was already written
-in place and tells you so, run
+later with nothing left half done. Cancelling out of an early prompt (a
+country pick, a file dialog) is silent, there’s nothing to report yet,
+so don’t expect a message there. Once a flow has actually done something
+(staged a file, synced submissions) and then stops, either because you
+declined a later confirmation or a step failed, it tells you plainly
+what state things were left in and that running
 [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
-again any time to pick up where you left off.
+again will pick up from there.
 
 ## What’s next
 

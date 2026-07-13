@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.34</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.35</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>eri_do(): a tour of the guided console wizard (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.34/vignettes/da-do-guide.Rmd" class="external-link"><code>vignettes/da-do-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-do-guide.Rmd" class="external-link"><code>vignettes/da-do-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-do-guide.Rmd</code></div>
     </div>
 
@@ -118,11 +118,11 @@ Azure/ODK to actually run · sandbox-safe: <span class="eri-sandbox-yes">yes</sp
 <code>atlantis</code>)</p>
 </div>
 <p><code><a href="../reference/eri_do.html">eri_do()</a></code> is the guided console wizard: run it, pick what
-you’re doing from a menu, and answer a few prompts, names you already
-know, files you already have, yes/no decisions, never a function name or
-an Azure path. This is a <strong>tour of the wizard itself</strong>:
+you’re doing from a menu, and answer a few prompts – names you already
+know, files you already have, yes/no decisions – never a function name
+or an Azure path. This is a <strong>tour of the wizard itself</strong>:
 what its menu looks like, what each of its five paths asks you, and
-where they hand off. It is not a substitute for the role guides, each
+where they hand off. It is not a substitute for the role guides – each
 pipeline still has its own guide for the domain knowledge (field codes,
 schema authoring, ODK app-user management) and real captured output that
 a short tour like this doesn’t cover.</p>
@@ -203,7 +203,11 @@ menu is five real tasks plus a shortcut into DQ review:</p>
 5: Review &amp; approve something already staged (DQ review)
 6: Exit</code></pre>
 <p>Pick a number, or <code>6</code> (or <code>0</code>) to leave the
-wizard entirely. The rest of this guide walks each path.</p>
+wizard entirely. <strong>This menu reappears after every flow</strong> –
+whether it finished, or you cancelled partway through – so seeing it
+again isn’t a sign anything went wrong; pick
+<code>6</code>/<code>0</code> again when you’re actually done. The rest
+of this guide walks each path.</p>
 </div>
 <div class="section level2">
 <h2 id="cmr">1. Bring this month’s country report (CMR)<a class="anchor" aria-label="anchor" href="#cmr"></a>
@@ -310,11 +314,15 @@ combinations are a normal, expected gap, not an error:</p>
 2: No</code></pre>
 <p>One call, <a href="../reference/eri_ingest.html"><code>eri_ingest()</code></a>, does
 the archive + DQ-check + stage in a single shot, unlike CMR’s multi-step
-upload/stage/split. If it finds open log entries afterward, it tells you
-and asks whether to approve anyway, rather than triaging them for you
-(surveillance’s DQ flags land in the general <a href="../reference/eri_logs.html"><code>eri_logs()</code></a> backlog,
+upload/stage/split. Before approving, it checks the
+<strong>whole</strong> outstanding backlog for this
+country/disease/channel/measure, not just what you just brought in – so
+this can fire even on a perfectly clean file, if an earlier ingest into
+the same dataset left something unresolved. It tells you and asks
+whether to approve anyway, rather than triaging for you (surveillance’s
+DQ flags land in the general <a href="../reference/eri_logs.html"><code>eri_logs()</code></a> backlog,
 not CMR’s per-sheet shape):</p>
-<pre><code>! 1 log entry need review before this can be approved.
+<pre><code>! 1 log entry in the backlog for this dataset needs review before this can be approved.
 ℹ Run `eri_logs()` to see them, `eri_dq_flag_resolve()` to triage each flag, then `eri_logs_resolve()` to close the entry out.
 
 ── Approve anyway? (only if you've already reviewed this)
@@ -465,10 +473,13 @@ noted, force-approve) does and why.</p>
 Nothing is written until you reach a flow’s own “Go ahead?”/“Write
 this…?” confirmation, so you can explore any menu, back out at any
 point, and re-run <code><a href="../reference/eri_do.html">eri_do()</a></code> later with nothing left half
-done. A flow that stops partway (declined a confirmation, or the DA
-cancelled) leaves whatever was already written in place and tells you
-so, run <code><a href="../reference/eri_do.html">eri_do()</a></code> again any time to pick up where you left
-off.</p>
+done. Cancelling out of an early prompt (a country pick, a file dialog)
+is silent, there’s nothing to report yet, so don’t expect a message
+there. Once a flow has actually done something (staged a file, synced
+submissions) and then stops, either because you declined a later
+confirmation or a step failed, it tells you plainly what state things
+were left in and that running <code><a href="../reference/eri_do.html">eri_do()</a></code> again will pick up
+from there.</p>
 </div>
 <div class="section level2">
 <h2 id="whats-next">What’s next<a class="anchor" aria-label="anchor" href="#whats-next"></a>

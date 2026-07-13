@@ -4,8 +4,10 @@
 
 Run these first, and reach for them whenever you’re not sure what to
 call next. eri_do() is the guided front door – pick a country and a
-file, answer a few prompts, and it runs the pipeline for you; the rest
-are for browsing or for when you’re calling the pieces yourself.
+file, answer a few prompts, and it runs the pipeline for you.
+eri_guide() is deprecated in its favor (see its own page);
+eri_task_map() is the plain browsing list, for when you’re calling the
+pieces yourself.
 
 - [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
   **\[experimental\]** : Bring a monthly report into the system,
