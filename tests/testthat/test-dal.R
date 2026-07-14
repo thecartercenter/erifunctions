@@ -36,8 +36,8 @@ test_that("eri_data_path builds correct paths without filename", {
     "ht/lf/cmr/processed"
   )
   expect_equal(
-    eri_data_path("ug", "oncho", "odk", "raw"),
-    "ug/oncho/odk/raw"
+    eri_data_path("uga", "oncho", "odk", "raw"),
+    "uga/oncho/odk/raw"
   )
 })
 
@@ -70,6 +70,34 @@ test_that("eri_data_path warns (does not error) on an unregistered axis value", 
     eri_data_path("dr", "malaria", "surveillance", "newmeasure", "processed"),
     "data_type"
   )
+})
+
+test_that("eri_data_path normalizes country/disease casing to lowercase (ADR-0020)", {
+  expect_equal(
+    eri_data_path("UGA", "LF", "surveillance", "staged"),
+    "uga/lf/surveillance/staged"
+  )
+  expect_equal(
+    eri_data_path(" Uga ", " Oncho ", "surveillance", "staged"),
+    "uga/oncho/surveillance/staged"
+  )
+})
+
+test_that("eri_data_path warns (does not error) on an unregistered country/disease", {
+  expect_warning(
+    p <- eri_data_path("xx", "malaria", "surveillance", "staged"),
+    "country"
+  )
+  expect_equal(p, "xx/malaria/surveillance/staged")
+  expect_warning(
+    eri_data_path("dr", "newdisease", "surveillance", "staged"),
+    "disease"
+  )
+})
+
+test_that("eri_data_path does not warn on the training sandbox or transitional codes", {
+  expect_no_warning(eri_data_path("atlantis", "oncho", "surveillance", "staged"))
+  expect_no_warning(eri_data_path("uga", "rblf", "cmr", "staged"))
 })
 
 test_that("eri_data_path resolves the legacy named form (data_type = <source>)", {

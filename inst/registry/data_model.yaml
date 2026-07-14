@@ -9,6 +9,34 @@
 # deliberately extensible: onboarding a new source/measure/format adds an entry here
 # (no core-code edit), and an unregistered value *warns* rather than errors, so the
 # system never blocks new data — it just nudges you to register it.
+#
+# `countries` and `diseases` are validated the same way, but ALSO normalized:
+# eri_data_path()/eri_odk_register() lowercase+trim whatever is passed before
+# checking it against these lists, so a path is always built from the canonical
+# form here regardless of input casing (ADR-0020 — prevents the `LF`/`lf`
+# legacy-casing drift found and fixed in #303).
+
+countries:
+  dr:       "Dominican Republic"
+  ht:       "Haiti"
+  eth:      "Ethiopia"
+  nga:      "Nigeria"
+  sdn:      "Sudan"
+  ssd:      "South Sudan"
+  uga:      "Uganda"
+  mad:      "Madagascar"
+  tcd:      "Chad"
+  atlantis: "(training sandbox) Synthetic country for teaching/testing; not a real ERI program."
+
+diseases:
+  malaria: "Malaria"
+  oncho:   "Onchocerciasis (river blindness)"
+  lf:      "Lymphatic filariasis"
+  sch:     "Schistosomiasis"
+  sth:     "Soil-transmitted helminths"
+  # Transitional (roadmap Phase 3): combined RB+LF programmatic code from the
+  # hsp-mal-era CMR pipeline, retired at the hsp-mal cutover -- not a new-write target.
+  rblf:    "(transitional) Combined RB+LF programmatic code; retired at the hsp-mal Phase-3 cutover."
 
 data_sources:
   surveillance: "Direct disease-output feed (e.g. a Ministry-of-Health surveillance system)."

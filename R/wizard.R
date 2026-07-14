@@ -78,11 +78,6 @@
 # not a generic step sequence. That's the right level of reuse; a schema forcing these flows into
 # one shape would be reuse for its own sake, not because the flows are actually alike.
 
-# Shared disease pick-list for flows whose country/disease space has no backing registry
-# (ADR-0012 deliberately leaves disease unregistered). One constant so the ingest and ODK flows
-# can't silently diverge from each other.
-.KNOWN_DISEASES <- c("malaria", "oncho", "lf", "sch", "sth")
-
 # Both onboarding schema templates (eri_onboard_country()/eri_onboard_cmr()) take a language for
 # their comments -- ERI's own countries include Francophone ones (Haiti), and the consult itself
 # calls for "language from a pick-list" (interactive-wizard-consult.md). Returns "en"/"fr", or NA on
@@ -402,7 +397,7 @@
   if (is.na(country)) return(invisible(NULL))
 
   disease <- .eri_prompt_pick_or_type(
-    "Which disease?", .KNOWN_DISEASES,
+    "Which disease?", .eri_known_diseases(),
     "Disease (blank to cancel): "
   )
   if (is.na(disease)) return(invisible(NULL))
@@ -489,8 +484,8 @@
 # The ODK flow: connect, discover the project/form (a DA rarely knows the numeric project id or
 # exact xmlFormId by heart -- list_odk_projects()/list_odk_forms() turn that into two pick-lists),
 # register if this form isn't already tracked (using con$url as server_url -- init_odk_connection()
-# already has it, no need to ask again -- and .KNOWN_COUNTRY_CODES, R/odk_registry.R's own
-# registration-validation list, as the country pick-list -- ODK registration is genuinely
+# already has it, no need to ask again -- and .eri_known_countries(), the shared data-model
+# registry's country list (ADR-0020), as the country pick-list -- ODK registration is genuinely
 # country-locked, unlike ingest), then sync. Stops there: there is no single stage-then-approve
 # function for ODK data (da-odk-guide.Rmd's own next step is a manual eri_write() after ad hoc
 # quality-checking), so this flow honestly ends at "synced to raw/," not a fabricated approve step.
@@ -528,13 +523,13 @@
 
   if (!isTRUE(already)) {
     cli::cli_alert_info("This form isn't registered yet -- I need a country and disease to file it under.")
-    country_map <- .KNOWN_COUNTRY_CODES
-    names(country_map) <- .KNOWN_COUNTRY_CODES
+    country_map <- .eri_known_countries()
+    names(country_map) <- .eri_known_countries()
     country <- .eri_prompt_pick_country(country_map, "Which country?")
     if (is.null(country)) return(invisible(NULL))
 
     disease <- .eri_prompt_pick_or_type(
-      "Which disease?", .KNOWN_DISEASES,
+      "Which disease?", .eri_known_diseases(),
       "Disease (blank to cancel): "
     )
     if (is.na(disease)) return(invisible(NULL))
@@ -621,7 +616,7 @@
   if (!nzchar(trimws(country_name))) return(invisible(NULL))
 
   disease <- .eri_prompt_pick_or_type(
-    "Which disease?", .KNOWN_DISEASES,
+    "Which disease?", .eri_known_diseases(),
     "Disease (blank to cancel): "
   )
   if (is.na(disease)) return(invisible(NULL))
@@ -690,7 +685,7 @@
 #' @keywords internal
 .eri_flow_onboard_disease <- function() {
   disease <- .eri_prompt_pick_or_type(
-    "Which disease?", .KNOWN_DISEASES,
+    "Which disease?", .eri_known_diseases(),
     "Disease (blank to cancel): "
   )
   if (is.na(disease)) return(invisible(NULL))

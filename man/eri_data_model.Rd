@@ -14,9 +14,11 @@ Invisibly, the registry as a named list.
 
 Prints (and returns invisibly) the registry of known values for the five-axis
 canonical path \verb{data/\{country\}/\{disease\}/\{data_source\}/\{data_type\}/\{layer\}/}
-(ADR-0012): the \code{data_source} channels, the \code{data_type} measures, the input
-\code{format}s, and the pipeline \code{layer}s. New sources/measures are added to the
-registry by onboarding; an unregistered value warns rather than errors.
+(ADR-0012): the \code{country} codes, \code{disease} codes, \code{data_source} channels,
+\code{data_type} measures, input \code{format}s, and pipeline \code{layer}s. New
+countries/sources/measures are added to the registry by onboarding; an
+unregistered value warns rather than errors. \code{country}/\code{disease} are also
+normalized to lowercase wherever a path is built (ADR-0020).
 }
 \examples{
 eri_data_model()

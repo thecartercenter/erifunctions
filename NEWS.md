@@ -1,3 +1,26 @@
+# erifunctions 0.9.37
+
+## Enforce canonical, lowercase country/disease codes (ADR-0020)
+
+- **`country`/`disease` are now normalized (lowercase + trim) and validated against a
+  registry, closing the gap that let `uga/LF`/`eth/RB` (legacy-cased paths) get
+  created in the first place (#303).** `inst/registry/data_model.yaml` gains
+  `countries:`/`diseases:` sections, matching the existing extensible `data_sources:`/
+  `data_types:` pattern (an unregistered value warns, never blocks).
+- **`eri_data_path()`** — the shared chokepoint nearly every write in the package
+  routes through — now normalizes `country`/`disease` before building the path, so
+  `"UGA"`/`"uga"`/`" Uga "` all produce the same canonical path.
+- **`eri_odk_register()`** normalizes both before validating: `country` keeps its
+  hard-abort on a genuinely unknown code (now case-insensitive, so `"UGA"` is
+  silently corrected instead of erroring on case alone); `disease` gets a soft
+  warning, not a hard error, since new disease programs can legitimately appear
+  over time.
+- Removed two independent, hardcoded country/disease lists (`R/odk_registry.R`'s
+  `.KNOWN_COUNTRY_CODES`, `R/wizard.R`'s `.KNOWN_DISEASES`) that could already drift
+  from each other; `eri_data_model()` now shows `country`/`disease` alongside the
+  other three axes.
+- See [ADR-0020](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0020-canonical-country-disease-codes.md).
+
 # erifunctions 0.9.36
 
 ## Fix: eri_odk_sync() no longer leaves stale test data in Azure after a real ODK deletion

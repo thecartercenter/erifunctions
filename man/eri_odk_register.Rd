@@ -20,9 +20,10 @@ eri_odk_register(
 
 \item{form_id}{\code{str} ODK Central form ID (xmlFormId).}
 
-\item{country}{\code{str} Country code (e.g. \code{"uga"}). Must be a known ERI country.}
+\item{country}{\code{str} Country code (e.g. \code{"uga"}). Must be a known ERI country
+(see \code{\link[=eri_data_model]{eri_data_model()}}) -- unknown values error.}
 
-\item{disease}{\code{str} Disease name (e.g. \code{"oncho"}).}
+\item{disease}{\code{str} Disease name (e.g. \code{"oncho"}; extensible -- unknown values warn).}
 
 \item{server_url}{\code{str} ODK Central server URL (e.g. \code{"https://odk.example.org"}).}
 
@@ -39,6 +40,11 @@ The new registry entry (invisibly).
 \description{
 Appends a new entry to \code{odk/registry.yaml} in the \verb{data/} Azure blob.
 Errors if the \verb{(server_url, project_id, form_id)} triple is already active.
+}
+\details{
+Both \code{country} and \code{disease} are normalized (lowercase + trim) before being
+stored, so casing typos like \code{"UGA"} are silently corrected rather than
+erroring or drifting into a differently-cased path later (ADR-0020).
 }
 \examples{
 \dontrun{

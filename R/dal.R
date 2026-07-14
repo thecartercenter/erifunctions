@@ -865,8 +865,15 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #' measure-less `{country}/{disease}/{data_source}/{layer}/` path — detected because
 #' its fourth argument is a `layer` keyword (a `data_type` measure never is).
 #'
-#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
-#' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
+#' `country` and `disease` are normalized (lowercase + trim) before the path is
+#' built, so `"UGA"`/`"uga"`/`" Uga "` all produce the same canonical path
+#' (ADR-0020) — this is what prevents legacy-cased paths like the `LF`/`lf`
+#' drift found and fixed in issue #303 from recurring.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`; extensible —
+#'   see [eri_data_model()]; unknown values warn, not error).
+#' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`; extensible;
+#'   unknown values warn).
 #' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
 #'   `"research"` (extensible — see [eri_data_model()]; unknown values warn).
 #' @param data_type `str` The measure: `"case"`, `"aggregate"`, `"treatment"`,
@@ -886,6 +893,11 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
   model         <- .eri_data_model()
   valid_layers  <- .eri_layers()
   known_sources <- names(model$data_sources)
+
+  # ADR-0020: always build the path from the canonical lowercase country/disease
+  # form, regardless of input casing -- the fix for the `LF`/`lf` drift (#303).
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
 
   # Capture which arguments were actually supplied before any reassignment.
   # An explicit NULL `data_type` is treated as "no measure" (the 4-axis form), so

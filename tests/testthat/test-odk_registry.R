@@ -252,6 +252,68 @@ test_that("form_display_name defaults to form_id when not supplied", {
   expect_equal(store$data$forms[[1]]$form_display_name, "MyForm")
 })
 
+# --- ADR-0020: country/disease normalization -----------------------------------
+
+test_that("eri_odk_register normalizes country/disease casing before storing", {
+  store <- new_yaml_store(list(forms = list()))
+  local_yaml_store(store)
+
+  local_mocked_bindings(
+    .eri_write_log     = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) {
+      if (is.null(store$data) || length(store$data$forms) == 0L) list(forms = list())
+      else store$data
+    },
+    .package = "erifunctions"
+  )
+
+  eri_odk_register(
+    project_id = 5L, form_id = "TAS3",
+    country = "UGA", disease = " LF ",
+    server_url = "https://odk3.example.org",
+    data_con = "mock"
+  )
+
+  expect_equal(store$data$forms[[1]]$country, "uga")
+  expect_equal(store$data$forms[[1]]$disease, "lf")
+})
+
+test_that("eri_odk_register warns (does not error) on an unregistered disease", {
+  store <- new_yaml_store(list(forms = list()))
+  local_yaml_store(store)
+
+  local_mocked_bindings(
+    .eri_write_log     = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) {
+      if (is.null(store$data) || length(store$data$forms) == 0L) list(forms = list())
+      else store$data
+    },
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    eri_odk_register(
+      project_id = 6L, form_id = "NewDiseaseForm",
+      country = "uga", disease = "newdisease",
+      server_url = "https://odk4.example.org",
+      data_con = "mock"
+    ),
+    "disease"
+  )
+  expect_equal(store$data$forms[[1]]$disease, "newdisease")
+})
+
+test_that("eri_odk_register still hard-errors on an unknown country regardless of case", {
+  expect_error(
+    eri_odk_register(
+      project_id = 1, form_id = "F", country = "XYZ",
+      disease = "oncho", server_url = "https://x.org",
+      data_con = mock_data_con()
+    ),
+    "not a known ERI country"
+  )
+})
+
 # --- .odk_data_con auto-connect ------------------------------------------------
 
 test_that(".odk_data_con delegates auto-connect to get_azure_storage_connection", {

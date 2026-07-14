@@ -63,3 +63,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted |
 | [0018](0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution, hash-based expiry | Accepted |
 | [0019](0019-odk-zero-row-parent-clears-raw-set.md) | A zero-row ODK parent clears the whole raw set, by default | Accepted — amends ADR-0010 point 4 |
+| [0020](0020-canonical-country-disease-codes.md) | Canonical, normalized country and disease codes | Accepted |
