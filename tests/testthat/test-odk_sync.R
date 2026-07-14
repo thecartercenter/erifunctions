@@ -66,7 +66,74 @@ test_that("eri_odk_sync errors when matching entry is inactive", {
 
 # --- zero submissions ---------------------------------------------------------
 
-test_that("eri_odk_sync warns and returns invisible NULL on zero submissions", {
+test_that("eri_odk_sync overwrites raw with the empty result on zero submissions (default)", {
+  entry <- make_sync_entry()
+  store <- new_yaml_store(make_sync_reg(entry))
+  local_yaml_store(store)
+
+  written_path  <- NULL
+  written_obj   <- NULL
+  deleted_paths <- character(0)
+
+  local_mocked_bindings(
+    .eri_log_session   = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
+    download_odk_form  = function(...) list(RiverProspection = tibble::tibble()),
+    eri_write = function(obj, file_loc, ...) {
+      written_obj  <<- obj
+      written_path <<- file_loc
+      invisible(NULL)
+    },
+    eri_list = function(...) tibble::tibble(name = "uga/oncho/research/raw/RiverProspection.parquet"),
+    eri_delete = function(file_loc, ...) { deleted_paths <<- c(deleted_paths, file_loc) },
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  result <- eri_odk_sync(
+    project_id = 7L, form_id = "RiverProspection",
+    data_con = "mock"
+  )
+
+  expect_equal(written_path, "uga/oncho/research/raw/RiverProspection.parquet")
+  expect_equal(nrow(written_obj), 0L)
+  expect_false(is.null(store$data$forms[[1]]$last_synced))
+  expect_equal(nrow(result), 0L)
+  # the only existing raw file is the one this pull just re-wrote -- nothing orphaned
+  expect_length(deleted_paths, 0L)
+})
+
+test_that("eri_odk_sync deletes an orphaned repeat table when the parent goes to zero rows", {
+  entry <- make_sync_entry(form_id = "RiverRepeat")
+  store <- new_yaml_store(make_sync_reg(entry))
+  local_yaml_store(store)
+
+  written_paths <- character(0)
+  deleted_paths <- character(0)
+
+  local_mocked_bindings(
+    .eri_log_session   = function(...) invisible(NULL),
+    .odk_registry_read = function(data_con) store$data,
+    # simulate ODK Central omitting the repeat group's CSV once the parent is empty
+    download_odk_form  = function(...) list(RiverRepeat = tibble::tibble()),
+    eri_write = function(obj, file_loc, ...) { written_paths <<- c(written_paths, file_loc) },
+    # the repeat table from the last non-empty sync is still sitting in raw/
+    eri_list = function(...) tibble::tibble(name = c(
+      "uga/oncho/research/raw/RiverRepeat.parquet",
+      "uga/oncho/research/raw/RiverRepeat-larva_sample.parquet"
+    )),
+    eri_delete = function(file_loc, ...) { deleted_paths <<- c(deleted_paths, file_loc) },
+    .eri_write_log = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  eri_odk_sync(project_id = 7L, form_id = "RiverRepeat", data_con = "mock")
+
+  expect_equal(written_paths, "uga/oncho/research/raw/RiverRepeat.parquet")
+  expect_equal(deleted_paths, "uga/oncho/research/raw/RiverRepeat-larva_sample.parquet")
+})
+
+test_that("eri_odk_sync(overwrite = FALSE) warns and leaves Azure untouched on zero submissions", {
   entry       <- make_sync_entry()
   reg         <- make_sync_reg(entry)
   eri_written <- FALSE
@@ -87,7 +154,7 @@ test_that("eri_odk_sync warns and returns invisible NULL on zero submissions", {
   expect_warning(
     result <- eri_odk_sync(
       project_id = 7L, form_id = "RiverProspection",
-      data_con = "mock"
+      data_con = "mock", overwrite = FALSE
     ),
     "No submissions"
   )
