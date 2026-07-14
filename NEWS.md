@@ -1,3 +1,20 @@
+# erifunctions 0.9.7
+
+## Fix: eri_odk_sync() no longer leaves stale test data in Azure after a real ODK deletion
+
+- **`eri_odk_sync()` now overwrites the raw blob on a zero-submission pull by
+  default (`overwrite = TRUE`).** Previously, a 0-row ODK pull was always
+  treated as "nothing to do" and skipped writing to Azure entirely — the raw
+  Parquet from the last non-empty sync stayed in place. That meant a DA
+  deleting test/bad submissions in ODK Central and re-syncing would see
+  "Downloaded 0 records" but the dashboard/raw blob would keep showing the
+  deleted data, because nothing ever cleared it. Reported by a DA working
+  Uganda TAS-3, where a deleted-test-data re-sync silently left the stale
+  data in place (#303).
+- Set `overwrite = FALSE` to restore the old skip-and-warn behavior, e.g. if
+  a 0-row pull might be a transient ODK API failure rather than a genuine
+  deletion at the source.
+
 # erifunctions 0.9.6
 
 ## Docs: explain why Uganda's CMR routing has no CDD/CS/STH sheets

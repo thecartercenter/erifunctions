@@ -12,7 +12,9 @@
 #' and each is written as its own Parquet (`{form_id}.parquet`,
 #' `{form_id}-{repeat}.parquet`, ...); a flat form writes a single
 #' `{form_id}.parquet`. The registry entry's `last_synced` timestamp is updated
-#' on success.
+#' on success. A pull that now returns zero submissions (e.g. all test data was
+#' deleted from ODK Central) overwrites raw with the empty result by default, so
+#' raw never silently goes stale relative to the source -- see `overwrite`.
 #'
 #' @param project_id `int` ODK Central project ID.
 #' @param form_id `str` ODK Central form ID (xmlFormId).
@@ -20,11 +22,15 @@
 #'   If `NULL`, falls back to the `ODK_URL` and `ODK_TOKEN` environment variables.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects
 #'   automatically using `ERIFUNCTIONS_*` environment variables.
-#' @param overwrite `lgl` Whether to overwrite an existing Parquet file in Azure.
-#'   Defaults to `TRUE`.
+#' @param overwrite `lgl` Whether a zero-submission pull overwrites (clears) an
+#'   existing raw Parquet file in Azure. Defaults to `TRUE`, so raw faithfully
+#'   mirrors the ODK source -- including a genuine deletion of all submissions
+#'   at the source. Set `FALSE` to instead skip the write and leave whatever is
+#'   already in Azure untouched, e.g. if a 0-row pull might be a transient ODK
+#'   API failure rather than a real deletion.
 #' @returns Invisibly, the downloaded tibble (single-table forms) or a named list
 #'   of tibbles (forms with repeat groups); `invisible(NULL)` when zero
-#'   submissions are found.
+#'   submissions are found and `overwrite = FALSE`.
 #' @examples
 #' \dontrun{
 #' con      <- init_odk_connection()
@@ -61,10 +67,10 @@ eri_odk_sync <- function(
   )
   main <- tabs[[1L]]
 
-  if (nrow(main) == 0L) {
+  if (nrow(main) == 0L && !overwrite) {
     cli::cli_warn(c(
       "No submissions found for {.val {form_id}}.",
-      "i" = "Nothing written to Azure."
+      "i" = "Nothing written to Azure ({.arg overwrite} = FALSE)."
     ))
     return(invisible(NULL))
   }
@@ -101,7 +107,11 @@ eri_odk_sync <- function(
   )
   .eri_write_log(op_log, data_con, paste0(country, "/", disease, "/research/logs"))
 
-  if (length(tabs) == 1L) {
+  if (nrow(main) == 0L) {
+    cli::cli_alert_warning(
+      "{.val {form_id}} now has 0 submissions in ODK -- raw blob at {.path {blob_paths[[1L]]}} cleared to match."
+    )
+  } else if (length(tabs) == 1L) {
     cli::cli_alert_success(
       "Synced {nrow(main)} record{?s} from {.val {form_id}} to {.path {blob_paths[[1L]]}}."
     )

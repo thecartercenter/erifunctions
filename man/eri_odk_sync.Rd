@@ -23,13 +23,17 @@ If \code{NULL}, falls back to the \code{ODK_URL} and \code{ODK_TOKEN} environmen
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects
 automatically using \verb{ERIFUNCTIONS_*} environment variables.}
 
-\item{overwrite}{\code{lgl} Whether to overwrite an existing Parquet file in Azure.
-Defaults to \code{TRUE}.}
+\item{overwrite}{\code{lgl} Whether a zero-submission pull overwrites (clears) an
+existing raw Parquet file in Azure. Defaults to \code{TRUE}, so raw faithfully
+mirrors the ODK source -- including a genuine deletion of all submissions
+at the source. Set \code{FALSE} to instead skip the write and leave whatever is
+already in Azure untouched, e.g. if a 0-row pull might be a transient ODK
+API failure rather than a real deletion.}
 }
 \value{
 Invisibly, the downloaded tibble (single-table forms) or a named list
 of tibbles (forms with repeat groups); \code{invisible(NULL)} when zero
-submissions are found.
+submissions are found and \code{overwrite = FALSE}.
 }
 \description{
 Downloads all submissions for a registered ODK form and writes them as
@@ -42,7 +46,9 @@ tables -- the main submission table plus one child table per repeat group --
 and each is written as its own Parquet (\verb{\{form_id\}.parquet},
 \verb{\{form_id\}-\{repeat\}.parquet}, ...); a flat form writes a single
 \verb{\{form_id\}.parquet}. The registry entry's \code{last_synced} timestamp is updated
-on success.
+on success. A pull that now returns zero submissions (e.g. all test data was
+deleted from ODK Central) overwrites raw with the empty result by default, so
+raw never silently goes stale relative to the source -- see \code{overwrite}.
 }
 \examples{
 \dontrun{
