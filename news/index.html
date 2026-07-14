@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.35</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.36</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.35/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.36" id="erifunctions-0936">erifunctions 0.9.36<a class="anchor" aria-label="anchor" href="#erifunctions-0936"></a></h2>
+<div class="section level3">
+<h3 id="fix-eri_odk_sync-no-longer-leaves-stale-test-data-in-azure-after-a-real-odk-deletion-0-9-36">Fix: eri_odk_sync() no longer leaves stale test data in Azure after a real ODK deletion<a class="anchor" aria-label="anchor" href="#fix-eri_odk_sync-no-longer-leaves-stale-test-data-in-azure-after-a-real-odk-deletion-0-9-36"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_odk_sync.html">eri_odk_sync()</a></code> now overwrites the raw blob on a zero-submission pull by default (<code>overwrite = TRUE</code>).</strong> Previously, a 0-row ODK pull was always treated as “nothing to do” and skipped writing to Azure entirely — the raw Parquet from the last non-empty sync stayed in place. That meant a DA deleting test/bad submissions in ODK Central and re-syncing would see “Downloaded 0 records” but the dashboard/raw blob would keep showing the deleted data, because nothing ever cleared it. Reported by a DA working Uganda TAS-3, where a deleted-test-data re-sync silently left the stale data in place (<a href="https://github.com/thecartercenter/erifunctions/issues/303" class="external-link">#303</a>).</li>
+<li>Set <code>overwrite = FALSE</code> to restore the old skip-and-warn behavior, e.g. if a 0-row pull might be a transient ODK API failure rather than a genuine deletion at the source.</li>
+<li>
+<strong>For forms with repeat groups, a zero-submission pull also deletes any repeat table already in <code>raw/</code> that the pull didn’t return</strong> (ODK Central can omit a repeat group’s export CSV entirely once its parent has no submissions). Without this, a repeat table’s rows would keep pointing at parent submissions that no longer exist. See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0019-odk-zero-row-parent-clears-raw-set.md" class="external-link">ADR-0019</a>, which amends ADR-0010 point 4.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.35" id="erifunctions-0935">erifunctions 0.9.35<a class="anchor" aria-label="anchor" href="#erifunctions-0935"></a></h2>
 <div class="section level3">

@@ -10,7 +10,15 @@ forms) export multiple tables – the main submission table plus one child
 table per repeat group – and each is written as its own Parquet
 (`{form_id}.parquet`, `{form_id}-{repeat}.parquet`, ...); a flat form
 writes a single `{form_id}.parquet`. The registry entry's `last_synced`
-timestamp is updated on success.
+timestamp is updated on success. A pull that now returns zero
+submissions (e.g. all test data was deleted from ODK Central) overwrites
+raw with the empty result by default, so raw never silently goes stale
+relative to the source – see `overwrite`. Per
+[ADR-0010](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0010-odk-repeat-group-tables.md)
+point 4 (amended by ADR-0019), a zero-row parent clears the whole set:
+any repeat table already in `raw/` that this pull did not return is
+deleted too, so no orphaned child survives pointing at submissions that
+no longer exist.
 
 ## Usage
 
@@ -48,14 +56,25 @@ eri_odk_sync(
 
 - overwrite:
 
-  `lgl` Whether to overwrite an existing Parquet file in Azure. Defaults
-  to `TRUE`.
+  `lgl` Whether a zero-submission pull overwrites (clears) the form's
+  existing raw Parquet file(s) in Azure – including deleting any repeat
+  table this pull did not return. Defaults to `TRUE`, so raw faithfully
+  mirrors the ODK source, including a genuine deletion of all
+  submissions at the source. Set `FALSE` to instead skip the
+  write/delete entirely and leave whatever is already in Azure
+  untouched, e.g. if a 0-row pull might be a transient ODK API failure
+  rather than a real deletion. Unlike `overwrite` elsewhere in the
+  package (e.g.
+  [`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md),
+  which gates collision handling on a *non-empty* write), this
+  `overwrite` only ever fires on a *zero-row* pull – a normal non-empty
+  sync always writes through regardless of this argument.
 
 ## Value
 
 Invisibly, the downloaded tibble (single-table forms) or a named list of
 tibbles (forms with repeat groups); `invisible(NULL)` when zero
-submissions are found.
+submissions are found and `overwrite = FALSE`.
 
 ## See also
 
