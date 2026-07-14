@@ -23,12 +23,17 @@ If \code{NULL}, falls back to the \code{ODK_URL} and \code{ODK_TOKEN} environmen
 \item{data_con}{Azure container object for the \verb{data/} blob. If \code{NULL}, connects
 automatically using \verb{ERIFUNCTIONS_*} environment variables.}
 
-\item{overwrite}{\code{lgl} Whether a zero-submission pull overwrites (clears) an
-existing raw Parquet file in Azure. Defaults to \code{TRUE}, so raw faithfully
-mirrors the ODK source -- including a genuine deletion of all submissions
-at the source. Set \code{FALSE} to instead skip the write and leave whatever is
-already in Azure untouched, e.g. if a 0-row pull might be a transient ODK
-API failure rather than a real deletion.}
+\item{overwrite}{\code{lgl} Whether a zero-submission pull overwrites (clears) the
+form's existing raw Parquet file(s) in Azure -- including deleting any
+repeat table this pull did not return. Defaults to \code{TRUE}, so raw
+faithfully mirrors the ODK source, including a genuine deletion of all
+submissions at the source. Set \code{FALSE} to instead skip the write/delete
+entirely and leave whatever is already in Azure untouched, e.g. if a 0-row
+pull might be a transient ODK API failure rather than a real deletion.
+Unlike \code{overwrite} elsewhere in the package (e.g. \code{\link[=eri_stage]{eri_stage()}}, which
+gates collision handling on a \emph{non-empty} write), this \code{overwrite} only
+ever fires on a \emph{zero-row} pull -- a normal non-empty sync always writes
+through regardless of this argument.}
 }
 \value{
 Invisibly, the downloaded tibble (single-table forms) or a named list
@@ -48,7 +53,11 @@ and each is written as its own Parquet (\verb{\{form_id\}.parquet},
 \verb{\{form_id\}.parquet}. The registry entry's \code{last_synced} timestamp is updated
 on success. A pull that now returns zero submissions (e.g. all test data was
 deleted from ODK Central) overwrites raw with the empty result by default, so
-raw never silently goes stale relative to the source -- see \code{overwrite}.
+raw never silently goes stale relative to the source -- see \code{overwrite}. Per
+\href{https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0010-odk-repeat-group-tables.md}{ADR-0010}
+point 3 (amended by ADR-0017), a form's tables move as one set: any repeat
+table already in \verb{raw/} that a zero-row pull did not return is deleted too,
+so no orphaned child survives pointing at submissions that no longer exist.
 }
 \examples{
 \dontrun{

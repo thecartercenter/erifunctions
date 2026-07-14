@@ -14,7 +14,11 @@
 #' `{form_id}.parquet`. The registry entry's `last_synced` timestamp is updated
 #' on success. A pull that now returns zero submissions (e.g. all test data was
 #' deleted from ODK Central) overwrites raw with the empty result by default, so
-#' raw never silently goes stale relative to the source -- see `overwrite`.
+#' raw never silently goes stale relative to the source -- see `overwrite`. Per
+#' [ADR-0010](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0010-odk-repeat-group-tables.md)
+#' point 3 (amended by ADR-0017), a form's tables move as one set: any repeat
+#' table already in `raw/` that a zero-row pull did not return is deleted too,
+#' so no orphaned child survives pointing at submissions that no longer exist.
 #'
 #' @param project_id `int` ODK Central project ID.
 #' @param form_id `str` ODK Central form ID (xmlFormId).
@@ -22,12 +26,17 @@
 #'   If `NULL`, falls back to the `ODK_URL` and `ODK_TOKEN` environment variables.
 #' @param data_con Azure container object for the `data/` blob. If `NULL`, connects
 #'   automatically using `ERIFUNCTIONS_*` environment variables.
-#' @param overwrite `lgl` Whether a zero-submission pull overwrites (clears) an
-#'   existing raw Parquet file in Azure. Defaults to `TRUE`, so raw faithfully
-#'   mirrors the ODK source -- including a genuine deletion of all submissions
-#'   at the source. Set `FALSE` to instead skip the write and leave whatever is
-#'   already in Azure untouched, e.g. if a 0-row pull might be a transient ODK
-#'   API failure rather than a real deletion.
+#' @param overwrite `lgl` Whether a zero-submission pull overwrites (clears) the
+#'   form's existing raw Parquet file(s) in Azure -- including deleting any
+#'   repeat table this pull did not return. Defaults to `TRUE`, so raw
+#'   faithfully mirrors the ODK source, including a genuine deletion of all
+#'   submissions at the source. Set `FALSE` to instead skip the write/delete
+#'   entirely and leave whatever is already in Azure untouched, e.g. if a 0-row
+#'   pull might be a transient ODK API failure rather than a real deletion.
+#'   Unlike `overwrite` elsewhere in the package (e.g. [eri_stage()], which
+#'   gates collision handling on a *non-empty* write), this `overwrite` only
+#'   ever fires on a *zero-row* pull -- a normal non-empty sync always writes
+#'   through regardless of this argument.
 #' @returns Invisibly, the downloaded tibble (single-table forms) or a named list
 #'   of tibbles (forms with repeat groups); `invisible(NULL)` when zero
 #'   submissions are found and `overwrite = FALSE`.
@@ -86,6 +95,24 @@ eri_odk_sync <- function(
     blob_paths <- c(blob_paths, bp)
   }
 
+  # ADR-0017: a zero-row parent means the whole set is now empty, but ODK
+  # Central's export may omit a repeat group's CSV entirely once its parent
+  # has no rows -- `tabs` would then never mention it. Sweep for any Parquet
+  # already in raw/ for this form_id that this pull did NOT return and delete
+  # it, so no orphaned child (PARENT_KEYs pointing at submissions that no
+  # longer exist) survives the clear.
+  deleted_paths <- character(0)
+  if (nrow(main) == 0L) {
+    existing <- eri_list(raw_dir, azure = TRUE, azcontainer = data_con)
+    own_table <- function(nm) {
+      identical(nm, paste0(form_id, ".parquet")) || startsWith(nm, paste0(form_id, "-"))
+    }
+    existing_own    <- existing$name[vapply(basename(existing$name), own_table, logical(1L))]
+    orphaned_own    <- setdiff(existing_own, blob_paths)
+    for (op in orphaned_own) eri_delete(op, azure = TRUE, azcontainer = data_con)
+    deleted_paths <- orphaned_own
+  }
+
   .odk_sync_update_last_synced(reg, data_con, project_id, form_id)
 
   op_log <- list(
@@ -99,18 +126,27 @@ eri_odk_sync <- function(
       disease     = disease,
       data_source = "research",
       format      = "odk",
-      n_records   = nrow(main),
-      n_tables    = length(tabs),
-      blob_paths  = as.list(blob_paths)
+      n_records     = nrow(main),
+      n_tables      = length(tabs),
+      blob_paths    = as.list(blob_paths),
+      deleted_paths = as.list(deleted_paths)
     ),
     status = "success"
   )
   .eri_write_log(op_log, data_con, paste0(country, "/", disease, "/research/logs"))
 
   if (nrow(main) == 0L) {
-    cli::cli_alert_warning(
-      "{.val {form_id}} now has 0 submissions in ODK -- raw blob at {.path {blob_paths[[1L]]}} cleared to match."
-    )
+    if (length(deleted_paths) > 0L) {
+      cli::cli_alert_warning(c(
+        "{.val {form_id}} now has 0 submissions in ODK -- raw cleared to match.",
+        "i" = "{length(blob_paths)} table{?s} written empty: {.path {blob_paths}}.",
+        "i" = "{length(deleted_paths)} orphaned repeat table{?s} removed: {.path {deleted_paths}}."
+      ))
+    } else {
+      cli::cli_alert_warning(
+        "{.val {form_id}} now has 0 submissions in ODK -- raw blob{?s} at {.path {blob_paths}} cleared to match."
+      )
+    }
   } else if (length(tabs) == 1L) {
     cli::cli_alert_success(
       "Synced {nrow(main)} record{?s} from {.val {form_id}} to {.path {blob_paths[[1L]]}}."

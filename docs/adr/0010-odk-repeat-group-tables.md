@@ -1,6 +1,6 @@
 # ADR-0010 — ODK repeat groups land as a relational set of tables, approved together
 
-- **Status:** Accepted
+- **Status:** Accepted — point 4 amended by [ADR-0017](0017-odk-zero-row-parent-clears-raw-set.md)
 - **Date:** 2026-06-26
 
 ## Context
@@ -47,7 +47,9 @@ Parquet per ODK export table — and that set is the unit that moves through the
 
 4. **No parents, no set.** If the parent table has zero rows, nothing is written (the existing
    warn-and-return behavior) — children cannot exist without parents, so an empty parent means an
-   empty sync.
+   empty sync. *(Amended by [ADR-0017](0017-odk-zero-row-parent-clears-raw-set.md): this is now the
+   `overwrite = FALSE` behavior only. By default (`overwrite = TRUE`), a zero-row parent instead
+   clears the whole raw set — parent and any orphaned children — to match the source.)*
 
 ## Consequences
 
