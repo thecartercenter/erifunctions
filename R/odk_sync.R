@@ -16,8 +16,8 @@
 #' deleted from ODK Central) overwrites raw with the empty result by default, so
 #' raw never silently goes stale relative to the source -- see `overwrite`. Per
 #' [ADR-0010](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0010-odk-repeat-group-tables.md)
-#' point 3 (amended by ADR-0017), a form's tables move as one set: any repeat
-#' table already in `raw/` that a zero-row pull did not return is deleted too,
+#' point 4 (amended by ADR-0017), a zero-row parent clears the whole set: any
+#' repeat table already in `raw/` that this pull did not return is deleted too,
 #' so no orphaned child survives pointing at submissions that no longer exist.
 #'
 #' @param project_id `int` ODK Central project ID.

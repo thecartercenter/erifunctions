@@ -14,8 +14,9 @@ In practice it has the opposite failure mode: it also treats a **genuine deletio
 source** as nothing-to-do. A DA who deletes test/bad submissions in ODK Central and re-syncs sees
 "0 records downloaded" (proof the deletion worked), but `eri_odk_sync()` skips the Azure write
 entirely — the raw Parquet(s) from the last non-empty sync stay in place, silently feeding stale
-data to anything reading `raw/` (a survey dashboard, in the reported case: Uganda TAS-3, where a
-DA's confirmed-empty resync left 23/19/16/27 stale rows sitting in Azure across four tables).
+data to anything reading `raw/` (a survey dashboard, in the reported case: issue #303, Uganda
+TAS-3 — a live-blob audit during remediation confirmed 23/19/16/27 stale rows still sitting in
+Azure across four tables, despite the DA's resync having confirmed 0 records at the source).
 `overwrite = TRUE` was already a parameter on `eri_odk_sync()`, documented as "whether to
 overwrite an existing Parquet file," but was never wired to this decision.
 

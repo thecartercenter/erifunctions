@@ -14,7 +14,7 @@ Each record is a numbered file, `NNNN-short-title.md`, with these sections:
 ```markdown
 # ADR-NNNN — Title
 
-- **Status:** Proposed | Accepted | Superseded by ADR-XXXX
+- **Status:** Proposed | Accepted | Superseded by ADR-XXXX | Accepted — point N amended by ADR-XXXX
 - **Date:** YYYY-MM-DD
 
 ## Context
@@ -31,7 +31,13 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 
 - One decision per file. Keep it short.
 - ADRs are append-only: don't rewrite an accepted ADR to change its meaning — add a new ADR
-  that supersedes it and update the old one's status.
+  that supersedes or amends it, and update the old one's status.
+  - **Supersede** when the new ADR replaces the old decision wholesale (the old one's status
+    becomes `Superseded by ADR-XXXX`).
+  - **Amend** when the new ADR revises a single point within an otherwise-still-valid ADR (the
+    old one's status becomes `Accepted — point N amended by ADR-XXXX`, and that point gets an
+    inline note pointing to the amendment). Prefer this over a full supersession when most of the
+    original ADR still holds.
 - Link the ADR from the roadmap when it shapes a phase.
 
 ## Index

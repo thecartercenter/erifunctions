@@ -55,8 +55,8 @@ on success. A pull that now returns zero submissions (e.g. all test data was
 deleted from ODK Central) overwrites raw with the empty result by default, so
 raw never silently goes stale relative to the source -- see \code{overwrite}. Per
 \href{https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0010-odk-repeat-group-tables.md}{ADR-0010}
-point 3 (amended by ADR-0017), a form's tables move as one set: any repeat
-table already in \verb{raw/} that a zero-row pull did not return is deleted too,
+point 4 (amended by ADR-0017), a zero-row parent clears the whole set: any
+repeat table already in \verb{raw/} that this pull did not return is deleted too,
 so no orphaned child survives pointing at submissions that no longer exist.
 }
 \examples{

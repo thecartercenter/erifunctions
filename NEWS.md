@@ -14,6 +14,13 @@
 - Set `overwrite = FALSE` to restore the old skip-and-warn behavior, e.g. if
   a 0-row pull might be a transient ODK API failure rather than a genuine
   deletion at the source.
+- **For forms with repeat groups, a zero-submission pull also deletes any
+  repeat table already in `raw/` that the pull didn't return** (ODK Central
+  can omit a repeat group's export CSV entirely once its parent has no
+  submissions). Without this, a repeat table's rows would keep pointing at
+  parent submissions that no longer exist. See
+  [ADR-0017](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0017-odk-zero-row-parent-clears-raw-set.md),
+  which amends ADR-0010 point 4.
 
 # erifunctions 0.9.6
 
