@@ -60,4 +60,6 @@ file order, a form's tables approve as one set) are unchanged and still govern t
 ## References
 
 - ADR-0010 — the relational-set model this amends point 4 of.
-- Issue #303 / PR #304 — the reported bug and fix.
+- Issue #303 — the reported bug. PR #304 — the fix, authored and reviewed against `dev`
+  (which had drifted stale behind `main`); PR #305 cherry-picked it onto `main`, where it
+  actually shipped.
