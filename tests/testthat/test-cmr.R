@@ -713,6 +713,96 @@ test_that("eri_split_cmr(supersede_staged = TRUE) safely handles a period contai
   expect_length(deleted, 0L)
 })
 
+test_that("eri_split_cmr(supersede_staged = TRUE) anchors correctly for a human-titled source with no YYYYMM_ prefix", {
+  # The combination the "No staged files found" bug (and this fix) is really
+  # about: a real submission's filename doesn't carry the period, period is
+  # passed explicitly (as the wizard does), and a prior period's staged file
+  # needs superseding -- the stale-file detection must key off the NEW,
+  # period-anchored destination name (dest_base), not the raw human title.
+  tmp <- withr::local_tempfile(pattern = "Uganda Data Report Submitted", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  deleted <- character(0)
+  written <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    # Only the oncho/treatment folder has a prior submission for this period --
+    # the other two sheets' folders have nothing stale to find.
+    list_storage_files  = function(container, dir, ...) {
+      if (grepl("oncho/programmatic/treatment", dir, fixed = TRUE)) {
+        tibble::tibble(name = paste0(dir, "/202406_old_submission_rb_treatment.parquet"), isdir = FALSE)
+      } else {
+        tibble::tibble(name = character(0), isdir = logical(0))
+      }
+    },
+    delete_storage_file = function(container, path, ...) { deleted <<- c(deleted, path); invisible(NULL) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { written <<- c(written, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                 period = "202406", supersede_staged = TRUE)
+  )
+
+  # the prior period's staged file was correctly identified and superseded...
+  expect_true(any(grepl("202406_old_submission_rb_treatment.parquet", deleted, fixed = TRUE)))
+  # ...and this run's OWN newly-written file is period-anchored, and was never
+  # mistaken for a stale file to delete
+  expect_true(all(startsWith(basename(written), "202406_")))
+  expect_length(deleted, 1L)
+})
+
+test_that("a human-titled submission's staged file is actually found by eri_approve() -- the originally reported bug", {
+  # End-to-end regression for Emalee's "No staged files found matching
+  # '202606'" error: eri_split_cmr()'s plan for a human-titled source (no
+  # YYYYMM_ prefix) must produce filenames eri_approve()'s period-substring
+  # match (R/dal.R) can actually find, or the "No staged files found" abort
+  # fires even though the DQ report saw the flags for that exact period.
+  tmp <- withr::local_tempfile(pattern = "CMR Data Report Submitted", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  plan <- suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE, period = "202406"))
+  oncho_dest <- plan$dest[plan$disease == "oncho"]
+  expect_length(oncho_dest, 1L)
+
+  moved <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(container, dir, ...) TRUE,
+    list_storage_files  = function(container, dir, ...) tibble::tibble(name = oncho_dest, isdir = FALSE),
+    create_storage_dir  = function(...) invisible(NULL),
+    delete_storage_file = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_read       = function(con, src, dest, ...) { file.create(dest); invisible(dest) },
+    .eri_blob_write      = function(con, src, dest, ...) { moved <<- c(moved, dest); invisible(NULL) },
+    .eri_write_log       = function(...) invisible(NULL),
+    .eri_log_session     = function(...) invisible(NULL),
+    eri_catalog_register = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  # The bug this guards against: before the staged-filename anchoring fix,
+  # this would abort with "No staged files found matching '202406'" even
+  # though the file above was genuinely staged for that exact period.
+  expect_no_error(
+    eri_approve("uga", "oncho", "programmatic", "202406", data_type = "treatment",
+               azcontainer = structure(list(), class = "mock"))
+  )
+  # .eri_blob_write() fires for both the moved data file and eri_approve()'s
+  # own approval-log write -- check the data file specifically got promoted.
+  moved_data_file <- moved[grepl("rb_treatment.parquet", moved, fixed = TRUE)]
+  expect_length(moved_data_file, 1L)
+  expect_match(moved_data_file, "processed/", fixed = TRUE)
+})
+
 test_that("eri_split_cmr does not delete anything when period can't be resolved", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")   # no YYYYMM_ prefix, no period passed
   make_uga_cmr(tmp)

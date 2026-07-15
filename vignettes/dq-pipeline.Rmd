@@ -107,7 +107,9 @@ The pipeline runs these steps in order:
    `required: true` that is completely absent from the data.
 4. **Type coercion**: converts columns to `numeric`, `date`, or `character`
    as declared; flags values that cannot be coerced.
-5. **Range checks**: flags numeric values outside the `[min, max]` range.
+5. **Range checks**: flags numeric values outside the `[min, max]` range. A column can add
+   `range_when` (`column`/`op`/`value`) to only apply its range to rows where another column meets
+   a condition -- rows where the gate column is missing or `NA` are out of scope, not flagged.
 6. **Translations and corrections**: applies the lookup maps silently,
    logging each change to `$log`.
 7. **Allowed-values check**: flags values not in the `allowed_values` list.

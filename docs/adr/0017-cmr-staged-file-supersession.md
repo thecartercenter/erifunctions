@@ -1,6 +1,6 @@
 # ADR-0017 — Superseding staged CMR files: opt-in delete, anchored match
 
-- **Status:** Accepted
+- **Status:** Accepted — mirror-filename cross-reference amended by ADR-0021
 - **Date:** 2026-07-10
 
 ## Context
@@ -38,10 +38,11 @@ Two risks came up in review:
    number that happens to start the same way — e.g. `2026050` doesn't falsely match period `202605`),
    matching the actual convention observed in real submissions (`{period}_...`) — the same convention
    [`eri_split_cmr()`](../../R/cmr.R) itself relies on to auto-detect `period` from a filename in the
-   first place. (The `mirror_pipeline` upload's generated name, `{country}_{period}_{timestamp}`, is a
-   different file in a different Azure location entirely — the `projects` blob's raw-drop folder, not
-   this `staged/` dedup scope — and isn't itself a candidate here.) A file that merely mentions the
-   period elsewhere in its name is never a candidate.
+   first place. (The `mirror_pipeline` upload's generated name — `{period}_{country}_{timestamp}` as of
+   [ADR-0021](0021-mirror-filename-period-leading.md) — is a different file in a different Azure
+   location entirely — the `projects` blob's raw-drop folder, not this `staged/` dedup scope — and isn't
+   itself a candidate here.) A file that merely mentions the period elsewhere in its name is never a
+   candidate.
 2. **Detection is unconditional; deletion is opt-in.** Whenever `period` is resolved, `eri_split_cmr()`
    always looks for anchored-match candidates in each destination folder and reports them. Whether
    they're actually removed is gated by a new parameter, `supersede_staged` (default `FALSE`): the

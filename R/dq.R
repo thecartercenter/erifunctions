@@ -214,19 +214,29 @@
     # those rows are treated as out of scope rather than flagged.
     when <- cols_schema[[col]]$range_when
     if (!is.null(when) && !is.null(when$column)) {
-      cond_vals <- if (when$column %in% names(data)) data[[when$column]] else NA
-      op        <- when$op %||% "=="
-      cond_ok <- switch(op,
-        "<=" = cond_vals <= when$value,
-        ">=" = cond_vals >= when$value,
-        "==" = cond_vals == when$value,
-        "<"  = cond_vals <  when$value,
-        ">"  = cond_vals >  when$value,
-        "!=" = cond_vals != when$value,
-        rep(FALSE, length(vals))
-      )
-      cond_ok[is.na(cond_ok)] <- FALSE
-      in_scope <- in_scope & cond_ok
+      op <- when$op %||% "=="
+      if (!op %in% c("<=", ">=", "==", "<", ">", "!=")) {
+        # A schema author's typo here must not silently narrow (or widen) what
+        # gets flagged -- warn loudly and fall back to the unconditional range
+        # check (never fires -> could hide a real problem; ignoring the gate
+        # is the safer failure direction, and impossible to miss in the log).
+        cli::cli_warn(c(
+          "Column {.val {col}}'s {.field range_when} has an unrecognized op {.val {op}} -- ignoring the gate, checking the range unconditionally.",
+          "i" = "Valid ops: <=, >=, ==, <, >, !=."
+        ))
+      } else {
+        cond_vals <- if (when$column %in% names(data)) data[[when$column]] else NA
+        cond_ok <- switch(op,
+          "<=" = cond_vals <= when$value,
+          ">=" = cond_vals >= when$value,
+          "==" = cond_vals == when$value,
+          "<"  = cond_vals <  when$value,
+          ">"  = cond_vals >  when$value,
+          "!=" = cond_vals != when$value
+        )
+        cond_ok[is.na(cond_ok)] <- FALSE
+        in_scope <- in_scope & cond_ok
+      }
     }
 
     out_of_range  <- which(in_scope & (vals < range_def[1] | vals > range_def[2]))

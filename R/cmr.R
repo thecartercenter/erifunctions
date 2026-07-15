@@ -245,10 +245,15 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   `"rb-expansion"`) whose legacy raw-drop location `path` should also be
 #'   uploaded to. Default `NULL` (no mirror; sandbox-safe).
 #' @param period `str` or `NULL` Reporting period (e.g. `"202605"`), used to tag
-#'   the op-log (so [eri_cmr_last_plan()] can find this run again) and, if
-#'   `mirror_pipeline` is set, the mirror upload. `NULL` (default) parses a
-#'   leading `YYYYMM_` from `basename(path)`; only required to be resolvable
-#'   when `mirror_pipeline` is set.
+#'   the op-log (so [eri_cmr_last_plan()] can find this run again), stage each
+#'   sheet's destination filename (see below), and, if `mirror_pipeline` is
+#'   set, the mirror upload. `NULL` (default) parses a leading `YYYYMM_` from
+#'   `basename(path)`; only required to be resolvable when `mirror_pipeline`
+#'   is set. When `period` is known (parsed or passed explicitly), each staged
+#'   filename is guaranteed to lead with `{period}_` even if `basename(path)`
+#'   doesn't -- real CMR submissions are commonly human-titled, not
+#'   `YYYYMM_`-prefixed, and [eri_approve()]'s promotion match (and
+#'   `supersede_staged` below) both depend on that leading period.
 #' @param projects_con Azure container for the `projects` blob; used only when
 #'   `mirror_pipeline` is set. If `NULL`, connects automatically.
 #' @param supersede_staged `logical` Re-splitting the same period from a

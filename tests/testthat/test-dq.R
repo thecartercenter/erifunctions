@@ -475,6 +475,30 @@ test_that("uga_oncho schema does not flag a zero target_pop for round 1 or an un
   expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
 })
 
+test_that("range_when treats an entirely absent gate column as out of scope, not flagged", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "treatment_round", op = ">", value = 1))
+  ))
+  df <- tibble::tibble(target_pop = 0)   # treatment_round doesn't exist in this sheet at all
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
+})
+
+test_that("range_when warns and falls back to an unconditional range check on an unrecognized op", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "treatment_round", op = "gte", value = 1))
+  ))
+  df <- tibble::tibble(target_pop = 0, treatment_round = 2)
+  expect_warning(
+    res <- run_dq_checks(df, schema),
+    "unrecognized op"
+  )
+  # the gate is ignored on a bad op -- range checked unconditionally, not silently skipped
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
+})
+
 test_that("uga_oncho schema flags a district not in the real allowed_values list", {
   schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
   df <- tibble::tibble(

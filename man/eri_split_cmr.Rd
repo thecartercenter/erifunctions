@@ -39,10 +39,15 @@ not staged data) so there's a stable \code{log_path} to attach an
 uploaded to. Default \code{NULL} (no mirror; sandbox-safe).}
 
 \item{period}{\code{str} or \code{NULL} Reporting period (e.g. \code{"202605"}), used to tag
-the op-log (so \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}} can find this run again) and, if
-\code{mirror_pipeline} is set, the mirror upload. \code{NULL} (default) parses a
-leading \code{YYYYMM_} from \code{basename(path)}; only required to be resolvable
-when \code{mirror_pipeline} is set.}
+the op-log (so \code{\link[=eri_cmr_last_plan]{eri_cmr_last_plan()}} can find this run again), stage each
+sheet's destination filename (see below), and, if \code{mirror_pipeline} is
+set, the mirror upload. \code{NULL} (default) parses a leading \code{YYYYMM_} from
+\code{basename(path)}; only required to be resolvable when \code{mirror_pipeline}
+is set. When \code{period} is known (parsed or passed explicitly), each staged
+filename is guaranteed to lead with \verb{\{period\}_} even if \code{basename(path)}
+doesn't -- real CMR submissions are commonly human-titled, not
+\code{YYYYMM_}-prefixed, and \code{\link[=eri_approve]{eri_approve()}}'s promotion match (and
+\code{supersede_staged} below) both depend on that leading period.}
 
 \item{projects_con}{Azure container for the \code{projects} blob; used only when
 \code{mirror_pipeline} is set. If \code{NULL}, connects automatically.}
