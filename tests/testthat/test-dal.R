@@ -36,8 +36,8 @@ test_that("eri_data_path builds correct paths without filename", {
     "ht/lf/cmr/processed"
   )
   expect_equal(
-    eri_data_path("ug", "oncho", "odk", "raw"),
-    "ug/oncho/odk/raw"
+    eri_data_path("uga", "oncho", "odk", "raw"),
+    "uga/oncho/odk/raw"
   )
 })
 
@@ -70,6 +70,34 @@ test_that("eri_data_path warns (does not error) on an unregistered axis value", 
     eri_data_path("dr", "malaria", "surveillance", "newmeasure", "processed"),
     "data_type"
   )
+})
+
+test_that("eri_data_path normalizes country/disease casing to lowercase (ADR-0020)", {
+  expect_equal(
+    eri_data_path("UGA", "LF", "surveillance", "staged"),
+    "uga/lf/surveillance/staged"
+  )
+  expect_equal(
+    eri_data_path(" Uga ", " Oncho ", "surveillance", "staged"),
+    "uga/oncho/surveillance/staged"
+  )
+})
+
+test_that("eri_data_path warns (does not error) on an unregistered country/disease", {
+  expect_warning(
+    p <- eri_data_path("xx", "malaria", "surveillance", "staged"),
+    "country"
+  )
+  expect_equal(p, "xx/malaria/surveillance/staged")
+  expect_warning(
+    eri_data_path("dr", "newdisease", "surveillance", "staged"),
+    "disease"
+  )
+})
+
+test_that("eri_data_path does not warn on the training sandbox or transitional codes", {
+  expect_no_warning(eri_data_path("atlantis", "oncho", "surveillance", "staged"))
+  expect_no_warning(eri_data_path("uga", "rblf", "cmr", "staged"))
 })
 
 test_that("eri_data_path resolves the legacy named form (data_type = <source>)", {
@@ -153,6 +181,20 @@ test_that("eri_stage errors clearly for unregistered country", {
   )
 })
 
+test_that("eri_stage normalizes country casing before the country_map lookup (ADR-0020)", {
+  # "DR" normalizes to "dr", which IS registered for hsp-mal -- so this must
+  # NOT hit "not registered" (the "zz" case above); without normalizing
+  # before the country_map lookup, "DR" would incorrectly hit it too.
+  err <- tryCatch({
+    eri_stage("hsp-mal", "DR", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
+})
+
 test_that("hsp-mal pipeline registry has required fields", {
   reg <- .eri_pipeline_registry[["hsp-mal"]]
   expect_false(is.null(reg))
@@ -177,6 +219,19 @@ test_that("eri_stage_cmr errors for unregistered country", {
                   data_con     = structure(list(), class = "mock")),
     "not registered"
   )
+})
+
+test_that("eri_stage_cmr normalizes country casing before the country_map lookup (ADR-0020)", {
+  # "UGA" normalizes to "uga", which IS registered for rb-expansion -- so this
+  # must NOT hit "not registered" (the "zz" case above).
+  err <- tryCatch({
+    eri_stage_cmr("UGA",
+                  projects_con = structure(list(), class = "mock"),
+                  data_con     = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
 })
 
 test_that("eri_stage_cmr errors when source directory not found", {
@@ -297,6 +352,21 @@ test_that("eri_ingest errors for a country not registered to the mirror pipeline
                data_con        = structure(list(), class = "mock")),
     "not registered"
   )
+})
+
+test_that("eri_ingest normalizes country casing before the mirror country_map lookup (ADR-0020)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  # "DR" normalizes to "dr", which IS registered for hsp-mal -- so this must
+  # NOT hit "not registered" (the "zz" case above).
+  err <- tryCatch({
+    eri_ingest(tmp, "DR", "malaria",
+               mirror_pipeline = "hsp-mal",
+               data_con        = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
 })
 
 test_that("eri_ingest no longer needs .eri_schema_country_map (retired)", {
@@ -514,6 +584,37 @@ test_that("eri_approve errors informatively when staged dir does not exist", {
       )
     }
   )
+})
+
+test_that("eri_approve normalizes country/disease so the log path matches the data path (ADR-0020)", {
+  mock_container <- structure(list(), class = "mock_container")
+  empty_tbl       <- tibble::tibble(name = character(0), size = integer(0))
+  captured_log_dir <- NULL
+
+  with_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    list_storage_files = function(...) empty_tbl,
+    .package = "AzureStor",
+    {
+      local_mocked_bindings(
+        .eri_write_log = function(op_log, azcontainer, log_dir) {
+          captured_log_dir <<- log_dir
+          invisible(NULL)
+        },
+        .package = "erifunctions"
+      )
+      expect_error(
+        eri_approve("UGA", "LF", "surveillance", "2024-W01",
+                    azcontainer = mock_container),
+        "No staged files"
+      )
+    }
+  )
+
+  # Without normalizing at eri_approve()'s own top, this would be
+  # "UGA/LF/surveillance/logs" -- a differently-cased sibling of the
+  # eri_data_path()-derived staged/processed dirs (uga/lf/...).
+  expect_equal(captured_log_dir, "uga/lf/surveillance/logs")
 })
 
 test_that(".eri_note_no_measure signposts the four-axis form once per session", {

@@ -1,9 +1,5 @@
 #### ODK form registry — Azure-backed YAML ####
 
-.KNOWN_COUNTRY_CODES <- c(
-  "dr", "ht", "eth", "nga", "sdn", "ssd", "uga", "mad", "tcd"
-)
-
 .ODK_REGISTRY_PATH <- "odk/registry.yaml"
 
 # Read registry from Azure; returns list with $forms element (may be empty).
@@ -46,10 +42,15 @@
 #' Appends a new entry to `odk/registry.yaml` in the `data/` Azure blob.
 #' Errors if the `(server_url, project_id, form_id)` triple is already active.
 #'
+#' Both `country` and `disease` are normalized (lowercase + trim) before being
+#' stored, so casing typos like `"UGA"` are silently corrected rather than
+#' erroring or drifting into a differently-cased path later (ADR-0020).
+#'
 #' @param project_id `int` ODK Central project ID.
 #' @param form_id `str` ODK Central form ID (xmlFormId).
-#' @param country `str` Country code (e.g. `"uga"`). Must be a known ERI country.
-#' @param disease `str` Disease name (e.g. `"oncho"`).
+#' @param country `str` Country code (e.g. `"uga"`). Must be a known ERI country
+#'   (see [eri_data_model()]) -- unknown values error.
+#' @param disease `str` Disease name (e.g. `"oncho"`; extensible -- unknown values warn).
 #' @param server_url `str` ODK Central server URL (e.g. `"https://odk.example.org"`).
 #' @param form_display_name `str` or `NULL` Human-readable form name. Defaults to `form_id`.
 #' @param con `odk_connection` or `NULL` ODK connection from [init_odk_connection()].
@@ -76,13 +77,21 @@ eri_odk_register <- function(
     con       = NULL,
     data_con  = NULL
 ) {
-  if (!country %in% .KNOWN_COUNTRY_CODES) {
-    known <- .KNOWN_COUNTRY_CODES
+  # ADR-0020: normalize case before validating, so a typo like "UGA" is
+  # silently corrected instead of erroring on case alone. country stays a hard
+  # abort (a small, curated set -- production-only, so the atlantis training
+  # sandbox is excluded here; ODK's own sandbox is the uga/demo namespace);
+  # disease only warns (extensible -- new disease programs are expected to
+  # appear over time), via the same normalize helper eri_data_path() uses.
+  country <- tolower(trimws(country))
+  known_countries <- .eri_known_countries(include_sandbox = FALSE)
+  if (!country %in% known_countries) {
     cli::cli_abort(c(
       "{.arg country} {.val {country}} is not a known ERI country code.",
-      "i" = "Valid codes: {.val {known}}"
+      "i" = "Valid codes: {.val {known_countries}}"
     ))
   }
+  disease <- .eri_normalize_geo_axis("disease", disease, .eri_known_diseases())
 
   data_con  <- .odk_data_con(data_con)
   analyst   <- .eri_analyst_id(data_con)

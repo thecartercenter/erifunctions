@@ -865,8 +865,15 @@ eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
 #' measure-less `{country}/{disease}/{data_source}/{layer}/` path — detected because
 #' its fourth argument is a `layer` keyword (a `data_type` measure never is).
 #'
-#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
-#' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
+#' `country` and `disease` are normalized (lowercase + trim) before the path is
+#' built, so `"UGA"`/`"uga"`/`" Uga "` all produce the same canonical path
+#' (ADR-0020) — this is what prevents legacy-cased paths like the `LF`/`lf`
+#' drift found and fixed in issue #303 from recurring.
+#'
+#' @param country `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`; extensible —
+#'   see [eri_data_model()]; unknown values warn, not error).
+#' @param disease `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`; extensible;
+#'   unknown values warn).
 #' @param data_source `str` The channel: `"surveillance"`, `"programmatic"`,
 #'   `"research"` (extensible — see [eri_data_model()]; unknown values warn).
 #' @param data_type `str` The measure: `"case"`, `"aggregate"`, `"treatment"`,
@@ -886,6 +893,11 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
   model         <- .eri_data_model()
   valid_layers  <- .eri_layers()
   known_sources <- names(model$data_sources)
+
+  # ADR-0020: always build the path from the canonical lowercase country/disease
+  # form, regardless of input casing -- the fix for the `LF`/`lf` drift (#303).
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
 
   # Capture which arguments were actually supplied before any reassignment.
   # An explicit NULL `data_type` is treated as "no measure" (the 4-axis form), so
@@ -986,6 +998,12 @@ eri_data_path <- function(country, disease, data_source, data_type, layer, filen
 eri_approve <- function(country, disease, data_source, period, data_type = NULL, azcontainer = NULL) {
   .eri_log_session()
   .eri_note_no_measure(data_type)
+  # ADR-0020: normalize once, up front, so every path built below from these
+  # locals -- eri_data_path() calls AND the hand-built log_dir -- agrees.
+  # eri_data_path() would otherwise normalize only its own internal copy.
+  model   <- .eri_data_model()
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
   if (is.null(azcontainer)) {
     azcontainer <- suppressMessages(
       get_azure_storage_connection(
@@ -1242,6 +1260,11 @@ eri_stage <- function(pipeline, country, disease,
                       projects_con = NULL,
                       data_con = NULL) {
   .eri_log_session()
+  # ADR-0020: normalize once, up front -- the country_map lookup below,
+  # eri_data_path(), and the hand-built log_dir all need to agree.
+  model   <- .eri_data_model()
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
 
   reg <- .eri_pipeline_registry[[pipeline]]
   if (is.null(reg)) {
@@ -1430,6 +1453,11 @@ eri_ingest <- function(path, country, disease,
                        mirror_pipeline = NULL,
                        projects_con = NULL) {
   .eri_log_session()
+  # ADR-0020: normalize once, up front -- the mirror's country_map lookup
+  # below, eri_data_path(), and the hand-built log_dir all need to agree.
+  model   <- .eri_data_model()
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
 
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")

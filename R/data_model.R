@@ -31,6 +31,35 @@
   invisible(value)
 }
 
+# Known country codes, from the bundled registry. A function (not a top-level
+# constant) so no file I/O happens at package-load time -- .eri_data_model()
+# is deliberately "read on demand." `include_sandbox = FALSE` drops `atlantis`
+# for contexts that are production-only and already have their own sandbox
+# convention -- e.g. ODK registration, which never included `atlantis` before
+# this registry was unified (ODK's own sandbox is the uga/demo namespace).
+#' @keywords internal
+.eri_known_countries <- function(include_sandbox = TRUE) {
+  codes <- names(.eri_data_model()$countries)
+  if (!include_sandbox) codes <- setdiff(codes, "atlantis")
+  codes
+}
+
+# Known disease codes, from the bundled registry. Same lazy-read rationale.
+#' @keywords internal
+.eri_known_diseases <- function() names(.eri_data_model()$diseases)
+
+# Normalize a country/disease code (lowercase + trim) and soft-warn via
+# .eri_check_axis() if the normalized value isn't in the known registry list
+# (ADR-0020). Returns the normalized value, so a path is always built from the
+# canonical form regardless of input casing -- this is what prevents the
+# `LF`/`lf` legacy-casing drift (#303) from recurring.
+#' @keywords internal
+.eri_normalize_geo_axis <- function(axis, value, known) {
+  normalized <- tolower(trimws(value))
+  .eri_check_axis(axis, normalized, known)
+  normalized
+}
+
 #' Show the data-addressing model: known sources, measures and formats
 #'
 #' @description
@@ -38,9 +67,11 @@
 #'
 #' Prints (and returns invisibly) the registry of known values for the five-axis
 #' canonical path `data/{country}/{disease}/{data_source}/{data_type}/{layer}/`
-#' (ADR-0012): the `data_source` channels, the `data_type` measures, the input
-#' `format`s, and the pipeline `layer`s. New sources/measures are added to the
-#' registry by onboarding; an unregistered value warns rather than errors.
+#' (ADR-0012): the `country` codes, `disease` codes, `data_source` channels,
+#' `data_type` measures, input `format`s, and pipeline `layer`s. New
+#' countries/sources/measures are added to the registry by onboarding; an
+#' unregistered value warns rather than errors. `country`/`disease` are also
+#' normalized to lowercase wherever a path is built (ADR-0020).
 #'
 #' @returns Invisibly, the registry as a named list.
 #' @examples
@@ -51,6 +82,12 @@ eri_data_model <- function() {
 
   cli::cli_h1("Data-addressing model (ADR-0012)")
   cli::cli_text("Path: {.path data/{{country}}/{{disease}}/{{data_source}}/{{data_type}}/{{layer}}/}")
+
+  cli::cli_h2("country")
+  for (nm in names(m$countries)) cli::cli_bullets(c("*" = "{.strong {nm}} -- {m$countries[[nm]]}"))
+
+  cli::cli_h2("disease")
+  for (nm in names(m$diseases)) cli::cli_bullets(c("*" = "{.strong {nm}} -- {m$diseases[[nm]]}"))
 
   cli::cli_h2("data_source {.emph (channel / how the data arrives)}")
   for (nm in names(m$data_sources)) cli::cli_bullets(c("*" = "{.strong {nm}} -- {m$data_sources[[nm]]}"))

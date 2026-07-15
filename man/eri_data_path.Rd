@@ -7,9 +7,11 @@
 eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 }
 \arguments{
-\item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}, \code{"uga"}).}
+\item{country}{\code{str} Country code (e.g. \code{"dr"}, \code{"ht"}, \code{"uga"}; extensible —
+see \code{\link[=eri_data_model]{eri_data_model()}}; unknown values warn, not error).}
 
-\item{disease}{\code{str} Disease name (e.g. \code{"malaria"}, \code{"lf"}, \code{"oncho"}).}
+\item{disease}{\code{str} Disease name (e.g. \code{"malaria"}, \code{"lf"}, \code{"oncho"}; extensible;
+unknown values warn).}
 
 \item{data_source}{\code{str} The channel: \code{"surveillance"}, \code{"programmatic"},
 \code{"research"} (extensible — see \code{\link[=eri_data_model]{eri_data_model()}}; unknown values warn).}
@@ -36,6 +38,11 @@ measure (what it captures). Use this instead of hard-coding path strings.
 The legacy four-axis form \code{eri_data_path(country, disease, data_source, layer[, filename])} is still accepted during the ADR-0012 migration and builds a
 measure-less \verb{\{country\}/\{disease\}/\{data_source\}/\{layer\}/} path — detected because
 its fourth argument is a \code{layer} keyword (a \code{data_type} measure never is).
+
+\code{country} and \code{disease} are normalized (lowercase + trim) before the path is
+built, so \code{"UGA"}/\code{"uga"}/\code{" Uga "} all produce the same canonical path
+(ADR-0020) — this is what prevents legacy-cased paths like the \code{LF}/\code{lf}
+drift found and fixed in issue #303 from recurring.
 }
 \examples{
 eri_data_path("dr", "malaria", "surveillance", "case", "staged")

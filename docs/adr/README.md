@@ -55,7 +55,7 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0009](0009-research-data-lifecycle.md) | Research-data lifecycle: Azure is the source, the project is the versioned working copy | Accepted |
 | [0010](0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables, approved together | Accepted — point 4 amended by ADR-0019 |
 | [0011](0011-unified-schema-naming.md) | One vocabulary for addressing data and schemas (unified schema naming) | Superseded by ADR-0012 |
-| [0012](0012-source-measure-data-model.md) | Data is addressed by source *and* measure (the 5-axis path model) | Accepted |
+| [0012](0012-source-measure-data-model.md) | Data is addressed by source *and* measure (the 5-axis path model) | Accepted — point 5 amended by ADR-0020 |
 | [0013](0013-odk-submission-backfill.md) | Submission backfill: erifunctions writes records *into* ODK Central | Accepted |
 | [0014](0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob | Accepted |
 | [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
@@ -63,3 +63,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted |
 | [0018](0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution, hash-based expiry | Accepted |
 | [0019](0019-odk-zero-row-parent-clears-raw-set.md) | A zero-row ODK parent clears the whole raw set, by default | Accepted — amends ADR-0010 point 4 |
+| [0020](0020-canonical-country-disease-codes.md) | Canonical, normalized country and disease codes | Accepted — amends ADR-0012 point 5 |

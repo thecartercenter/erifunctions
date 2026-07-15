@@ -251,6 +251,12 @@ eri_dq_log <- function(result, country, disease, data_source,
   if (!inherits(result, "dq_result")) {
     cli::cli_abort("{.arg result} must be a {.cls dq_result} from {.fn run_dq_checks}.")
   }
+  # ADR-0020: this function never calls eri_data_path(), so without this it
+  # would never normalize at all -- a DQ log's path could drift from the
+  # data path it's logging about.
+  model   <- .eri_data_model()
+  country <- .eri_normalize_geo_axis("country", country, names(model$countries))
+  disease <- .eri_normalize_geo_axis("disease", disease, names(model$diseases))
   data_con <- .eri_logs_con(data_con)
 
   flags   <- result$flags

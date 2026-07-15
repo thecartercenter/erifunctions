@@ -1,6 +1,7 @@
 # ADR-0012 — Data is addressed by source *and* measure (the 5-axis model)
 
-- **Status:** Accepted — supersedes [ADR-0011](0011-unified-schema-naming.md)
+- **Status:** Accepted — supersedes [ADR-0011](0011-unified-schema-naming.md); point 5 amended by
+  [ADR-0020](0020-canonical-country-disease-codes.md)
 - **Date:** 2026-06-27
 
 ## Context
@@ -88,7 +89,10 @@ data/{country}/{disease}/{data_source}/{data_type}/{layer}/
 5. **`data_source` and `data_type` are extensible by data, not code.** Validation is driven by a small
    registry / the schema set, so onboarding a new source or measure is a **data** change — not a core
    edit (roadmap Phase 5; CLAUDE.md global-vs-local guardrail). "This country/disease/source/measure
-   doesn't exist yet" is a normal, expected gap.
+   doesn't exist yet" is a normal, expected gap. *(Amended by
+   [ADR-0020](0020-canonical-country-disease-codes.md): this same registry-and-warn mechanism now
+   actually governs `country`/`disease` too, not just illustratively — they were named here in spirit
+   but never wired to a registry or validated until ADR-0020.)*
 6. **General primitives; legacy/production specifics are thin adapters.** Every core operation works
    over the five axes on *any* data, including a sandbox. `eri_ingest()` becomes the single general
    ingest core; the `projects`-blob **dual-write** becomes an opt-in `mirror_pipeline = NULL` parameter
