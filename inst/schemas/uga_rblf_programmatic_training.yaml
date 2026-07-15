@@ -25,7 +25,7 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
@@ -39,7 +39,7 @@ columns:
       - '#entotrn_year'
       - '#labtrn_year'
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
@@ -53,7 +53,7 @@ columns:
       - '#entotrn_adm1'
       - '#labtrn_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -121,7 +121,7 @@ columns:
       - YUMBE
       - Zombo
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -136,7 +136,7 @@ columns:
       - '#entotrn_adm3'
       - '#labtrn_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#vhttrn_disease'
@@ -148,7 +148,7 @@ columns:
       - '#entotrn_disease'
       - '#labtrn_disease'
   goal:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#vhttrn_goal'
@@ -159,11 +159,9 @@ columns:
       - '#dmditrnpt_goal'
       - '#entotrn_goal'
       - '#labtrn_goal'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#vhttrn_tot_male'
@@ -174,11 +172,9 @@ columns:
       - '#dmditrnpt_tot_male'
       - '#entotrn_tot_male'
       - '#labtrn_tot_male'
-    range:
-      - 0
-      - 4926
+    range: [0, 4926]
   female_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#vhttrn_tot_fem'
@@ -189,11 +185,9 @@ columns:
       - '#dmditrnpt_tot_fem'
       - '#entotrn_tot_fem'
       - '#labtrn_tot_fem'
-    range:
-      - 0
-      - 4926
+    range: [0, 4926]
   tot:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Trained
@@ -205,11 +199,9 @@ columns:
       - '#dmditrnpt_tot'
       - '#entotrn_tot'
       - '#labtrn_tot'
-    range:
-      - 0
-      - 4926
+    range: [0, 4926]
   achieved_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#vhttrn_achieved'
@@ -220,7 +212,5 @@ columns:
       - '#dmditrnpt_achieved'
       - '#entotrn_achieved'
       - '#labtrn_achieved'
-    range:
-      - 0
-      - 2
+    range: [0, 2]
 

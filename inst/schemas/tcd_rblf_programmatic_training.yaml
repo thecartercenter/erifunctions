@@ -25,7 +25,7 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
@@ -39,7 +39,7 @@ columns:
       - '#hgtrn_year'
       - '#tchrtrn_year'
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
@@ -53,7 +53,7 @@ columns:
       - '#hgtrn_adm1'
       - '#tchrtrn_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -136,7 +136,7 @@ columns:
       - Yamodo
       - Youe
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -151,7 +151,7 @@ columns:
       - '#hgtrn_adm3'
       - '#tchrtrn_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#cddtrn_disease'
@@ -163,7 +163,7 @@ columns:
       - '#hgtrn_disease'
       - '#tchrtrn_disease'
   goal:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_goal'
@@ -174,11 +174,9 @@ columns:
       - '#hwtrn_goal'
       - '#hgtrn_goal'
       - '#tchrtrn_goal'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_tot_male'
@@ -189,11 +187,9 @@ columns:
       - '#hwtrn_tot_male'
       - '#hgtrn_tot_male'
       - '#tchrtrn_tot_male'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   female_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_tot_fem'
@@ -204,11 +200,9 @@ columns:
       - '#hwtrn_tot_fem'
       - '#hgtrn_tot_fem'
       - '#tchrtrn_tot_fem'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   tot:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Trained
@@ -220,11 +214,9 @@ columns:
       - '#hwtrn_tot'
       - '#hgtrn_tot'
       - '#tchrtrn_tot'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   achieved_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_achieved'
@@ -235,7 +227,5 @@ columns:
       - '#hwtrn_achieved'
       - '#hgtrn_achieved'
       - '#tchrtrn_achieved'
-    range:
-      - 0
-      - 2
+    range: [0, 2]
 

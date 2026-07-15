@@ -18,24 +18,22 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
       - YEAR
       - '#lfdmdi_year'
-    range:
-      - 1990
-      - 2035
+    range: [1990, 2035]
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
       - adm1
       - '#lfdmdi_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -65,7 +63,7 @@ columns:
       - Sofia
       - Vatovavy- Fitovinany
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -73,74 +71,58 @@ columns:
       - adm3
       - '#lfdmdi_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#lfdmdi_disease'
   surgery_target:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_surgeytarget'
-    range:
-      - 0
-      - 50000
+    range: [0, 50000]
   village_target:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_villagetarget'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_managed:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_male_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   female_managed:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_fem_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   tot:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Treated
       - people_managed
       - '#lfdmdi_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   households_managed:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_hh_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   surgeries_done:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_sx_tot'
-    range:
-      - 0
-      - 50000
+    range: [0, 50000]
   surgeries_achieved_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lfdmdi_sx_achieved'
-    range:
-      - 0
-      - 2
+    range: [0, 2]
 

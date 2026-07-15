@@ -17,24 +17,22 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
       - YEAR
       - '#lftrt_year'
-    range:
-      - 1990
-      - 2035
+    range: [1990, 2035]
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
       - adm1
       - '#lftrt_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -184,7 +182,7 @@ columns:
       - Warri South West
       - Wase
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -192,85 +190,69 @@ columns:
       - adm3
       - '#lftrt_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#lftrt_disease'
   population:
-    required: no
+    required: false
     type: numeric
     aliases:
       - Population
       - '#lftrt_pop'
-    range:
-      - 0
-      - 1411776
+    range: [0, 1411776]
   treatment_round:
-    required: no
+    required: false
     type: numeric
     aliases:
       - Round
       - MDA_round
       - treatment_round
       - '#lftrt_trtrd'
-    range:
-      - 0
-      - 10
+    range: [0, 10]
   target_pop:
-    required: no
+    required: false
     type: numeric
     aliases:
       - TargetPop
       - target_population
       - eligible_pop
       - '#lftrt_trttarget'
-    range:
-      - 1
-      - 500000
+    range: [1, 500000]
   village_target:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lftrt_villagetarget'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_treated:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lftrt_male_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   female_treated:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#lftrt_fem_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   treated:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Treated
       - people_treated
       - '#lftrt_tot'
-    range:
-      - 0
-      - 500000
+    range: [0, 500000]
   coverage_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
       - CoveragePct
       - coverage
       - '#lftrt_coverage'
-    range:
-      - 0
-      - 150
+    range: [0, 150]
 consistency:
   implausible_overcoverage:
     lhs: treated

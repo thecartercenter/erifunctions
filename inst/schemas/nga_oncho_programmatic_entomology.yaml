@@ -22,24 +22,22 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
       - YEAR
       - '#rb_ento_surv_year'
-    range:
-      - 1990
-      - 2035
+    range: [1990, 2035]
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
       - adm1
       - '#rb_ento_surv_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -190,7 +188,7 @@ columns:
       - Yakur
       - Yala
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -198,12 +196,12 @@ columns:
       - adm3
       - '#rb_ento_surv_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#rb_ento_surv_disease'
   otz:
-    required: no
+    required: false
     type: character
     aliases:
       - '#rb_ento_surv_otz'

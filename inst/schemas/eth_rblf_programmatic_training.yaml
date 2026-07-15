@@ -1,13 +1,32 @@
-# Built 2026-07-16 against the REAL CMR field codes (#dmditrnsx_* / #dmditrnpt_* / #entotrn_* / #hgtrn_* / #hwtrn_* / #labtrn_*), via read-only
-# recon (structure/aggregate counts only, no records persisted or shared) against the
-# real 202605 submission from Ethiopia.
+# Built 2026-07-16 against the REAL CMR field codes (#cddtrn_* / #cstrn_* / #dmditrnsx_* /
+# #dmditrnpt_* / #entotrn_* / #hgtrn_* / #hwtrn_* / #labtrn_*), via read-only recon
+# (structure/aggregate counts only, no records persisted or shared) against the real
+# 202605 submission from Ethiopia.
 #
-# ONE schema covers all training sheets present this period (MMDP (surgery) Training, MMDP (patient) Training, Field Ento Training, Hope Group Leader Training, HW Training, Lab Training) because
-# eri_split_cmr() routes all of them to the same disease/data_type combo (rblf/training,
-# per ADR-0012's combined training code) -- load_dq_schema() can only resolve one file
-# per (country, disease, data_source, data_type). Each ingested sheet only ever has ONE
-# prefix present, so aliasing every prefix under one canonical column set works:
-# run_dq_checks() resolves whichever alias matches the data actually present.
+# ONE schema covers all 8 training sheets inst/schemas/cmr/eth.yaml routes to rblf/training
+# (CDD Training, CS Training, MMDP (surgery) Training, MMDP (patient) Training, Field Ento
+# Training, Hope Group Leader Training, HW Training, Lab Training) because eri_split_cmr()
+# routes all of them to the same disease/data_type combo (rblf/training, per ADR-0012's
+# combined training code) -- load_dq_schema() can only resolve one file per (country,
+# disease, data_source, data_type). Each ingested sheet only ever has ONE prefix present,
+# so aliasing every prefix under one canonical column set works: run_dq_checks() resolves
+# whichever alias matches the data actually present.
+#
+# CDD Training and CS Training's #cddtrn_/#cstrn_ aliases are added STRUCTURALLY here, not
+# from a successfully-ingested sheet: Ethiopia's real 202605 submission has the same known
+# duplicate field-code template defect on both sheets ("#cddtrn_male_oct"/"#cstrn_male_oct"
+# each typed twice), which now blocks the whole workbook per ADR-0022 -- eri_ingest_cmr()
+# cannot read either sheet until the shared Carter Center master template is fixed. Their
+# field shape (year/adm0-3/disease/goal/tot_male/tot_fem/tot/achieved) is identical to the
+# other 6 training types per inst/schemas/cmr/eth.yaml's required_fields, so the alias
+# mapping is exact even though it wasn't recon-verified against live data this pass.
+#
+# eth.yaml ALSO routes "ToT Regional"/"ToT Zonal" to rblf/training, deliberately NOT
+# aliased here: those two sheets have no adm2/district field at all (donor/goal/
+# tot_reg__male-fem instead), so they can never satisfy this schema's required `district`
+# column. Unlike CDD/CS (blocked entirely by the template defect), ToT sheets ingest fine
+# today -- ingesting one will produce a permanent, unresolvable "district missing" flag
+# under this schema until ToT gets its own data_type. Known gap, not silently dropped.
 
 country: eth
 disease: rblf
@@ -25,11 +44,13 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
       - YEAR
+      - '#cddtrn_year'
+      - '#cstrn_year'
       - '#dmditrnsx_year'
       - '#dmditrnpt_year'
       - '#entotrn_year'
@@ -37,11 +58,13 @@ columns:
       - '#hwtrn_year'
       - '#labtrn_year'
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
       - adm1
+      - '#cddtrn_adm1'
+      - '#cstrn_adm1'
       - '#dmditrnsx_adm1'
       - '#dmditrnpt_adm1'
       - '#entotrn_adm1'
@@ -49,12 +72,14 @@ columns:
       - '#hwtrn_adm1'
       - '#labtrn_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
       - district_name
       - adm2
+      - '#cddtrn_adm2'
+      - '#cstrn_adm2'
       - '#dmditrnsx_adm2'
       - '#dmditrnpt_adm2'
       - '#entotrn_adm2'
@@ -110,12 +135,14 @@ columns:
       - WTH
       - Yem
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
       - sub_county
       - adm3
+      - '#cddtrn_adm3'
+      - '#cstrn_adm3'
       - '#dmditrnsx_adm3'
       - '#dmditrnpt_adm3'
       - '#entotrn_adm3'
@@ -123,9 +150,11 @@ columns:
       - '#hwtrn_adm3'
       - '#labtrn_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
+      - '#cddtrn_disease'
+      - '#cstrn_disease'
       - '#dmditrnsx_disease'
       - '#dmditrnpt_disease'
       - '#entotrn_disease'
@@ -133,69 +162,69 @@ columns:
       - '#hwtrn_disease'
       - '#labtrn_disease'
   goal:
-    required: no
+    required: false
     type: numeric
     aliases:
+      - '#cddtrn_goal'
+      - '#cstrn_goal'
       - '#dmditrnsx_goal'
       - '#dmditrnpt_goal'
       - '#entotrn_goal'
       - '#hgtrn_goal'
       - '#hwtrn_goal'
       - '#labtrn_goal'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
+      - '#cddtrn_tot_male'
+      - '#cstrn_tot_male'
       - '#dmditrnsx_tot_male'
       - '#dmditrnpt_tot_male'
       - '#entotrn_tot_male'
       - '#hgtrn_tot_male'
       - '#hwtrn_tot_male'
       - '#labtrn_tot_male'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   female_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
+      - '#cddtrn_tot_fem'
+      - '#cstrn_tot_fem'
       - '#dmditrnsx_tot_fem'
       - '#dmditrnpt_tot_fem'
       - '#entotrn_tot_fem'
       - '#hgtrn_tot_fem'
       - '#hwtrn_tot_fem'
       - '#labtrn_tot_fem'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   tot:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Trained
+      - '#cddtrn_tot'
+      - '#cstrn_tot'
       - '#dmditrnsx_tot'
       - '#dmditrnpt_tot'
       - '#entotrn_tot'
       - '#hgtrn_tot'
       - '#hwtrn_tot'
       - '#labtrn_tot'
-    range:
-      - 0
-      - 1000
+    range: [0, 1000]
   achieved_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
+      - '#cddtrn_achieved'
+      - '#cstrn_achieved'
       - '#dmditrnsx_achieved'
       - '#dmditrnpt_achieved'
       - '#entotrn_achieved'
       - '#hgtrn_achieved'
       - '#hwtrn_achieved'
       - '#labtrn_achieved'
-    range:
-      - 0
-      - 2
+    range: [0, 2]
 

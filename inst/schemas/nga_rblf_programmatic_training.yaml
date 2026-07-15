@@ -25,7 +25,7 @@ preprocessing:
   - remove_smart_quotes
 columns:
   year:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Year
@@ -40,7 +40,7 @@ columns:
       - '#labtrn_year'
       - '#tchrtrn_year'
   region:
-    required: no
+    required: false
     type: character
     aliases:
       - Region
@@ -55,7 +55,7 @@ columns:
       - '#labtrn_adm1'
       - '#tchrtrn_adm1'
   district:
-    required: yes
+    required: true
     type: character
     aliases:
       - District
@@ -258,7 +258,7 @@ columns:
       - Yakur
       - Yala
   sub_county:
-    required: no
+    required: false
     type: character
     aliases:
       - SubCounty
@@ -274,7 +274,7 @@ columns:
       - '#labtrn_adm3'
       - '#tchrtrn_adm3'
   disease_reported:
-    required: no
+    required: false
     type: character
     aliases:
       - '#cddtrn_disease'
@@ -287,7 +287,7 @@ columns:
       - '#labtrn_disease'
       - '#tchrtrn_disease'
   goal:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_goal'
@@ -299,11 +299,9 @@ columns:
       - '#hgtrn_goal'
       - '#labtrn_goal'
       - '#tchrtrn_goal'
-    range:
-      - 0
-      - 5000
+    range: [0, 5000]
   male_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_tot_male'
@@ -315,11 +313,9 @@ columns:
       - '#hgtrn_tot_male'
       - '#labtrn_tot_male'
       - '#tchrtrn_tot_male'
-    range:
-      - 0
-      - 1719
+    range: [0, 1719]
   female_trained:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_tot_fem'
@@ -331,11 +327,9 @@ columns:
       - '#hgtrn_tot_fem'
       - '#labtrn_tot_fem'
       - '#tchrtrn_tot_fem'
-    range:
-      - 0
-      - 1719
+    range: [0, 1719]
   tot:
-    required: yes
+    required: true
     type: numeric
     aliases:
       - Trained
@@ -348,11 +342,9 @@ columns:
       - '#hgtrn_tot'
       - '#labtrn_tot'
       - '#tchrtrn_tot'
-    range:
-      - 0
-      - 1719
+    range: [0, 1719]
   achieved_pct:
-    required: no
+    required: false
     type: numeric
     aliases:
       - '#cddtrn_achieved'
@@ -364,7 +356,5 @@ columns:
       - '#hgtrn_achieved'
       - '#labtrn_achieved'
       - '#tchrtrn_achieved'
-    range:
-      - 0
-      - 2
+    range: [0, 2]
 

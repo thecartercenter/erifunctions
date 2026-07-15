@@ -27,9 +27,16 @@
 - Each `rblf/training` schema combines every training-sheet prefix that country's CMR
   template routes to `rblf/training` into one canonical column set, aliasing all of them --
   same precedent as `sdn_rblf_programmatic_training.yaml`/`ssd_rblf_programmatic_training.yaml`.
-  Ethiopia's "ToT Regional"/"ToT Zonal" sheets are deliberately excluded (distinct field
-  shape that doesn't fit the shared training template, same "scoped narrow" precedent used
-  for `tas`/`entomology`/`prevalence`).
+  **`eth_rblf_programmatic_training.yaml` includes `#cddtrn_`/`#cstrn_` (CDD/CS Training)
+  structurally**, not from a successfully-ingested sheet -- both sheets hit the same
+  duplicate-field-code defect as "RB Ento Surveys" (ADR-0022) in Ethiopia's real submission.
+  **Known gap, not yet resolved:** Ethiopia's "ToT Regional"/"ToT Zonal" sheets are still
+  routed to `rblf/training` by `inst/schemas/cmr/eth.yaml`, but excluded from this schema --
+  they have no `adm2`/district field at all (distinct donor/goal/tot_reg__male-fem shape),
+  so they can never satisfy this schema's required `district` column. Unlike CDD/CS, ToT
+  sheets ingest fine today, so ingesting one will produce a permanent, unresolvable "district
+  missing" flag under this schema until ToT gets its own `data_type` -- a design decision for
+  a maintainer, not made here.
 
 # erifunctions 0.9.38
 
