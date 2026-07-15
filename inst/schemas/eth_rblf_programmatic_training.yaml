@@ -1,235 +1,145 @@
 # Built 2026-07-16 against the REAL CMR field codes (#cddtrn_* / #cstrn_* / #dmditrnsx_* /
-# #dmditrnpt_* / #entotrn_* / #hgtrn_* / #hwtrn_* / #labtrn_*), via read-only recon
-# (structure/aggregate counts only, no records persisted or shared) against the real
-# 202605 submission from Ethiopia.
+# #dmditrnpt_* / #entotrn_* / #hgtrn_* / #hwtrn_* / #labtrn_* / #tot_reg_trn_* /
+# #tot_zone_trn_*), via read-only recon (structure/aggregate counts only, no records
+# persisted or shared) against the real 202605 submission from Ethiopia.
 #
-# ONE schema covers all 8 training sheets inst/schemas/cmr/eth.yaml routes to rblf/training
-# (CDD Training, CS Training, MMDP (surgery) Training, MMDP (patient) Training, Field Ento
-# Training, Hope Group Leader Training, HW Training, Lab Training) because eri_split_cmr()
-# routes all of them to the same disease/data_type combo (rblf/training, per ADR-0012's
-# combined training code) -- load_dq_schema() can only resolve one file per (country,
-# disease, data_source, data_type). Each ingested sheet only ever has ONE prefix present,
-# so aliasing every prefix under one canonical column set works: run_dq_checks() resolves
-# whichever alias matches the data actually present.
+# ONE schema covers all 10 training sheets inst/schemas/cmr/eth.yaml routes to
+# rblf/training (CDD Training, CS Training, MMDP (surgery) Training, MMDP (patient)
+# Training, Field Ento Training, Hope Group Leader Training, HW Training, Lab Training,
+# ToT Regional, ToT Zonal) because eri_split_cmr() routes all of them to the same
+# disease/data_type combo (rblf/training, per ADR-0012's combined training code) --
+# load_dq_schema() can only resolve one file per (country, disease, data_source,
+# data_type). Each ingested sheet only ever has ONE prefix present, so aliasing every
+# prefix under one canonical column set works: run_dq_checks() resolves whichever alias
+# matches the data actually present.
 #
-# CDD Training and CS Training's #cddtrn_/#cstrn_ aliases are added STRUCTURALLY here, not
+# CDD Training and CS Training's #cddtrn_/#cstrn_ aliases are added STRUCTURALLY, not
 # from a successfully-ingested sheet: Ethiopia's real 202605 submission has the same known
 # duplicate field-code template defect on both sheets ("#cddtrn_male_oct"/"#cstrn_male_oct"
 # each typed twice), which now blocks the whole workbook per ADR-0022 -- eri_ingest_cmr()
 # cannot read either sheet until the shared Carter Center master template is fixed. Their
 # field shape (year/adm0-3/disease/goal/tot_male/tot_fem/tot/achieved) is identical to the
-# other 6 training types per inst/schemas/cmr/eth.yaml's required_fields, so the alias
-# mapping is exact even though it wasn't recon-verified against live data this pass.
+# other 6 already-verified training types per inst/schemas/cmr/eth.yaml's required_fields,
+# so the alias mapping is exact even though it wasn't recon-verified against live data.
 #
-# eth.yaml ALSO routes "ToT Regional"/"ToT Zonal" to rblf/training, deliberately NOT
-# aliased here. "ToT Regional" has no adm2/district field at all (donor/goal/
-# tot_reg__male-fem instead), so it can never satisfy this schema's required `district`
-# column under any alias mapping. "ToT Zonal" DOES have an adm2 field (donor/goal/
-# tot_zone__male-fem alongside adm0/adm1/adm2) but a genuinely different field shape from
-# the other 8 sheets (no adm3/disease, distinct tot_zone__male/fem naming) -- not aliased
-# here either, pending a decision on whether it fits this schema or needs its own
-# data_type. Unlike CDD/CS (blocked entirely by the template defect), both ToT sheets
-# ingest fine today -- ingesting either will produce a permanent, unresolvable DQ flag
-# under this schema (missing `district` for Regional; missing required fields more
-# generally for Zonal) until this gap is resolved. Known gap, not silently dropped.
+# ToT Regional/Zonal ("Training of Trainers") are genuinely training data too, folded into
+# this same schema rather than a separate data_type -- eri_split_cmr() already routes them
+# here, and they don't need their own storage location, just alias coverage for their
+# distinct field-naming convention:
+# - Both use "donor"/"goal" (a new optional column here) rather than a district-level
+#   target, and name their totals "tot_reg_"/"tot_zone_" instead of the other 8 types'
+#   plain "tot" (e.g. "#tot_reg_trn_tot_reg__male" is that prefix's "male_trained").
+# - "ToT Regional" genuinely has NO adm2/district field (only adm0/adm1) -- this is why
+#   `district` below is `required: false` rather than `true`: since each ingest only ever
+#   carries ONE sheet's columns, relaxing this doesn't weaken district validation for the
+#   other 9 sheet types (their own adm2 alias is always present when their data is
+#   ingested; `required` only fires on a column missing ENTIRELY from that ingest, not a
+#   per-row blank -- see .dq_check_required()).
+# - "ToT Zonal" DOES have adm2 (real values folded into district's allowed_values below,
+#   including two zone-level entries -- "Agaro Town"/"Jimma Town" -- not seen in the other
+#   8 sheets' woreda-level rosters) but, like Regional, has no adm3/disease field.
 
 country: eth
 disease: rblf
 data_source: programmatic
 data_type: training
-version: '1.0'
-description: Ethiopia RB+LF programme trainings, combined training sheets of the monthly
-  CMR
+version: "1.0"
+description: "Ethiopia RB+LF programme trainings, combined training sheets of the monthly CMR"
 language: en
 time_grain: annual
+
 temporal:
   year_col: year
   period_col: year
+
 preprocessing:
   - remove_smart_quotes
+
 columns:
   year:
     required: true
     type: numeric
-    aliases:
-      - Year
-      - YEAR
-      - '#cddtrn_year'
-      - '#cstrn_year'
-      - '#dmditrnsx_year'
-      - '#dmditrnpt_year'
-      - '#entotrn_year'
-      - '#hgtrn_year'
-      - '#hwtrn_year'
-      - '#labtrn_year'
+    aliases: [Year, YEAR, "#cddtrn_year", "#cstrn_year", "#dmditrnsx_year", "#dmditrnpt_year",
+      "#entotrn_year", "#hgtrn_year", "#hwtrn_year", "#labtrn_year", "#tot_reg_trn_year",
+      "#tot_zone_trn_year"]
+
   region:
     required: false
     type: character
-    aliases:
-      - Region
-      - adm1
-      - '#cddtrn_adm1'
-      - '#cstrn_adm1'
-      - '#dmditrnsx_adm1'
-      - '#dmditrnpt_adm1'
-      - '#entotrn_adm1'
-      - '#hgtrn_adm1'
-      - '#hwtrn_adm1'
-      - '#labtrn_adm1'
+    aliases: [Region, adm1, "#cddtrn_adm1", "#cstrn_adm1", "#dmditrnsx_adm1", "#dmditrnpt_adm1",
+      "#entotrn_adm1", "#hgtrn_adm1", "#hwtrn_adm1", "#labtrn_adm1", "#tot_reg_trn_adm1",
+      "#tot_zone_trn_adm1"]
+
   district:
-    required: true
+    # NOT required: "ToT Regional" has no adm2/district field at all -- see header note.
+    required: false
     type: character
-    aliases:
-      - District
-      - district_name
-      - adm2
-      - '#cddtrn_adm2'
-      - '#cstrn_adm2'
-      - '#dmditrnsx_adm2'
-      - '#dmditrnpt_adm2'
-      - '#entotrn_adm2'
-      - '#hgtrn_adm2'
-      - '#hwtrn_adm2'
-      - '#labtrn_adm2'
-    allowed_values:
-      - Agnua
-      - Amhara
-      - Ari
-      - Awi
-      - Bale
-      - Basketo SpW
-      - Bench Sheko
-      - Benishangul Gumz
-      - Buno Bedele
-      - Central
-      - Central Gondar
-      - Dawuro
-      - East Arsi
-      - East Bale
-      - East Hararge
-      - Gambella
-      - Gofa
-      - Gurage
-      - Hadiya
-      - Illubabor
-      - Itang SpW
-      - Jimma
-      - Kaffa
-      - Konta Special
-      - Liban
-      - Metekel
-      - Mezheng
-      - North Gojam
-      - North Shoa
-      - Oromia
-      - Sheka
-      - Somali
-      - South
-      - South Gondar
-      - South Omo
-      - South West Shoa
-      - South Wollo
-      - SWEPR
-      - Tambaro SpW
-      - West Gojjam
-      - West Gondar
-      - West Guji
-      - West Hararge
-      - West Omo
-      - Wolayita
-      - WTH
-      - Yem
+    aliases: [District, district_name, adm2, "#cddtrn_adm2", "#cstrn_adm2", "#dmditrnsx_adm2",
+      "#dmditrnpt_adm2", "#entotrn_adm2", "#hgtrn_adm2", "#hwtrn_adm2", "#labtrn_adm2",
+      "#tot_zone_trn_adm2"]
+    allowed_values: ["Agaro Town", Agnua, Amhara, Ari, Awi, Bale, "Basketo SpW",
+      "Bench Sheko", "Benishangul Gumz", "Buno Bedele", Central, "Central Gondar", Dawuro,
+      "East Arsi", "East Bale", "East Hararge", Gambella, Gofa, Gurage, Hadiya, Illubabor,
+      "Itang SpW", Jimma, "Jimma Town", Kaffa, "Konta Special", Liban, Metekel, Mezheng,
+      "North Gojam", "North Shoa", Oromia, Sheka, Somali, South, "South Gondar",
+      "South Omo", "South West Shoa", "South Wollo", SWEPR, "Tambaro SpW", "West Gojjam",
+      "West Gondar", "West Guji", "West Hararge", "West Omo", Wolayita, WTH, Yem]
+
   sub_county:
     required: false
     type: character
-    aliases:
-      - SubCounty
-      - sub_county
-      - adm3
-      - '#cddtrn_adm3'
-      - '#cstrn_adm3'
-      - '#dmditrnsx_adm3'
-      - '#dmditrnpt_adm3'
-      - '#entotrn_adm3'
-      - '#hgtrn_adm3'
-      - '#hwtrn_adm3'
-      - '#labtrn_adm3'
+    aliases: [SubCounty, sub_county, adm3, "#cddtrn_adm3", "#cstrn_adm3", "#dmditrnsx_adm3",
+      "#dmditrnpt_adm3", "#entotrn_adm3", "#hgtrn_adm3", "#hwtrn_adm3", "#labtrn_adm3"]
+
   disease_reported:
     required: false
     type: character
-    aliases:
-      - '#cddtrn_disease'
-      - '#cstrn_disease'
-      - '#dmditrnsx_disease'
-      - '#dmditrnpt_disease'
-      - '#entotrn_disease'
-      - '#hgtrn_disease'
-      - '#hwtrn_disease'
-      - '#labtrn_disease'
+    aliases: ["#cddtrn_disease", "#cstrn_disease", "#dmditrnsx_disease", "#dmditrnpt_disease",
+      "#entotrn_disease", "#hgtrn_disease", "#hwtrn_disease", "#labtrn_disease"]
+
+  donor:
+    # ToT-specific -- no equivalent in the other 8 training types.
+    required: false
+    type: character
+    aliases: ["#tot_reg_trn_donor", "#tot_zone_trn_donor"]
+
   goal:
     required: false
     type: numeric
-    aliases:
-      - '#cddtrn_goal'
-      - '#cstrn_goal'
-      - '#dmditrnsx_goal'
-      - '#dmditrnpt_goal'
-      - '#entotrn_goal'
-      - '#hgtrn_goal'
-      - '#hwtrn_goal'
-      - '#labtrn_goal'
+    aliases: ["#cddtrn_goal", "#cstrn_goal", "#dmditrnsx_goal", "#dmditrnpt_goal",
+      "#entotrn_goal", "#hgtrn_goal", "#hwtrn_goal", "#labtrn_goal", "#tot_reg_trn_goal",
+      "#tot_zone_trn_goal"]
     range: [0, 5000]
+
   male_trained:
     required: false
     type: numeric
-    aliases:
-      - '#cddtrn_tot_male'
-      - '#cstrn_tot_male'
-      - '#dmditrnsx_tot_male'
-      - '#dmditrnpt_tot_male'
-      - '#entotrn_tot_male'
-      - '#hgtrn_tot_male'
-      - '#hwtrn_tot_male'
-      - '#labtrn_tot_male'
+    aliases: ["#cddtrn_tot_male", "#cstrn_tot_male", "#dmditrnsx_tot_male",
+      "#dmditrnpt_tot_male", "#entotrn_tot_male", "#hgtrn_tot_male", "#hwtrn_tot_male",
+      "#labtrn_tot_male", "#tot_reg_trn_tot_reg__male", "#tot_zone_trn_tot_zone__male"]
     range: [0, 1000]
+
   female_trained:
     required: false
     type: numeric
-    aliases:
-      - '#cddtrn_tot_fem'
-      - '#cstrn_tot_fem'
-      - '#dmditrnsx_tot_fem'
-      - '#dmditrnpt_tot_fem'
-      - '#entotrn_tot_fem'
-      - '#hgtrn_tot_fem'
-      - '#hwtrn_tot_fem'
-      - '#labtrn_tot_fem'
+    aliases: ["#cddtrn_tot_fem", "#cstrn_tot_fem", "#dmditrnsx_tot_fem", "#dmditrnpt_tot_fem",
+      "#entotrn_tot_fem", "#hgtrn_tot_fem", "#hwtrn_tot_fem", "#labtrn_tot_fem",
+      "#tot_reg_trn_tot_reg__fem", "#tot_zone_trn_tot_zone__fem"]
     range: [0, 1000]
+
   tot:
     required: true
     type: numeric
-    aliases:
-      - Trained
-      - '#cddtrn_tot'
-      - '#cstrn_tot'
-      - '#dmditrnsx_tot'
-      - '#dmditrnpt_tot'
-      - '#entotrn_tot'
-      - '#hgtrn_tot'
-      - '#hwtrn_tot'
-      - '#labtrn_tot'
+    aliases: [Trained, "#cddtrn_tot", "#cstrn_tot", "#dmditrnsx_tot", "#dmditrnpt_tot",
+      "#entotrn_tot", "#hgtrn_tot", "#hwtrn_tot", "#labtrn_tot", "#tot_reg_trn_tot_reg_",
+      "#tot_zone_trn_tot_zone_"]
     range: [0, 1000]
+
   achieved_pct:
     required: false
     type: numeric
-    aliases:
-      - '#cddtrn_achieved'
-      - '#cstrn_achieved'
-      - '#dmditrnsx_achieved'
-      - '#dmditrnpt_achieved'
-      - '#entotrn_achieved'
-      - '#hgtrn_achieved'
-      - '#hwtrn_achieved'
-      - '#labtrn_achieved'
+    aliases: ["#cddtrn_achieved", "#cstrn_achieved", "#dmditrnsx_achieved",
+      "#dmditrnpt_achieved", "#entotrn_achieved", "#hgtrn_achieved", "#hwtrn_achieved",
+      "#labtrn_achieved", "#tot_reg_trn_achieved", "#tot_zone_trn_achieved"]
+    # Proportion scale, not percentage.
     range: [0, 2]
-
