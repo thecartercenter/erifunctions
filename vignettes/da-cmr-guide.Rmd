@@ -243,9 +243,16 @@ here, since the example is a two-sheet subset. (If *none* of the routable sheets
 
 If the dry run comes back with nothing skipped and no warnings, you'll see a plain "Dry run clean --
 ready to run for real" instead of having to infer it from an absence of complaints. If it does flag
-something (a skipped sheet, or a real template defect like a duplicate field code), it's also logged
-so you have a stable reference to attach a note to later, once you've looked into it and fixed
-whatever needed fixing:
+a skipped sheet, that's logged so you have a stable reference to attach a note to later, once you've
+looked into it and fixed whatever needed fixing:
+
+A **duplicate field code** (a real template defect -- the same machine-readable code typed twice in
+a sheet's row 5, most often seen on "RB Ento Surveys") is different: it's not a survivable warning.
+It **aborts the dry run entirely, for the whole workbook** -- no plan is produced, not even for
+sheets unrelated to the defective one (see [ADR-0022](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0022-cmr-duplicate-field-code-blocks-workbook.md)).
+The failure is still logged (`status = "error"`), so it's visible via `eri_logs()`, but there's no
+plan to review around it -- flag it to whoever maintains the CMR template and get a corrected file
+before retrying.
 
 ```{r split-dry-log, eval=FALSE}
 # ... after investigating and correcting something upstream ...

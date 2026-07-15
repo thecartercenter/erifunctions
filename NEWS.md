@@ -1,3 +1,38 @@
+# erifunctions 0.9.38
+
+## CMR pipeline fixes from the uga/ssd/nga pilot session
+
+- **`eri_split_cmr()` now guarantees the staged filename leads with `{period}_`**, even when
+  the source workbook's own filename doesn't (real CMR submissions are commonly human-titled,
+  e.g. `"...Data Report Submitted_09-June-2026.xlsx"`). Previously the staged filename was
+  built from `basename(path)` verbatim, so `eri_approve_cmr()`'s period-substring match could
+  fail to find files that DQ review had just flagged for that exact period ("No staged files
+  found matching '202606'").
+- **Duplicate field codes in a CMR sheet's row 5 (e.g. the known "RB Ento Surveys" master-
+  template defect) now block the whole workbook** with a clear error, instead of silently
+  suffixing the duplicate column and continuing. A DA works with a CMR submission as one unit;
+  the failure is logged (`status = "error"`) before aborting so it's still visible via
+  `eri_logs()`.
+- **UGA's `target_pop` DQ range floor is now conditional on `treatment_round > 1`**
+  (`inst/schemas/uga_oncho_programmatic_treatment.yaml`, `uga_sch_programmatic_treatment.yaml`).
+  A present-but-zero target is only implausible once a round is actually underway — round 1
+  legitimately reports 0 in many districts before scale-up. `.dq_check_ranges()` gained a
+  general `range_when` gate (column/op/value) any schema can use for this pattern.
+- **The interactive DQ review's "Fix in source" prompt can now be cancelled** (blank answer)
+  instead of looping forever on "This can't be blank" when a DA picks it without the file path
+  handy.
+- **New `eri_dq_review_note()`** logs a free-text note against a CMR period that isn't tied to
+  any specific DQ flag (e.g. confirming the workbook's narrative section against the data).
+  Wired into `eri_dq_review()`'s interactive loop as "Add a note (not tied to a flag)".
+- **The legacy `projects`-blob mirror filename now leads with the period** (`{period}_
+  {country}_{timestamp}.ext`, was `{country}_{period}_{timestamp}.ext`), matching the real
+  `YYYYMM_...` convention the legacy pipeline expects.
+- **`eri_do("cmr")` now asks replace-vs-update when a DA brings in a new file for a period
+  that's already been split**, instead of silently defaulting to "add alongside" (leaving both
+  the old and new staged files for `eri_approve_cmr()`'s period match to promote). A
+  correction supersedes the earlier staged data (`eri_split_cmr(supersede_staged = TRUE)`); a
+  genuine update is added alongside it, same as before.
+
 # erifunctions 0.9.37
 
 ## Enforce canonical, lowercase country/disease codes (ADR-0020)

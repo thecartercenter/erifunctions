@@ -65,7 +65,7 @@ test_that("eri_dq_review's loop returns 'exited' when the DA exits from the clea
       excel_row = integer(0), column = character(0), value = character(0),
       issue = character(0), status = character(0)
     ),
-    .eri_prompt_menu = scripted(list(3L)),  # "Exit"
+    .eri_prompt_menu = scripted(list(4L)),  # "Exit"
     .package = "erifunctions"
   )
 
@@ -89,13 +89,64 @@ test_that("eri_dq_review's 'print report' loops back to the same menu instead of
     ),
     eri_approve_cmr = function(...) { approved <<- TRUE },
     .eri_dq_review_print_report = function(...) { printed <<- TRUE },
-    .eri_prompt_menu = scripted(list(2L, 1L)),  # "Print report", then "Approve"
+    .eri_prompt_menu = scripted(list(3L, 1L)),  # "Print report", then "Approve"
     .package = "erifunctions"
   )
 
   eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
   expect_true(printed)
   expect_true(approved)
+})
+
+test_that("eri_dq_review's 'add a note' option logs a standalone note and loops back to the same menu", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  noted <- NULL
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      excel_row = integer(0), column = character(0), value = character(0),
+      issue = character(0), status = character(0)
+    ),
+    eri_dq_review_note = function(country, period, note, ...) {
+      noted <<- list(country = country, period = period, note = note)
+    },
+    # "Nothing outstanding" menu: "Add a note", then "Exit"
+    .eri_prompt_menu = scripted(list(2L, 4L)),
+    .eri_prompt_line = scripted(list("Narrative section matches the data -- no discrepancy.")),
+    .package = "erifunctions"
+  )
+
+  eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_equal(noted$country, "sdn")
+  expect_equal(noted$period, "202605")
+  expect_equal(noted$note, "Narrative section matches the data -- no discrepancy.")
+})
+
+test_that("eri_dq_review's 'add a note' cancels cleanly on a blank note", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  note_logged <- FALSE
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) tibble::tibble(
+      sheet = character(0), disease = character(0), data_type = character(0),
+      log_path = character(0), flag_id = character(0), row = integer(0),
+      excel_row = integer(0), column = character(0), value = character(0),
+      issue = character(0), status = character(0)
+    ),
+    eri_dq_review_note = function(...) { note_logged <<- TRUE },
+    .eri_prompt_menu = scripted(list(2L, 4L)),
+    .eri_prompt_line = scripted(list("")),   # blank -- cancels
+    .package = "erifunctions"
+  )
+
+  eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+  expect_false(note_logged)
 })
 
 test_that("eri_dq_review exiting from the clean menu does not approve", {
@@ -198,7 +249,7 @@ test_that("eri_dq_review cancels the force-approve when the typed confirmation d
     eri_cmr_dq_report  = function(...) flagged_tbl,
     eri_approve_cmr = function(...) { approve_called <<- TRUE },
     # main menu: "Force-approve anyway", then "Exit" (since the cancelled force-approve loops back)
-    .eri_prompt_menu = scripted(list(3L, 5L)),
+    .eri_prompt_menu = scripted(list(3L, 6L)),
     .eri_prompt_line = scripted(list("Justification.", "wrong period")),
     .package = "erifunctions"
   )
@@ -221,7 +272,7 @@ test_that("eri_dq_review's 'adjust the schema' path offers to submit at the end 
     # main menu: "Work through flags"; within the flag: "Adjust the schema";
     # then back at main menu: "Exit" (still flagged -- adjusting the schema
     # doesn't itself resolve the flag); then the end-of-session submit offer: "Yes"
-    .eri_prompt_menu = scripted(list(1L, 2L, 5L, 1L)),
+    .eri_prompt_menu = scripted(list(1L, 2L, 6L, 1L)),
     .eri_prompt_line = scripted(list("optional ticket note")),
     .package = "erifunctions"
   )
@@ -250,7 +301,7 @@ test_that("eri_dq_review's 're-run' offers to re-split only after a 'fix in sour
     # source" (only one flag, so the walk ends and returns to the main loop);
     # main menu (iter 2, still the same mocked flag): "Re-run the DQ check";
     # re-run's own sub-menu: "Yes" (re-split); main menu (iter 3): "Exit"
-    .eri_prompt_menu = scripted(list(1L, 1L, 2L, 1L, 5L)),
+    .eri_prompt_menu = scripted(list(1L, 1L, 2L, 1L, 6L)),
     .eri_prompt_line = scripted(list(tmp)),  # the local workbook path prompt
     .package = "erifunctions"
   )
@@ -308,7 +359,7 @@ test_that("eri_dq_review's re-run scopes the fresh DQ check to just the resplit 
     # main menu: "Work through flags"; oncho flag: "Fix in source"; sch flag:
     # "Mark not important" (with a note); main menu: "Re-run the DQ check";
     # re-run's own sub-menu: "Yes"; main menu: "Exit"
-    .eri_prompt_menu = scripted(list(1L, 1L, 3L, 2L, 1L, 5L)),
+    .eri_prompt_menu = scripted(list(1L, 1L, 3L, 2L, 1L, 6L)),
     .eri_prompt_line = scripted(list(tmp, "known template quirk")),
     .package = "erifunctions"
   )
@@ -321,6 +372,40 @@ test_that("eri_dq_review's re-run scopes the fresh DQ check to just the resplit 
   rerun_plan <- dq_report_calls[[2]]
   expect_equal(nrow(rerun_plan), 1L)
   expect_equal(rerun_plan$disease, "oncho")
+})
+
+test_that("eri_dq_review_note writes a standalone log entry, not tied to any flag", {
+  logged <- NULL
+  local_mocked_bindings(
+    .eri_write_log = function(op_log, data_con, log_dir) {
+      logged <<- list(op_log = op_log, log_dir = log_dir)
+      "sdn/rblf/cmr/logs/fake_note.yaml"
+    },
+    .package = "erifunctions"
+  )
+
+  path <- suppressWarnings(
+    eri_dq_review_note("sdn", "202605", "Narrative matches the data.",
+                       data_con = structure(list(), class = "mock"))
+  )
+
+  expect_equal(path, "sdn/rblf/cmr/logs/fake_note.yaml")
+  expect_equal(logged$log_dir, "sdn/rblf/cmr/logs")
+  expect_equal(logged$op_log$operation, "dq_review_note")
+  expect_equal(logged$op_log$note, "Narrative matches the data.")
+  expect_equal(logged$op_log$parameters, list(country = "sdn", period = "202605"))
+  expect_equal(logged$op_log$status, "success")
+})
+
+test_that("eri_dq_review_note rejects a blank note", {
+  expect_error(
+    eri_dq_review_note("sdn", "202605", "", data_con = structure(list(), class = "mock")),
+    "non-empty"
+  )
+  expect_error(
+    eri_dq_review_note("sdn", "202605", "   ", data_con = structure(list(), class = "mock")),
+    "non-empty"
+  )
 })
 
 test_that(".eri_dq_review_fix_in_source forks even when the ORIGINAL filename contains '_fixed' not at the end", {
@@ -346,6 +431,27 @@ test_that(".eri_dq_review_fix_in_source forks even when the ORIGINAL filename co
   expect_false(identical(local_path_env$path, original))  # a real working copy was made
   expect_true(file.exists(local_path_env$path))
   expect_equal(opened, local_path_env$path)
+})
+
+test_that(".eri_dq_review_fix_in_source lets a blank path cancel back to the flag, instead of looping forever", {
+  # Regression guard: this prompt used to be required = TRUE, which meant a
+  # DA who picked "Fix in source" without the file path handy had no way out
+  # -- every blank answer just re-prompted "This can't be blank" forever.
+  local_path_env <- new.env(parent = emptyenv())
+  local_path_env$path <- NULL
+  opened <- NULL
+  local_mocked_bindings(
+    .eri_prompt_line = function(...) "",
+    .eri_open_file    = function(path, ...) { opened <<- path; invisible(path) },
+    .package = "erifunctions"
+  )
+
+  f <- list(column = "x", excel_row = 1L, sheet = "s", issue = "i")
+  result <- .eri_dq_review_fix_in_source(f, local_path_env)
+
+  expect_null(result)
+  expect_null(local_path_env$path)   # nothing was set -- caller stays at the flag menu
+  expect_null(opened)                # never tried to open a file
 })
 
 test_that(".eri_dq_review_fix_in_source prints the fix instructions as two separate bullets, not jammed onto one line", {
@@ -429,7 +535,7 @@ test_that("eri_dq_review's 'print report' hands the in-session flags (with notes
     eri_dq_export = function(flags, country, period, ...) { exported <<- flags; invisible("x") },
     # main menu: "Work through flags"; within the flag: "Mark noted" (with a note); back at the
     # now-clean "Nothing outstanding" menu: "Print report", then "Exit"
-    .eri_prompt_menu = scripted(list(1L, 4L, 2L, 3L)),
+    .eri_prompt_menu = scripted(list(1L, 4L, 3L, 4L)),
     .eri_prompt_line = scripted(list("worth a second look")),
     .package = "erifunctions"
   )

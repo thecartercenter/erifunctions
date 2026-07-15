@@ -264,6 +264,93 @@ test_that(".eri_flow_cmr offers to resume into DQ review when this country/perio
   expect_invisible(.eri_flow_cmr())
 })
 
+test_that(".eri_flow_cmr asks replace-vs-update when declining to resume, and threads 'replace' into supersede_staged", {
+  withr::local_options(rlang_interactive = TRUE)
+  existing_plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                                  dest = "a", n_rows = 1L)
+  split_calls <- list()
+  local_mocked_bindings(
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_file    = function(...) "C:/fake/202406_uga_cmr.xlsx",
+    .eri_wizard_pick_period  = function(...) "202406",
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock_projects_con"),
+    .eri_wizard_detect_cmr_progress = function(...) existing_plan,
+    # "already split, resume?": No; replace-vs-update: "A correction that
+    # replaces..."; final "Go ahead?": Yes
+    .eri_prompt_menu = scripted(list(2L, 1L, 1L)),
+    eri_upload    = function(...) invisible(NULL),
+    eri_stage_cmr = function(...) invisible(NULL),
+    eri_split_cmr = function(path, country, period, data_con = NULL, dry_run = FALSE,
+                             mirror_pipeline = NULL, supersede_staged = FALSE, ...) {
+      split_calls[[length(split_calls) + 1L]] <<- list(dry_run = dry_run, supersede_staged = supersede_staged)
+      tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                     dest = "a", n_rows = 1L)
+    },
+    .eri_wizard_should_mirror_cmr = function(...) FALSE,
+    .eri_dq_review_loop = function(...) "approved",
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_cmr())
+
+  expect_length(split_calls, 2L)                    # dry-run preview, then the real split
+  expect_true(split_calls[[1]]$dry_run)
+  expect_false(split_calls[[2]]$dry_run)
+  expect_true(split_calls[[2]]$supersede_staged)     # "replace" -> supersede_staged = TRUE
+})
+
+test_that(".eri_flow_cmr's replace-vs-update 'add as an update' does not supersede the earlier staged data", {
+  withr::local_options(rlang_interactive = TRUE)
+  existing_plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                                  dest = "a", n_rows = 1L)
+  real_split_call <- NULL
+  local_mocked_bindings(
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_file    = function(...) "C:/fake/202406_uga_cmr.xlsx",
+    .eri_wizard_pick_period  = function(...) "202406",
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock_projects_con"),
+    .eri_wizard_detect_cmr_progress = function(...) existing_plan,
+    # "already split, resume?": No; replace-vs-update: "An update to add alongside..."; "Go ahead?": Yes
+    .eri_prompt_menu = scripted(list(2L, 2L, 1L)),
+    eri_upload    = function(...) invisible(NULL),
+    eri_stage_cmr = function(...) invisible(NULL),
+    eri_split_cmr = function(path, country, period, data_con = NULL, dry_run = FALSE,
+                             mirror_pipeline = NULL, supersede_staged = FALSE, ...) {
+      if (!dry_run) real_split_call <<- list(supersede_staged = supersede_staged)
+      tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                     dest = "a", n_rows = 1L)
+    },
+    .eri_wizard_should_mirror_cmr = function(...) FALSE,
+    .eri_dq_review_loop = function(...) "approved",
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_cmr())
+
+  expect_false(is.null(real_split_call))
+  expect_false(real_split_call$supersede_staged)
+})
+
+test_that(".eri_flow_cmr's replace-vs-update prompt cancels cleanly (no upload/stage/split)", {
+  withr::local_options(rlang_interactive = TRUE)
+  existing_plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                                  dest = "a", n_rows = 1L)
+  local_mocked_bindings(
+    .eri_prompt_pick_country = function(...) "uga",
+    .eri_prompt_pick_file    = function(...) "C:/fake/202406_uga_cmr.xlsx",
+    .eri_wizard_pick_period  = function(...) "202406",
+    .eri_logs_con = function(...) structure(list(), class = "mock_data_con"),
+    .eri_wizard_detect_cmr_progress = function(...) existing_plan,
+    # "already split, resume?": No; replace-vs-update: "Cancel"
+    .eri_prompt_menu = scripted(list(2L, 3L)),
+    eri_upload    = function(...) stop("must not upload -- cancelled at the replace-vs-update prompt"),
+    eri_stage_cmr = function(...) stop("must not stage -- cancelled at the replace-vs-update prompt"),
+    eri_split_cmr = function(...) stop("must not split -- cancelled at the replace-vs-update prompt"),
+    .package = "erifunctions"
+  )
+  expect_invisible(.eri_flow_cmr())
+})
+
 #### Phase B: surveillance ingest ####
 
 test_that(".eri_prompt_pick_or_type returns a picked value, a typed 'Other', or NA on cancel", {

@@ -135,17 +135,18 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 
   # A real template can have the same field code typed twice in row 5 (a
   # copy-paste slip when a monthly block was duplicated, not a data problem).
-  # Selecting by position (not by name) keeps both columns' data distinct;
-  # de-duplicating the names lets the rest of the pipeline proceed instead of
-  # hard-erroring on every row of an otherwise-valid submission.
+  # Blocks the WHOLE workbook, not just this sheet -- DAs work with a CMR
+  # submission as one unit, confirmed 2026-07-15 after this defect surfaced in
+  # a live "RB Ento Surveys" sheet (a known Carter Center master-template
+  # issue, not country-specific). Previously this only warned and continued
+  # (suffixing the duplicate column); that silently let a template defect
+  # through instead of forcing it back to whoever maintains the template.
   dup <- duplicated(field_cols) | duplicated(field_cols, fromLast = TRUE)
   if (any(dup)) {
-    cli::cli_warn(c(
+    cli::cli_abort(c(
       "Sheet {.val {actual_sheet}} has duplicate field code{?s} in row 5 (a template defect): {.val {unique(field_cols[dup])}}.",
-      "i" = "Kept both columns; the later one is suffixed ({.code __1}, {.code __2}, ...).",
-      "i" = "Flag this to whoever maintains the CMR template."
+      "i" = "This blocks the whole workbook -- flag it to whoever maintains the CMR template and get a corrected file before retrying."
     ))
-    field_cols <- make.unique(field_cols, sep = "__")
   }
 
   df <- raw[, field_pos, drop = FALSE]
@@ -244,10 +245,15 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 #'   `"rb-expansion"`) whose legacy raw-drop location `path` should also be
 #'   uploaded to. Default `NULL` (no mirror; sandbox-safe).
 #' @param period `str` or `NULL` Reporting period (e.g. `"202605"`), used to tag
-#'   the op-log (so [eri_cmr_last_plan()] can find this run again) and, if
-#'   `mirror_pipeline` is set, the mirror upload. `NULL` (default) parses a
-#'   leading `YYYYMM_` from `basename(path)`; only required to be resolvable
-#'   when `mirror_pipeline` is set.
+#'   the op-log (so [eri_cmr_last_plan()] can find this run again), stage each
+#'   sheet's destination filename (see below), and, if `mirror_pipeline` is
+#'   set, the mirror upload. `NULL` (default) parses a leading `YYYYMM_` from
+#'   `basename(path)`; only required to be resolvable when `mirror_pipeline`
+#'   is set. When `period` is known (parsed or passed explicitly), each staged
+#'   filename is guaranteed to lead with `{period}_` even if `basename(path)`
+#'   doesn't -- real CMR submissions are commonly human-titled, not
+#'   `YYYYMM_`-prefixed, and [eri_approve()]'s promotion match (and
+#'   `supersede_staged` below) both depend on that leading period.
 #' @param projects_con Azure container for the `projects` blob; used only when
 #'   `mirror_pipeline` is set. If `NULL`, connects automatically.
 #' @param supersede_staged `logical` Re-splitting the same period from a
@@ -367,6 +373,16 @@ eri_split_cmr <- function(path, country, data_con = NULL,
   available <- readxl::excel_sheets(path)
   fbase     <- tools::file_path_sans_ext(basename(path))
   slug      <- function(x) gsub("_+", "_", gsub("[^a-z0-9]+", "_", tolower(x)))
+  # eri_approve()'s promotion match and supersede_staged detection above both
+  # anchor on a leading `{period}_` in the staged filename (the "real filename
+  # convention"). Real CMR submissions are commonly human-titled without it
+  # (see the mirror-name comment below) -- guarantee the anchor here rather
+  # than trusting basename(path) to already have it.
+  dest_base <- if (!is.null(period) && !startsWith(fbase, paste0(period, "_"))) {
+    paste0(period, "_", fbase)
+  } else {
+    fbase
+  }
 
   plan     <- list()
   skipped  <- character(0)
@@ -380,14 +396,45 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     # Observe (don't muffle) warnings from parsing -- they still propagate
     # normally, this just also lets the dry-run summary below say whether
     # anything needs attention before you run for real.
-    df <- withCallingHandlers(
-      eri_ingest_cmr(path, sheet = sheet_name, country = country),
-      warning = function(w) {
-        warnings_seen <<- c(warnings_seen, paste0(sheet_name, ": ", conditionMessage(w)))
-      }
+    df <- tryCatch(
+      withCallingHandlers(
+        eri_ingest_cmr(path, sheet = sheet_name, country = country),
+        warning = function(w) {
+          warnings_seen <<- c(warnings_seen, paste0(sheet_name, ": ", conditionMessage(w)))
+        }
+      ),
+      error = function(e) e
     )
+    if (inherits(df, "error")) {
+      # A sheet-level parse failure (e.g. duplicate field codes) blocks the
+      # WHOLE workbook, not just this sheet. Logged best-effort before
+      # aborting -- this happens before eri_split_cmr's own op-log is ever
+      # written, so without this the failure would leave no trail at all.
+      err_con <- tryCatch(
+        if (is.null(data_con)) {
+          suppressMessages(get_azure_storage_connection(
+            storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", "data")
+          ))
+        } else data_con,
+        error = function(e2) NULL
+      )
+      if (!is.null(err_con)) {
+        .eri_write_log(
+          list(
+            operation  = if (dry_run) "eri_split_cmr_dryrun" else "eri_split_cmr",
+            analyst    = .eri_analyst_id(err_con),
+            timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+            parameters = list(country = country, path = path, sheet = sheet_name),
+            status     = "error",
+            error      = conditionMessage(df)
+          ),
+          err_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/")
+        )
+      }
+      cli::cli_abort(conditionMessage(df), call = NULL)
+    }
     dest_dir <- eri_data_path(country, spec$disease, "programmatic", spec$data_type, "staged")
-    dest     <- paste0(dest_dir, "/", fbase, "_", slug(sheet_name), ".parquet")
+    dest     <- paste0(dest_dir, "/", dest_base, "_", slug(sheet_name), ".parquet")
     plan[[length(plan) + 1L]] <- list(
       sheet = sheet_name, disease = spec$disease, data_type = spec$data_type,
       dest = dest, dest_dir = dest_dir, n_rows = nrow(df), data = df
@@ -429,7 +476,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       mirror_dir <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
                              mirror$subfolder, mirror$period), collapse = "/")
       cli::cli_inform(c(
-        "i" = "Would also mirror raw file -> {.path {mirror_dir}}/{country}_{mirror$period}_<timestamp>.{tools::file_ext(path)}",
+        "i" = "Would also mirror raw file -> {.path {mirror_dir}}/{mirror$period}_{country}_<timestamp>.{tools::file_ext(path)}",
         " " = "(the timestamp is generated fresh at write time, not reused from this preview)"
       ))
     }
@@ -543,7 +590,7 @@ eri_split_cmr <- function(path, country, data_con = NULL,
         existing <- existing[!existing$isdir, , drop = FALSE]
         stale <- existing$name[
           grepl(period_prefix, basename(existing$name), perl = TRUE) &
-          !startsWith(basename(existing$name), fbase)
+          !startsWith(basename(existing$name), dest_base)
         ]
         if (length(stale) == 0L) next
 
@@ -594,9 +641,12 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       # on this upload while the slugified parquet upload succeeded). A
       # generated name is also self-timestamping, so the DA doesn't need to
       # rename the local file to embed the period.
+      # Leading YYYYMM_ -- the real filename convention the legacy pipeline
+      # expects -- confirmed 2026-07-15 (was previously country_period_..., a
+      # tested but wrong order: period must lead, not follow the country).
       mirror_ext  <- tools::file_ext(path)
       mirror_ts   <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
-      mirror_name <- paste0(country, "_", mirror$period, "_", mirror_ts,
+      mirror_name <- paste0(mirror$period, "_", country, "_", mirror_ts,
                             if (nzchar(mirror_ext)) paste0(".", mirror_ext) else "")
       mirror_dest <- paste0(mirror_dir, "/", mirror_name)
       if (!AzureStor::storage_dir_exists(projects_con, mirror_dir)) {

@@ -66,6 +66,7 @@ eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected upstream")
 Other CMR pipeline functions: 
 \code{\link{eri_approve_cmr}()},
 \code{\link{eri_cmr_last_plan}()},
+\code{\link{eri_dq_review_note}()},
 \code{\link{eri_ingest_cmr}()},
 \code{\link{eri_split_cmr}()},
 \code{\link{eri_stage_cmr}()}

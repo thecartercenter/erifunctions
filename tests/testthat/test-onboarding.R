@@ -210,6 +210,67 @@ test_that("eri_schema_validate flags consistency rules referencing unknown colum
   unlink(tmp)
 })
 
+test_that("eri_schema_validate flags a range_when referencing an unknown column", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year       = list(required = TRUE, type = "numeric"),
+      EpiWeek    = list(required = TRUE, type = "numeric"),
+      target_pop = list(required = FALSE, type = "numeric", range = list(1, 100),
+                        range_when = list(column = "NoSuchCol", op = ">", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- suppressWarnings(eri_schema_validate(tmp))
+  expect_true(any(result$field == "columns.target_pop.range_when.column" &
+                    result$issue_type == "unknown_column_reference"))
+  unlink(tmp)
+})
+
+test_that("eri_schema_validate flags a range_when with an invalid op", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year             = list(required = TRUE, type = "numeric"),
+      EpiWeek          = list(required = TRUE, type = "numeric"),
+      treatment_round  = list(required = FALSE, type = "numeric"),
+      target_pop       = list(required = FALSE, type = "numeric", range = list(1, 100),
+                              range_when = list(column = "treatment_round", op = "gte", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- suppressWarnings(eri_schema_validate(tmp))
+  expect_true(any(result$field == "columns.target_pop.range_when.op" &
+                    result$issue_type == "invalid_value"))
+  unlink(tmp)
+})
+
+test_that("eri_schema_validate is clean on a valid range_when", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year             = list(required = TRUE, type = "numeric"),
+      EpiWeek          = list(required = TRUE, type = "numeric"),
+      treatment_round  = list(required = FALSE, type = "numeric"),
+      target_pop       = list(required = FALSE, type = "numeric", range = list(1, 100),
+                              range_when = list(column = "treatment_round", op = ">", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- eri_schema_validate(tmp)
+  expect_equal(nrow(result), 0L)
+  unlink(tmp)
+})
+
 test_that("eri_schema_validate flags invalid column type", {
   schema <- list(
     country  = "Uganda",
