@@ -327,6 +327,34 @@ test_that("eri_dq_log writes a dq_flags envelope with the flags", {
   expect_equal(captured$flags[[1]]$column, "Age")
 })
 
+test_that("eri_dq_log normalizes country/disease casing in the log path (ADR-0020)", {
+  captured_dest <- NULL
+  local_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    storage_upload = function(container, src, dest, ...) {
+      captured_dest <<- dest; invisible(dest)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+
+  res <- structure(
+    list(data = tibble::tibble(a = 1),
+         log  = tibble::tibble(row = integer()),
+         flags = tibble::tibble(row = integer(), column = character(),
+                                 value = character(), issue = character())),
+    class = "dq_result"
+  )
+
+  # .eri_dq_log_write() never calls eri_data_path() -- without its own
+  # normalization this would write to "UGA/LF/surveillance/logs/...".
+  eri_dq_log(res, "UGA", " LF ", "surveillance", period = "2024-01")
+  expect_true(startsWith(captured_dest, "uga/lf/surveillance/logs/"))
+})
+
 test_that("eri_dq_log records a clean status when there are no flags", {
   captured <- NULL
   local_mocked_bindings(

@@ -523,8 +523,11 @@
 
   if (!isTRUE(already)) {
     cli::cli_alert_info("This form isn't registered yet -- I need a country and disease to file it under.")
-    country_map <- .eri_known_countries()
-    names(country_map) <- .eri_known_countries()
+    # Production-only (ADR-0020): ODK registration excludes the atlantis
+    # training sandbox, matching eri_odk_register()'s own hard validation --
+    # ODK's own sandbox is the uga/demo namespace, not atlantis.
+    country_map <- .eri_known_countries(include_sandbox = FALSE)
+    names(country_map) <- country_map
     country <- .eri_prompt_pick_country(country_map, "Which country?")
     if (is.null(country)) return(invisible(NULL))
 

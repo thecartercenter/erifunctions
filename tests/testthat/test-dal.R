@@ -544,6 +544,37 @@ test_that("eri_approve errors informatively when staged dir does not exist", {
   )
 })
 
+test_that("eri_approve normalizes country/disease so the log path matches the data path (ADR-0020)", {
+  mock_container <- structure(list(), class = "mock_container")
+  empty_tbl       <- tibble::tibble(name = character(0), size = integer(0))
+  captured_log_dir <- NULL
+
+  with_mocked_bindings(
+    storage_dir_exists = function(...) TRUE,
+    list_storage_files = function(...) empty_tbl,
+    .package = "AzureStor",
+    {
+      local_mocked_bindings(
+        .eri_write_log = function(op_log, azcontainer, log_dir) {
+          captured_log_dir <<- log_dir
+          invisible(NULL)
+        },
+        .package = "erifunctions"
+      )
+      expect_error(
+        eri_approve("UGA", "LF", "surveillance", "2024-W01",
+                    azcontainer = mock_container),
+        "No staged files"
+      )
+    }
+  )
+
+  # Without normalizing at eri_approve()'s own top, this would be
+  # "UGA/LF/surveillance/logs" -- a differently-cased sibling of the
+  # eri_data_path()-derived staged/processed dirs (uga/lf/...).
+  expect_equal(captured_log_dir, "uga/lf/surveillance/logs")
+})
+
 test_that(".eri_note_no_measure signposts the four-axis form once per session", {
   withr::local_options(erifunctions.noted_no_measure = NULL)
   expect_message(

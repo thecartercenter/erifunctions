@@ -79,19 +79,19 @@ eri_odk_register <- function(
 ) {
   # ADR-0020: normalize case before validating, so a typo like "UGA" is
   # silently corrected instead of erroring on case alone. country stays a hard
-  # abort (a small, curated set); disease only warns (extensible -- new
-  # disease programs are expected to appear over time).
+  # abort (a small, curated set -- production-only, so the atlantis training
+  # sandbox is excluded here; ODK's own sandbox is the uga/demo namespace);
+  # disease only warns (extensible -- new disease programs are expected to
+  # appear over time), via the same normalize helper eri_data_path() uses.
   country <- tolower(trimws(country))
-  disease <- tolower(trimws(disease))
-
-  known_countries <- .eri_known_countries()
+  known_countries <- .eri_known_countries(include_sandbox = FALSE)
   if (!country %in% known_countries) {
     cli::cli_abort(c(
       "{.arg country} {.val {country}} is not a known ERI country code.",
       "i" = "Valid codes: {.val {known_countries}}"
     ))
   }
-  .eri_check_axis("disease", disease, .eri_known_diseases())
+  disease <- .eri_normalize_geo_axis("disease", disease, .eri_known_diseases())
 
   data_con  <- .odk_data_con(data_con)
   analyst   <- .eri_analyst_id(data_con)

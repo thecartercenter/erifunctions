@@ -314,6 +314,21 @@ test_that("eri_odk_register still hard-errors on an unknown country regardless o
   )
 })
 
+test_that("eri_odk_register rejects the atlantis training sandbox (production-only)", {
+  # atlantis is a real, valid country for eri_data_path()'s general soft-warn
+  # validation (CMR/DQ sandbox), but ODK registration is production-only and
+  # already has its own sandbox convention (uga/demo) -- it was never valid
+  # here before the registries were unified, and should stay that way.
+  expect_error(
+    eri_odk_register(
+      project_id = 1, form_id = "F", country = "atlantis",
+      disease = "oncho", server_url = "https://x.org",
+      data_con = mock_data_con()
+    ),
+    "not a known ERI country"
+  )
+})
+
 # --- .odk_data_con auto-connect ------------------------------------------------
 
 test_that(".odk_data_con delegates auto-connect to get_azure_storage_connection", {

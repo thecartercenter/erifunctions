@@ -33,9 +33,16 @@
 
 # Known country codes, from the bundled registry. A function (not a top-level
 # constant) so no file I/O happens at package-load time -- .eri_data_model()
-# is deliberately "read on demand."
+# is deliberately "read on demand." `include_sandbox = FALSE` drops `atlantis`
+# for contexts that are production-only and already have their own sandbox
+# convention -- e.g. ODK registration, which never included `atlantis` before
+# this registry was unified (ODK's own sandbox is the uga/demo namespace).
 #' @keywords internal
-.eri_known_countries <- function() names(.eri_data_model()$countries)
+.eri_known_countries <- function(include_sandbox = TRUE) {
+  codes <- names(.eri_data_model()$countries)
+  if (!include_sandbox) codes <- setdiff(codes, "atlantis")
+  codes
+}
 
 # Known disease codes, from the bundled registry. Same lazy-read rationale.
 #' @keywords internal

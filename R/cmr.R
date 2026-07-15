@@ -283,6 +283,10 @@ eri_split_cmr <- function(path, country, data_con = NULL,
                           mirror_pipeline = NULL, period = NULL,
                           projects_con = NULL, supersede_staged = FALSE) {
   if (!dry_run) .eri_log_session()
+  # ADR-0020: normalize once, up front -- the country_map/schema lookups and
+  # the hand-built log_dir (there's no per-disease data path here; the run
+  # splits into several) all need to agree.
+  country <- .eri_normalize_geo_axis("country", country, .eri_known_countries())
   if (!file.exists(path)) {
     cli::cli_abort("File not found: {.path {path}}")
   }
@@ -776,6 +780,10 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #' @export
 eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
                             force = FALSE, justification = NULL) {
+  # ADR-0020: normalize once, up front -- eri_cmr_last_plan()'s lookup and
+  # the hand-built log_dir below both need to agree.
+  country <- .eri_normalize_geo_axis("country", country, .eri_known_countries())
+
   if (isTRUE(force) &&
       (is.null(justification) || length(justification) != 1L ||
        is.na(justification) || !nzchar(trimws(justification)))) {
@@ -1085,6 +1093,9 @@ eri_stage_cmr <- function(country,
                            projects_con = NULL,
                            data_con     = NULL) {
   .eri_log_session()
+  # ADR-0020: normalize once, up front -- the country_map lookup below,
+  # eri_data_path(), and the hand-built log_dir all need to agree.
+  country <- .eri_normalize_geo_axis("country", country, .eri_known_countries())
 
   reg <- .eri_pipeline_registry[["rb-expansion"]]
 
