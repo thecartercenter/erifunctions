@@ -359,7 +359,46 @@ new_schemas <- list(
   c("global", "schisto", "programmatic", "treatment"),
   c("global", "schisto", "research",     "prevalence"),
   c("global", "sth",     "programmatic", "treatment"),
-  c("global", "sth",     "research",     "prevalence")
+  c("global", "sth",     "research",     "prevalence"),
+
+  # uga's remaining CMR gap + eth/nga/mad/tcd (NEWS 0.9.39): every disease/measure
+  # each country's own inst/schemas/cmr/{code}.yaml actually routes to programmatic/.
+  c("uga", "lf",    "programmatic", "mmdp"),
+  c("uga", "lf",    "programmatic", "tas"),
+  c("uga", "oncho", "programmatic", "prevalence"),
+  c("uga", "oncho", "programmatic", "entomology"),
+  c("uga", "rblf",  "programmatic", "training"),
+
+  c("eth", "oncho", "programmatic", "treatment"),
+  c("eth", "lf",    "programmatic", "treatment"),
+  c("eth", "lf",    "programmatic", "mmdp"),
+  c("eth", "lf",    "programmatic", "tas"),
+  c("eth", "oncho", "programmatic", "prevalence"),
+  c("eth", "oncho", "programmatic", "entomology"),
+  c("eth", "rblf",  "programmatic", "training"),
+
+  c("nga", "oncho", "programmatic", "treatment"),
+  c("nga", "lf",    "programmatic", "treatment"),
+  c("nga", "sch",   "programmatic", "treatment"),
+  c("nga", "sth",   "programmatic", "treatment"),
+  c("nga", "lf",    "programmatic", "mmdp"),
+  c("nga", "lf",    "programmatic", "tas"),
+  c("nga", "oncho", "programmatic", "prevalence"),
+  c("nga", "oncho", "programmatic", "entomology"),
+  c("nga", "rblf",  "programmatic", "training"),
+
+  c("mad", "lf",    "programmatic", "treatment"),
+  c("mad", "lf",    "programmatic", "mmdp"),
+  c("mad", "lf",    "programmatic", "tas"),
+  c("mad", "rblf",  "programmatic", "training"),
+
+  c("tcd", "oncho", "programmatic", "treatment"),
+  c("tcd", "lf",    "programmatic", "treatment"),
+  c("tcd", "lf",    "programmatic", "mmdp"),
+  c("tcd", "lf",    "programmatic", "tas"),
+  c("tcd", "oncho", "programmatic", "prevalence"),
+  c("tcd", "oncho", "programmatic", "entomology"),
+  c("tcd", "rblf",  "programmatic", "training")
 )
 
 for (s in new_schemas) {

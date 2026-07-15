@@ -1,3 +1,45 @@
+# erifunctions 0.9.39
+
+## Close the CMR DQ schema coverage gap for eth/nga/mad/tcd, and uga's remaining gap
+
+- **32 new DQ schemas**, built 2026-07-16 via read-only recon (structure/aggregate counts
+  only, no records persisted or shared) against each country's real most-recent CMR
+  submission. Before this, `load_dq_schema()` hard-aborted with "schema not found" for any
+  disease/measure without a bundled schema -- meaning DQ review (and therefore approval) was
+  completely broken past the initial split step for eth, nga, mad, and tcd, and partially
+  broken for uga:
+  - **uga** (5 of 7 measures were missing): `lf/mmdp`, `lf/tas`, `oncho/prevalence`,
+    `oncho/entomology`, `rblf/training`.
+  - **eth** (7 of 7, all): `oncho/treatment`, `lf/treatment`, `lf/mmdp`, `lf/tas`,
+    `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+  - **nga** (9 of 9, all): `oncho/treatment`, `lf/treatment`, `sch/treatment`,
+    `sth/treatment`, `lf/mmdp`, `lf/tas`, `oncho/prevalence`, `oncho/entomology`,
+    `rblf/training`.
+  - **mad** (4 of 4, all -- no oncho/sch/sth sheets in this country's template):
+    `lf/treatment`, `lf/mmdp`, `lf/tas`, `rblf/training`.
+  - **tcd** (7 of 7, all): `oncho/treatment`, `lf/treatment`, `lf/mmdp`, `lf/tas`,
+    `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+- **uga's and eth's `oncho/entomology` schemas are structural-only** (no real district
+  `allowed_values`): both countries' real "RB Ento Surveys" sheet has the known duplicate
+  field-code template defect (ADR-0022), which now blocks the whole workbook, so no real
+  ingested data was available to source a district list from this pass. Fill in once a
+  corrected template lets the sheet actually ingest.
+- Each `rblf/training` schema combines every training-sheet prefix that country's CMR
+  template routes to `rblf/training` into one canonical column set, aliasing all of them --
+  same precedent as `sdn_rblf_programmatic_training.yaml`/`ssd_rblf_programmatic_training.yaml`.
+  **`eth_rblf_programmatic_training.yaml` includes `#cddtrn_`/`#cstrn_` (CDD/CS Training)
+  structurally**, not from a successfully-ingested sheet -- both sheets hit the same
+  duplicate-field-code defect as "RB Ento Surveys" (ADR-0022) in Ethiopia's real submission.
+  **Known gap, not yet resolved:** Ethiopia's "ToT Regional"/"ToT Zonal" sheets are still
+  routed to `rblf/training` by `inst/schemas/cmr/eth.yaml`, but excluded from this schema.
+  "ToT Regional" has no `adm2`/district field at all (distinct donor/goal/tot_reg__male-fem
+  shape) and can never satisfy this schema's required `district` column under any alias
+  mapping. "ToT Zonal" does have an `adm2` field, but a different shape otherwise (no
+  adm3/disease, distinct tot_zone__male/fem naming) -- not aliased pending a decision on
+  whether it fits this schema or needs its own `data_type`. Unlike CDD/CS, both ToT sheets
+  ingest fine today, so ingesting either will produce a permanent, unresolvable DQ flag under
+  this schema until this gap is resolved -- a design decision for a maintainer, not made here.
+
 # erifunctions 0.9.38
 
 ## CMR pipeline fixes from the uga/ssd/nga pilot session
