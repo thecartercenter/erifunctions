@@ -117,10 +117,17 @@ eri_split_cmr(
   `str` or `NULL` Reporting period (e.g. `"202605"`), used to tag the
   op-log (so
   [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md)
-  can find this run again) and, if `mirror_pipeline` is set, the mirror
-  upload. `NULL` (default) parses a leading `YYYYMM_` from
-  `basename(path)`; only required to be resolvable when
-  `mirror_pipeline` is set.
+  can find this run again), stage each sheet's destination filename (see
+  below), and, if `mirror_pipeline` is set, the mirror upload. `NULL`
+  (default) parses a leading `YYYYMM_` from `basename(path)`; only
+  required to be resolvable when `mirror_pipeline` is set. When `period`
+  is known (parsed or passed explicitly), each staged filename is
+  guaranteed to lead with `{period}_` even if `basename(path)` doesn't –
+  real CMR submissions are commonly human-titled, not
+  `YYYYMM_`-prefixed, and
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)'s
+  promotion match (and `supersede_staged` below) both depend on that
+  leading period.
 
 - projects_con:
 
@@ -153,6 +160,7 @@ Other CMR pipeline functions:
 [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md),
 [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md),
 [`eri_cmr_last_plan()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_last_plan.md),
+[`eri_dq_review_note()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review_note.md),
 [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md),
 [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md)
 

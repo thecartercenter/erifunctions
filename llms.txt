@@ -208,6 +208,10 @@ generic ingest/approval, then CMR-specific routing.
   **\[experimental\]** : Interactively review and resolve a CMR
   workbook's DQ flags, then approve
 
+- [`eri_dq_review_note()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review_note.md)
+  **\[experimental\]** : Log a free-text note against a CMR period,
+  outside of any single DQ flag
+
 - [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
   **\[experimental\]** : Run and log DQ checks for a whole CMR workbook,
   one combined report

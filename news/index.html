@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,51 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.37/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.39" id="erifunctions-0939">erifunctions 0.9.39<a class="anchor" aria-label="anchor" href="#erifunctions-0939"></a></h2>
+<div class="section level3">
+<h3 id="close-the-cmr-dq-schema-coverage-gap-for-ethngamadtcd-and-ugas-remaining-gap-0-9-39">Close the CMR DQ schema coverage gap for eth/nga/mad/tcd, and uga’s remaining gap<a class="anchor" aria-label="anchor" href="#close-the-cmr-dq-schema-coverage-gap-for-ethngamadtcd-and-ugas-remaining-gap-0-9-39"></a></h3>
+<ul><li>
+<strong>32 new DQ schemas</strong>, built 2026-07-16 via read-only recon (structure/aggregate counts only, no records persisted or shared) against each country’s real most-recent CMR submission. Before this, <code><a href="../reference/load_dq_schema.html">load_dq_schema()</a></code> hard-aborted with “schema not found” for any disease/measure without a bundled schema – meaning DQ review (and therefore approval) was completely broken past the initial split step for eth, nga, mad, and tcd, and partially broken for uga:
+<ul><li>
+<strong>uga</strong> (5 of 7 measures were missing): <code>lf/mmdp</code>, <code>lf/tas</code>, <code>oncho/prevalence</code>, <code>oncho/entomology</code>, <code>rblf/training</code>.</li>
+<li>
+<strong>eth</strong> (7 of 7, all): <code>oncho/treatment</code>, <code>lf/treatment</code>, <code>lf/mmdp</code>, <code>lf/tas</code>, <code>oncho/prevalence</code>, <code>oncho/entomology</code>, <code>rblf/training</code>.</li>
+<li>
+<strong>nga</strong> (9 of 9, all): <code>oncho/treatment</code>, <code>lf/treatment</code>, <code>sch/treatment</code>, <code>sth/treatment</code>, <code>lf/mmdp</code>, <code>lf/tas</code>, <code>oncho/prevalence</code>, <code>oncho/entomology</code>, <code>rblf/training</code>.</li>
+<li>
+<strong>mad</strong> (4 of 4, all – no oncho/sch/sth sheets in this country’s template): <code>lf/treatment</code>, <code>lf/mmdp</code>, <code>lf/tas</code>, <code>rblf/training</code>.</li>
+<li>
+<strong>tcd</strong> (7 of 7, all): <code>oncho/treatment</code>, <code>lf/treatment</code>, <code>lf/mmdp</code>, <code>lf/tas</code>, <code>oncho/prevalence</code>, <code>oncho/entomology</code>, <code>rblf/training</code>.</li>
+</ul></li>
+<li>
+<strong>uga’s and eth’s <code>oncho/entomology</code> schemas are structural-only</strong> (no real district <code>allowed_values</code>): both countries’ real “RB Ento Surveys” sheet has the known duplicate field-code template defect (ADR-0022), which now blocks the whole workbook, so no real ingested data was available to source a district list from this pass. Fill in once a corrected template lets the sheet actually ingest.</li>
+<li>Each <code>rblf/training</code> schema combines every training-sheet prefix that country’s CMR template routes to <code>rblf/training</code> into one canonical column set, aliasing all of them – same precedent as <code>sdn_rblf_programmatic_training.yaml</code>/<code>ssd_rblf_programmatic_training.yaml</code>. <strong><code>eth_rblf_programmatic_training.yaml</code> includes <code>#cddtrn_</code>/<code>#cstrn_</code> (CDD/CS Training) structurally</strong>, not from a successfully-ingested sheet – both sheets hit the same duplicate-field-code defect as “RB Ento Surveys” (ADR-0022) in Ethiopia’s real submission. <strong>Known gap, not yet resolved:</strong> Ethiopia’s “ToT Regional”/“ToT Zonal” sheets are still routed to <code>rblf/training</code> by <code>inst/schemas/cmr/eth.yaml</code>, but excluded from this schema. “ToT Regional” has no <code>adm2</code>/district field at all (distinct donor/goal/tot_reg__male-fem shape) and can never satisfy this schema’s required <code>district</code> column under any alias mapping. “ToT Zonal” does have an <code>adm2</code> field, but a different shape otherwise (no adm3/disease, distinct tot_zone__male/fem naming) – not aliased pending a decision on whether it fits this schema or needs its own <code>data_type</code>. Unlike CDD/CS, both ToT sheets ingest fine today, so ingesting either will produce a permanent, unresolvable DQ flag under this schema until this gap is resolved – a design decision for a maintainer, not made here.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.38" id="erifunctions-0938">erifunctions 0.9.38<a class="anchor" aria-label="anchor" href="#erifunctions-0938"></a></h2>
+<div class="section level3">
+<h3 id="cmr-pipeline-fixes-from-the-ugassdnga-pilot-session-0-9-38">CMR pipeline fixes from the uga/ssd/nga pilot session<a class="anchor" aria-label="anchor" href="#cmr-pipeline-fixes-from-the-ugassdnga-pilot-session-0-9-38"></a></h3>
+<ul><li>
+<strong><code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> now guarantees the staged filename leads with <code>{period}_</code></strong>, even when the source workbook’s own filename doesn’t (real CMR submissions are commonly human-titled, e.g. <code>"...Data Report Submitted_09-June-2026.xlsx"</code>). Previously the staged filename was built from <code>basename(path)</code> verbatim, so <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>’s period-substring match could fail to find files that DQ review had just flagged for that exact period (“No staged files found matching ‘202606’”).</li>
+<li>
+<strong>Duplicate field codes in a CMR sheet’s row 5 (e.g. the known “RB Ento Surveys” master- template defect) now block the whole workbook</strong> with a clear error, instead of silently suffixing the duplicate column and continuing. A DA works with a CMR submission as one unit; the failure is logged (<code>status = "error"</code>) before aborting so it’s still visible via <code><a href="../reference/eri_logs.html">eri_logs()</a></code>.</li>
+<li>
+<strong>UGA’s <code>target_pop</code> DQ range floor is now conditional on <code>treatment_round &gt; 1</code></strong> (<code>inst/schemas/uga_oncho_programmatic_treatment.yaml</code>, <code>uga_sch_programmatic_treatment.yaml</code>). A present-but-zero target is only implausible once a round is actually underway — round 1 legitimately reports 0 in many districts before scale-up. <code>.dq_check_ranges()</code> gained a general <code>range_when</code> gate (column/op/value) any schema can use for this pattern.</li>
+<li>
+<strong>The interactive DQ review’s “Fix in source” prompt can now be cancelled</strong> (blank answer) instead of looping forever on “This can’t be blank” when a DA picks it without the file path handy.</li>
+<li>
+<strong>New <code><a href="../reference/eri_dq_review_note.html">eri_dq_review_note()</a></code></strong> logs a free-text note against a CMR period that isn’t tied to any specific DQ flag (e.g. confirming the workbook’s narrative section against the data). Wired into <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s interactive loop as “Add a note (not tied to a flag)”.</li>
+<li>
+<strong>The legacy <code>projects</code>-blob mirror filename now leads with the period</strong> (<code>{period}_ {country}_{timestamp}.ext</code>, was <code>{country}_{period}_{timestamp}.ext</code>), matching the real <code>YYYYMM_...</code> convention the legacy pipeline expects.</li>
+<li>
+<strong><code>eri_do("cmr")</code> now asks replace-vs-update when a DA brings in a new file for a period that’s already been split</strong>, instead of silently defaulting to “add alongside” (leaving both the old and new staged files for <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code>’s period match to promote). A correction supersedes the earlier staged data (<code>eri_split_cmr(supersede_staged = TRUE)</code>); a genuine update is added alongside it, same as before.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.37" id="erifunctions-0937">erifunctions 0.9.37<a class="anchor" aria-label="anchor" href="#erifunctions-0937"></a></h2>
 <div class="section level3">

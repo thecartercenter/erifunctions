@@ -1,5 +1,107 @@
 # Changelog
 
+## erifunctions 0.9.39
+
+### Close the CMR DQ schema coverage gap for eth/nga/mad/tcd, and uga’s remaining gap
+
+- **32 new DQ schemas**, built 2026-07-16 via read-only recon
+  (structure/aggregate counts only, no records persisted or shared)
+  against each country’s real most-recent CMR submission. Before this,
+  [`load_dq_schema()`](https://thecartercenter.github.io/erifunctions/reference/load_dq_schema.md)
+  hard-aborted with “schema not found” for any disease/measure without a
+  bundled schema – meaning DQ review (and therefore approval) was
+  completely broken past the initial split step for eth, nga, mad, and
+  tcd, and partially broken for uga:
+  - **uga** (5 of 7 measures were missing): `lf/mmdp`, `lf/tas`,
+    `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+  - **eth** (7 of 7, all): `oncho/treatment`, `lf/treatment`, `lf/mmdp`,
+    `lf/tas`, `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+  - **nga** (9 of 9, all): `oncho/treatment`, `lf/treatment`,
+    `sch/treatment`, `sth/treatment`, `lf/mmdp`, `lf/tas`,
+    `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+  - **mad** (4 of 4, all – no oncho/sch/sth sheets in this country’s
+    template): `lf/treatment`, `lf/mmdp`, `lf/tas`, `rblf/training`.
+  - **tcd** (7 of 7, all): `oncho/treatment`, `lf/treatment`, `lf/mmdp`,
+    `lf/tas`, `oncho/prevalence`, `oncho/entomology`, `rblf/training`.
+- **uga’s and eth’s `oncho/entomology` schemas are structural-only** (no
+  real district `allowed_values`): both countries’ real “RB Ento
+  Surveys” sheet has the known duplicate field-code template defect
+  (ADR-0022), which now blocks the whole workbook, so no real ingested
+  data was available to source a district list from this pass. Fill in
+  once a corrected template lets the sheet actually ingest.
+- Each `rblf/training` schema combines every training-sheet prefix that
+  country’s CMR template routes to `rblf/training` into one canonical
+  column set, aliasing all of them – same precedent as
+  `sdn_rblf_programmatic_training.yaml`/`ssd_rblf_programmatic_training.yaml`.
+  **`eth_rblf_programmatic_training.yaml` includes `#cddtrn_`/`#cstrn_`
+  (CDD/CS Training) structurally**, not from a successfully-ingested
+  sheet – both sheets hit the same duplicate-field-code defect as “RB
+  Ento Surveys” (ADR-0022) in Ethiopia’s real submission. **Known gap,
+  not yet resolved:** Ethiopia’s “ToT Regional”/“ToT Zonal” sheets are
+  still routed to `rblf/training` by `inst/schemas/cmr/eth.yaml`, but
+  excluded from this schema. “ToT Regional” has no `adm2`/district field
+  at all (distinct donor/goal/tot_reg\_\_male-fem shape) and can never
+  satisfy this schema’s required `district` column under any alias
+  mapping. “ToT Zonal” does have an `adm2` field, but a different shape
+  otherwise (no adm3/disease, distinct tot_zone\_\_male/fem naming) –
+  not aliased pending a decision on whether it fits this schema or needs
+  its own `data_type`. Unlike CDD/CS, both ToT sheets ingest fine today,
+  so ingesting either will produce a permanent, unresolvable DQ flag
+  under this schema until this gap is resolved – a design decision for a
+  maintainer, not made here.
+
+## erifunctions 0.9.38
+
+### CMR pipeline fixes from the uga/ssd/nga pilot session
+
+- **[`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  now guarantees the staged filename leads with `{period}_`**, even when
+  the source workbook’s own filename doesn’t (real CMR submissions are
+  commonly human-titled,
+  e.g. `"...Data Report Submitted_09-June-2026.xlsx"`). Previously the
+  staged filename was built from `basename(path)` verbatim, so
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)’s
+  period-substring match could fail to find files that DQ review had
+  just flagged for that exact period (“No staged files found matching
+  ‘202606’”).
+- **Duplicate field codes in a CMR sheet’s row 5 (e.g. the known “RB
+  Ento Surveys” master- template defect) now block the whole workbook**
+  with a clear error, instead of silently suffixing the duplicate column
+  and continuing. A DA works with a CMR submission as one unit; the
+  failure is logged (`status = "error"`) before aborting so it’s still
+  visible via
+  [`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md).
+- **UGA’s `target_pop` DQ range floor is now conditional on
+  `treatment_round > 1`**
+  (`inst/schemas/uga_oncho_programmatic_treatment.yaml`,
+  `uga_sch_programmatic_treatment.yaml`). A present-but-zero target is
+  only implausible once a round is actually underway — round 1
+  legitimately reports 0 in many districts before scale-up.
+  `.dq_check_ranges()` gained a general `range_when` gate
+  (column/op/value) any schema can use for this pattern.
+- **The interactive DQ review’s “Fix in source” prompt can now be
+  cancelled** (blank answer) instead of looping forever on “This can’t
+  be blank” when a DA picks it without the file path handy.
+- **New
+  [`eri_dq_review_note()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review_note.md)**
+  logs a free-text note against a CMR period that isn’t tied to any
+  specific DQ flag (e.g. confirming the workbook’s narrative section
+  against the data). Wired into
+  [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
+  interactive loop as “Add a note (not tied to a flag)”.
+- **The legacy `projects`-blob mirror filename now leads with the
+  period** (`{period}_ {country}_{timestamp}.ext`, was
+  `{country}_{period}_{timestamp}.ext`), matching the real `YYYYMM_...`
+  convention the legacy pipeline expects.
+- **`eri_do("cmr")` now asks replace-vs-update when a DA brings in a new
+  file for a period that’s already been split**, instead of silently
+  defaulting to “add alongside” (leaving both the old and new staged
+  files for
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)’s
+  period match to promote). A correction supersedes the earlier staged
+  data (`eri_split_cmr(supersede_staged = TRUE)`); a genuine update is
+  added alongside it, same as before.
+
 ## erifunctions 0.9.37
 
 ### Enforce canonical, lowercase country/disease codes (ADR-0020)

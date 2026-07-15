@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Adding a New NTD Program</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.37/vignettes/adding-a-program.Rmd" class="external-link"><code>vignettes/adding-a-program.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/adding-a-program.Rmd" class="external-link"><code>vignettes/adding-a-program.Rmd</code></a></small>
       <div class="d-none name"><code>adding-a-program.Rmd</code></div>
     </div>
 
@@ -178,6 +178,16 @@ found in raw data files</li>
 <li>
 <strong><code>range</code></strong> – for numeric columns; flag
 implausible values</li>
+<li>
+<strong><code>range_when</code></strong> – optional; only apply
+<code>range</code> to rows where another column meets a condition
+(<code>column</code>/<code>op</code>/<code>value</code>,
+e.g. <code>column: treatment_round, op: "&gt;", value: 1</code>). Use
+this when a value is only implausible under some circumstance – e.g. a
+target population of 0 is fine before a treatment round starts, but not
+once one is underway. A row where the gate column is missing or
+<code>NA</code> is treated as out of scope (not flagged), not as
+satisfying the condition.</li>
 <li>
 <strong><code>allowed_values</code></strong> – for categorical
 columns; triggers a flag if a value is unexpected</li>

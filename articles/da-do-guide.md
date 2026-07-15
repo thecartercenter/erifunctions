@@ -165,9 +165,17 @@ data also needs mirroring to the legacy pipeline (never asked, see
 [`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md)).
 Then it hands off directly into the same DQ review screen [§5’s
 shortcut](#dq-shortcut) uses, work through any flags, and it approves
-for you once everything is clean. If UGA/202406 was already split in an
-earlier session, it offers to skip straight to reviewing it instead of
-starting over.
+for you once everything is clean.
+
+If UGA/202406 was already split in an earlier session, it offers to skip
+straight to reviewing it instead of starting over. Say no to that (you
+have a new file for the same period, not just a resume), and it asks one
+more thing before re-splitting: is this new file a **correction that
+replaces** the earlier submission, or an **update to add alongside** it?
+A correction supersedes (removes) the earlier staged data for that
+period; an update leaves it in place. Either way, nothing is staged from
+a file you don’t choose one of these for – cancel is always the third
+option.
 
 **The [CMR
 guide](https://thecartercenter.github.io/erifunctions/articles/da-cmr-guide.md)**

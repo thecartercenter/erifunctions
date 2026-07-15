@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>eri_do(): a tour of the guided console wizard (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.37/vignettes/da-do-guide.Rmd" class="external-link"><code>vignettes/da-do-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-do-guide.Rmd" class="external-link"><code>vignettes/da-do-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-do-guide.Rmd</code></div>
     </div>
 
@@ -253,9 +253,16 @@ Then a summary and one confirmation before anything is written:</p>
 disease/measure, all in one run, auto-detecting whether this country’s
 data also needs mirroring to the legacy pipeline (never asked, see <a href="../reference/eri_cutover_status.html"><code>eri_cutover_status()</code></a>).
 Then it hands off directly into the same DQ review screen <a href="#dq-shortcut">§5’s shortcut</a> uses, work through any flags, and
-it approves for you once everything is clean. If UGA/202406 was already
-split in an earlier session, it offers to skip straight to reviewing it
-instead of starting over.</p>
+it approves for you once everything is clean.</p>
+<p>If UGA/202406 was already split in an earlier session, it offers to
+skip straight to reviewing it instead of starting over. Say no to that
+(you have a new file for the same period, not just a resume), and it
+asks one more thing before re-splitting: is this new file a
+<strong>correction that replaces</strong> the earlier submission, or an
+<strong>update to add alongside</strong> it? A correction supersedes
+(removes) the earlier staged data for that period; an update leaves it
+in place. Either way, nothing is staged from a file you don’t choose one
+of these for – cancel is always the third option.</p>
 <p><strong>The <a href="da-cmr-guide.html">CMR guide</a></strong> has
 the domain knowledge this tour skips: what the field-code row looks
 like, why <code>rblf</code>/<code>cmr</code> is a transitional staging

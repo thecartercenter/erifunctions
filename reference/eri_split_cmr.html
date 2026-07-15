@@ -109,7 +109,7 @@ step.
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.37</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.39</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -173,7 +173,7 @@ step.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Split a CMR monthly report into per-disease, per-measure staged datasets</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.37/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_split_cmr.Rd</code></div>
     </div>
 
@@ -286,10 +286,15 @@ uploaded to. Default <code>NULL</code> (no mirror; sandbox-safe).</p></dd>
 
 <dt id="arg-period">period<a class="anchor" aria-label="anchor" href="#arg-period"></a></dt>
 <dd><p><code>str</code> or <code>NULL</code> Reporting period (e.g. <code>"202605"</code>), used to tag
-the op-log (so <code><a href="eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code> can find this run again) and, if
-<code>mirror_pipeline</code> is set, the mirror upload. <code>NULL</code> (default) parses a
-leading <code>YYYYMM_</code> from <code>basename(path)</code>; only required to be resolvable
-when <code>mirror_pipeline</code> is set.</p></dd>
+the op-log (so <code><a href="eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code> can find this run again), stage each
+sheet's destination filename (see below), and, if <code>mirror_pipeline</code> is
+set, the mirror upload. <code>NULL</code> (default) parses a leading <code>YYYYMM_</code> from
+<code>basename(path)</code>; only required to be resolvable when <code>mirror_pipeline</code>
+is set. When <code>period</code> is known (parsed or passed explicitly), each staged
+filename is guaranteed to lead with <code>{period}_</code> even if <code>basename(path)</code>
+doesn't – real CMR submissions are commonly human-titled, not
+<code>YYYYMM_</code>-prefixed, and <code><a href="eri_approve.html">eri_approve()</a></code>'s promotion match (and
+<code>supersede_staged</code> below) both depend on that leading period.</p></dd>
 
 
 <dt id="arg-projects-con">projects_con<a class="anchor" aria-label="anchor" href="#arg-projects-con"></a></dt>
@@ -322,6 +327,7 @@ when <code>period</code> couldn't be resolved.</p></dd>
 <code><a href="eri_approve_cmr.html">eri_approve_cmr()</a></code>,
 <code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>,
 <code><a href="eri_cmr_last_plan.html">eri_cmr_last_plan()</a></code>,
+<code><a href="eri_dq_review_note.html">eri_dq_review_note()</a></code>,
 <code><a href="eri_ingest_cmr.html">eri_ingest_cmr()</a></code>,
 <code><a href="eri_stage_cmr.html">eri_stage_cmr()</a></code></p></div>
     </div>
