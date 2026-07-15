@@ -1,0 +1,165 @@
+# Built 2026-07-16 against the REAL CMR field codes (#rbtrt_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202605 submission from Ethiopia.
+
+country: eth
+disease: oncho
+data_source: programmatic
+data_type: treatment
+version: '1.0'
+description: Ethiopia oncho MDA coverage, 'RB Treatment' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: treatment_round
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#rbtrt_year'
+    range: [1990, 2035]
+  region:
+    required: false
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#rbtrt_adm1'
+  district:
+    required: true
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#rbtrt_adm2'
+    allowed_values:
+      - Agnua
+      - Ari
+      - Awi
+      - Bale
+      - Basketo SpW
+      - Bench Sheko
+      - Buno Bedele
+      - Central Gondar
+      - Dawuro
+      - East Arsi
+      - East Bale
+      - East Hararge
+      - Gofa
+      - Gurage
+      - Hadiya
+      - Illubabor
+      - Itang SpW
+      - Jimma
+      - Kaffa
+      - Konta Special
+      - Liban
+      - Metekel
+      - Mezheng
+      - North Gojam
+      - North Shoa
+      - Sheka
+      - South Gondar
+      - South Omo
+      - South West Shoa
+      - South Wollo
+      - Tambaro SpW
+      - West Gojjam
+      - West Gondar
+      - West Guji
+      - West Hararge
+      - West Omo
+      - Wolayita
+      - WTH
+      - Yem
+  sub_county:
+    required: false
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#rbtrt_adm3'
+  disease_reported:
+    required: false
+    type: character
+    aliases:
+      - '#rbtrt_disease'
+  population:
+    required: false
+    type: numeric
+    aliases:
+      - Population
+      - '#rbtrt_pop'
+    range: [0, 775490]
+  treatment_round:
+    required: false
+    type: numeric
+    aliases:
+      - Round
+      - MDA_round
+      - treatment_round
+      - '#rbtrt_trtrd'
+    range: [0, 10]
+  target_pop:
+    required: false
+    type: numeric
+    aliases:
+      - TargetPop
+      - target_population
+      - eligible_pop
+      - '#rbtrt_trttarget'
+    range: [1, 1302823]
+  village_target:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_villagetarget'
+    range: [0, 5000]
+  male_treated:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_male_tot'
+    range: [0, 950016]
+  female_treated:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_fem_tot'
+    range: [0, 950016]
+  treated:
+    required: true
+    type: numeric
+    aliases:
+      - Treated
+      - people_treated
+      - '#rbtrt_tot'
+    range: [0, 950016]
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases:
+      - CoveragePct
+      - coverage
+      - '#rbtrt_coverage'
+    range: [0, 150]
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: <=
+    rhs: target_pop
+    message: treated exceeds target_pop (over 100% raw coverage)
+  treated_nonneg:
+    lhs: treated
+    op: '>='
+    rhs_value: 0.0
+    message: Negative treated count
+

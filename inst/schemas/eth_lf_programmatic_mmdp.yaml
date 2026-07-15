@@ -1,0 +1,146 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lfdmdi_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202605 submission from Ethiopia.
+
+country: eth
+disease: lf
+data_source: programmatic
+data_type: mmdp
+version: '1.0'
+description: Ethiopia lf morbidity management and disability prevention (MMDP), 'LF
+  MMDP' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lfdmdi_year'
+    range: [1990, 2035]
+  region:
+    required: false
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lfdmdi_adm1'
+  district:
+    required: true
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lfdmdi_adm2'
+    allowed_values:
+      - Agnua
+      - Ari
+      - Awi
+      - Bale
+      - Basketo SpW
+      - Bench Sheko
+      - Buno Bedele
+      - Central Gondar
+      - Dawuro
+      - East Arsi
+      - East Bale
+      - East Hararge
+      - Gofa
+      - Gurage
+      - Hadiya
+      - Illubabor
+      - Itang SpW
+      - Jimma
+      - Kaffa
+      - Konta Special
+      - Liban
+      - Metekel
+      - Mezheng
+      - North Gojam
+      - North Shoa
+      - Sheka
+      - South Gondar
+      - South Omo
+      - South West Shoa
+      - South Wollo
+      - Tambaro SpW
+      - West Gojjam
+      - West Gondar
+      - West Guji
+      - West Hararge
+      - West Omo
+      - Wolayita
+      - WTH
+      - Yem
+  sub_county:
+    required: false
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lfdmdi_adm3'
+  disease_reported:
+    required: false
+    type: character
+    aliases:
+      - '#lfdmdi_disease'
+  surgery_target:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_surgeytarget'
+    range: [0, 50000]
+  village_target:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_villagetarget'
+    range: [0, 5000]
+  male_managed:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_male_tot'
+    range: [0, 500000]
+  female_managed:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_fem_tot'
+    range: [0, 500000]
+  tot:
+    required: true
+    type: numeric
+    aliases:
+      - Treated
+      - people_managed
+      - '#lfdmdi_tot'
+    range: [0, 500000]
+  households_managed:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_hh_tot'
+    range: [0, 500000]
+  surgeries_done:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_tot'
+    range: [0, 50000]
+  surgeries_achieved_pct:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_achieved'
+    range: [0, 2]
+

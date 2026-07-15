@@ -203,8 +203,43 @@
     range_def <- cols_schema[[col]]$range
     if (is.null(range_def) || length(range_def) != 2) next
 
-    vals          <- data[[col]]
-    out_of_range  <- which(!is.na(vals) & (vals < range_def[1] | vals > range_def[2]))
+    vals     <- data[[col]]
+    in_scope <- !is.na(vals)
+
+    # Optional gate: only apply this range floor/ceiling to rows where another
+    # column satisfies a condition (e.g. UGA target_pop's floor of 1 should
+    # only fire once a treatment round is actually underway -- a genuinely
+    # untargeted round legitimately reports 0). A gate column absent from this
+    # sheet, or NA on a given row, means the condition can't be confirmed, so
+    # those rows are treated as out of scope rather than flagged.
+    when <- cols_schema[[col]]$range_when
+    if (!is.null(when) && !is.null(when$column)) {
+      op <- when$op %||% "=="
+      if (!op %in% c("<=", ">=", "==", "<", ">", "!=")) {
+        # A schema author's typo here must not silently narrow (or widen) what
+        # gets flagged -- warn loudly and fall back to the unconditional range
+        # check (never fires -> could hide a real problem; ignoring the gate
+        # is the safer failure direction, and impossible to miss in the log).
+        cli::cli_warn(c(
+          "Column {.val {col}}'s {.field range_when} has an unrecognized op {.val {op}} -- ignoring the gate, checking the range unconditionally.",
+          "i" = "Valid ops: <=, >=, ==, <, >, !=."
+        ))
+      } else {
+        cond_vals <- if (when$column %in% names(data)) data[[when$column]] else NA
+        cond_ok <- switch(op,
+          "<=" = cond_vals <= when$value,
+          ">=" = cond_vals >= when$value,
+          "==" = cond_vals == when$value,
+          "<"  = cond_vals <  when$value,
+          ">"  = cond_vals >  when$value,
+          "!=" = cond_vals != when$value
+        )
+        cond_ok[is.na(cond_ok)] <- FALSE
+        in_scope <- in_scope & cond_ok
+      }
+    }
+
+    out_of_range  <- which(in_scope & (vals < range_def[1] | vals > range_def[2]))
     if (length(out_of_range) > 0) {
       state <- .dq_log_flag(
         state,

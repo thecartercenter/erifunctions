@@ -66,7 +66,14 @@ columns:
     required: false
     type: numeric
     aliases: [TargetPop, target_population, eligible_pop, "#schtrt_trttarget"]
+    # Gated on treatment_round > 1 -- round 1 legitimately reports 0 in many
+    # districts before scale-up, confirmed 2026-07-15 against live UGA data
+    # (see uga_oncho_programmatic_treatment.yaml's target_pop for the same rule).
     range: [1, 2000000]
+    range_when:
+      column: treatment_round
+      op: ">"
+      value: 1
 
   village_target:
     required: false

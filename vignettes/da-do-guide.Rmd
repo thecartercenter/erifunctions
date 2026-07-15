@@ -166,8 +166,15 @@ Say yes, and it uploads, stages, and splits the workbook per disease/measure, al
 auto-detecting whether this country's data also needs mirroring to the legacy pipeline (never
 asked, see [`eri_cutover_status()`](../reference/eri_cutover_status.html)). Then it hands off
 directly into the same DQ review screen [§5's shortcut](#dq-shortcut) uses, work through any flags,
-and it approves for you once everything is clean. If UGA/202406 was already split in an earlier
-session, it offers to skip straight to reviewing it instead of starting over.
+and it approves for you once everything is clean.
+
+If UGA/202406 was already split in an earlier session, it offers to skip straight to reviewing it
+instead of starting over. Say no to that (you have a new file for the same period, not just a
+resume), and it asks one more thing before re-splitting: is this new file a **correction that
+replaces** the earlier submission, or an **update to add alongside** it? A correction supersedes
+(removes) the earlier staged data for that period; an update leaves it in place. Either way,
+nothing is staged from a file you don't choose one of these for -- cancel is always the third
+option.
 
 **The [CMR guide](da-cmr-guide.html)** has the domain knowledge this tour skips: what the field-code
 row looks like, why `rblf`/`cmr` is a transitional staging code (not the canonical per-disease

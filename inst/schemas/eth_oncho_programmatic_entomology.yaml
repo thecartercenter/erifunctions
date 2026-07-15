@@ -1,0 +1,62 @@
+country: eth
+disease: oncho
+data_source: programmatic
+data_type: entomology
+version: "1.0"
+description: "Ethiopia onchocerciasis entomological (blackfly) surveys, RB Ento Surveys sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-16 from the CMR routing schema's field codes only
+# (inst/schemas/cmr/eth.yaml, #rb_ento_surv_* prefix) -- NOT from a real
+# ingested sheet. Ethiopia's "RB Ento Surveys" sheet (202605 real submission)
+# has the same known duplicate field-code template defect as sdn/ssd/uga
+# ("#rb_ento_surv_notes_jan" typed twice), which now blocks the whole
+# workbook per ADR-0022 -- eri_ingest_cmr() cannot successfully read this
+# sheet at all until the shared Carter Center master template is fixed.
+#
+# Structurally identical to sdn_oncho_programmatic_entomology.yaml (same
+# template, same defect, same "otz" field) since that one WAS built from a
+# real ingested sheet before the whole-workbook block existed. district has
+# no allowed_values here -- no real Ethiopia entomology data has been
+# successfully read yet to source a district list from; add one once a
+# corrected file lets this sheet actually ingest.
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rb_ento_surv_year"]
+    range: [1990, 2035]
+
+  region:
+    required: false
+    type: character
+    aliases: [Region, adm1, "#rb_ento_surv_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rb_ento_surv_adm2"]
+
+  sub_county:
+    required: false
+    type: character
+    aliases: [SubCounty, sub_county, adm3, "#rb_ento_surv_adm3"]
+
+  otz:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_otz"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_disease"]

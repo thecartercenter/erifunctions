@@ -660,6 +660,26 @@ eri_schema_validate <- function(schema_path) {
                               "'. Valid: ", paste(valid, collapse = ", "), ".")
         )))
       }
+      if (!is.null(defn$range_when)) {
+        when_col <- defn$range_when$column
+        if (is.null(when_col) || !when_col %in% col_names) {
+          issues <- c(issues, list(list(
+            issue_type = "unknown_column_reference",
+            field      = paste0("columns.", col, ".range_when.column"),
+            message    = paste0("Column '", col, "'s range_when references unknown column '",
+                                when_col %||% "(missing)", "'.")
+          )))
+        }
+        when_op <- defn$range_when$op %||% "=="
+        if (!when_op %in% c("<=", ">=", "==", "<", ">", "!=")) {
+          issues <- c(issues, list(list(
+            issue_type = "invalid_value",
+            field      = paste0("columns.", col, ".range_when.op"),
+            message    = paste0("Column '", col, "'s range_when has invalid op '", when_op,
+                                "'. Valid: <=, >=, ==, <, >, !=.")
+          )))
+        }
+      }
     }
   }
 

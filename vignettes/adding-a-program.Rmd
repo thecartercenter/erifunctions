@@ -75,6 +75,11 @@ Key decisions to make for each column:
 - **`type`** -- `numeric`, `character`, `categorical`, or `date`
 - **`aliases`** -- all the column name variants found in raw data files
 - **`range`** -- for numeric columns; flag implausible values
+- **`range_when`** -- optional; only apply `range` to rows where another column meets a condition
+  (`column`/`op`/`value`, e.g. `column: treatment_round, op: ">", value: 1`). Use this when a value
+  is only implausible under some circumstance -- e.g. a target population of 0 is fine before a
+  treatment round starts, but not once one is underway. A row where the gate column is missing or
+  `NA` is treated as out of scope (not flagged), not as satisfying the condition.
 - **`allowed_values`** -- for categorical columns; triggers a flag if a value is unexpected
 - **`translations`** -- map raw variants to a canonical value (e.g. `"YES"` -> `"Yes"`)
 

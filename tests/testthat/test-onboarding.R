@@ -210,6 +210,67 @@ test_that("eri_schema_validate flags consistency rules referencing unknown colum
   unlink(tmp)
 })
 
+test_that("eri_schema_validate flags a range_when referencing an unknown column", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year       = list(required = TRUE, type = "numeric"),
+      EpiWeek    = list(required = TRUE, type = "numeric"),
+      target_pop = list(required = FALSE, type = "numeric", range = list(1, 100),
+                        range_when = list(column = "NoSuchCol", op = ">", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- suppressWarnings(eri_schema_validate(tmp))
+  expect_true(any(result$field == "columns.target_pop.range_when.column" &
+                    result$issue_type == "unknown_column_reference"))
+  unlink(tmp)
+})
+
+test_that("eri_schema_validate flags a range_when with an invalid op", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year             = list(required = TRUE, type = "numeric"),
+      EpiWeek          = list(required = TRUE, type = "numeric"),
+      treatment_round  = list(required = FALSE, type = "numeric"),
+      target_pop       = list(required = FALSE, type = "numeric", range = list(1, 100),
+                              range_when = list(column = "treatment_round", op = "gte", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- suppressWarnings(eri_schema_validate(tmp))
+  expect_true(any(result$field == "columns.target_pop.range_when.op" &
+                    result$issue_type == "invalid_value"))
+  unlink(tmp)
+})
+
+test_that("eri_schema_validate is clean on a valid range_when", {
+  schema <- list(
+    country  = "Uganda",
+    disease  = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year             = list(required = TRUE, type = "numeric"),
+      EpiWeek          = list(required = TRUE, type = "numeric"),
+      treatment_round  = list(required = FALSE, type = "numeric"),
+      target_pop       = list(required = FALSE, type = "numeric", range = list(1, 100),
+                              range_when = list(column = "treatment_round", op = ">", value = 1))
+    )
+  )
+  tmp <- tempfile(fileext = ".yaml")
+  yaml::write_yaml(schema, tmp)
+  result <- eri_schema_validate(tmp)
+  expect_equal(nrow(result), 0L)
+  unlink(tmp)
+})
+
 test_that("eri_schema_validate flags invalid column type", {
   schema <- list(
     country  = "Uganda",
@@ -298,7 +359,46 @@ new_schemas <- list(
   c("global", "schisto", "programmatic", "treatment"),
   c("global", "schisto", "research",     "prevalence"),
   c("global", "sth",     "programmatic", "treatment"),
-  c("global", "sth",     "research",     "prevalence")
+  c("global", "sth",     "research",     "prevalence"),
+
+  # uga's remaining CMR gap + eth/nga/mad/tcd (NEWS 0.9.39): every disease/measure
+  # each country's own inst/schemas/cmr/{code}.yaml actually routes to programmatic/.
+  c("uga", "lf",    "programmatic", "mmdp"),
+  c("uga", "lf",    "programmatic", "tas"),
+  c("uga", "oncho", "programmatic", "prevalence"),
+  c("uga", "oncho", "programmatic", "entomology"),
+  c("uga", "rblf",  "programmatic", "training"),
+
+  c("eth", "oncho", "programmatic", "treatment"),
+  c("eth", "lf",    "programmatic", "treatment"),
+  c("eth", "lf",    "programmatic", "mmdp"),
+  c("eth", "lf",    "programmatic", "tas"),
+  c("eth", "oncho", "programmatic", "prevalence"),
+  c("eth", "oncho", "programmatic", "entomology"),
+  c("eth", "rblf",  "programmatic", "training"),
+
+  c("nga", "oncho", "programmatic", "treatment"),
+  c("nga", "lf",    "programmatic", "treatment"),
+  c("nga", "sch",   "programmatic", "treatment"),
+  c("nga", "sth",   "programmatic", "treatment"),
+  c("nga", "lf",    "programmatic", "mmdp"),
+  c("nga", "lf",    "programmatic", "tas"),
+  c("nga", "oncho", "programmatic", "prevalence"),
+  c("nga", "oncho", "programmatic", "entomology"),
+  c("nga", "rblf",  "programmatic", "training"),
+
+  c("mad", "lf",    "programmatic", "treatment"),
+  c("mad", "lf",    "programmatic", "mmdp"),
+  c("mad", "lf",    "programmatic", "tas"),
+  c("mad", "rblf",  "programmatic", "training"),
+
+  c("tcd", "oncho", "programmatic", "treatment"),
+  c("tcd", "lf",    "programmatic", "treatment"),
+  c("tcd", "lf",    "programmatic", "mmdp"),
+  c("tcd", "lf",    "programmatic", "tas"),
+  c("tcd", "oncho", "programmatic", "prevalence"),
+  c("tcd", "oncho", "programmatic", "entomology"),
+  c("tcd", "rblf",  "programmatic", "training")
 )
 
 for (s in new_schemas) {

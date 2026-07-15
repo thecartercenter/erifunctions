@@ -1,0 +1,80 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lfsurv_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202604 submission from Madagascar.
+#
+# Scoped to the identifier spine only (year/region/district/sub_county), matching
+# sdn/ssd's precedent for this sheet shape: monthly-wide survey-result blocks with
+# no single annual roll-up column to validate a range against.
+
+country: mad
+disease: lf
+data_source: programmatic
+data_type: tas
+version: '1.0'
+description: Madagascar lf tas surveys, 'FL Enquetes' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lfsurv_year'
+    range: [1990, 2035]
+  region:
+    required: false
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lfsurv_adm1'
+  district:
+    required: true
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lfsurv_adm2'
+    allowed_values:
+      - Alaotra Mango-ro
+      - Amoron'i Mania
+      - Analamanga
+      - Analanjirofo
+      - Anosy
+      - Atsimo- Atsinanana
+      - Atsimo Andrefana
+      - Atsinanana
+      - Betsiboka-Betsiboka
+      - Boeny
+      - Bongolava
+      - Diana
+      - Haute Matsiatra
+      - Ihorombe
+      - Itasy
+      - Melaky
+      - Menabe
+      - Sava
+      - Sofia
+      - Vatovavy- Fitovinany
+  sub_county:
+    required: false
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lfsurv_adm3'
+  disease_reported:
+    required: false
+    type: character
+    aliases:
+      - '#lfsurv_disease'
+

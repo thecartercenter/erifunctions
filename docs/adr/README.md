@@ -60,7 +60,9 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0014](0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob | Accepted |
 | [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
 | [0016](0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes go through the blob endpoint | Accepted |
-| [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted |
+| [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted — mirror-filename cross-reference amended by ADR-0021 |
 | [0018](0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution, hash-based expiry | Accepted |
 | [0019](0019-odk-zero-row-parent-clears-raw-set.md) | A zero-row ODK parent clears the whole raw set, by default | Accepted — amends ADR-0010 point 4 |
 | [0020](0020-canonical-country-disease-codes.md) | Canonical, normalized country and disease codes | Accepted — amends ADR-0012 point 5 |
+| [0021](0021-mirror-filename-period-leading.md) | Legacy mirror filename leads with period, not country | Accepted |
+| [0022](0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet | Accepted — reverses v0.9.8 |

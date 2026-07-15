@@ -144,24 +144,21 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
 })
 
-test_that("eri_ingest_cmr survives a real-world duplicate field code in row 5 without dropping data", {
+test_that("eri_ingest_cmr aborts on a real-world duplicate field code in row 5", {
   # Real defect seen in the RB-expansion CMR template's "RB Ento Surveys" sheet:
-  # a field code was typed twice (a copy-paste slip across monthly blocks), which
-  # otherwise crashes tibble::as_tibble() with "must not be duplicated" and aborts
-  # ingestion of an otherwise-valid sheet.
+  # a field code was typed twice (a copy-paste slip across monthly blocks).
+  # Confirmed 2026-07-15: this must block the whole workbook, not be tolerated
+  # and silently suffixed -- a template defect should force a corrected file,
+  # not quietly pass through.
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
     data_rows   = list(c("2026", "ZoneA", "ZoneA-dup"), c("2026", "ZoneB", "ZoneB-dup"))
   )
-  expect_warning(
-    out <- eri_ingest_cmr(tmp, sheet = "RB Treatment"),
+  expect_error(
+    eri_ingest_cmr(tmp, sheet = "RB Treatment"),
     "duplicate field code"
   )
-  expect_equal(nrow(out), 2L)
-  expect_true(all(c("#rb_ento_surv_otz", "#rb_ento_surv_otz__1") %in% names(out)))
-  expect_equal(out[["#rb_ento_surv_otz"]], c("ZoneA", "ZoneB"))
-  expect_equal(out[["#rb_ento_surv_otz__1"]], c("ZoneA-dup", "ZoneB-dup"))
 })
 
 #### Tests for load_cmr_schema ####
@@ -427,6 +424,19 @@ test_that("eri_split_cmr routes each sheet to {disease}/programmatic/{measure} (
                "^uga/lf/programmatic/mmdp/staged/")
   # The per-row program code is preserved, not split: RB Treatment keeps both rows.
   expect_equal(plan$n_rows[plan$sheet == "RB Treatment"], 2L)
+})
+
+test_that("eri_split_cmr anchors staged filenames with period even when the source filename isn't", {
+  # Real CMR submissions are commonly human-titled (e.g. "CMR Data Report
+  # Submitted_09-June-2026.xlsx"), not "YYYYMM_..."; eri_approve()'s
+  # period-substring match and the supersede_staged anchor both require the
+  # period to lead the staged filename, so eri_split_cmr must guarantee it
+  # itself rather than trusting basename(path).
+  tmp <- withr::local_tempfile(fileext = ".xlsx")   # random name, no YYYYMM_ prefix
+  make_uga_cmr(tmp)
+
+  plan <- suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE, period = "202607"))
+  expect_true(all(startsWith(basename(plan$dest), "202607_")))
 })
 
 test_that("eri_split_cmr keeps the per-row program code as a column (no disease split)", {
@@ -703,6 +713,96 @@ test_that("eri_split_cmr(supersede_staged = TRUE) safely handles a period contai
   expect_length(deleted, 0L)
 })
 
+test_that("eri_split_cmr(supersede_staged = TRUE) anchors correctly for a human-titled source with no YYYYMM_ prefix", {
+  # The combination the "No staged files found" bug (and this fix) is really
+  # about: a real submission's filename doesn't carry the period, period is
+  # passed explicitly (as the wizard does), and a prior period's staged file
+  # needs superseding -- the stale-file detection must key off the NEW,
+  # period-anchored destination name (dest_base), not the raw human title.
+  tmp <- withr::local_tempfile(pattern = "Uganda Data Report Submitted", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  deleted <- character(0)
+  written <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    # Only the oncho/treatment folder has a prior submission for this period --
+    # the other two sheets' folders have nothing stale to find.
+    list_storage_files  = function(container, dir, ...) {
+      if (grepl("oncho/programmatic/treatment", dir, fixed = TRUE)) {
+        tibble::tibble(name = paste0(dir, "/202406_old_submission_rb_treatment.parquet"), isdir = FALSE)
+      } else {
+        tibble::tibble(name = character(0), isdir = logical(0))
+      }
+    },
+    delete_storage_file = function(container, path, ...) { deleted <<- c(deleted, path); invisible(NULL) },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { written <<- c(written, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                 period = "202406", supersede_staged = TRUE)
+  )
+
+  # the prior period's staged file was correctly identified and superseded...
+  expect_true(any(grepl("202406_old_submission_rb_treatment.parquet", deleted, fixed = TRUE)))
+  # ...and this run's OWN newly-written file is period-anchored, and was never
+  # mistaken for a stale file to delete
+  expect_true(all(startsWith(basename(written), "202406_")))
+  expect_length(deleted, 1L)
+})
+
+test_that("a human-titled submission's staged file is actually found by eri_approve() -- the originally reported bug", {
+  # End-to-end regression for Emalee's "No staged files found matching
+  # '202606'" error: eri_split_cmr()'s plan for a human-titled source (no
+  # YYYYMM_ prefix) must produce filenames eri_approve()'s period-substring
+  # match (R/dal.R) can actually find, or the "No staged files found" abort
+  # fires even though the DQ report saw the flags for that exact period.
+  tmp <- withr::local_tempfile(pattern = "CMR Data Report Submitted", fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  plan <- suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE, period = "202406"))
+  oncho_dest <- plan$dest[plan$disease == "oncho"]
+  expect_length(oncho_dest, 1L)
+
+  moved <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(container, dir, ...) TRUE,
+    list_storage_files  = function(container, dir, ...) tibble::tibble(name = oncho_dest, isdir = FALSE),
+    create_storage_dir  = function(...) invisible(NULL),
+    delete_storage_file = function(...) invisible(NULL),
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_read       = function(con, src, dest, ...) { file.create(dest); invisible(dest) },
+    .eri_blob_write      = function(con, src, dest, ...) { moved <<- c(moved, dest); invisible(NULL) },
+    .eri_write_log       = function(...) invisible(NULL),
+    .eri_log_session     = function(...) invisible(NULL),
+    eri_catalog_register = function(...) invisible(NULL),
+    .package = "erifunctions"
+  )
+
+  # The bug this guards against: before the staged-filename anchoring fix,
+  # this would abort with "No staged files found matching '202406'" even
+  # though the file above was genuinely staged for that exact period.
+  expect_no_error(
+    eri_approve("uga", "oncho", "programmatic", "202406", data_type = "treatment",
+               azcontainer = structure(list(), class = "mock"))
+  )
+  # .eri_blob_write() fires for both the moved data file and eri_approve()'s
+  # own approval-log write -- check the data file specifically got promoted.
+  moved_data_file <- moved[grepl("rb_treatment.parquet", moved, fixed = TRUE)]
+  expect_length(moved_data_file, 1L)
+  expect_match(moved_data_file, "processed/", fixed = TRUE)
+})
+
 test_that("eri_split_cmr does not delete anything when period can't be resolved", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")   # no YYYYMM_ prefix, no period passed
   make_uga_cmr(tmp)
@@ -754,8 +854,9 @@ test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-
   expect_length(legacy_dest, 1L)
   expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
   # Generated name, not the raw local filename (which can carry characters
-  # that break the storage REST call) -- country_period_timestamp.ext.
-  expect_match(legacy_dest, "uga_202406_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
+  # that break the storage REST call) -- period_country_timestamp.ext, period
+  # leading to match the legacy pipeline's real YYYYMM_ filename convention.
+  expect_match(legacy_dest, "202406_uga_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
   expect_false(grepl(basename(tmp), legacy_dest, fixed = TRUE))
 })
 
@@ -855,7 +956,10 @@ test_that("eri_split_cmr dry_run alerts clean when nothing was skipped or warned
   )
 })
 
-test_that("eri_split_cmr dry_run with issues warns instead of claiming clean, and logs for triage", {
+test_that("eri_split_cmr dry_run aborts on a duplicate field code and logs the failure for triage", {
+  # A dry run previews whether the real run would succeed -- since a duplicate
+  # field code now blocks the whole workbook for real, the dry run must abort
+  # too (not report it as a survivable "warning" and invite the DA to proceed).
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
@@ -870,24 +974,55 @@ test_that("eri_split_cmr dry_run with issues warns instead of claiming clean, an
   local_mocked_bindings(
     .eri_write_log = function(log_list, ...) {
       logged[[length(logged) + 1L]] <<- log_list
-      "uga/rblf/cmr/logs/fake_dryrun.yaml"
+      "uga/rblf/cmr/logs/fake_dryrun_error.yaml"
     },
     get_azure_storage_connection = function(...) structure(list(), class = "mock"),
     .package = "erifunctions"
   )
 
-  expect_warning(
-    expect_message(
-      eri_split_cmr(tmp, "uga", dry_run = TRUE, data_con = structure(list(), class = "mock")),
-      "Dry run found"
-    ),
+  expect_error(
+    eri_split_cmr(tmp, "uga", dry_run = TRUE, data_con = structure(list(), class = "mock")),
     "duplicate field code"
   )
 
   expect_length(logged, 1L)
   expect_equal(logged[[1]]$operation, "eri_split_cmr_dryrun")
-  expect_equal(logged[[1]]$status, "needs_review")
-  expect_true(length(logged[[1]]$warnings) > 0L)
+  expect_equal(logged[[1]]$status, "error")
+  expect_match(logged[[1]]$error, "duplicate field code")
+})
+
+test_that("eri_split_cmr blocks the WHOLE workbook when only one sheet has a duplicate field code", {
+  # DAs work with a CMR submission as one unit, not sheet-by-sheet -- a clean
+  # "RB Treatment" sheet must not get staged just because an unrelated
+  # "RB Ento Surveys" sheet in the same workbook has the known template defect.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  clean_sheet <- make_cmr_sheet_df(
+    c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_target"),
+    list(c("2024", "North", "1000"))
+  )
+  dup_sheet <- make_cmr_sheet_df(
+    c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
+    list(c("2026", "ZoneA", "ZoneA-dup"))
+  )
+  writexl::write_xlsx(list("RB Treatment" = clean_sheet, "RB Ento Surveys" = dup_sheet), tmp)
+
+  local_mocked_bindings(
+    load_cmr_schema = function(country) list(
+      country = country, sheets = list(
+        "RB Treatment" = list(field_code_prefix = "#rbtrt_", disease = "oncho",
+                              data_type = "treatment", required_fields = "#rbtrt_year"),
+        "RB Ento Surveys" = list(field_code_prefix = "#rb_ento_surv_", disease = "oncho",
+                                 data_type = "entomology", required_fields = "#rb_ento_surv_year")
+      )
+    ),
+    .package = "erifunctions"
+  )
+
+  expect_error(
+    plan <- eri_split_cmr(tmp, "uga", dry_run = TRUE),
+    "duplicate field code"
+  )
+  expect_false(exists("plan"))   # eri_split_cmr never returned a plan -- nothing was staged, not even RB Treatment
 })
 
 test_that("eri_cmr_last_plan reconstructs a plan from the persisted op-log", {

@@ -448,17 +448,55 @@ test_that("uga_oncho_programmatic_treatment schema resolves the real #rbtrt_ fie
   expect_false(isTRUE(schema$columns$sub_county$required))
 })
 
-test_that("uga_oncho schema flags a present-but-zero target_pop, not a missing one", {
+test_that("uga_oncho schema flags a present-but-zero target_pop once a treatment round > 1 is underway, not a missing one", {
   schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
   df <- tibble::tibble(
     `#rbtrt_year` = c("2026", "2026", "2026"),
     `#rbtrt_adm2` = c("Arua", "Gulu", "Jinja"),
     `#rbtrt_tot`  = c("100", "200", "300"),
+    `#rbtrt_trtrd`     = c("2", "2", "2"),
     `#rbtrt_trttarget` = c("0", NA_character_, "500")   # zero flagged; NA not required
   )
   res <- run_dq_checks(df, schema)
   expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
   expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_oncho schema does not flag a zero target_pop for round 1 or an unreported round", {
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026"),
+    `#rbtrt_adm2` = c("Arua", "Gulu"),
+    `#rbtrt_tot`  = c("100", "200"),
+    `#rbtrt_trtrd`     = c("1", NA_character_),   # round 1, and no round reported
+    `#rbtrt_trttarget` = c("0", "0")
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
+})
+
+test_that("range_when treats an entirely absent gate column as out of scope, not flagged", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "treatment_round", op = ">", value = 1))
+  ))
+  df <- tibble::tibble(target_pop = 0)   # treatment_round doesn't exist in this sheet at all
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
+})
+
+test_that("range_when warns and falls back to an unconditional range check on an unrecognized op", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "treatment_round", op = "gte", value = 1))
+  ))
+  df <- tibble::tibble(target_pop = 0, treatment_round = 2)
+  expect_warning(
+    res <- run_dq_checks(df, schema),
+    "unrecognized op"
+  )
+  # the gate is ignored on a bad op -- range checked unconditionally, not silently skipped
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
 })
 
 test_that("uga_oncho schema flags a district not in the real allowed_values list", {
@@ -468,6 +506,37 @@ test_that("uga_oncho schema flags a district not in the real allowed_values list
   )
   res <- run_dq_checks(df, schema)
   expect_true(any(res$flags$column == "district"))
+})
+
+test_that("eth_oncho_programmatic_treatment schema loads with the real district list", {
+  schema <- load_dq_schema("eth", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#rbtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Ari" %in% schema$columns$district$allowed_values)
+})
+
+test_that("nga_sth_programmatic_treatment schema loads (STH is Nigeria-only) with real aliases", {
+  schema <- load_dq_schema("nga", "sth", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#sthtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Aba North" %in% schema$columns$district$allowed_values)
+})
+
+test_that("mad_lf_programmatic_treatment schema loads with the real (French-template) district list", {
+  schema <- load_dq_schema("mad", "lf", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#lftrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Analamanga" %in% schema$columns$district$allowed_values)
+})
+
+test_that("tcd_rblf_programmatic_training schema combines all training-sheet prefixes into one alias set", {
+  schema <- load_dq_schema("tcd", "rblf", "programmatic", "training", azcontainer = NULL)
+  expect_true("#cddtrn_tot" %in% schema$columns$tot$aliases)
+  expect_true("#entotrn_tot" %in% schema$columns$tot$aliases)
+})
+
+test_that("uga_lf_programmatic_mmdp and uga_lf_programmatic_tas schemas exist and resolve real codes (pilot-session gap fill)", {
+  mmdp <- load_dq_schema("uga", "lf", "programmatic", "mmdp", azcontainer = NULL)
+  expect_true("#lfdmdi_adm2" %in% mmdp$columns$district$aliases)
+  tas <- load_dq_schema("uga", "lf", "programmatic", "tas", azcontainer = NULL)
+  expect_true("#lfsurv_adm2" %in% tas$columns$district$aliases)
 })
 
 test_that("uga_sch_programmatic_treatment schema loads and resolves #schtrt_ codes", {
