@@ -5,10 +5,11 @@
 Prints (and returns invisibly) the registry of known values for the
 five-axis canonical path
 `data/{country}/{disease}/{data_source}/{data_type}/{layer}/`
-(ADR-0012): the `data_source` channels, the `data_type` measures, the
-input `format`s, and the pipeline `layer`s. New sources/measures are
-added to the registry by onboarding; an unregistered value warns rather
-than errors.
+(ADR-0012): the `country` codes, `disease` codes, `data_source`
+channels, `data_type` measures, input `format`s, and pipeline `layer`s.
+New countries/sources/measures are added to the registry by onboarding;
+an unregistered value warns rather than errors. `country`/`disease` are
+also normalized to lowercase wherever a path is built (ADR-0020).
 
 ## Usage
 
@@ -27,6 +28,30 @@ eri_data_model()
 #> 
 #> ── Data-addressing model (ADR-0012) ────────────────────────────────────────────
 #> Path: data/{country}/{disease}/{data_source}/{data_type}/{layer}/
+#> 
+#> ── country ──
+#> 
+#> • dr -- Dominican Republic
+#> • ht -- Haiti
+#> • eth -- Ethiopia
+#> • nga -- Nigeria
+#> • sdn -- Sudan
+#> • ssd -- South Sudan
+#> • uga -- Uganda
+#> • mad -- Madagascar
+#> • tcd -- Chad
+#> • atlantis -- (training sandbox) Synthetic country for teaching/testing; not a
+#>   real ERI program.
+#> 
+#> ── disease ──
+#> 
+#> • malaria -- Malaria
+#> • oncho -- Onchocerciasis (river blindness)
+#> • lf -- Lymphatic filariasis
+#> • sch -- Schistosomiasis
+#> • sth -- Soil-transmitted helminths
+#> • rblf -- (transitional) Combined RB+LF programmatic code; retired at the
+#>   hsp-mal Phase-3 cutover.
 #> 
 #> ── data_source (channel / how the data arrives) ──
 #> 

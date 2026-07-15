@@ -1,5 +1,63 @@
 # Changelog
 
+## erifunctions 0.9.37
+
+### Enforce canonical, lowercase country/disease codes (ADR-0020)
+
+- **`country`/`disease` are now normalized (lowercase + trim) and
+  validated against a registry, closing the gap that let
+  `uga/LF`/`eth/RB` (legacy-cased paths) get created in the first place
+  ([\#303](https://github.com/thecartercenter/erifunctions/issues/303)).**
+  `inst/registry/data_model.yaml` gains `countries:`/`diseases:`
+  sections, matching the existing extensible `data_sources:`/
+  `data_types:` pattern (an unregistered value warns, never blocks).
+- **[`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)**
+  — the shared chokepoint nearly every write in the package routes
+  through — now normalizes `country`/`disease` before building the path,
+  so `"UGA"`/`"uga"`/`" Uga "` all produce the same canonical path.
+- **[`eri_odk_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_register.md)**
+  normalizes both before validating: `country` keeps its hard-abort on a
+  genuinely unknown code (now case-insensitive, so `"UGA"` is silently
+  corrected instead of erroring on case alone); `disease` gets a soft
+  warning, not a hard error, since new disease programs can legitimately
+  appear over time.
+- Removed two independent, hardcoded country/disease lists
+  (`R/odk_registry.R`’s `.KNOWN_COUNTRY_CODES`, `R/wizard.R`’s
+  `.KNOWN_DISEASES`) that could already drift from each other;
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md)
+  now shows `country`/`disease` alongside the other three axes.
+- **[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md),
+  [`eri_stage()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage.md),
+  [`eri_ingest()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest.md),
+  [`eri_dq_log()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_log.md),
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md),
+  [`eri_stage_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_stage_cmr.md),
+  and
+  [`eri_approve_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve_cmr.md)
+  also normalize `country`/`disease` at their own entry point**, not
+  just via
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md).
+  Each of these hand-builds a log directory alongside the
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)-derived
+  staged/processed/raw dir in the same call; without normalizing both
+  from the same value, the log could still land at a differently-cased
+  sibling path (e.g. `UGA/LF/.../logs/` next to `uga/lf/.../processed/`)
+  — the same failure class as
+  [\#303](https://github.com/thecartercenter/erifunctions/issues/303),
+  one hop away.
+- The `atlantis` training sandbox (needed for
+  [`eri_data_path()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_path.md)’s
+  general validation, used by CMR/DQ sandbox testing) is excluded from
+  [`eri_odk_register()`](https://thecartercenter.github.io/erifunctions/reference/eri_odk_register.md)’s
+  hard-validated country set and the ODK wizard’s country picker — ODK
+  registration is production-only and already has its own sandbox
+  convention (`uga`/`demo`).
+- See
+  [ADR-0020](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0020-canonical-country-disease-codes.md)
+  (amends
+  [ADR-0012](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md)
+  point 5).
+
 ## erifunctions 0.9.36
 
 ### Fix: eri_odk_sync() no longer leaves stale test data in Azure after a real ODK deletion

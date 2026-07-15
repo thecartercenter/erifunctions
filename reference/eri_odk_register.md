@@ -31,11 +31,13 @@ eri_odk_register(
 
 - country:
 
-  `str` Country code (e.g. `"uga"`). Must be a known ERI country.
+  `str` Country code (e.g. `"uga"`). Must be a known ERI country (see
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md))
+  – unknown values error.
 
 - disease:
 
-  `str` Disease name (e.g. `"oncho"`).
+  `str` Disease name (e.g. `"oncho"`; extensible – unknown values warn).
 
 - server_url:
 
@@ -60,6 +62,13 @@ eri_odk_register(
 ## Value
 
 The new registry entry (invisibly).
+
+## Details
+
+Both `country` and `disease` are normalized (lowercase + trim) before
+being stored, so casing typos like `"UGA"` are silently corrected rather
+than erroring or drifting into a differently-cased path later
+(ADR-0020).
 
 ## See also
 

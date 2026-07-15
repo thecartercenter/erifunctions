@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.36</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.37</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,26 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.36/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.37" id="erifunctions-0937">erifunctions 0.9.37<a class="anchor" aria-label="anchor" href="#erifunctions-0937"></a></h2>
+<div class="section level3">
+<h3 id="enforce-canonical-lowercase-countrydisease-codes-adr-0-9-37">Enforce canonical, lowercase country/disease codes (ADR-0020)<a class="anchor" aria-label="anchor" href="#enforce-canonical-lowercase-countrydisease-codes-adr-0-9-37"></a></h3>
+<ul><li>
+<strong><code>country</code>/<code>disease</code> are now normalized (lowercase + trim) and validated against a registry, closing the gap that let <code>uga/LF</code>/<code>eth/RB</code> (legacy-cased paths) get created in the first place (<a href="https://github.com/thecartercenter/erifunctions/issues/303" class="external-link">#303</a>).</strong> <code>inst/registry/data_model.yaml</code> gains <code>countries:</code>/<code>diseases:</code> sections, matching the existing extensible <code>data_sources:</code>/ <code>data_types:</code> pattern (an unregistered value warns, never blocks).</li>
+<li>
+<strong><code><a href="../reference/eri_data_path.html">eri_data_path()</a></code></strong> — the shared chokepoint nearly every write in the package routes through — now normalizes <code>country</code>/<code>disease</code> before building the path, so <code>"UGA"</code>/<code>"uga"</code>/<code>" Uga "</code> all produce the same canonical path.</li>
+<li>
+<strong><code><a href="../reference/eri_odk_register.html">eri_odk_register()</a></code></strong> normalizes both before validating: <code>country</code> keeps its hard-abort on a genuinely unknown code (now case-insensitive, so <code>"UGA"</code> is silently corrected instead of erroring on case alone); <code>disease</code> gets a soft warning, not a hard error, since new disease programs can legitimately appear over time.</li>
+<li>Removed two independent, hardcoded country/disease lists (<code>R/odk_registry.R</code>’s <code>.KNOWN_COUNTRY_CODES</code>, <code>R/wizard.R</code>’s <code>.KNOWN_DISEASES</code>) that could already drift from each other; <code><a href="../reference/eri_data_model.html">eri_data_model()</a></code> now shows <code>country</code>/<code>disease</code> alongside the other three axes.</li>
+<li>
+<strong><code><a href="../reference/eri_approve.html">eri_approve()</a></code>, <code><a href="../reference/eri_stage.html">eri_stage()</a></code>, <code><a href="../reference/eri_ingest.html">eri_ingest()</a></code>, <code><a href="../reference/eri_dq_log.html">eri_dq_log()</a></code>, <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code>, <code><a href="../reference/eri_stage_cmr.html">eri_stage_cmr()</a></code>, and <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> also normalize <code>country</code>/<code>disease</code> at their own entry point</strong>, not just via <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>. Each of these hand-builds a log directory alongside the <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>-derived staged/processed/raw dir in the same call; without normalizing both from the same value, the log could still land at a differently-cased sibling path (e.g. <code>UGA/LF/.../logs/</code> next to <code>uga/lf/.../processed/</code>) — the same failure class as <a href="https://github.com/thecartercenter/erifunctions/issues/303" class="external-link">#303</a>, one hop away.</li>
+<li>The <code>atlantis</code> training sandbox (needed for <code><a href="../reference/eri_data_path.html">eri_data_path()</a></code>’s general validation, used by CMR/DQ sandbox testing) is excluded from <code><a href="../reference/eri_odk_register.html">eri_odk_register()</a></code>’s hard-validated country set and the ODK wizard’s country picker — ODK registration is production-only and already has its own sandbox convention (<code>uga</code>/<code>demo</code>).</li>
+<li>See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0020-canonical-country-disease-codes.md" class="external-link">ADR-0020</a> (amends <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md" class="external-link">ADR-0012</a> point 5).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.36" id="erifunctions-0936">erifunctions 0.9.36<a class="anchor" aria-label="anchor" href="#erifunctions-0936"></a></h2>
 <div class="section level3">

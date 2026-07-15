@@ -15,6 +15,11 @@ still accepted during the ADR-0012 migration and builds a measure-less
 `{country}/{disease}/{data_source}/{layer}/` path — detected because its
 fourth argument is a `layer` keyword (a `data_type` measure never is).
 
+`country` and `disease` are normalized (lowercase + trim) before the
+path is built, so `"UGA"`/`"uga"`/`" Uga "` all produce the same
+canonical path (ADR-0020) — this is what prevents legacy-cased paths
+like the `LF`/`lf` drift found and fixed in issue \#303 from recurring.
+
 ## Usage
 
 ``` r
@@ -25,11 +30,14 @@ eri_data_path(country, disease, data_source, data_type, layer, filename = NULL)
 
 - country:
 
-  `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`).
+  `str` Country code (e.g. `"dr"`, `"ht"`, `"uga"`; extensible — see
+  [`eri_data_model()`](https://thecartercenter.github.io/erifunctions/reference/eri_data_model.md);
+  unknown values warn, not error).
 
 - disease:
 
-  `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`).
+  `str` Disease name (e.g. `"malaria"`, `"lf"`, `"oncho"`; extensible;
+  unknown values warn).
 
 - data_source:
 
