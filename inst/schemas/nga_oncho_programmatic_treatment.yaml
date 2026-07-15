@@ -1,0 +1,286 @@
+# Built 2026-07-16 against the REAL CMR field codes (#rbtrt_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202605 submission from Nigeria.
+
+country: nga
+disease: oncho
+data_source: programmatic
+data_type: treatment
+version: '1.0'
+description: Nigeria oncho MDA coverage, 'RB Treatment' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: treatment_round
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#rbtrt_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#rbtrt_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#rbtrt_adm2'
+    allowed_values:
+      - Aba North
+      - Aba South
+      - Abakaliki
+      - Abo-Mbaise
+      - Afikpo North
+      - Aguata
+      - Ahiazu-Mbaise
+      - Akamkpa
+      - Akoko-Edo
+      - Akpabuyo
+      - Akwanga
+      - Anaocha
+      - Aninri
+      - Aniocha North
+      - Aniocha South
+      - Arochukwu
+      - Awgu
+      - Awka North
+      - Awka South
+      - Ayamelum
+      - Bakasi
+      - Bassa
+      - Bekwara
+      - Bende
+      - Biase
+      - Boki
+      - Bokkos
+      - Calabar Municipal
+      - Dunukofia
+      - Ebonyi
+      - Ehime-Mbano
+      - Ekwusiko
+      - Enugu East
+      - Esan Central
+      - Esan North East
+      - Esan South East
+      - Esan West
+      - Ethiope East
+      - Ethiope West
+      - Etsako Central
+      - Etsako East
+      - Etsako West
+      - Etung
+      - Ezeagu
+      - Ezinihitte
+      - Ezza North
+      - Ezza South
+      - Ideato North
+      - Ideato South
+      - Idimili North
+      - Idimili South
+      - Igbo-Eze North
+      - Igbo-Eze South
+      - Igbo Ekiti
+      - Igueben
+      - Ihiala
+      - Ihite/Uboma
+      - Ika North East
+      - Ika South
+      - Ikeduru
+      - Ikom
+      - Ikpoba-Okha
+      - Ikwo
+      - Ikwuano
+      - Ishielu
+      - Isi-Uzo
+      - Isiala-Mbano
+      - Isiala-Ngwa North
+      - Isiala-Ngwa South
+      - Isiukwuato
+      - Isoko North
+      - Isu
+      - Ivo
+      - Izzi
+      - Jos East
+      - Kanke
+      - Karu
+      - Kokona
+      - Lafia
+      - Mbaitoli
+      - Nasarawa-Eggon
+      - Ndokwa East
+      - Ndokwa West
+      - Ngor-Okp
+      - Njaba
+      - Njikoka
+      - Nkanu East
+      - Nkanu West
+      - Nkwere
+      - Nnewi North
+      - Nnewi South
+      - Nsuka
+      - Nwangele
+      - Obanliku
+      - Obio-Ngwa
+      - Obowo
+      - Obubra
+      - Obudu
+      - Odukpani
+      - Ogoja
+      - Ohafia
+      - Ohaozara
+      - Ohaukwu
+      - Okigwe
+      - Okpe
+      - Onicha
+      - Onuimo
+      - Orhionmwon
+      - Orji-River
+      - Orlu
+      - Orsu
+      - Orumba North
+      - Orumba South
+      - Oshimili North
+      - Oshimili South
+      - Osisioma Ngwa
+      - Ovia North East
+      - Ovia South West
+      - Owan East
+      - Owan West
+      - Owerri Municipal
+      - Owerri North
+      - Oyi
+      - Pankshin
+      - Sapele
+      - Toto
+      - Udenu
+      - Udi
+      - Ughelli North
+      - Ugwunagbo
+      - Uhunmwonde
+      - Ukwa East
+      - Ukwa West
+      - Ukwuani
+      - Umu-Nneochi
+      - Umuahia North
+      - Umuahia South
+      - Uzo-Uwani
+      - Wamba
+      - Wase
+      - Yakur
+      - Yala
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#rbtrt_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#rbtrt_disease'
+  population:
+    required: no
+    type: numeric
+    aliases:
+      - Population
+      - '#rbtrt_pop'
+    range:
+      - 0
+      - 1411776
+  treatment_round:
+    required: no
+    type: numeric
+    aliases:
+      - Round
+      - MDA_round
+      - treatment_round
+      - '#rbtrt_trtrd'
+    range:
+      - 0
+      - 10
+  target_pop:
+    required: no
+    type: numeric
+    aliases:
+      - TargetPop
+      - target_population
+      - eligible_pop
+      - '#rbtrt_trttarget'
+    range:
+      - 1
+      - 1779852
+  village_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#rbtrt_villagetarget'
+    range:
+      - 0
+      - 5000
+  male_treated:
+    required: no
+    type: numeric
+    aliases:
+      - '#rbtrt_male_tot'
+    range:
+      - 0
+      - 516840
+  female_treated:
+    required: no
+    type: numeric
+    aliases:
+      - '#rbtrt_fem_tot'
+    range:
+      - 0
+      - 516840
+  treated:
+    required: yes
+    type: numeric
+    aliases:
+      - Treated
+      - people_treated
+      - '#rbtrt_tot'
+    range:
+      - 0
+      - 516840
+  coverage_pct:
+    required: no
+    type: numeric
+    aliases:
+      - CoveragePct
+      - coverage
+      - '#rbtrt_coverage'
+    range:
+      - 0
+      - 150
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: <=
+    rhs: target_pop
+    message: treated exceeds target_pop (over 100% raw coverage)
+  treated_nonneg:
+    lhs: treated
+    op: '>='
+    rhs_value: 0.0
+    message: Negative treated count
+

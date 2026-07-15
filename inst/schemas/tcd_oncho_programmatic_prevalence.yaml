@@ -1,0 +1,124 @@
+# Built 2026-07-16 against the REAL CMR field codes (#rb_epi_surv_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202606 submission from Chad.
+#
+# Scoped to the identifier spine only (year/region/district/sub_county), matching
+# sdn/ssd's precedent for this sheet shape: monthly-wide survey-result blocks with
+# no single annual roll-up column to validate a range against.
+
+country: tcd
+disease: oncho
+data_source: programmatic
+data_type: prevalence
+version: '1.0'
+description: Chad oncho prevalence surveys, 'Oncho Enquetes Epi' sheet of the monthly
+  CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#rb_epi_surv_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#rb_epi_surv_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#rb_epi_surv_adm2'
+    allowed_values:
+      - Baibokoum
+      - Bakctchoro
+      - Balimba
+      - Bebedjia
+      - Beboto
+      - Bedaya
+      - Bedjondo
+      - Beinamar
+      - Bekourou
+      - Bere
+      - Bessao
+      - Billiam Oursi
+      - Binder
+      - Biobe Singako
+      - Bologo
+      - Bouna
+      - Dafra
+      - Danamadji
+      - Dembo
+      - Djodo Gassa
+      - Doba
+      - Donia
+      - Fianga
+      - Gagal
+      - Gore
+      - Gounou Gaya
+      - Guegou
+      - Guelao
+      - Guene
+      - Kara
+      - Kelo
+      - Kolon
+      - Korbol
+      - Koumogo
+      - Koumra
+      - Koupor
+      - Krim-Krim
+      - Kyabe
+      - Lagon
+      - Lame
+      - Laokassy
+      - Larmanaye
+      - Lere
+      - Maro
+      - Moissala
+      - Moundou Centre
+      - Moundou Est
+      - Moundou Ouest
+      - Mouroum Goulaye
+      - Pala
+      - Peni
+      - Pont Carol
+      - Sarh
+      - Torrock
+      - Yamodo
+      - Youe
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#rb_epi_surv_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#rb_epi_surv_disease'
+  otz:
+    required: no
+    type: character
+    aliases:
+      - '#rb_epi_surv_otz'
+

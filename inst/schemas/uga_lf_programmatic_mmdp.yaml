@@ -1,0 +1,176 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lfdmdi_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202606 submission from Uganda.
+
+country: uga
+disease: lf
+data_source: programmatic
+data_type: mmdp
+version: '1.0'
+description: Uganda lf morbidity management and disability prevention (MMDP), 'LF
+  MMDP' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lfdmdi_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lfdmdi_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lfdmdi_adm2'
+    allowed_values:
+      - Adjumani
+      - Amuru
+      - Arua
+      - Bududa
+      - Buhweju
+      - Buliisa
+      - Bushenyi
+      - Gulu
+      - Gulu City
+      - Hoima
+      - Ibanda
+      - Jinja
+      - Kabarole
+      - Kagadi
+      - Kamuli
+      - Kanungu
+      - Kasese
+      - Kayunga
+      - Kikuube
+      - Kisoro
+      - Kitagwenda
+      - Kitgum
+      - KOBOKO
+      - Kyenjojo
+      - Lamwo
+      - Lira
+      - MadI-Okollo
+      - Manafwa
+      - Maracha/Teregago
+      - Masindi
+      - Mayuge
+      - Mbale
+      - Mbale City
+      - Mitooma
+      - MOYO
+      - Mukono
+      - Namisindwa
+      - Nebbi
+      - Nwoya
+      - Obongi
+      - Omoro
+      - Oyam
+      - Pader
+      - Pakwach
+      - Refugees
+      - Rubanda
+      - Rubirizi
+      - Sironko
+      - Terego
+      - YUMBE
+      - Zombo
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lfdmdi_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#lfdmdi_disease'
+  surgery_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_surgeytarget'
+    range:
+      - 0
+      - 50000
+  village_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_villagetarget'
+    range:
+      - 0
+      - 5000
+  male_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_male_tot'
+    range:
+      - 0
+      - 500000
+  female_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_fem_tot'
+    range:
+      - 0
+      - 500000
+  tot:
+    required: yes
+    type: numeric
+    aliases:
+      - Treated
+      - people_managed
+      - '#lfdmdi_tot'
+    range:
+      - 0
+      - 500000
+  households_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_hh_tot'
+    range:
+      - 0
+      - 500000
+  surgeries_done:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_tot'
+    range:
+      - 0
+      - 50000
+  surgeries_achieved_pct:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_achieved'
+    range:
+      - 0
+      - 2
+

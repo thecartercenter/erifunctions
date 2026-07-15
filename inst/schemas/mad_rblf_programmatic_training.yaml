@@ -1,0 +1,185 @@
+# Built 2026-07-16 against the REAL CMR field codes (#cddtrn_* / #cstrn_* / #dmditrnsx_* / #dmditrnpt_* / #hwtrn_* / #hgtrn_* / #tchrtrn_*), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202604 submission from Madagascar.
+#
+# ONE schema covers all training sheets present this period (Formation Distributeurs, Formation SC, PCMPI Formation Chirurgie, Formation PCMPI Patient, Formation Travailleurs de Sante, Formation Leader Groupe HOPE, Formation Professeurs) because
+# eri_split_cmr() routes all of them to the same disease/data_type combo (rblf/training,
+# per ADR-0012's combined training code) -- load_dq_schema() can only resolve one file
+# per (country, disease, data_source, data_type). Each ingested sheet only ever has ONE
+# prefix present, so aliasing every prefix under one canonical column set works:
+# run_dq_checks() resolves whichever alias matches the data actually present.
+
+country: mad
+disease: rblf
+data_source: programmatic
+data_type: training
+version: '1.0'
+description: Madagascar RB+LF programme trainings, combined training sheets of the
+  monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#cddtrn_year'
+      - '#cstrn_year'
+      - '#dmditrnsx_year'
+      - '#dmditrnpt_year'
+      - '#hwtrn_year'
+      - '#hgtrn_year'
+      - '#tchrtrn_year'
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#cddtrn_adm1'
+      - '#cstrn_adm1'
+      - '#dmditrnsx_adm1'
+      - '#dmditrnpt_adm1'
+      - '#hwtrn_adm1'
+      - '#hgtrn_adm1'
+      - '#tchrtrn_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#cddtrn_adm2'
+      - '#cstrn_adm2'
+      - '#dmditrnsx_adm2'
+      - '#dmditrnpt_adm2'
+      - '#hwtrn_adm2'
+      - '#hgtrn_adm2'
+      - '#tchrtrn_adm2'
+    allowed_values:
+      - Alaotra Mango-ro
+      - Amoron'i Mania
+      - Analamanga
+      - Analanjirofo
+      - Androy
+      - Anosy
+      - Atsimo- Atsinanana
+      - Atsimo Andrefana
+      - Atsinanana
+      - Betsiboka-Betsiboka
+      - Boeny
+      - Bongolava
+      - Diana
+      - Haute Matsiatra
+      - Ihorombe
+      - Itasy
+      - Melaky
+      - Menabe
+      - Sava
+      - Sofia
+      - Vatovavy- Fitovinany
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#cddtrn_adm3'
+      - '#cstrn_adm3'
+      - '#dmditrnsx_adm3'
+      - '#dmditrnpt_adm3'
+      - '#hwtrn_adm3'
+      - '#hgtrn_adm3'
+      - '#tchrtrn_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#cddtrn_disease'
+      - '#cstrn_disease'
+      - '#dmditrnsx_disease'
+      - '#dmditrnpt_disease'
+      - '#hwtrn_disease'
+      - '#hgtrn_disease'
+      - '#tchrtrn_disease'
+  goal:
+    required: no
+    type: numeric
+    aliases:
+      - '#cddtrn_goal'
+      - '#cstrn_goal'
+      - '#dmditrnsx_goal'
+      - '#dmditrnpt_goal'
+      - '#hwtrn_goal'
+      - '#hgtrn_goal'
+      - '#tchrtrn_goal'
+    range:
+      - 0
+      - 5000
+  male_trained:
+    required: no
+    type: numeric
+    aliases:
+      - '#cddtrn_tot_male'
+      - '#cstrn_tot_male'
+      - '#dmditrnsx_tot_male'
+      - '#dmditrnpt_tot_male'
+      - '#hwtrn_tot_male'
+      - '#hgtrn_tot_male'
+      - '#tchrtrn_tot_male'
+    range:
+      - 0
+      - 1000
+  female_trained:
+    required: no
+    type: numeric
+    aliases:
+      - '#cddtrn_tot_fem'
+      - '#cstrn_tot_fem'
+      - '#dmditrnsx_tot_fem'
+      - '#dmditrnpt_tot_fem'
+      - '#hwtrn_tot_fem'
+      - '#hgtrn_tot_fem'
+      - '#tchrtrn_tot_fem'
+    range:
+      - 0
+      - 1000
+  tot:
+    required: yes
+    type: numeric
+    aliases:
+      - Trained
+      - '#cddtrn_tot'
+      - '#cstrn_tot'
+      - '#dmditrnsx_tot'
+      - '#dmditrnpt_tot'
+      - '#hwtrn_tot'
+      - '#hgtrn_tot'
+      - '#tchrtrn_tot'
+    range:
+      - 0
+      - 1000
+  achieved_pct:
+    required: no
+    type: numeric
+    aliases:
+      - '#cddtrn_achieved'
+      - '#cstrn_achieved'
+      - '#dmditrnsx_achieved'
+      - '#dmditrnpt_achieved'
+      - '#hwtrn_achieved'
+      - '#hgtrn_achieved'
+      - '#tchrtrn_achieved'
+    range:
+      - 0
+      - 2
+

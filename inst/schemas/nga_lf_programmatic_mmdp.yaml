@@ -1,0 +1,293 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lfdmdi_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202605 submission from Nigeria.
+
+country: nga
+disease: lf
+data_source: programmatic
+data_type: mmdp
+version: '1.0'
+description: Nigeria lf morbidity management and disability prevention (MMDP), 'LF
+  MMDP' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lfdmdi_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lfdmdi_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lfdmdi_adm2'
+    allowed_values:
+      - Aba North
+      - Aba South
+      - Abakaliki
+      - Aboh-Mbaise
+      - Afikpo North
+      - Afikpo South
+      - Aguata
+      - Ahiazu-Mbaise
+      - Akoko-Edo
+      - Akwanga
+      - Anambra East
+      - Anambra West
+      - Anaocha
+      - Aninri
+      - Aniocha North
+      - Aniocha South
+      - Arochukwu
+      - Awe
+      - Awgu
+      - Awka North
+      - Awka South
+      - Ayamelum
+      - Barkin Ladi
+      - Bassa
+      - Bende
+      - Bokkos
+      - Bomadi
+      - Burutu
+      - Doma
+      - Dunukofia
+      - Ebonyi
+      - Egor
+      - Ehime-Mbano
+      - Ekwusiko
+      - Enugu East
+      - Enugu North
+      - Enugu South
+      - Esan Central
+      - Esan North East
+      - Esan South East
+      - Esan West
+      - Ethiope East
+      - Ethiope West
+      - Etsako Central
+      - Etsako East
+      - Etsako West
+      - Ezeagu
+      - Ezinihitte
+      - Ezza North
+      - Ezza South
+      - Ideato North
+      - Ideato South
+      - Idimili North
+      - Idimili South
+      - Igbo-Eze North
+      - Igbo-Eze South
+      - Igbo Etiti
+      - Igueben
+      - Ihiala
+      - Ihite/Uboma
+      - Ika North East
+      - Ika South
+      - Ikeduru
+      - Ikpoba-Okha
+      - Ikwo
+      - Ikwuano
+      - Ishielu
+      - Isi-Uzo
+      - Isiala-Mbano
+      - Isiala-Ngwa North
+      - Isiala-Ngwa South
+      - Isiukwuato
+      - Isoko North
+      - Isoko South
+      - Isu
+      - Ivo
+      - Izzi
+      - Jos East
+      - Jos North
+      - Jos South
+      - Kanem
+      - Kanke
+      - Karu
+      - Keana
+      - Keffi
+      - Kokona
+      - Lafia
+      - Langtan North
+      - Langtan South
+      - Mangu
+      - Mbaitoli
+      - Mikang
+      - Nasarawa
+      - Nasarawa-Eggon
+      - Ndokwa East
+      - Ndokwa West
+      - Ngor-Okp
+      - Njaba
+      - Njikoka
+      - Nkanu East
+      - Nkanu West
+      - Nkwere
+      - Nnewi North
+      - Nnewi South
+      - Nsuka
+      - Nwangele
+      - Obi
+      - Obio-Ngwa
+      - Obowo
+      - Ogbaru
+      - Oguta
+      - Ohafia
+      - Ohaji/Egbema
+      - Ohaozara
+      - Ohaukwu
+      - Okigwe
+      - Okpe
+      - Onicha
+      - Onitsha North
+      - Onitsha South
+      - Onuimo
+      - Oredo
+      - Orhionmwon
+      - Orji-River
+      - Orlu
+      - Orsu
+      - Oru East
+      - Oru West
+      - Orumba North
+      - Orumba South
+      - Oshimili North
+      - Oshimili South
+      - Osisioma Ngwa
+      - Ovia North East
+      - Ovia South West
+      - Owan East
+      - Owan West
+      - Owerri municipal
+      - Owerri North
+      - Owerri West
+      - Oyi
+      - Pankshin
+      - Patani
+      - Quan'Pam
+      - Riyom
+      - Sapele
+      - Shendam
+      - Toto
+      - Udenu
+      - Udi
+      - Udu
+      - Ughelli North
+      - Ughelli South
+      - Ugwunagbo
+      - Uhunmwonde
+      - Ukwa East
+      - Ukwa West
+      - Ukwuani
+      - Umu-Nneochi
+      - Umuahia North
+      - Umuahia South
+      - Uvwie
+      - Uzo-Uwani
+      - Wamba
+      - Warii North
+      - Warri South
+      - Warri South West
+      - Wase
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lfdmdi_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#lfdmdi_disease'
+  surgery_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_surgeytarget'
+    range:
+      - 0
+      - 50000
+  village_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_villagetarget'
+    range:
+      - 0
+      - 5000
+  male_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_male_tot'
+    range:
+      - 0
+      - 500000
+  female_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_fem_tot'
+    range:
+      - 0
+      - 500000
+  tot:
+    required: yes
+    type: numeric
+    aliases:
+      - Treated
+      - people_managed
+      - '#lfdmdi_tot'
+    range:
+      - 0
+      - 500000
+  households_managed:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_hh_tot'
+    range:
+      - 0
+      - 500000
+  surgeries_done:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_tot'
+    range:
+      - 0
+      - 50000
+  surgeries_achieved_pct:
+    required: no
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_achieved'
+    range:
+      - 0
+      - 2
+

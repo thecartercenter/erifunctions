@@ -1,0 +1,226 @@
+# Built 2026-07-16 against the REAL CMR field codes (#vhttrn_* / #pstrn_* / #lltrn_* / #sstrn_* / #dmditrnsx_* / #dmditrnpt_* / #entotrn_* / #labtrn_*), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202606 submission from Uganda.
+#
+# ONE schema covers all training sheets present this period (VHT Training, Parish Supervisors Training, Local Leaders Training, Subcounty Supervisor Training, MMDP (surgery) Training, MMDP (patient) Training, Field Ento Training, Lab Training) because
+# eri_split_cmr() routes all of them to the same disease/data_type combo (rblf/training,
+# per ADR-0012's combined training code) -- load_dq_schema() can only resolve one file
+# per (country, disease, data_source, data_type). Each ingested sheet only ever has ONE
+# prefix present, so aliasing every prefix under one canonical column set works:
+# run_dq_checks() resolves whichever alias matches the data actually present.
+
+country: uga
+disease: rblf
+data_source: programmatic
+data_type: training
+version: '1.0'
+description: Uganda RB+LF programme trainings, combined training sheets of the monthly
+  CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#vhttrn_year'
+      - '#pstrn_year'
+      - '#lltrn_year'
+      - '#sstrn_year'
+      - '#dmditrnsx_year'
+      - '#dmditrnpt_year'
+      - '#entotrn_year'
+      - '#labtrn_year'
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#vhttrn_adm1'
+      - '#pstrn_adm1'
+      - '#lltrn_adm1'
+      - '#sstrn_adm1'
+      - '#dmditrnsx_adm1'
+      - '#dmditrnpt_adm1'
+      - '#entotrn_adm1'
+      - '#labtrn_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#vhttrn_adm2'
+      - '#pstrn_adm2'
+      - '#lltrn_adm2'
+      - '#sstrn_adm2'
+      - '#dmditrnsx_adm2'
+      - '#dmditrnpt_adm2'
+      - '#entotrn_adm2'
+      - '#labtrn_adm2'
+    allowed_values:
+      - Adjumani
+      - Amuru
+      - Arua
+      - Bududa
+      - Buhweju
+      - Buliisa
+      - Bushenyi
+      - Gulu
+      - Gulu City
+      - Hoima
+      - Ibanda
+      - Jinja
+      - Kabarole
+      - Kagadi
+      - Kamuli
+      - Kanungu
+      - Kasese
+      - Kayunga
+      - Kikuube
+      - Kiryandongo
+      - Kisoro
+      - Kitagwenda
+      - Kitgum
+      - KOBOKO
+      - Kyenjojo
+      - Lamwo
+      - Lira
+      - MadI-Okollo
+      - Manafwa
+      - Maracha/Teregago
+      - Masindi
+      - Mayuge
+      - Mbale
+      - Mbale City
+      - Mitooma
+      - MOYO
+      - Mukono
+      - Namisindwa
+      - Nebbi
+      - Nwoya
+      - Obongi
+      - Omoro
+      - Oyam
+      - Pader
+      - Pakwach
+      - Refugees
+      - Rubanda
+      - Rubirizi
+      - Sironko
+      - Terego
+      - YUMBE
+      - Zombo
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#vhttrn_adm3'
+      - '#pstrn_adm3'
+      - '#lltrn_adm3'
+      - '#sstrn_adm3'
+      - '#dmditrnsx_adm3'
+      - '#dmditrnpt_adm3'
+      - '#entotrn_adm3'
+      - '#labtrn_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#vhttrn_disease'
+      - '#pstrn_disease'
+      - '#lltrn_disease'
+      - '#sstrn_disease'
+      - '#dmditrnsx_disease'
+      - '#dmditrnpt_disease'
+      - '#entotrn_disease'
+      - '#labtrn_disease'
+  goal:
+    required: no
+    type: numeric
+    aliases:
+      - '#vhttrn_goal'
+      - '#pstrn_goal'
+      - '#lltrn_goal'
+      - '#sstrn_goal'
+      - '#dmditrnsx_goal'
+      - '#dmditrnpt_goal'
+      - '#entotrn_goal'
+      - '#labtrn_goal'
+    range:
+      - 0
+      - 5000
+  male_trained:
+    required: no
+    type: numeric
+    aliases:
+      - '#vhttrn_tot_male'
+      - '#pstrn_tot_male'
+      - '#lltrn_tot_male'
+      - '#sstrn_tot_male'
+      - '#dmditrnsx_tot_male'
+      - '#dmditrnpt_tot_male'
+      - '#entotrn_tot_male'
+      - '#labtrn_tot_male'
+    range:
+      - 0
+      - 4926
+  female_trained:
+    required: no
+    type: numeric
+    aliases:
+      - '#vhttrn_tot_fem'
+      - '#pstrn_tot_fem'
+      - '#lltrn_tot_fem'
+      - '#sstrn_tot_fem'
+      - '#dmditrnsx_tot_fem'
+      - '#dmditrnpt_tot_fem'
+      - '#entotrn_tot_fem'
+      - '#labtrn_tot_fem'
+    range:
+      - 0
+      - 4926
+  tot:
+    required: yes
+    type: numeric
+    aliases:
+      - Trained
+      - '#vhttrn_tot'
+      - '#pstrn_tot'
+      - '#lltrn_tot'
+      - '#sstrn_tot'
+      - '#dmditrnsx_tot'
+      - '#dmditrnpt_tot'
+      - '#entotrn_tot'
+      - '#labtrn_tot'
+    range:
+      - 0
+      - 4926
+  achieved_pct:
+    required: no
+    type: numeric
+    aliases:
+      - '#vhttrn_achieved'
+      - '#pstrn_achieved'
+      - '#lltrn_achieved'
+      - '#sstrn_achieved'
+      - '#dmditrnsx_achieved'
+      - '#dmditrnpt_achieved'
+      - '#entotrn_achieved'
+      - '#labtrn_achieved'
+    range:
+      - 0
+      - 2
+

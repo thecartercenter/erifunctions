@@ -1,0 +1,105 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lfsurv_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202606 submission from Chad.
+#
+# Scoped to the identifier spine only (year/region/district/sub_county), matching
+# sdn/ssd's precedent for this sheet shape: monthly-wide survey-result blocks with
+# no single annual roll-up column to validate a range against.
+
+country: tcd
+disease: lf
+data_source: programmatic
+data_type: tas
+version: '1.0'
+description: Chad lf tas surveys, 'LF Enquetes' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: year
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lfsurv_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lfsurv_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lfsurv_adm2'
+    allowed_values:
+      - Baibokoum
+      - Bakctchoro
+      - Balimba
+      - Bebalem
+      - Bebedjia
+      - Beboto
+      - Bedaya
+      - Beinamar
+      - Benoye
+      - Bere
+      - Bessao
+      - Biobe Singako
+      - Bodo
+      - Bologo
+      - Dafra
+      - Danamadji
+      - Deressia
+      - Doba
+      - Donia
+      - Donomanga
+      - Gore
+      - Guelendeng
+      - Guidari
+      - Kara
+      - Katoa
+      - Kelo
+      - Kolon
+      - Korbol
+      - Koumogo
+      - Koumra
+      - Krim-Krim
+      - Kyabe
+      - Lai
+      - Laokassy
+      - Larmanaye
+      - Maro
+      - Moulkou
+      - Moundou Centre
+      - Moundou Est
+      - Moundou Ouest
+      - Ndam
+      - Sarh
+      - Yamodo
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lfsurv_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#lfsurv_disease'
+

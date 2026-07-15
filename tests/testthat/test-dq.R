@@ -508,6 +508,37 @@ test_that("uga_oncho schema flags a district not in the real allowed_values list
   expect_true(any(res$flags$column == "district"))
 })
 
+test_that("eth_oncho_programmatic_treatment schema loads with the real district list", {
+  schema <- load_dq_schema("eth", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#rbtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Ari" %in% schema$columns$district$allowed_values)
+})
+
+test_that("nga_sth_programmatic_treatment schema loads (STH is Nigeria-only) with real aliases", {
+  schema <- load_dq_schema("nga", "sth", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#sthtrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Aba North" %in% schema$columns$district$allowed_values)
+})
+
+test_that("mad_lf_programmatic_treatment schema loads with the real (French-template) district list", {
+  schema <- load_dq_schema("mad", "lf", "programmatic", "treatment", azcontainer = NULL)
+  expect_true("#lftrt_adm2" %in% schema$columns$district$aliases)
+  expect_true("Analamanga" %in% schema$columns$district$allowed_values)
+})
+
+test_that("tcd_rblf_programmatic_training schema combines all training-sheet prefixes into one alias set", {
+  schema <- load_dq_schema("tcd", "rblf", "programmatic", "training", azcontainer = NULL)
+  expect_true("#cddtrn_tot" %in% schema$columns$tot$aliases)
+  expect_true("#entotrn_tot" %in% schema$columns$tot$aliases)
+})
+
+test_that("uga_lf_programmatic_mmdp and uga_lf_programmatic_tas schemas exist and resolve real codes (pilot-session gap fill)", {
+  mmdp <- load_dq_schema("uga", "lf", "programmatic", "mmdp", azcontainer = NULL)
+  expect_true("#lfdmdi_adm2" %in% mmdp$columns$district$aliases)
+  tas <- load_dq_schema("uga", "lf", "programmatic", "tas", azcontainer = NULL)
+  expect_true("#lfsurv_adm2" %in% tas$columns$district$aliases)
+})
+
 test_that("uga_sch_programmatic_treatment schema loads and resolves #schtrt_ codes", {
   schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
   expect_true("#schtrt_adm2" %in% schema$columns$district$aliases)

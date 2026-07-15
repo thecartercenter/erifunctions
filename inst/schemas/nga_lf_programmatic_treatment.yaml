@@ -1,0 +1,285 @@
+# Built 2026-07-16 against the REAL CMR field codes (#lftrt_* prefix), via read-only
+# recon (structure/aggregate counts only, no records persisted or shared) against the
+# real 202605 submission from Nigeria.
+
+country: nga
+disease: lf
+data_source: programmatic
+data_type: treatment
+version: '1.0'
+description: Nigeria lf MDA coverage, 'LF Treatment' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: treatment_round
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: yes
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#lftrt_year'
+    range:
+      - 1990
+      - 2035
+  region:
+    required: no
+    type: character
+    aliases:
+      - Region
+      - adm1
+      - '#lftrt_adm1'
+  district:
+    required: yes
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#lftrt_adm2'
+    allowed_values:
+      - Aba North
+      - Aba South
+      - Abakaliki
+      - Aboh-Mbaise
+      - Afikpo North
+      - Aguata
+      - Ahiazu-Mbaise
+      - Akoko-Edo
+      - Akwanga
+      - Anambra East
+      - Anambra West
+      - Anaocha
+      - Aniocha North
+      - Aniocha South
+      - Arochukwu
+      - Awe
+      - Awgu
+      - Awka North
+      - Awka South
+      - Ayamelum
+      - Barkin Ladi
+      - Bassa
+      - Bende
+      - Bokkos
+      - Bomadi
+      - Doma
+      - Dunukofia
+      - Ebonyi
+      - Ehime-Mbano
+      - Ekwusiko
+      - Enugu East
+      - Enugu North
+      - Enugu South
+      - Esan North East
+      - Esan South East
+      - Ethiope East
+      - Etsako Central
+      - Etsako West
+      - Ezeagu
+      - Ezinihitte
+      - Ezza North
+      - Ideato North
+      - Ideato South
+      - Idimili North
+      - Idimili South
+      - Igbo-Eze South
+      - Igbo Ekiti
+      - Ihiala
+      - Ihite/Uboma
+      - Ika North East
+      - Ika South
+      - Ikeduru
+      - Ikwo
+      - Ikwuano
+      - Ishielu
+      - Isi-Uzo
+      - Isiala-Mbano
+      - Isiala-Ngwa North
+      - Isiala-Ngwa South
+      - Isiukwuato
+      - Isoko North
+      - Isoko South
+      - Isu
+      - Izzi
+      - Jos East
+      - Jos North
+      - Jos South
+      - Kanem
+      - Kanke
+      - Karu
+      - Keana
+      - Keffi
+      - Kokona
+      - Lafia
+      - Langtan North
+      - Langtan South
+      - Mangu
+      - Mbaitoli
+      - Mikang
+      - Nasarawa
+      - Nasarawa-Eggon
+      - Ndokwa East
+      - Ngor-Okp
+      - Njaba
+      - Njikoka
+      - Nkanu East
+      - Nkanu West
+      - Nkwere
+      - Nnewi North
+      - Nnewi South
+      - Nsuka
+      - Nwangele
+      - Obi
+      - Obio-Ngwa
+      - Obowo
+      - Ogbaru
+      - Oguta
+      - Ohafia
+      - Ohaji/Egbema
+      - Ohaozara
+      - Ohaukwu
+      - Okigwe
+      - Onitsha North
+      - Onitsha South
+      - Onuimo
+      - Orji-River
+      - Orlu
+      - Orsu
+      - Oru East
+      - Oru West
+      - Orumba North
+      - Orumba South
+      - Oshimili North
+      - Osisioma Ngwa
+      - Ovia South West
+      - Owan East
+      - Owerri municipal
+      - Owerri North
+      - Owerri West
+      - Oyi
+      - Pankshin
+      - Patani
+      - Quan'Pam
+      - Riyom
+      - Shendam
+      - Toto
+      - Udenu
+      - Udi
+      - Udu
+      - Ugwunagbo
+      - Ukwa East
+      - Ukwa West
+      - Ukwuani
+      - Umu-Nneochi
+      - Umuahia North
+      - Umuahia South
+      - Wamba
+      - Warii North
+      - Warri South
+      - Warri South West
+      - Wase
+  sub_county:
+    required: no
+    type: character
+    aliases:
+      - SubCounty
+      - sub_county
+      - adm3
+      - '#lftrt_adm3'
+  disease_reported:
+    required: no
+    type: character
+    aliases:
+      - '#lftrt_disease'
+  population:
+    required: no
+    type: numeric
+    aliases:
+      - Population
+      - '#lftrt_pop'
+    range:
+      - 0
+      - 1411776
+  treatment_round:
+    required: no
+    type: numeric
+    aliases:
+      - Round
+      - MDA_round
+      - treatment_round
+      - '#lftrt_trtrd'
+    range:
+      - 0
+      - 10
+  target_pop:
+    required: no
+    type: numeric
+    aliases:
+      - TargetPop
+      - target_population
+      - eligible_pop
+      - '#lftrt_trttarget'
+    range:
+      - 1
+      - 500000
+  village_target:
+    required: no
+    type: numeric
+    aliases:
+      - '#lftrt_villagetarget'
+    range:
+      - 0
+      - 5000
+  male_treated:
+    required: no
+    type: numeric
+    aliases:
+      - '#lftrt_male_tot'
+    range:
+      - 0
+      - 500000
+  female_treated:
+    required: no
+    type: numeric
+    aliases:
+      - '#lftrt_fem_tot'
+    range:
+      - 0
+      - 500000
+  treated:
+    required: yes
+    type: numeric
+    aliases:
+      - Treated
+      - people_treated
+      - '#lftrt_tot'
+    range:
+      - 0
+      - 500000
+  coverage_pct:
+    required: no
+    type: numeric
+    aliases:
+      - CoveragePct
+      - coverage
+      - '#lftrt_coverage'
+    range:
+      - 0
+      - 150
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: <=
+    rhs: target_pop
+    message: treated exceeds target_pop (over 100% raw coverage)
+  treated_nonneg:
+    lhs: treated
+    op: '>='
+    rhs_value: 0.0
+    message: Negative treated count
+
