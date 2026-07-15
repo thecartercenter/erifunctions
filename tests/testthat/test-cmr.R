@@ -144,24 +144,21 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
 })
 
-test_that("eri_ingest_cmr survives a real-world duplicate field code in row 5 without dropping data", {
+test_that("eri_ingest_cmr aborts on a real-world duplicate field code in row 5", {
   # Real defect seen in the RB-expansion CMR template's "RB Ento Surveys" sheet:
-  # a field code was typed twice (a copy-paste slip across monthly blocks), which
-  # otherwise crashes tibble::as_tibble() with "must not be duplicated" and aborts
-  # ingestion of an otherwise-valid sheet.
+  # a field code was typed twice (a copy-paste slip across monthly blocks).
+  # Confirmed 2026-07-15: this must block the whole workbook, not be tolerated
+  # and silently suffixed -- a template defect should force a corrected file,
+  # not quietly pass through.
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
     data_rows   = list(c("2026", "ZoneA", "ZoneA-dup"), c("2026", "ZoneB", "ZoneB-dup"))
   )
-  expect_warning(
-    out <- eri_ingest_cmr(tmp, sheet = "RB Treatment"),
+  expect_error(
+    eri_ingest_cmr(tmp, sheet = "RB Treatment"),
     "duplicate field code"
   )
-  expect_equal(nrow(out), 2L)
-  expect_true(all(c("#rb_ento_surv_otz", "#rb_ento_surv_otz__1") %in% names(out)))
-  expect_equal(out[["#rb_ento_surv_otz"]], c("ZoneA", "ZoneB"))
-  expect_equal(out[["#rb_ento_surv_otz__1"]], c("ZoneA-dup", "ZoneB-dup"))
 })
 
 #### Tests for load_cmr_schema ####
@@ -427,6 +424,19 @@ test_that("eri_split_cmr routes each sheet to {disease}/programmatic/{measure} (
                "^uga/lf/programmatic/mmdp/staged/")
   # The per-row program code is preserved, not split: RB Treatment keeps both rows.
   expect_equal(plan$n_rows[plan$sheet == "RB Treatment"], 2L)
+})
+
+test_that("eri_split_cmr anchors staged filenames with period even when the source filename isn't", {
+  # Real CMR submissions are commonly human-titled (e.g. "CMR Data Report
+  # Submitted_09-June-2026.xlsx"), not "YYYYMM_..."; eri_approve()'s
+  # period-substring match and the supersede_staged anchor both require the
+  # period to lead the staged filename, so eri_split_cmr must guarantee it
+  # itself rather than trusting basename(path).
+  tmp <- withr::local_tempfile(fileext = ".xlsx")   # random name, no YYYYMM_ prefix
+  make_uga_cmr(tmp)
+
+  plan <- suppressWarnings(eri_split_cmr(tmp, "uga", dry_run = TRUE, period = "202607"))
+  expect_true(all(startsWith(basename(plan$dest), "202607_")))
 })
 
 test_that("eri_split_cmr keeps the per-row program code as a column (no disease split)", {
@@ -754,8 +764,9 @@ test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-
   expect_length(legacy_dest, 1L)
   expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
   # Generated name, not the raw local filename (which can carry characters
-  # that break the storage REST call) -- country_period_timestamp.ext.
-  expect_match(legacy_dest, "uga_202406_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
+  # that break the storage REST call) -- period_country_timestamp.ext, period
+  # leading to match the legacy pipeline's real YYYYMM_ filename convention.
+  expect_match(legacy_dest, "202406_uga_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
   expect_false(grepl(basename(tmp), legacy_dest, fixed = TRUE))
 })
 
@@ -855,7 +866,10 @@ test_that("eri_split_cmr dry_run alerts clean when nothing was skipped or warned
   )
 })
 
-test_that("eri_split_cmr dry_run with issues warns instead of claiming clean, and logs for triage", {
+test_that("eri_split_cmr dry_run aborts on a duplicate field code and logs the failure for triage", {
+  # A dry run previews whether the real run would succeed -- since a duplicate
+  # field code now blocks the whole workbook for real, the dry run must abort
+  # too (not report it as a survivable "warning" and invite the DA to proceed).
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
@@ -870,24 +884,55 @@ test_that("eri_split_cmr dry_run with issues warns instead of claiming clean, an
   local_mocked_bindings(
     .eri_write_log = function(log_list, ...) {
       logged[[length(logged) + 1L]] <<- log_list
-      "uga/rblf/cmr/logs/fake_dryrun.yaml"
+      "uga/rblf/cmr/logs/fake_dryrun_error.yaml"
     },
     get_azure_storage_connection = function(...) structure(list(), class = "mock"),
     .package = "erifunctions"
   )
 
-  expect_warning(
-    expect_message(
-      eri_split_cmr(tmp, "uga", dry_run = TRUE, data_con = structure(list(), class = "mock")),
-      "Dry run found"
-    ),
+  expect_error(
+    eri_split_cmr(tmp, "uga", dry_run = TRUE, data_con = structure(list(), class = "mock")),
     "duplicate field code"
   )
 
   expect_length(logged, 1L)
   expect_equal(logged[[1]]$operation, "eri_split_cmr_dryrun")
-  expect_equal(logged[[1]]$status, "needs_review")
-  expect_true(length(logged[[1]]$warnings) > 0L)
+  expect_equal(logged[[1]]$status, "error")
+  expect_match(logged[[1]]$error, "duplicate field code")
+})
+
+test_that("eri_split_cmr blocks the WHOLE workbook when only one sheet has a duplicate field code", {
+  # DAs work with a CMR submission as one unit, not sheet-by-sheet -- a clean
+  # "RB Treatment" sheet must not get staged just because an unrelated
+  # "RB Ento Surveys" sheet in the same workbook has the known template defect.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  clean_sheet <- make_cmr_sheet_df(
+    c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_target"),
+    list(c("2024", "North", "1000"))
+  )
+  dup_sheet <- make_cmr_sheet_df(
+    c("#rb_ento_surv_year", "#rb_ento_surv_otz", "#rb_ento_surv_otz"),
+    list(c("2026", "ZoneA", "ZoneA-dup"))
+  )
+  writexl::write_xlsx(list("RB Treatment" = clean_sheet, "RB Ento Surveys" = dup_sheet), tmp)
+
+  local_mocked_bindings(
+    load_cmr_schema = function(country) list(
+      country = country, sheets = list(
+        "RB Treatment" = list(field_code_prefix = "#rbtrt_", disease = "oncho",
+                              data_type = "treatment", required_fields = "#rbtrt_year"),
+        "RB Ento Surveys" = list(field_code_prefix = "#rb_ento_surv_", disease = "oncho",
+                                 data_type = "entomology", required_fields = "#rb_ento_surv_year")
+      )
+    ),
+    .package = "erifunctions"
+  )
+
+  expect_error(
+    plan <- eri_split_cmr(tmp, "uga", dry_run = TRUE),
+    "duplicate field code"
+  )
+  expect_false(exists("plan"))   # eri_split_cmr never returned a plan -- nothing was staged, not even RB Treatment
 })
 
 test_that("eri_cmr_last_plan reconstructs a plan from the persisted op-log", {

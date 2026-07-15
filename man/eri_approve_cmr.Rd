@@ -89,6 +89,7 @@ eri_approve_cmr("sdn", "202605", force = TRUE,
 Other CMR pipeline functions: 
 \code{\link{eri_cmr_dq_report}()},
 \code{\link{eri_cmr_last_plan}()},
+\code{\link{eri_dq_review_note}()},
 \code{\link{eri_ingest_cmr}()},
 \code{\link{eri_split_cmr}()},
 \code{\link{eri_stage_cmr}()}

@@ -114,10 +114,17 @@
 #' @keywords internal
 .eri_dq_review_fix_in_source <- function(f, local_path_env) {
   if (is.null(local_path_env$path)) {
+    # NOT required = TRUE: unlike a plan/report prompt with no sane default,
+    # this one needs an escape hatch -- a DA who picked this option without
+    # the file path handy must be able to back out to the flag menu instead
+    # of being stuck in an unbreakable "This can't be blank" loop.
     p <- .eri_prompt_line(
-      "Path to the local source workbook for this period (or a '_fixed' copy you've already started, if you have one): ",
-      required = TRUE
+      "Path to the local source workbook for this period (or a '_fixed' copy you've already started, if you have one; blank to cancel): "
     )
+    if (!nzchar(trimws(p))) {
+      cli::cli_alert_info("Cancelled -- back to this flag.")
+      return(invisible(NULL))
+    }
     if (!file.exists(p)) {
       cli::cli_alert_danger("File not found: {.path {p}}")
       return(invisible(NULL))
@@ -325,6 +332,63 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
   invisible(.eri_dq_review_loop(country, period, plan, data_con))
 }
 
+#' Log a free-text note against a CMR period, outside of any single DQ flag
+#'
+#' @description
+#' `r lifecycle::badge("experimental")`
+#'
+#' [eri_dq_flag_resolve()] and [eri_logs_resolve()] both take a `note`, but only as part of
+#' resolving something -- there's no way to record an observation that isn't tied to a flag.
+#' DAs review more than the flagged fields: cross-checking the workbook's narrative section
+#' against the data itself is routine, and whatever that turns up (confirmed, a discrepancy
+#' worth flagging to the country, anything else) needs a home in the log even when it never
+#' produced a DQ flag. This writes exactly that -- a standalone entry alongside the period's other
+#' CMR logs, picked up by [eri_logs()] like any other log entry.
+#'
+#' @param country `str` Country code (e.g. `"sdn"`).
+#' @param period `str` Reporting period (e.g. `"202605"`).
+#' @param note `str` The note itself. Required, non-empty.
+#' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
+#' @returns Invisibly, the log path written.
+#' @examples
+#' \dontrun{
+#' eri_dq_review_note("sdn", "202605", "Narrative section matches the data -- no discrepancy.")
+#' }
+#' @seealso [eri_dq_flag_resolve()], [eri_logs_resolve()] for notes tied to a specific flag/entry.
+#' @family CMR pipeline functions
+#' @export
+eri_dq_review_note <- function(country, period, note, data_con = NULL) {
+  if (missing(note) || length(note) != 1L || is.na(note) || !nzchar(trimws(note))) {
+    cli::cli_abort("{.arg note} must be a single non-empty string.")
+  }
+  data_con <- .eri_logs_con(data_con)
+  country  <- .eri_normalize_geo_axis("country", country, .eri_known_countries())
+
+  log_entry <- list(
+    operation  = "dq_review_note",
+    analyst    = .eri_analyst_id(data_con),
+    timestamp  = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    parameters = list(country = country, period = period),
+    status     = "success",
+    note       = note
+  )
+  log_path <- .eri_write_log(log_entry, data_con, paste(c(country, "rblf", "cmr", "logs"), collapse = "/"))
+  cli::cli_alert_success("Logged note for {.val {country}} / {.val {period}}.")
+  invisible(log_path)
+}
+
+# Prompts for a general note and logs it via eri_dq_review_note() -- blank cancels back to the
+# menu, same "blank = cancel" convention as .eri_dq_review_fix_in_source().
+#' @keywords internal
+.eri_dq_review_add_note <- function(country, period, data_con) {
+  note <- .eri_prompt_line("Note (blank to cancel): ")
+  if (!nzchar(trimws(note))) {
+    cli::cli_alert_info("Cancelled.")
+    return(invisible(NULL))
+  }
+  eri_dq_review_note(country, period, note, data_con = data_con)
+}
+
 # The main check -> fix -> re-check -> approve loop, extracted from eri_dq_review() so
 # R/wizard.R's CMR flow can hand off into it directly with the plan it just built (no
 # eri_cmr_last_plan() round-trip needed) instead of duplicating this control flow. eri_dq_review()
@@ -370,12 +434,16 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
           tryCatch(eri_logs_resolve(lp, data_con = data_con), error = function(e) NULL)
         }
       }
-      choice <- .eri_prompt_menu("Nothing outstanding. What next?", c("Approve", "Print report", "Exit"))
+      choice <- .eri_prompt_menu("Nothing outstanding. What next?",
+        c("Approve", "Add a note (not tied to a flag)", "Print report", "Exit"))
       if (choice == 1L) {
         eri_approve_cmr(country, period, plan = plan, data_con = data_con)
         status <- "approved"
         break
       } else if (choice == 2L) {
+        .eri_dq_review_add_note(country, period, data_con)
+        next
+      } else if (choice == 3L) {
         .eri_dq_review_print_report(flags, country, period)
         next
       } else {
@@ -386,7 +454,7 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
     choice <- .eri_prompt_menu(
       paste0(nrow(open_flags), " open flag(s) across the workbook. What do you want to do?"),
       c("Work through the open flags one at a time", "Re-run the DQ check",
-        "Force-approve anyway", "Print report", "Exit")
+        "Force-approve anyway", "Add a note (not tied to a flag)", "Print report", "Exit")
     )
     if (choice == 1L) {
       result <- .eri_dq_review_walk_flags(open_flags, country, data_con, local_path_env)
@@ -407,6 +475,8 @@ eri_dq_review <- function(country, period, plan = NULL, data_con = NULL) {
         break
       }
     } else if (choice == 4L) {
+      .eri_dq_review_add_note(country, period, data_con)
+    } else if (choice == 5L) {
       .eri_dq_review_print_report(flags, country, period)
     } else {
       break

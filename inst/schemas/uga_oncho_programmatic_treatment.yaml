@@ -77,10 +77,17 @@ columns:
     required: false
     type: numeric
     aliases: [TargetPop, target_population, eligible_pop, "#rbtrt_trttarget"]
-    # A present target of 0 (or negative) is implausible for a reporting district
-    # and is what this range floor catches; a MISSING target is common (roughly
-    # half of historical rows) and is not flagged, since it is not required.
+    # A present target of 0 (or negative) is implausible once a treatment round
+    # is actually underway, and is what this range floor catches; a MISSING
+    # target is common (roughly half of historical rows) and is not flagged,
+    # since it is not required. Gated on treatment_round > 1 -- round 1
+    # legitimately reports 0 in many districts before scale-up, confirmed
+    # 2026-07-15 against live UGA data.
     range: [1, 2000000]
+    range_when:
+      column: treatment_round
+      op: ">"
+      value: 1
 
   village_target:
     required: false

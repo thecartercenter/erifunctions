@@ -448,17 +448,31 @@ test_that("uga_oncho_programmatic_treatment schema resolves the real #rbtrt_ fie
   expect_false(isTRUE(schema$columns$sub_county$required))
 })
 
-test_that("uga_oncho schema flags a present-but-zero target_pop, not a missing one", {
+test_that("uga_oncho schema flags a present-but-zero target_pop once a treatment round > 1 is underway, not a missing one", {
   schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
   df <- tibble::tibble(
     `#rbtrt_year` = c("2026", "2026", "2026"),
     `#rbtrt_adm2` = c("Arua", "Gulu", "Jinja"),
     `#rbtrt_tot`  = c("100", "200", "300"),
+    `#rbtrt_trtrd`     = c("2", "2", "2"),
     `#rbtrt_trttarget` = c("0", NA_character_, "500")   # zero flagged; NA not required
   )
   res <- run_dq_checks(df, schema)
   expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
   expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_oncho schema does not flag a zero target_pop for round 1 or an unreported round", {
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026"),
+    `#rbtrt_adm2` = c("Arua", "Gulu"),
+    `#rbtrt_tot`  = c("100", "200"),
+    `#rbtrt_trtrd`     = c("1", NA_character_),   # round 1, and no round reported
+    `#rbtrt_trttarget` = c("0", "0")
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
 })
 
 test_that("uga_oncho schema flags a district not in the real allowed_values list", {

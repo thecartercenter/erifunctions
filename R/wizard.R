@@ -253,6 +253,7 @@
   period <- .eri_wizard_pick_period(filename)
   if (is.na(period)) return(invisible(NULL))
 
+  supersede_staged <- FALSE
   existing_plan <- .eri_wizard_detect_cmr_progress(country, period, data_con)
   if (!is.null(existing_plan) && nrow(existing_plan) > 0L) {
     if (.eri_wizard_confirm(paste0(
@@ -263,6 +264,20 @@
       .eri_flow_cmr_closing(status, country, period)
       return(invisible(NULL))
     }
+    # Not resuming -- this file will re-split a period that already has staged
+    # data. Find out whether it corrects/replaces the earlier submission
+    # (superseding the old staged files, per eri_split_cmr()'s
+    # supersede_staged) or is a genuinely separate update meant to sit
+    # alongside it -- silently picking one would either lose a real update or
+    # leave a stale duplicate for eri_approve()'s period match to promote.
+    replace_choice <- .eri_prompt_menu(
+      paste0(toupper(country), " / ", period, " already has staged data from an earlier session. What is this file?"),
+      c("A correction that replaces the earlier submission",
+        "An update to add alongside the existing data",
+        "Cancel")
+    )
+    if (replace_choice %in% c(0L, 3L)) return(invisible(NULL))
+    supersede_staged <- (replace_choice == 1L)
   }
 
   dest <- .eri_derive_cmr_destination(country, period, filename)
@@ -305,7 +320,8 @@
 
   sp <- .eri_wizard_step(function() {
     eri_split_cmr(local_path, country, period = period, data_con = data_con,
-                  projects_con = projects_con, mirror_pipeline = mirror_pipeline)
+                  projects_con = projects_con, mirror_pipeline = mirror_pipeline,
+                  supersede_staged = supersede_staged)
   })
   if (!sp$ok) return(invisible(NULL))
   plan <- sp$value
