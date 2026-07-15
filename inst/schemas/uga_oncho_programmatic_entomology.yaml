@@ -7,20 +7,18 @@ description: "Uganda onchocerciasis entomological (blackfly) surveys, RB Ento Su
 language: en
 time_grain: annual
 
-# Built 2026-07-16 from the CMR routing schema's field codes only
-# (inst/schemas/cmr/uga.yaml, #rb_ento_surv_* prefix) -- NOT from a real
-# ingested sheet. Uganda's "RB Ento Surveys" sheet (202606 real submission)
-# has the same known duplicate field-code template defect as sdn/ssd/eth
-# ("#rb_ento_surv_notes_jan" typed twice), which now blocks the whole
-# workbook per ADR-0022 -- eri_ingest_cmr() cannot successfully read this
-# sheet at all until the shared Carter Center master template is fixed.
+# Built 2026-07-16 against the REAL district values in Uganda's "RB Ento Surveys" sheet
+# (202606 real submission, #rb_ento_surv_* prefix), via read-only recon (structure/
+# aggregate counts only, no records persisted or shared).
 #
-# Structurally identical to sdn_oncho_programmatic_entomology.yaml (same
-# template, same defect, same "otz" field) since that one WAS built from a
-# real ingested sheet before the whole-workbook block existed. district has
-# no allowed_values here -- no real Uganda entomology data has been
-# successfully read yet to source a district list from; add one once a
-# corrected file lets this sheet actually ingest.
+# This sheet has the known duplicate field-code template defect ("#rb_ento_surv_notes_jan"
+# typed twice) shared with sdn/ssd/eth, which blocks eri_ingest_cmr() from building a clean
+# data frame for it (ADR-0022). That doesn't block reading a SPECIFIC column directly,
+# though -- the district list below was read straight from the raw sheet (readxl, no
+# dedup/cleanup needed for a single column), bypassing eri_ingest_cmr() entirely rather
+# than waiting on the template fix. 54 real districts, including two refugee-settlement
+# entries ("Adjumani Refugee Settlements", "Palabek Refugee Settlements",
+# "Palorinya Refugee Settlements") not seen in the treatment-sheet district rosters.
 
 temporal:
   year_col: year
@@ -45,6 +43,13 @@ columns:
     required: true
     type: character
     aliases: [District, district_name, adm2, "#rb_ento_surv_adm2"]
+    allowed_values: [Adjumani, "Adjumani Refugee Settlements", Amuru, Arua, Bududa,
+      Buhweju, Buliisa, Bushenyi, Gulu, "Gulu City", Hoima, Ibanda, Jinja, Kabarole,
+      Kagadi, Kamuli, Kanungu, Kasese, Kayunga, Kikuube, Kiryandongo, Kisoro, Kitagwenda,
+      Kitgum, KOBOKO, Kyenjojo, Lamwo, Lira, "MadI-Okollo", Manafwa, "Maracha/Teregago",
+      Masindi, Mayuge, Mbale, "Mbale City", Mitooma, MOYO, Mukono, Namisindwa, Nebbi,
+      Nwoya, Obongi, Omoro, Oyam, Pader, Pakwach, "Palabek Refugee Settlements",
+      "Palorinya Refugee Settlements", Rubanda, Rubirizi, Sironko, Terego, YUMBE, Zombo]
 
   sub_county:
     required: false

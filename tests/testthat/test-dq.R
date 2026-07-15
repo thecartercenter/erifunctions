@@ -508,6 +508,42 @@ test_that("uga_oncho schema flags a district not in the real allowed_values list
   expect_true(any(res$flags$column == "district"))
 })
 
+test_that("eth_rblf_programmatic_training folds ToT Regional/Zonal into the shared training schema", {
+  schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
+  # ToT-specific fields resolve
+  expect_true("#tot_reg_trn_donor" %in% schema$columns$donor$aliases)
+  expect_true("#tot_zone_trn_donor" %in% schema$columns$donor$aliases)
+  expect_true("#tot_reg_trn_tot_reg_" %in% schema$columns$tot$aliases)
+  expect_true("#tot_zone_trn_tot_zone_" %in% schema$columns$tot$aliases)
+  # district is NOT required -- "ToT Regional" genuinely has no adm2 field
+  expect_false(schema$columns$district$required)
+  # "ToT Zonal" real district values are present (including zone-level entries
+  # not seen in the other 8 sheets' woreda-level rosters)
+  expect_true("Agaro Town" %in% schema$columns$district$allowed_values)
+})
+
+test_that("eth_rblf_programmatic_training: a ToT Regional row (no district at all) is not flagged as missing a required column", {
+  schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#tot_reg_trn_year` = "2026", `#tot_reg_trn_adm1` = "Amhara",
+    `#tot_reg_trn_donor` = "Sightsavers", `#tot_reg_trn_tot_reg_` = "20"
+  )
+  res <- run_dq_checks(df, schema)
+  expect_false(any(res$flags$issue == "Required column is missing from data" & res$flags$column == "district"))
+})
+
+test_that("uga_oncho_programmatic_entomology and eth_oncho_programmatic_entomology have real district allowed_values", {
+  # Both sheets currently fail eri_ingest_cmr() (duplicate field code, ADR-0022), but the
+  # district list was read directly from the raw sheet, bypassing that abort.
+  uga <- load_dq_schema("uga", "oncho", "programmatic", "entomology", azcontainer = NULL)
+  expect_true("Adjumani" %in% uga$columns$district$allowed_values)
+  expect_true(length(uga$columns$district$allowed_values) > 1L)
+
+  eth <- load_dq_schema("eth", "oncho", "programmatic", "entomology", azcontainer = NULL)
+  expect_true("Awi" %in% eth$columns$district$allowed_values)
+  expect_true(length(eth$columns$district$allowed_values) > 1L)
+})
+
 test_that("eth_oncho_programmatic_treatment schema loads with the real district list", {
   schema <- load_dq_schema("eth", "oncho", "programmatic", "treatment", azcontainer = NULL)
   expect_true("#rbtrt_adm2" %in% schema$columns$district$aliases)
