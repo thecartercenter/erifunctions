@@ -31,12 +31,14 @@
   structurally**, not from a successfully-ingested sheet -- both sheets hit the same
   duplicate-field-code defect as "RB Ento Surveys" (ADR-0022) in Ethiopia's real submission.
   **Known gap, not yet resolved:** Ethiopia's "ToT Regional"/"ToT Zonal" sheets are still
-  routed to `rblf/training` by `inst/schemas/cmr/eth.yaml`, but excluded from this schema --
-  they have no `adm2`/district field at all (distinct donor/goal/tot_reg__male-fem shape),
-  so they can never satisfy this schema's required `district` column. Unlike CDD/CS, ToT
-  sheets ingest fine today, so ingesting one will produce a permanent, unresolvable "district
-  missing" flag under this schema until ToT gets its own `data_type` -- a design decision for
-  a maintainer, not made here.
+  routed to `rblf/training` by `inst/schemas/cmr/eth.yaml`, but excluded from this schema.
+  "ToT Regional" has no `adm2`/district field at all (distinct donor/goal/tot_reg__male-fem
+  shape) and can never satisfy this schema's required `district` column under any alias
+  mapping. "ToT Zonal" does have an `adm2` field, but a different shape otherwise (no
+  adm3/disease, distinct tot_zone__male/fem naming) -- not aliased pending a decision on
+  whether it fits this schema or needs its own `data_type`. Unlike CDD/CS, both ToT sheets
+  ingest fine today, so ingesting either will produce a permanent, unresolvable DQ flag under
+  this schema until this gap is resolved -- a design decision for a maintainer, not made here.
 
 # erifunctions 0.9.38
 

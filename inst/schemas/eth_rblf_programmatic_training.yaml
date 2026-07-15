@@ -22,11 +22,16 @@
 # mapping is exact even though it wasn't recon-verified against live data this pass.
 #
 # eth.yaml ALSO routes "ToT Regional"/"ToT Zonal" to rblf/training, deliberately NOT
-# aliased here: those two sheets have no adm2/district field at all (donor/goal/
-# tot_reg__male-fem instead), so they can never satisfy this schema's required `district`
-# column. Unlike CDD/CS (blocked entirely by the template defect), ToT sheets ingest fine
-# today -- ingesting one will produce a permanent, unresolvable "district missing" flag
-# under this schema until ToT gets its own data_type. Known gap, not silently dropped.
+# aliased here. "ToT Regional" has no adm2/district field at all (donor/goal/
+# tot_reg__male-fem instead), so it can never satisfy this schema's required `district`
+# column under any alias mapping. "ToT Zonal" DOES have an adm2 field (donor/goal/
+# tot_zone__male-fem alongside adm0/adm1/adm2) but a genuinely different field shape from
+# the other 8 sheets (no adm3/disease, distinct tot_zone__male/fem naming) -- not aliased
+# here either, pending a decision on whether it fits this schema or needs its own
+# data_type. Unlike CDD/CS (blocked entirely by the template defect), both ToT sheets
+# ingest fine today -- ingesting either will produce a permanent, unresolvable DQ flag
+# under this schema (missing `district` for Regional; missing required fields more
+# generally for Zonal) until this gap is resolved. Known gap, not silently dropped.
 
 country: eth
 disease: rblf
