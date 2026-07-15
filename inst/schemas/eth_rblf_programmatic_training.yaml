@@ -28,16 +28,30 @@
 # distinct field-naming convention:
 # - Both use "donor"/"goal" (a new optional column here) rather than a district-level
 #   target, and name their totals "tot_reg_"/"tot_zone_" instead of the other 8 types'
-#   plain "tot" (e.g. "#tot_reg_trn_tot_reg__male" is that prefix's "male_trained").
+#   plain "tot" (e.g. "#tot_reg_trn_tot_reg__male" is that prefix's "male_trained"; the
+#   ungendered "#tot_reg_trn_tot_reg_"/"#tot_zone_trn_tot_zone_" aliased into `tot` were
+#   both directly observed as real columns in the 202605 raw sheet, not inferred from the
+#   other 8 types' naming convention).
 # - "ToT Regional" genuinely has NO adm2/district field (only adm0/adm1) -- this is why
 #   `district` below is `required: false` rather than `true`: since each ingest only ever
 #   carries ONE sheet's columns, relaxing this doesn't weaken district validation for the
-#   other 9 sheet types (their own adm2 alias is always present when their data is
-#   ingested; `required` only fires on a column missing ENTIRELY from that ingest, not a
-#   per-row blank -- see .dq_check_required()).
+#   other 9 sheet types AS LONG AS each keeps reporting adm2 (their own alias is always
+#   present when their data is ingested today; `required` only fires on a column missing
+#   ENTIRELY from that ingest, not a per-row blank -- see .dq_check_required()). If a
+#   future template revision drops adm2 from one of the other 9 sheets, that specific
+#   regression would go uncaught by this check -- an accepted, narrow trade-off, not a
+#   general weakening.
 # - "ToT Zonal" DOES have adm2 (real values folded into district's allowed_values below,
 #   including two zone-level entries -- "Agaro Town"/"Jimma Town" -- not seen in the other
 #   8 sheets' woreda-level rosters) but, like Regional, has no adm3/disease field.
+#
+# CAVEAT for anyone rolling up `tot` across the whole rblf/training measure (e.g. via
+# eri_query()): ToT counts "people trained as trainers" (cascade capacity), a different
+# thing from the other 8 sheets' "front-line workers trained" (direct service delivery) --
+# summing across both without distinguishing them conflates two different metrics. No
+# discriminator column exists to separate them (ADR-0012 already combines 8 different
+# training audiences with none); worth a `training_type`/`sheet` column in a future ADR if
+# this measure needs to support that kind of analysis.
 
 country: eth
 disease: rblf

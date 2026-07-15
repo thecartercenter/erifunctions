@@ -12,8 +12,11 @@ Two follow-ups to 0.9.39's new DQ schemas:
   instead of the other 8 types' plain `tot`). `district` is now `required: false` on this
   schema specifically: "ToT Regional" genuinely has no district-level field at all, and
   since each ingest only ever carries one sheet's columns, relaxing this doesn't weaken
-  district validation for the other 9 sheet types (their own alias is always present when
-  their data is ingested).
+  district validation for the other 9 sheet types today (an accepted, narrow trade-off if
+  a future template revision ever drops a sheet's own adm2 -- see the schema's header
+  comment). **Caveat for anyone rolling up `tot` across this measure:** ToT counts "people
+  trained as trainers," a different metric from the other 8 sheets' "front-line workers
+  trained" -- no discriminator column exists yet to separate them.
 - **`uga_oncho_programmatic_entomology.yaml`/`eth_oncho_programmatic_entomology.yaml` now
   have real district `allowed_values`** (54 and 39 districts respectively), read directly
   from the raw "RB Ento Surveys" sheet -- bypassing `eri_ingest_cmr()`'s duplicate-field-code
