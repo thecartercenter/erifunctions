@@ -820,6 +820,19 @@ test_that("eri_split_cmr mirror_pipeline errors clearly for an unregistered pipe
   )
 })
 
+test_that("eri_split_cmr normalizes country casing before the mirror country_map lookup (ADR-0020)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  # "UGA" normalizes to "uga", which IS registered for rb-expansion -- so this
+  # must reach the same "Could not parse" error as the lowercase "uga" case
+  # above, not "not registered for pipeline" (the "zzz" case above).
+  expect_error(
+    eri_split_cmr(tmp, "UGA", dry_run = TRUE, mirror_pipeline = "rb-expansion"),
+    "Could not parse"
+  )
+})
+
 test_that("eri_split_cmr dry_run alerts clean when nothing was skipped or warned", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp, sheet_name = "RB Treatment")
@@ -990,6 +1003,25 @@ test_that("eri_approve_cmr blocks and reports when a measure was never DQ-checke
   result <- eri_approve_cmr("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
   expect_equal(nrow(result), 2L)
   expect_true(all(grepl("never DQ-checked", result$issue)))
+})
+
+test_that("eri_approve_cmr normalizes country casing before calling eri_cmr_last_plan (ADR-0020)", {
+  captured_country <- NULL
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(country, period, data_con = NULL) {
+      captured_country <<- country
+      cli::cli_abort("stop here for the test")
+    },
+    .package = "erifunctions"
+  )
+
+  tryCatch(
+    eri_approve_cmr("UGA", "202406", data_con = structure(list(), class = "mock")),
+    error = function(e) NULL
+  )
+  # plan = NULL (default) -> eri_approve_cmr() calls eri_cmr_last_plan(country, ...)
+  # itself; without normalizing first, it would pass "UGA" straight through.
+  expect_equal(captured_country, "uga")
 })
 
 test_that("eri_approve_cmr blocks on unresolved DQ flags and does not call eri_approve", {

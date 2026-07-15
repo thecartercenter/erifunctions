@@ -19,7 +19,20 @@
   `.KNOWN_COUNTRY_CODES`, `R/wizard.R`'s `.KNOWN_DISEASES`) that could already drift
   from each other; `eri_data_model()` now shows `country`/`disease` alongside the
   other three axes.
-- See [ADR-0020](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0020-canonical-country-disease-codes.md).
+- **`eri_approve()`, `eri_stage()`, `eri_ingest()`, `eri_dq_log()`, `eri_split_cmr()`,
+  `eri_stage_cmr()`, and `eri_approve_cmr()` also normalize `country`/`disease` at
+  their own entry point**, not just via `eri_data_path()`. Each of these hand-builds
+  a log directory alongside the `eri_data_path()`-derived staged/processed/raw dir in
+  the same call; without normalizing both from the same value, the log could still
+  land at a differently-cased sibling path (e.g. `UGA/LF/.../logs/` next to
+  `uga/lf/.../processed/`) — the same failure class as #303, one hop away.
+- The `atlantis` training sandbox (needed for `eri_data_path()`'s general validation,
+  used by CMR/DQ sandbox testing) is excluded from `eri_odk_register()`'s
+  hard-validated country set and the ODK wizard's country picker — ODK registration
+  is production-only and already has its own sandbox convention (`uga`/`demo`).
+- See [ADR-0020](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0020-canonical-country-disease-codes.md)
+  (amends [ADR-0012](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0012-source-measure-data-model.md)
+  point 5).
 
 # erifunctions 0.9.36
 

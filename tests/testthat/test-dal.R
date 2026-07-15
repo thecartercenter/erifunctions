@@ -181,6 +181,20 @@ test_that("eri_stage errors clearly for unregistered country", {
   )
 })
 
+test_that("eri_stage normalizes country casing before the country_map lookup (ADR-0020)", {
+  # "DR" normalizes to "dr", which IS registered for hsp-mal -- so this must
+  # NOT hit "not registered" (the "zz" case above); without normalizing
+  # before the country_map lookup, "DR" would incorrectly hit it too.
+  err <- tryCatch({
+    eri_stage("hsp-mal", "DR", "malaria",
+              projects_con = structure(list(), class = "mock"),
+              data_con     = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
+})
+
 test_that("hsp-mal pipeline registry has required fields", {
   reg <- .eri_pipeline_registry[["hsp-mal"]]
   expect_false(is.null(reg))
@@ -205,6 +219,19 @@ test_that("eri_stage_cmr errors for unregistered country", {
                   data_con     = structure(list(), class = "mock")),
     "not registered"
   )
+})
+
+test_that("eri_stage_cmr normalizes country casing before the country_map lookup (ADR-0020)", {
+  # "UGA" normalizes to "uga", which IS registered for rb-expansion -- so this
+  # must NOT hit "not registered" (the "zz" case above).
+  err <- tryCatch({
+    eri_stage_cmr("UGA",
+                  projects_con = structure(list(), class = "mock"),
+                  data_con     = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
 })
 
 test_that("eri_stage_cmr errors when source directory not found", {
@@ -325,6 +352,21 @@ test_that("eri_ingest errors for a country not registered to the mirror pipeline
                data_con        = structure(list(), class = "mock")),
     "not registered"
   )
+})
+
+test_that("eri_ingest normalizes country casing before the mirror country_map lookup (ADR-0020)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writexl::write_xlsx(tibble::tibble(x = 1), tmp)
+  # "DR" normalizes to "dr", which IS registered for hsp-mal -- so this must
+  # NOT hit "not registered" (the "zz" case above).
+  err <- tryCatch({
+    eri_ingest(tmp, "DR", "malaria",
+               mirror_pipeline = "hsp-mal",
+               data_con        = structure(list(), class = "mock"))
+    NULL
+  }, error = function(e) conditionMessage(e))
+  expect_false(is.null(err))
+  expect_false(grepl("not registered", err, fixed = TRUE))
 })
 
 test_that("eri_ingest no longer needs .eri_schema_country_map (retired)", {
