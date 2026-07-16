@@ -1,5 +1,40 @@
 # Changelog
 
+## erifunctions 0.9.40
+
+### Fold ToT into eth’s training schema; real district lists for the entomology schemas
+
+Two follow-ups to 0.9.39’s new DQ schemas:
+
+- **`eth_rblf_programmatic_training.yaml` now includes Ethiopia’s “ToT
+  Regional”/“ToT Zonal” (Training of Trainers) sheets**, instead of
+  leaving them unsupported.
+  [`eri_split_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_split_cmr.md)
+  already routes them to `rblf/training` like every other training
+  sheet, so they belong in the same schema, not a separate `data_type` –
+  they just needed alias coverage for their distinct field-naming
+  convention (`donor`/`goal`, and totals named `tot_reg_`/`tot_zone_`
+  instead of the other 8 types’ plain `tot`). `district` is now
+  `required: false` on this schema specifically: “ToT Regional”
+  genuinely has no district-level field at all, and since each ingest
+  only ever carries one sheet’s columns, relaxing this doesn’t weaken
+  district validation for the other 9 sheet types today (an accepted,
+  narrow trade-off if a future template revision ever drops a sheet’s
+  own adm2 – see the schema’s header comment). **Caveat for anyone
+  rolling up `tot` across this measure:** ToT counts “people trained as
+  trainers,” a different metric from the other 8 sheets’ “front-line
+  workers trained” – no discriminator column exists yet to separate
+  them.
+- **`uga_oncho_programmatic_entomology.yaml`/`eth_oncho_programmatic_entomology.yaml`
+  now have real district `allowed_values`** (54 and 39 districts
+  respectively), read directly from the raw “RB Ento Surveys” sheet –
+  bypassing
+  [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)’s
+  duplicate-field-code abort (ADR-0022) rather than waiting on it, since
+  only the district column was needed, not a full clean ingest.
+  Previously left unconstrained pending “once a corrected template lets
+  the sheet ingest.”
+
 ## erifunctions 0.9.39
 
 ### Close the CMR DQ schema coverage gap for eth/nga/mad/tcd, and uga’s remaining gap

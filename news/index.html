@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.39</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.40</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.39/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.40" id="erifunctions-0940">erifunctions 0.9.40<a class="anchor" aria-label="anchor" href="#erifunctions-0940"></a></h2>
+<div class="section level3">
+<h3 id="fold-tot-into-eths-training-schema-real-district-lists-for-the-entomology-schemas-0-9-40">Fold ToT into eth’s training schema; real district lists for the entomology schemas<a class="anchor" aria-label="anchor" href="#fold-tot-into-eths-training-schema-real-district-lists-for-the-entomology-schemas-0-9-40"></a></h3>
+<p>Two follow-ups to 0.9.39’s new DQ schemas:</p>
+<ul><li>
+<strong><code>eth_rblf_programmatic_training.yaml</code> now includes Ethiopia’s “ToT Regional”/“ToT Zonal” (Training of Trainers) sheets</strong>, instead of leaving them unsupported. <code><a href="../reference/eri_split_cmr.html">eri_split_cmr()</a></code> already routes them to <code>rblf/training</code> like every other training sheet, so they belong in the same schema, not a separate <code>data_type</code> – they just needed alias coverage for their distinct field-naming convention (<code>donor</code>/<code>goal</code>, and totals named <code>tot_reg_</code>/<code>tot_zone_</code> instead of the other 8 types’ plain <code>tot</code>). <code>district</code> is now <code>required: false</code> on this schema specifically: “ToT Regional” genuinely has no district-level field at all, and since each ingest only ever carries one sheet’s columns, relaxing this doesn’t weaken district validation for the other 9 sheet types today (an accepted, narrow trade-off if a future template revision ever drops a sheet’s own adm2 – see the schema’s header comment). <strong>Caveat for anyone rolling up <code>tot</code> across this measure:</strong> ToT counts “people trained as trainers,” a different metric from the other 8 sheets’ “front-line workers trained” – no discriminator column exists yet to separate them.</li>
+<li>
+<strong><code>uga_oncho_programmatic_entomology.yaml</code>/<code>eth_oncho_programmatic_entomology.yaml</code> now have real district <code>allowed_values</code></strong> (54 and 39 districts respectively), read directly from the raw “RB Ento Surveys” sheet – bypassing <code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code>’s duplicate-field-code abort (ADR-0022) rather than waiting on it, since only the district column was needed, not a full clean ingest. Previously left unconstrained pending “once a corrected template lets the sheet ingest.”</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.39" id="erifunctions-0939">erifunctions 0.9.39<a class="anchor" aria-label="anchor" href="#erifunctions-0939"></a></h2>
 <div class="section level3">
