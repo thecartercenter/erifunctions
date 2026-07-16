@@ -28,6 +28,12 @@ time_grain: annual
 # UNVERIFIED CEILING: goal/tot ranges below are set from the observed spread
 # across all 6 training types this period (goal up to ~2,832 for CDD Training);
 # not confirmed against a full year of data.
+#
+# training_type (added 2026-07-16) discriminates which of the 6 sheets a row
+# came from -- aliased to `sheet`, the real sheet name eri_ingest_cmr() now
+# stamps onto every row (added specifically so combined schemas like this one
+# can tell their sources apart; rolling up `tot` across the whole measure
+# without it would conflate 6 different training audiences under one number).
 
 temporal:
   year_col: year
@@ -37,6 +43,13 @@ preprocessing:
   - remove_smart_quotes
 
 columns:
+  training_type:
+    required: true
+    type: character
+    aliases: [sheet]
+    allowed_values: ["CDD Training", "CS Training", "MMDP (surgery) Training",
+      "MMDP (patient) Training", "Field Ento Training", "Health Workers Training"]
+
   year:
     required: true
     type: numeric

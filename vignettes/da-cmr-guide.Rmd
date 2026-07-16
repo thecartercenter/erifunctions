@@ -181,13 +181,18 @@ rb <- eri_ingest_cmr(report, sheet = "RB Treatment", country = "uga")
 #> ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.
 
 rb
-#> # A tibble: 3 × 7
-#>   country `#rbtrt_year` `#rbtrt_month` `#rbtrt_adm1` `#rbtrt_adm2` `#rbtrt_target` `#rbtrt_treated`
-#>   <chr>   <chr>         <chr>          <chr>         <chr>         <chr>           <chr>
-#> 1 uga     2024          06             Central       Kampala       12000           11400
-#> 2 uga     2024          06             Western       Mbarara       8000            7600
-#> 3 uga     2024          06             Eastern       Soroti        6000            5800
+#> # A tibble: 3 × 9
+#>   country sheet        excel_row `#rbtrt_year` `#rbtrt_month` `#rbtrt_adm1` `#rbtrt_adm2` `#rbtrt_target` `#rbtrt_treated`
+#>   <chr>   <chr>            <int> <chr>         <chr>          <chr>         <chr>         <chr>           <chr>
+#> 1 uga     RB Treatment         6 2024          06             Central       Kampala       12000           11400
+#> 2 uga     RB Treatment         7 2024          06             Western       Mbarara       8000            7600
+#> 3 uga     RB Treatment         8 2024          06             Eastern       Soroti        6000            5800
 ```
+
+`sheet` (the real sheet name) and `excel_row` (each row's actual position in the workbook) are
+always there alongside `country` and the field-code columns -- `sheet` is what lets a schema
+covering several sheets routed to the same measure (e.g. the combined training schemas) tell
+which one a row came from.
 
 Each sheet is its own programme, parsed the same way:
 

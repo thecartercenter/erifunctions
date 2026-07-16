@@ -508,6 +508,41 @@ test_that("uga_oncho schema flags a district not in the real allowed_values list
   expect_true(any(res$flags$column == "district"))
 })
 
+test_that("run_dq_checks resolves training_type from the sheet column eri_ingest_cmr() stamps", {
+  schema <- load_dq_schema("sdn", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    sheet = "CDD Training", `#cddtrn_year` = "2026", `#cddtrn_adm2` = "Barbar",
+    `#cddtrn_tot` = "10"
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "training_type", ]), 0L)
+})
+
+test_that("run_dq_checks flags a training_type value not in the real sheet-name list", {
+  schema <- load_dq_schema("sdn", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    sheet = "Not A Real Sheet", `#cddtrn_year` = "2026", `#cddtrn_adm2` = "Barbar",
+    `#cddtrn_tot` = "10"
+  )
+  res <- run_dq_checks(df, schema)
+  expect_true(any(res$flags$column == "training_type"))
+})
+
+test_that("every rblf_programmatic_training schema's training_type is required and lists its real sheet names", {
+  cases <- list(
+    list(country = "sdn", n = 6), list(country = "ssd", n = 6),
+    list(country = "uga", n = 8), list(country = "nga", n = 9),
+    list(country = "mad", n = 7), list(country = "tcd", n = 8),
+    list(country = "eth", n = 10)
+  )
+  for (cs in cases) {
+    schema <- load_dq_schema(cs$country, "rblf", "programmatic", "training", azcontainer = NULL)
+    expect_true(schema$columns$training_type$required, info = cs$country)
+    expect_true("sheet" %in% schema$columns$training_type$aliases, info = cs$country)
+    expect_equal(length(schema$columns$training_type$allowed_values), cs$n, info = cs$country)
+  }
+})
+
 test_that("eth_rblf_programmatic_training folds ToT Regional/Zonal into the shared training schema", {
   schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
   # ToT-specific fields resolve
