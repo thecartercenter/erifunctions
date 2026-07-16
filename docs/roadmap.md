@@ -82,6 +82,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0020](adr/0020-canonical-country-disease-codes.md) | Canonical, normalized (lowercase + trim) `country`/`disease`, validated against a registry; amends ADR-0012 point 5 | Prevent case-drift path duplication (#303/#306) |
 | [0021](adr/0021-mirror-filename-period-leading.md) | Legacy `projects`-blob mirror filename leads with period (`{period}_{country}_{timestamp}`), matching the real convention | CMR pilot-session filename mismatch |
 | [0022](adr/0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet; reverses the v0.9.8 per-sheet-tolerant behavior | CMR pilot-session template-defect handling |
+| [0023](adr/0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row, so a combined schema (e.g. training) can discriminate its sources | `training_type` discriminator for rolled-up measures |
 
 ---
 

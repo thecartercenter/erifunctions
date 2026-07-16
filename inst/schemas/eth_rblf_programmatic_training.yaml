@@ -45,13 +45,13 @@
 #   including two zone-level entries -- "Agaro Town"/"Jimma Town" -- not seen in the other
 #   8 sheets' woreda-level rosters) but, like Regional, has no adm3/disease field.
 #
-# CAVEAT for anyone rolling up `tot` across the whole rblf/training measure (e.g. via
-# eri_query()): ToT counts "people trained as trainers" (cascade capacity), a different
-# thing from the other 8 sheets' "front-line workers trained" (direct service delivery) --
-# summing across both without distinguishing them conflates two different metrics. No
-# discriminator column exists to separate them (ADR-0012 already combines 8 different
-# training audiences with none); worth a `training_type`/`sheet` column in a future ADR if
-# this measure needs to support that kind of analysis.
+# training_type (added 2026-07-15) discriminates which of the 10 sheets a row came from --
+# aliased to `sheet`, the real sheet name eri_ingest_cmr() now stamps onto every row. This is
+# what lets anyone rolling up `tot` across the whole measure (e.g. via eri_query()) separate
+# ToT's "people trained as trainers" (cascade capacity) from the other 8 sheets' "front-line
+# workers trained" (direct service delivery) -- summing across both without filtering by
+# training_type still conflates two different metrics, but the column to do that filtering
+# now exists.
 
 country: eth
 disease: rblf
@@ -70,6 +70,14 @@ preprocessing:
   - remove_smart_quotes
 
 columns:
+  training_type:
+    required: true
+    type: character
+    aliases: [sheet]
+    allowed_values: ["CDD Training", "CS Training", "MMDP (surgery) Training",
+      "MMDP (patient) Training", "Field Ento Training", "Hope Group Leader Training",
+      "HW Training", "Lab Training", "ToT Regional", "ToT Zonal"]
+
   year:
     required: true
     type: numeric

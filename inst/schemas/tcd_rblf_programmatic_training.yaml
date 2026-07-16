@@ -8,6 +8,12 @@
 # per (country, disease, data_source, data_type). Each ingested sheet only ever has ONE
 # prefix present, so aliasing every prefix under one canonical column set works:
 # run_dq_checks() resolves whichever alias matches the data actually present.
+#
+# training_type (added 2026-07-15) discriminates which of the 8 sheets a row
+# came from -- aliased to `sheet`, the real sheet name eri_ingest_cmr() now
+# stamps onto every row (added specifically so combined schemas like this one
+# can tell their sources apart; rolling up `tot` across the whole measure
+# without it would conflate 8 different training audiences under one number).
 
 country: tcd
 disease: rblf
@@ -24,6 +30,15 @@ temporal:
 preprocessing:
   - remove_smart_quotes
 columns:
+  training_type:
+    required: true
+    type: character
+    aliases: [sheet]
+    allowed_values: ["Formation Distributeurs Comm", "Formation Superviseurs Comm",
+      "PCMPI (Chirurgie) Formation", "PCMPI Formation (Patient)",
+      "Formation Ento de Terrain", "Formation Trav Sante", "Formation Leader Groupe Hope",
+      "Formation Professeurs"]
+
   year:
     required: true
     type: numeric
