@@ -35,13 +35,21 @@ make_cmr_xlsx <- function(path,
 
 #### Tests for eri_ingest_cmr ####
 
-test_that("eri_ingest_cmr returns tibble with field code columns plus excel_row", {
+test_that("eri_ingest_cmr returns tibble with field code columns plus sheet/excel_row", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp)
   out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
   expect_s3_class(out, "tbl_df")
-  expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
-  expect_equal(ncol(out), 4L)  # 3 field codes + excel_row
+  expect_true(all(startsWith(setdiff(names(out), c("excel_row", "sheet")), "#")))
+  expect_equal(ncol(out), 5L)  # 3 field codes + sheet + excel_row
+  expect_equal(unique(out$sheet), "RB Treatment")
+})
+
+test_that("eri_ingest_cmr's sheet column resolves the real name even when sheet is passed as a 1-based index", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp, sheet_name = "RB Treatment")
+  out <- eri_ingest_cmr(tmp, sheet = 1L)
+  expect_equal(unique(out$sheet), "RB Treatment")
 })
 
 test_that("eri_ingest_cmr's excel_row points at the real workbook row (data starts at row 6)", {
@@ -141,7 +149,7 @@ test_that("eri_ingest_cmr ignores non-field-code columns (merged header cols)", 
   )
   out <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
   expect_false(any(c("GroupHeader", "AnotherHeader") %in% names(out)))
-  expect_true(all(startsWith(setdiff(names(out), "excel_row"), "#")))
+  expect_true(all(startsWith(setdiff(names(out), c("excel_row", "sheet")), "#")))
 })
 
 test_that("eri_ingest_cmr aborts on a real-world duplicate field code in row 5", {

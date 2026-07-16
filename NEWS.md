@@ -1,3 +1,19 @@
+# erifunctions 0.9.41
+
+## Add a training_type discriminator to every combined training schema
+
+`eri_ingest_cmr()` now stamps a `sheet` column (the real sheet name, resolved even when
+`sheet` was passed as an index or slug) onto every row it returns. All 7
+`{country}_rblf_programmatic_training.yaml` schemas (`sdn`, `ssd`, `uga`, `eth`, `nga`, `mad`,
+`tcd`) alias it into a new required `training_type` column, with `allowed_values` listing
+that country's real training sheet names.
+
+This closes the gap flagged in 0.9.40's review: rolling up `tot` across a combined training
+measure (e.g. via `eri_query()`) previously had no way to distinguish which of several
+training audiences (CDD vs. Field Ento vs. ToT, etc.) a row came from -- `training_type` is
+that discriminator. `eth`'s schema in particular now lets someone separate ToT's "people
+trained as trainers" from the other 9 sheets' "front-line workers trained."
+
 # erifunctions 0.9.40
 
 ## Fold ToT into eth's training schema; real district lists for the entomology schemas

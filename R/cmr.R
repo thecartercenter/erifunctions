@@ -80,7 +80,10 @@ load_cmr_schema <- function(country) {
 #'   aliases are resolved. Default `NULL`.
 #'
 #' @returns A tibble with field-code column names and data from row 6 onward,
-#'   plus an `excel_row` column recording each row's real position in the
+#'   plus a `sheet` column (the real sheet name, resolved even when `sheet` was
+#'   passed as an index or slug -- lets a schema covering several sheets routed
+#'   to the same disease/data_type, e.g. combined trainings, tell them apart)
+#'   and an `excel_row` column recording each row's real position in the
 #'   workbook (survives all-NA spacer-row dropping, so it stays accurate even
 #'   after rows are removed). If `country` is supplied it is prepended as a
 #'   `country` column.
@@ -107,17 +110,22 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
     }
   }
 
+  available <- readxl::excel_sheets(path)
+
   # Fail with a helpful, named error rather than readxl's opaque one when the
   # sheet (after alias resolution) isn't in the workbook.
-  if (is.character(actual_sheet)) {
-    available <- readxl::excel_sheets(path)
-    if (!actual_sheet %in% available) {
-      cli::cli_abort(c(
-        "Sheet {.val {actual_sheet}} not found in {.path {basename(path)}}.",
-        "i" = "Available sheets: {.val {available}}."
-      ))
-    }
+  if (is.character(actual_sheet) && !actual_sheet %in% available) {
+    cli::cli_abort(c(
+      "Sheet {.val {actual_sheet}} not found in {.path {basename(path)}}.",
+      "i" = "Available sheets: {.val {available}}."
+    ))
   }
+
+  # The real sheet name, whether `sheet` was passed as a name, a slug (resolved
+  # above), or a 1-based index -- stamped onto every row below so a combined
+  # schema (several sheets routed to the same disease/data_type, e.g.
+  # rblf/training) can tell which sheet a row actually came from.
+  sheet_name <- if (is.character(actual_sheet)) actual_sheet else available[[actual_sheet]]
 
   raw <- readxl::read_excel(path, sheet = actual_sheet, skip = 4,
                              col_names = TRUE, .name_repair = "minimal")
@@ -162,6 +170,7 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
   df        <- tibble::as_tibble(df[!all_na, , drop = FALSE])
   excel_row <- excel_row[!all_na]
   df        <- tibble::add_column(df, excel_row = excel_row, .before = 1)
+  df        <- tibble::add_column(df, sheet = sheet_name, .before = 1)
 
   if (!is.null(country)) {
     df <- tibble::add_column(df, country = country, .before = 1)
