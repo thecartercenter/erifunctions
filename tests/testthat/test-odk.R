@@ -115,6 +115,21 @@ test_that(".odk_creds errors when con is not an odk_connection", {
   )
 })
 
+test_that(".odk_creds errors when resolved auth is empty", {
+  expect_error(
+    .odk_creds(NULL, "https://fallback.org/", ""),
+    "No ODK credentials resolved"
+  )
+})
+
+test_that(".odk_creds errors when con's token is empty", {
+  con <- structure(
+    list(url = "https://odk.example.org/", token = ""),
+    class = "odk_connection"
+  )
+  expect_error(.odk_creds(con, NULL, NULL), "No ODK credentials resolved")
+})
+
 #### Tests for empty-result guard ####
 
 test_that("list_odk_projects empty-result tibble has correct columns", {
