@@ -93,6 +93,12 @@ test_that("eri_ingest_cmr errors helpfully when the sheet is missing", {
                "Sheet .* not found")
 })
 
+test_that("eri_ingest_cmr errors helpfully (not R's raw 'subscript out of bounds') on an out-of-range sheet index", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp, sheet_name = "RB Treatment")
+  expect_error(eri_ingest_cmr(tmp, sheet = 5L), "out of range")
+})
+
 test_that("eri_ingest_cmr drops all-NA spacer rows", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,

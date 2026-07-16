@@ -12,7 +12,14 @@ This closes the gap flagged in 0.9.40's review: rolling up `tot` across a combin
 measure (e.g. via `eri_query()`) previously had no way to distinguish which of several
 training audiences (CDD vs. Field Ento vs. ToT, etc.) a row came from -- `training_type` is
 that discriminator. `eth`'s schema in particular now lets someone separate ToT's "people
-trained as trainers" from the other 9 sheets' "front-line workers trained."
+trained as trainers" from the other 9 sheets' "front-line workers trained." See
+[ADR-0023](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0023-cmr-ingest-stamps-sheet-name.md).
+
+**Migration note:** any `rblf/training` parquet already staged (not yet approved) before this
+change was split without a `sheet` column, so it will now be missing `training_type`
+(`required: true`) on its next DQ check. Re-run `eri_split_cmr(..., supersede_staged = TRUE)`
+against the same source workbook to refresh it (same mechanism as any other staged-data
+fix, per ADR-0017) -- nothing migrates automatically.
 
 # erifunctions 0.9.40
 

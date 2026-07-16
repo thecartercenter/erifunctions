@@ -112,12 +112,19 @@ eri_ingest_cmr <- function(path, sheet, country = NULL) {
 
   available <- readxl::excel_sheets(path)
 
-  # Fail with a helpful, named error rather than readxl's opaque one when the
-  # sheet (after alias resolution) isn't in the workbook.
+  # Fail with a helpful, named error rather than readxl's/R's opaque one when
+  # the sheet (after alias resolution) isn't in the workbook -- by name, or by
+  # an out-of-range 1-based index.
   if (is.character(actual_sheet) && !actual_sheet %in% available) {
     cli::cli_abort(c(
       "Sheet {.val {actual_sheet}} not found in {.path {basename(path)}}.",
       "i" = "Available sheets: {.val {available}}."
+    ))
+  }
+  if (!is.character(actual_sheet) && !actual_sheet %in% seq_along(available)) {
+    cli::cli_abort(c(
+      "Sheet index {.val {actual_sheet}} is out of range for {.path {basename(path)}}.",
+      "i" = "This workbook has {length(available)} sheet{?s}: {.val {available}}."
     ))
   }
 
