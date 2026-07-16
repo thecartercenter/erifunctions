@@ -19,7 +19,10 @@ trained as trainers" from the other 9 sheets' "front-line workers trained." See
 change was split without a `sheet` column, so it will now be missing `training_type`
 (`required: true`) on its next DQ check. Re-run `eri_split_cmr(..., supersede_staged = TRUE)`
 against the same source workbook to refresh it (same mechanism as any other staged-data
-fix, per ADR-0017) -- nothing migrates automatically.
+fix, per ADR-0017) -- nothing migrates automatically. As of 2026-07-15, this affects real
+staged data: `ssd` (6 files) and `uga` (8 files) both have staged `rblf/training` parquet
+that will need a re-split; these counts will change as DAs work through their own backlogs,
+so treat them as a pointer to check `eri_logs()`, not a permanent count.
 
 # erifunctions 0.9.40
 

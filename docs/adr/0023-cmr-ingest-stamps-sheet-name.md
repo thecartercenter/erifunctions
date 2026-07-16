@@ -1,7 +1,7 @@
 # ADR-0023 — `eri_ingest_cmr()` stamps the real sheet name onto every row
 
 - **Status:** Accepted
-- **Date:** 2026-07-16
+- **Date:** 2026-07-15
 
 ## Context
 
