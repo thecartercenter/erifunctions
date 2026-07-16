@@ -59,3 +59,11 @@ explicit rationale and a logged trail (which the pre-v0.9.8 behavior never had).
 - Reverses the tolerant behavior introduced in v0.9.8 (`eb2b5530`/`863eb5e9`,
   "Sudan/South Sudan pilot").
 - `R/cmr.R`'s `eri_ingest_cmr()` and `eri_split_cmr()`.
+- **Working around the abort for schema authoring:** a sheet blocked by this ADR can still
+  have specific columns (e.g. a district list) read directly via
+  `readxl::read_excel(path, sheet = sheet, skip = 4, col_names = TRUE)` — bypassing
+  `eri_ingest_cmr()` entirely, since only that ADR's duplicate-code *dedup* logic (not raw
+  Excel reading) is affected. Used in v0.9.40 to source real `allowed_values` for
+  `uga_oncho_programmatic_entomology.yaml`/`eth_oncho_programmatic_entomology.yaml` while
+  their "RB Ento Surveys" sheet was still blocked. Reach for this before leaving a schema
+  column unconstrained "pending a template fix."
