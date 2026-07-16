@@ -46,11 +46,14 @@ eri_ingest_cmr(path, sheet, country = NULL)
 
 ## Value
 
-A tibble with field-code column names and data from row 6 onward, plus
-an `excel_row` column recording each row's real position in the workbook
-(survives all-NA spacer-row dropping, so it stays accurate even after
-rows are removed). If `country` is supplied it is prepended as a
-`country` column.
+A tibble with field-code column names and data from row 6 onward, plus a
+`sheet` column (the real sheet name, resolved even when `sheet` was
+passed as an index or slug – lets a schema covering several sheets
+routed to the same disease/data_type, e.g. combined trainings, tell them
+apart) and an `excel_row` column recording each row's real position in
+the workbook (survives all-NA spacer-row dropping, so it stays accurate
+even after rows are removed). If `country` is supplied it is prepended
+as a `country` column.
 
 ## See also
 

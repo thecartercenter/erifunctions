@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.40</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.41</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.40/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -321,12 +321,17 @@ at your staged file.)</p>
 <span><span class="co">#&gt; ✔ CMR sheet "RB Treatment": 3 data rows, 6 field codes.</span></span>
 <span></span>
 <span><span class="va">rb</span></span>
-<span><span class="co">#&gt; # A tibble: 3 × 7</span></span>
-<span><span class="co">#&gt;   country `#rbtrt_year` `#rbtrt_month` `#rbtrt_adm1` `#rbtrt_adm2` `#rbtrt_target` `#rbtrt_treated`</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;         &lt;chr&gt;          &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;           &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 uga     2024          06             Central       Kampala       12000           11400</span></span>
-<span><span class="co">#&gt; 2 uga     2024          06             Western       Mbarara       8000            7600</span></span>
-<span><span class="co">#&gt; 3 uga     2024          06             Eastern       Soroti        6000            5800</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 3 × 9</span></span>
+<span><span class="co">#&gt;   country sheet        excel_row `#rbtrt_year` `#rbtrt_month` `#rbtrt_adm1` `#rbtrt_adm2` `#rbtrt_target` `#rbtrt_treated`</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;            &lt;int&gt; &lt;chr&gt;         &lt;chr&gt;          &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;           &lt;chr&gt;</span></span>
+<span><span class="co">#&gt; 1 uga     RB Treatment         6 2024          06             Central       Kampala       12000           11400</span></span>
+<span><span class="co">#&gt; 2 uga     RB Treatment         7 2024          06             Western       Mbarara       8000            7600</span></span>
+<span><span class="co">#&gt; 3 uga     RB Treatment         8 2024          06             Eastern       Soroti        6000            5800</span></span></code></pre></div>
+<p><code>sheet</code> (the real sheet name) and <code>excel_row</code>
+(each row’s actual position in the workbook) are always there alongside
+<code>country</code> and the field-code columns – <code>sheet</code> is
+what lets a schema covering several sheets routed to the same measure
+(e.g. the combined training schemas) tell which one a row came from.</p>
 <p>Each sheet is its own programme, parsed the same way:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sch</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr</a></span><span class="op">(</span><span class="va">report</span>, sheet <span class="op">=</span> <span class="st">"SCH Treatment"</span>, country <span class="op">=</span> <span class="st">"uga"</span><span class="op">)</span></span>

@@ -1,5 +1,45 @@
 # Changelog
 
+## erifunctions 0.9.41
+
+### Add a training_type discriminator to every combined training schema
+
+[`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
+now stamps a `sheet` column (the real sheet name, resolved even when
+`sheet` was passed as an index or slug) onto every row it returns. All 7
+`{country}_rblf_programmatic_training.yaml` schemas (`sdn`, `ssd`,
+`uga`, `eth`, `nga`, `mad`, `tcd`) alias it into a new required
+`training_type` column, with `allowed_values` listing that country’s
+real training sheet names.
+
+This closes the gap flagged in 0.9.40’s review: rolling up `tot` across
+a combined training measure (e.g. via
+[`eri_query()`](https://thecartercenter.github.io/erifunctions/reference/eri_query.md))
+previously had no way to distinguish which of several training audiences
+(CDD vs. Field Ento vs. ToT, etc.) a row came from – `training_type` is
+that discriminator. `eth`‘s schema in particular now lets someone
+separate ToT’s “people trained as trainers” from the other 9 sheets’
+“front-line workers trained.” See
+[ADR-0023](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0023-cmr-ingest-stamps-sheet-name.md).
+
+**Migration note:** any `rblf/training` parquet already staged (not yet
+approved) before this change was split without a `sheet` column, so it
+will now be missing `training_type` (`required: true`) on its next DQ
+check. Re-run `eri_split_cmr(..., supersede_staged = TRUE)` against the
+same source workbook to refresh it (same mechanism as any other
+staged-data fix, per ADR-0017) – nothing migrates automatically. As of
+2026-07-15, this affects real staged data: `ssd` (6 files) and `uga` (8
+files) both have staged `rblf/training` parquet that will need a
+re-split; these counts will change as DAs work through their own
+backlogs, so treat them as a pointer to check
+[`eri_logs()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs.md),
+not a permanent count.
+
+- [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
+  also now aborts with a clear message when `sheet` is passed as an
+  out-of-range 1-based index, instead of R’s raw “subscript out of
+  bounds”.
+
 ## erifunctions 0.9.40
 
 ### Fold ToT into eth’s training schema; real district lists for the entomology schemas

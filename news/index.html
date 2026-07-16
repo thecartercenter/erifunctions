@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.40</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.41</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.40/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.41" id="erifunctions-0941">erifunctions 0.9.41<a class="anchor" aria-label="anchor" href="#erifunctions-0941"></a></h2>
+<div class="section level3">
+<h3 id="add-a-training_type-discriminator-to-every-combined-training-schema-0-9-41">Add a training_type discriminator to every combined training schema<a class="anchor" aria-label="anchor" href="#add-a-training_type-discriminator-to-every-combined-training-schema-0-9-41"></a></h3>
+<p><code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> now stamps a <code>sheet</code> column (the real sheet name, resolved even when <code>sheet</code> was passed as an index or slug) onto every row it returns. All 7 <code>{country}_rblf_programmatic_training.yaml</code> schemas (<code>sdn</code>, <code>ssd</code>, <code>uga</code>, <code>eth</code>, <code>nga</code>, <code>mad</code>, <code>tcd</code>) alias it into a new required <code>training_type</code> column, with <code>allowed_values</code> listing that country’s real training sheet names.</p>
+<p>This closes the gap flagged in 0.9.40’s review: rolling up <code>tot</code> across a combined training measure (e.g. via <code><a href="../reference/eri_query.html">eri_query()</a></code>) previously had no way to distinguish which of several training audiences (CDD vs. Field Ento vs. ToT, etc.) a row came from – <code>training_type</code> is that discriminator. <code>eth</code>‘s schema in particular now lets someone separate ToT’s “people trained as trainers” from the other 9 sheets’ “front-line workers trained.” See <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0023-cmr-ingest-stamps-sheet-name.md" class="external-link">ADR-0023</a>.</p>
+<p><strong>Migration note:</strong> any <code>rblf/training</code> parquet already staged (not yet approved) before this change was split without a <code>sheet</code> column, so it will now be missing <code>training_type</code> (<code>required: true</code>) on its next DQ check. Re-run <code>eri_split_cmr(..., supersede_staged = TRUE)</code> against the same source workbook to refresh it (same mechanism as any other staged-data fix, per ADR-0017) – nothing migrates automatically. As of 2026-07-15, this affects real staged data: <code>ssd</code> (6 files) and <code>uga</code> (8 files) both have staged <code>rblf/training</code> parquet that will need a re-split; these counts will change as DAs work through their own backlogs, so treat them as a pointer to check <code><a href="../reference/eri_logs.html">eri_logs()</a></code>, not a permanent count.</p>
+<ul><li>
+<code><a href="../reference/eri_ingest_cmr.html">eri_ingest_cmr()</a></code> also now aborts with a clear message when <code>sheet</code> is passed as an out-of-range 1-based index, instead of R’s raw “subscript out of bounds”.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.40" id="erifunctions-0940">erifunctions 0.9.40<a class="anchor" aria-label="anchor" href="#erifunctions-0940"></a></h2>
 <div class="section level3">
