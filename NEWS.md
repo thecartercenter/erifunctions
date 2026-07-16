@@ -24,6 +24,9 @@ staged data: `ssd` (6 files) and `uga` (8 files) both have staged `rblf/training
 that will need a re-split; these counts will change as DAs work through their own backlogs,
 so treat them as a pointer to check `eri_logs()`, not a permanent count.
 
+- `eri_ingest_cmr()` also now aborts with a clear message when `sheet` is passed as an
+  out-of-range 1-based index, instead of R's raw "subscript out of bounds".
+
 # erifunctions 0.9.40
 
 ## Fold ToT into eth's training schema; real district lists for the entomology schemas

@@ -18,7 +18,7 @@ sheet a row came from. Rolling up `tot` (people trained) across the whole `rblf/
 — e.g. via `eri_query()` — silently conflated genuinely different training audiences. Ethiopia's
 case makes this concrete: "ToT" (Training of Trainers) counts trainer-cascade capacity, a different
 metric from the other 9 sheets' front-line worker headcounts, with no column to separate them
-(flagged in the PR #311 review, 2026-07-16).
+(flagged in the PR #311 review, 2026-07-15).
 
 ## Decision
 

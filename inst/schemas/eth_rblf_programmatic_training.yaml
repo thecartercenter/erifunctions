@@ -45,7 +45,7 @@
 #   including two zone-level entries -- "Agaro Town"/"Jimma Town" -- not seen in the other
 #   8 sheets' woreda-level rosters) but, like Regional, has no adm3/disease field.
 #
-# training_type (added 2026-07-16) discriminates which of the 10 sheets a row came from --
+# training_type (added 2026-07-15) discriminates which of the 10 sheets a row came from --
 # aliased to `sheet`, the real sheet name eri_ingest_cmr() now stamps onto every row. This is
 # what lets anyone rolling up `tot` across the whole measure (e.g. via eri_query()) separate
 # ToT's "people trained as trainers" (cascade capacity) from the other 8 sheets' "front-line
