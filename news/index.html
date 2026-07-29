@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.41</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,28 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.41/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.42" id="erifunctions-0942">erifunctions 0.9.42<a class="anchor" aria-label="anchor" href="#erifunctions-0942"></a></h2>
+<div class="section level3">
+<h3 id="odk_creds-aborts-on-unresolved-auth-instead-of-a-bare-0-9-42">
+<code>.odk_creds()</code> aborts on unresolved auth instead of a bare 401<a class="anchor" aria-label="anchor" href="#odk_creds-aborts-on-unresolved-auth-instead-of-a-bare-0-9-42"></a></h3>
+<p>A DA hit an opaque <code>HTTP 401</code> from <code>.odk_form_fields()</code> while running <code><a href="../reference/eri_odk_upload.html">eri_odk_upload()</a></code>. Root cause: she had a valid session from <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code>, but the upload call explicitly passed <code>con = NULL</code> plus <code>auth = Sys.getenv("ODK_TOKEN")</code> (a separate CI/automation-only credential she’d never set) – silently discarding her real session and sending an empty <code>Authorization</code> header several calls before the failure surfaced.</p>
+<p><code><a href="../reference/dot-odk_creds.html">.odk_creds()</a></code> now aborts immediately when the resolved <code>auth</code> is empty/NA, pointing at <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code>/<code>con</code> or the <code>ODK_URL</code>/<code>ODK_TOKEN</code> env vars, instead of letting a blank bearer token reach the network and come back as a generic 401. Every ODK entry point (<code>eri_odk_upload</code>, <code>eri_odk_sync</code>, <code>list_odk_projects</code>, <code>download_odk_form</code>, <code>eri_odk_bulk_users</code>, <code>eri_survey_status</code>, etc.) routes through this one helper, so the fix is general. Closes <a href="https://github.com/thecartercenter/erifunctions/issues/318" class="external-link">#318</a>.</p>
+</div>
+<div class="section level3">
+<h3 id="conditional-dq-ranges-keyed-on-another-columns-value-range_overrides-0-9-42">Conditional DQ ranges keyed on another column’s value (<code>range_overrides</code>)<a class="anchor" aria-label="anchor" href="#conditional-dq-ranges-keyed-on-another-columns-value-range_overrides-0-9-42"></a></h3>
+<p>Fixes two Ethiopia DQ over-flagging issues Emalee reported while uploading the June 2026 CMR (202606), cc Hannah:</p>
+<ul><li>
+<strong>RB/LF Treatment’s <code>target_pop</code> no longer flags a legitimate 0.</strong> Both schemas now capture the real <code>#rbtrt_programstatus</code> / <code>#lftrt_programstatus</code> field as a new <code>program_status</code> column, and <code>target_pop</code>’s range is conditioned on it: RB expects <code>[1, 1302823]</code> while transmission is still active (<code>Transmission ongoing</code>, <code>Transmission suppressed</code>, <code>Transmission suspected interrupted</code>, <code>PTS Failed</code>) and exactly <code>0</code> once it’s <code>Transmission interrupted</code>/<code>Transmission eliminated</code>; LF expects <code>[1, 500000]</code> before TAS (<code>MDA Not Started</code>, <code>MDA Started</code>, <code>Passed EMS</code>) and <code>0</code> once <code>Passed TAS1</code>/<code>TAS2</code>/<code>TAS3</code>. (LF keeps its existing, data-grounded 500000 ceiling rather than the 1302823 in Emalee’s email, which real LF data doesn’t support – see the schema comment.) Both keep their pre-existing bound as a fallback <code>range</code> for any row where <code>program_status</code> is missing or unrecognized, so that case still gets today’s coverage rather than going unchecked.</li>
+<li>
+<strong>CDD/CS Training’s <code>goal</code>/<code>tot</code> caps widened to <code>[0, 10000]</code></strong>, up from <code>[0, 5000]</code> / <code>[0, 1000]</code> – real 202606 CDD training reached a goal of 8902 and a total of 7360, both already past the old caps. The other 8 training types sharing <code>eth_rblf_programmatic_training.yaml</code> (HW, Lab, MMDP, Field Ento, Hope Group, ToT) keep their original, tighter caps – real values for those stay under ~200, so a blanket widen would have meaningfully loosened DQ protection for them.</li>
+</ul><p>Both are built on the same new schema mechanism: <code>range_overrides</code>, an ordered list of <code>{when: {column, op, value}, range: [lo, hi]}</code> blocks on any numeric column. The first override whose condition is confirmed true claims a row’s range; rows no override claims fall back to the column’s base <code>range</code> (if any), else go unchecked – never flagged on an unconfirmed guess. This generalizes the existing <code>range_when</code> gate (which only turns a single range on/off) to cases where <em>which</em> range applies varies by category, and adds <code>op: in</code>/<code>not_in</code> (list membership) alongside the existing <code>&lt;=</code>/<code>&gt;=</code>/<code>==</code>/<code>&lt;</code>/<code>&gt;</code>/<code>!=</code>. A <code>when</code> block missing <code>value</code> now warns and disables cleanly (falls back to the base range / ignores the gate), rather than silently leaving the row completely unchecked – caught in review before this shipped.</p>
+<ul><li>Tracked as issue <a href="https://github.com/thecartercenter/erifunctions/issues/320" class="external-link">#320</a>, feedback tickets <a href="https://github.com/thecartercenter/erifunctions/issues/9" class="external-link">#9</a>/#10.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.41" id="erifunctions-0941">erifunctions 0.9.41<a class="anchor" aria-label="anchor" href="#erifunctions-0941"></a></h2>
 <div class="section level3">
