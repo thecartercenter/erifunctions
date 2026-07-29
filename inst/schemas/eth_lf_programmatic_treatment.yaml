@@ -69,6 +69,19 @@ columns:
     type: character
     aliases:
       - '#lftrt_disease'
+  program_status:
+    required: false
+    type: character
+    aliases:
+      - program_status
+      - '#lftrt_programstatus'
+    allowed_values:
+      - MDA Not Started
+      - MDA Started
+      - Passed EMS
+      - Passed TAS1
+      - Passed TAS2
+      - Passed TAS3
   population:
     required: false
     type: numeric
@@ -93,7 +106,27 @@ columns:
       - target_population
       - eligible_pop
       - '#lftrt_trttarget'
+    # See eth_oncho_programmatic_treatment.yaml's target_pop for the same
+    # program_status-conditioned logic (reported by Emalee, 2026-07-29), and
+    # for why the base `range` below is kept as a fallback for an unrecognized
+    # program_status.
+    # NOTE: Emalee's email asked for [1, 1302823] here too (RB's bound), but
+    # real ETH 202606 LF target_pop tops out around 125k -- keeping this
+    # schema's existing, data-grounded 500000 ceiling (matches `population`'s
+    # own range) rather than carrying over what looks like a copy/paste from
+    # the RB section.
     range: [1, 500000]
+    range_overrides:
+      - when:
+          column: program_status
+          op: in
+          value: [MDA Not Started, MDA Started, Passed EMS]
+        range: [1, 500000]
+      - when:
+          column: program_status
+          op: in
+          value: [Passed TAS1, Passed TAS2, Passed TAS3]
+        range: [0, 0]
   village_target:
     required: false
     type: numeric

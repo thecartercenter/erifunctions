@@ -499,6 +499,130 @@ test_that("range_when warns and falls back to an unconditional range check on an
   expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
 })
 
+test_that("range_when accepts a `not_in` op, and an NA gate value doesn't match it", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "status", op = "not_in",
+                                        value = list("interrupted", "eliminated")))
+  ))
+  df <- tibble::tibble(target_pop = c(0, 0, 0),
+                       status     = c("ongoing", "interrupted", NA_character_))
+  res <- run_dq_checks(df, schema)
+  # row 1: status not in the excluded set -> gate true -> flagged.
+  # row 2: status IS in the excluded set -> gate false -> not flagged.
+  # row 3: status missing -> can't confirm -> not flagged (not_in's inverted-NA
+  # trap: `!(NA %in% x)` would otherwise read TRUE, wrongly matching the gate).
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("range_when/range_overrides warn and disable (not silently no-op) on a condition missing `value`", {
+  schema_gate <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "status", op = "=="))
+  ))
+  df <- tibble::tibble(target_pop = 0, status = "ongoing")
+  expect_warning(res <- run_dq_checks(df, schema_gate), "no `value`")
+  # gate ignored (no `value` to compare against) -- range checked unconditionally
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
+
+  schema_override <- list(columns = list(
+    tot = list(type = "numeric", range = list(0, 1000),
+              range_overrides = list(
+                list(when = list(column = "training_type", op = "=="), range = list(0, 10000))
+              ))
+  ))
+  df2 <- tibble::tibble(tot = 5000, training_type = "CDD Training")
+  expect_warning(res2 <- run_dq_checks(df2, schema_override), "no `value`")
+  # override skipped (no `value` to compare against) -- falls back to the base [0,1000] range,
+  # NOT silently unchecked (the bug this test guards against: a missing `value` used to
+  # produce an NA that poisoned `matched`, leaving the row completely unvalidated).
+  expect_equal(nrow(res2$flags[res2$flags$column == "tot", ]), 1L)
+})
+
+test_that("range_when accepts an `in` op for list-membership gates", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric", range = list(1, 100),
+                      range_when = list(column = "status", op = "in",
+                                        value = list("ongoing", "suppressed")))
+  ))
+  df <- tibble::tibble(target_pop = c(0, 0, 0),
+                       status     = c("ongoing", "suppressed", "interrupted"))
+  res <- run_dq_checks(df, schema)
+  expect_equal(sort(res$flags$row[res$flags$column == "target_pop"]), c(1L, 2L))
+})
+
+test_that("range_overrides applies a different range per training_type, first match wins", {
+  schema <- list(columns = list(
+    tot = list(type = "numeric", range = list(0, 1000),
+              range_overrides = list(
+                list(when = list(column = "training_type", op = "in",
+                                 value = list("CDD Training", "CS Training")),
+                    range = list(0, 10000))
+              ))
+  ))
+  df <- tibble::tibble(
+    tot           = c(7360, 1780, 1780),
+    training_type = c("CDD Training", "CS Training", "HW Training")
+  )
+  res <- run_dq_checks(df, schema)
+  # CDD (7360) and CS (1780) fall under the widened [0,10000] override -- not flagged.
+  # HW (1780) has no matching override, falls back to the base [0,1000] -- flagged.
+  expect_equal(res$flags$row[res$flags$column == "tot"], 3L)
+})
+
+test_that("range_overrides with no matching override and no base range leaves the row unchecked", {
+  schema <- list(columns = list(
+    tot = list(type = "numeric",
+              range_overrides = list(
+                list(when = list(column = "training_type", op = "in", value = list("CDD Training")),
+                    range = list(0, 10000))
+              ))
+  ))
+  df <- tibble::tibble(tot = 999999, training_type = "Lab Training")
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "tot", ]), 0L)
+})
+
+test_that("range_overrides supports two-sided conditional bounds (e.g. target_pop by program_status)", {
+  schema <- list(columns = list(
+    target_pop = list(type = "numeric",
+      range_overrides = list(
+        list(when = list(column = "program_status", op = "in",
+                         value = list("Transmission ongoing", "PTS Failed")),
+            range = list(1, 1302823)),
+        list(when = list(column = "program_status", op = "in",
+                         value = list("Transmission interrupted", "Transmission eliminated")),
+            range = list(0, 0))
+      ))
+  ))
+  df <- tibble::tibble(
+    target_pop     = c(0, 5000, 0, 10),
+    program_status = c("Transmission ongoing", "Transmission ongoing",
+                       "Transmission interrupted", "Transmission interrupted")
+  )
+  res <- run_dq_checks(df, schema)
+  # row 1: ongoing but 0 -> flagged. row 2: ongoing, nonzero -> fine.
+  # row 3: interrupted, legitimately 0 -> fine (this is the false positive being fixed).
+  # row 4: interrupted but nonzero -> flagged.
+  expect_equal(sort(res$flags$row[res$flags$column == "target_pop"]), c(1L, 4L))
+})
+
+test_that("range_overrides warns and skips a malformed override entry", {
+  schema <- list(columns = list(
+    tot = list(type = "numeric", range = list(0, 1000),
+              range_overrides = list(
+                list(when = list(op = "in", value = list("CDD Training")), range = list(0, 10000))
+              ))
+  ))
+  df <- tibble::tibble(tot = 5000, training_type = "CDD Training")
+  expect_warning(
+    res <- run_dq_checks(df, schema),
+    "malformed"
+  )
+  # override skipped (missing `when$column`) -- falls back to the base [0,1000] range
+  expect_equal(nrow(res$flags[res$flags$column == "tot", ]), 1L)
+})
+
 test_that("uga_oncho schema flags a district not in the real allowed_values list", {
   schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
   df <- tibble::tibble(

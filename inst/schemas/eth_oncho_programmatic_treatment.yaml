@@ -92,6 +92,19 @@ columns:
     type: character
     aliases:
       - '#rbtrt_disease'
+  program_status:
+    required: false
+    type: character
+    aliases:
+      - program_status
+      - '#rbtrt_programstatus'
+    allowed_values:
+      - Transmission ongoing
+      - Transmission suppressed
+      - Transmission suspected interrupted
+      - PTS Failed
+      - Transmission interrupted
+      - Transmission eliminated
   population:
     required: false
     type: numeric
@@ -116,7 +129,27 @@ columns:
       - target_population
       - eligible_pop
       - '#rbtrt_trttarget'
+    # Whether a target_pop of 0 is a flag or expected depends on program_status:
+    # once transmission is interrupted/eliminated, a genuinely zero target is
+    # correct, not a data error (reported by Emalee, 2026-07-29, real ETH
+    # 202606 data -- e.g. "Transmission interrupted" rows with target_pop = 0).
+    # The base `range` below is the pre-existing bound, kept as a fallback for
+    # a program_status this schema can't recognize (missing/blank/unexpected
+    # value) -- so those rows still get today's coverage rather than going
+    # completely unchecked.
     range: [1, 1302823]
+    range_overrides:
+      - when:
+          column: program_status
+          op: in
+          value: [Transmission ongoing, Transmission suppressed,
+                  Transmission suspected interrupted, PTS Failed]
+        range: [1, 1302823]
+      - when:
+          column: program_status
+          op: in
+          value: [Transmission interrupted, Transmission eliminated]
+        range: [0, 0]
   village_target:
     required: false
     type: numeric

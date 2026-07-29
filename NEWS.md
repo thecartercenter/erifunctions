@@ -1,3 +1,41 @@
+# erifunctions 0.9.42
+
+## Conditional DQ ranges keyed on another column's value (`range_overrides`)
+
+Fixes two Ethiopia DQ over-flagging issues Emalee reported while uploading the June 2026 CMR
+(202606), cc Hannah:
+
+- **RB/LF Treatment's `target_pop` no longer flags a legitimate 0.** Both schemas now capture
+  the real `#rbtrt_programstatus` / `#lftrt_programstatus` field as a new `program_status`
+  column, and `target_pop`'s range is conditioned on it: RB expects `[1, 1302823]` while
+  transmission is still active (`Transmission ongoing`, `Transmission suppressed`,
+  `Transmission suspected interrupted`, `PTS Failed`) and exactly `0` once it's
+  `Transmission interrupted`/`Transmission eliminated`; LF expects `[1, 500000]` before TAS
+  (`MDA Not Started`, `MDA Started`, `Passed EMS`) and `0` once `Passed TAS1`/`TAS2`/`TAS3`.
+  (LF keeps its existing, data-grounded 500000 ceiling rather than the 1302823 in Emalee's
+  email, which real LF data doesn't support -- see the schema comment.) Both keep their
+  pre-existing bound as a fallback `range` for any row where `program_status` is missing or
+  unrecognized, so that case still gets today's coverage rather than going unchecked.
+- **CDD/CS Training's `goal`/`tot` caps widened to `[0, 10000]`**, up from `[0, 5000]` /
+  `[0, 1000]` -- real 202606 CDD training reached a goal of 8902 and a total of 7360, both
+  already past the old caps. The other 8 training types sharing `eth_rblf_programmatic_training.yaml`
+  (HW, Lab, MMDP, Field Ento, Hope Group, ToT) keep their original, tighter caps -- real values
+  for those stay under ~200, so a blanket widen would have meaningfully loosened DQ protection
+  for them.
+
+Both are built on the same new schema mechanism: `range_overrides`, an ordered list of
+`{when: {column, op, value}, range: [lo, hi]}` blocks on any numeric column. The first override
+whose condition is confirmed true claims a row's range; rows no override claims fall back to
+the column's base `range` (if any), else go unchecked -- never flagged on an unconfirmed guess.
+This generalizes the existing `range_when` gate (which only turns a single range on/off) to
+cases where *which* range applies varies by category, and adds `op: in`/`not_in` (list
+membership) alongside the existing `<=`/`>=`/`==`/`<`/`>`/`!=`. A `when` block missing `value`
+now warns and disables cleanly (falls back to the base range / ignores the gate), rather than
+silently leaving the row completely unchecked -- caught in review before this shipped.
+
+- Tracked as issue [#320](https://github.com/thecartercenter/erifunctions/issues/320), feedback
+  tickets #9/#10.
+
 # erifunctions 0.9.41
 
 ## Add a training_type discriminator to every combined training schema

@@ -131,6 +131,17 @@ columns:
     aliases: ["#cddtrn_goal", "#cstrn_goal", "#dmditrnsx_goal", "#dmditrnpt_goal",
       "#entotrn_goal", "#hgtrn_goal", "#hwtrn_goal", "#labtrn_goal", "#tot_reg_trn_goal",
       "#tot_zone_trn_goal"]
+    # CDD/CS goals run to the thousands (community-wide reach) where the other
+    # 8 training types stay under ~200 (specialist cohorts) -- real 202606 CDD
+    # goal reached 8902, which the flat 5000 cap flagged (reported by Emalee,
+    # 2026-07-29). Widen only for CDD/CS; the base 5000 cap still protects the
+    # other 8 types.
+    range_overrides:
+      - when:
+          column: training_type
+          op: in
+          value: ["CDD Training", "CS Training"]
+        range: [0, 10000]
     range: [0, 5000]
 
   male_trained:
@@ -155,6 +166,15 @@ columns:
     aliases: [Trained, "#cddtrn_tot", "#cstrn_tot", "#dmditrnsx_tot", "#dmditrnpt_tot",
       "#entotrn_tot", "#hgtrn_tot", "#hwtrn_tot", "#labtrn_tot", "#tot_reg_trn_tot_reg_",
       "#tot_zone_trn_tot_zone_"]
+    # Same CDD/CS-only widening as `goal` above -- real 202606 CDD tot reached
+    # 7360 against the flat 1000 cap (reported by Emalee, 2026-07-29). The
+    # other 8 types stay well under 200, so their base 1000 cap is unchanged.
+    range_overrides:
+      - when:
+          column: training_type
+          op: in
+          value: ["CDD Training", "CS Training"]
+        range: [0, 10000]
     range: [0, 1000]
 
   achieved_pct:
