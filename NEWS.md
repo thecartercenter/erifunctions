@@ -1,5 +1,20 @@
 # erifunctions 0.9.42
 
+## `.odk_creds()` aborts on unresolved auth instead of a bare 401
+
+A DA hit an opaque `HTTP 401` from `.odk_form_fields()` while running `eri_odk_upload()`. Root
+cause: she had a valid session from `init_odk_connection()`, but the upload call explicitly
+passed `con = NULL` plus `auth = Sys.getenv("ODK_TOKEN")` (a separate CI/automation-only
+credential she'd never set) -- silently discarding her real session and sending an empty
+`Authorization` header several calls before the failure surfaced.
+
+`.odk_creds()` now aborts immediately when the resolved `auth` is empty/NA, pointing at
+`init_odk_connection()`/`con` or the `ODK_URL`/`ODK_TOKEN` env vars, instead of letting a blank
+bearer token reach the network and come back as a generic 401. Every ODK entry point
+(`eri_odk_upload`, `eri_odk_sync`, `list_odk_projects`, `download_odk_form`,
+`eri_odk_bulk_users`, `eri_survey_status`, etc.) routes through this one helper, so the fix is
+general. Closes [#318](https://github.com/thecartercenter/erifunctions/issues/318).
+
 ## Conditional DQ ranges keyed on another column's value (`range_overrides`)
 
 Fixes two Ethiopia DQ over-flagging issues Emalee reported while uploading the June 2026 CMR
