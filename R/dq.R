@@ -194,17 +194,118 @@
   state
 }
 
+.ERI_DQ_RANGE_OPS <- c("<=", ">=", "==", "<", ">", "!=", "in", "not_in")
+
+# Evaluate a `{column, op, value}` condition against `data`, row-wise. Returns
+# a logical vector (TRUE only where the condition is confirmed true) the same
+# length as `nrow(data)`, or NULL if the condition itself is malformed --
+# an unrecognized `op`, or a missing `value` (the caller decides the fallback;
+# range_when and range_overrides fall back differently). A missing `value` is
+# checked here, centrally, rather than by each caller: left unchecked, e.g.
+# `cond_vals == NULL` returns `logical(0)`, and the NA-masking line below
+# silently *extends* it with NA instead of producing an all-FALSE vector --
+# that NA then poisons every downstream accumulator (`matched`, `in_scope`),
+# disabling the range check entirely with no warning ever firing. A gate
+# column absent from this sheet, or NA on a given row, means the condition
+# can't be confirmed, so those rows read FALSE rather than TRUE -- never
+# flagged on a guess.
+.dq_eval_condition <- function(data, when, col_label, field_label) {
+  op         <- when$op %||% "=="
+  valid_ops  <- .ERI_DQ_RANGE_OPS
+  if (!op %in% valid_ops || is.null(when$value)) {
+    # A schema author's typo here must not silently narrow (or widen) what
+    # gets flagged -- warn loudly; the caller falls back to the safer
+    # direction for its own construct rather than guessing here.
+    reason <- if (!op %in% valid_ops) {
+      cli::format_inline("an unrecognized op {.val {op}}")
+    } else {
+      "no `value`"
+    }
+    cli::cli_warn(c(
+      "Column {.val {col_label}}'s {.field {field_label}} has {reason}.",
+      "i" = "Valid ops: {.val {valid_ops}}."
+    ))
+    return(NULL)
+  }
+  cond_vals <- if (when$column %in% names(data)) data[[when$column]] else NA
+  cond_ok <- switch(op,
+    "<="     = cond_vals <= when$value,
+    ">="     = cond_vals >= when$value,
+    "=="     = cond_vals == when$value,
+    "<"      = cond_vals <  when$value,
+    ">"      = cond_vals >  when$value,
+    "!="     = cond_vals != when$value,
+    "in"     = cond_vals %in% when$value,
+    "not_in" = !(cond_vals %in% when$value)
+  )
+  cond_ok[is.na(cond_vals)] <- FALSE
+  cond_ok
+}
+
 .dq_check_ranges <- function(state, schema) {
   data        <- state$data
   cols_schema <- schema$columns %||% list()
 
   for (col in names(cols_schema)) {
     if (!col %in% names(data)) next
-    range_def <- cols_schema[[col]]$range
-    if (is.null(range_def) || length(range_def) != 2) next
+    col_def   <- cols_schema[[col]]
+    # Exact matching (not `$`/default `[[`) matters here: a column with
+    # `range_overrides` but no `range` would otherwise have `range` PARTIAL-
+    # MATCH onto `range_overrides` (both start with "range"), silently
+    # treating the overrides list as the base range.
+    range_def <- col_def[["range", exact = TRUE]]
+    if (!is.null(range_def) && length(range_def) != 2) range_def <- NULL
+    overrides <- col_def[["range_overrides", exact = TRUE]]
 
-    vals     <- data[[col]]
-    in_scope <- !is.na(vals)
+    vals   <- data[[col]]
+    not_na <- !is.na(vals)
+
+    # `range_overrides`: which range applies depends on another column's
+    # value (e.g. ETH target_pop's floor of 1 only holds while program_status
+    # says transmission is still active; CDD/CS training's higher goal/tot
+    # ceiling only holds for those two training_types, not the other 8 that
+    # share this schema). Each override is tried in order; the first whose
+    # `when` condition is confirmed true claims the row. Rows no override
+    # claims fall back to the column's base `range` (if any); with neither a
+    # matching override nor a base range, they go unchecked.
+    if (!is.null(overrides)) {
+      matched <- rep(FALSE, length(vals))
+      for (ov in overrides) {
+        when     <- ov$when
+        ov_range <- ov$range
+        if (is.null(when) || is.null(when$column) || is.null(ov_range) || length(ov_range) != 2) {
+          cli::cli_warn("Column {.val {col}} has a malformed {.field range_overrides} entry -- skipping it.")
+          next
+        }
+        cond_ok <- .dq_eval_condition(data, when, col, "range_overrides")
+        if (is.null(cond_ok)) next
+        scope   <- not_na & !matched & cond_ok
+        matched <- matched | scope
+        out_of_range <- which(scope & (vals < ov_range[1] | vals > ov_range[2]))
+        if (length(out_of_range) > 0) {
+          state <- .dq_log_flag(
+            state, rows = out_of_range, column = col,
+            value = as.character(vals[out_of_range]),
+            issue = glue::glue("Value outside expected range [{ov_range[1]}, {ov_range[2]}]")
+          )
+        }
+      }
+      if (!is.null(range_def)) {
+        scope <- not_na & !matched
+        out_of_range <- which(scope & (vals < range_def[1] | vals > range_def[2]))
+        if (length(out_of_range) > 0) {
+          state <- .dq_log_flag(
+            state, rows = out_of_range, column = col,
+            value = as.character(vals[out_of_range]),
+            issue = glue::glue("Value outside expected range [{range_def[1]}, {range_def[2]}]")
+          )
+        }
+      }
+      next
+    }
+
+    if (is.null(range_def)) next
+    in_scope <- not_na
 
     # Optional gate: only apply this range floor/ceiling to rows where another
     # column satisfies a condition (e.g. UGA target_pop's floor of 1 should
@@ -212,29 +313,14 @@
     # untargeted round legitimately reports 0). A gate column absent from this
     # sheet, or NA on a given row, means the condition can't be confirmed, so
     # those rows are treated as out of scope rather than flagged.
-    when <- cols_schema[[col]]$range_when
+    when <- col_def[["range_when", exact = TRUE]]
     if (!is.null(when) && !is.null(when$column)) {
-      op <- when$op %||% "=="
-      if (!op %in% c("<=", ">=", "==", "<", ">", "!=")) {
-        # A schema author's typo here must not silently narrow (or widen) what
-        # gets flagged -- warn loudly and fall back to the unconditional range
-        # check (never fires -> could hide a real problem; ignoring the gate
-        # is the safer failure direction, and impossible to miss in the log).
-        cli::cli_warn(c(
-          "Column {.val {col}}'s {.field range_when} has an unrecognized op {.val {op}} -- ignoring the gate, checking the range unconditionally.",
-          "i" = "Valid ops: <=, >=, ==, <, >, !=."
-        ))
+      cond_ok <- .dq_eval_condition(data, when, col, "range_when")
+      if (is.null(cond_ok)) {
+        # Unrecognized op: ignoring the gate (check unconditionally) is the
+        # safer failure direction for a plain gate -- never firing could hide
+        # a real problem, and it's impossible to miss in the warning log.
       } else {
-        cond_vals <- if (when$column %in% names(data)) data[[when$column]] else NA
-        cond_ok <- switch(op,
-          "<=" = cond_vals <= when$value,
-          ">=" = cond_vals >= when$value,
-          "==" = cond_vals == when$value,
-          "<"  = cond_vals <  when$value,
-          ">"  = cond_vals >  when$value,
-          "!=" = cond_vals != when$value
-        )
-        cond_ok[is.na(cond_ok)] <- FALSE
         in_scope <- in_scope & cond_ok
       }
     }

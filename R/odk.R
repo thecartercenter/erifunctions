@@ -5,13 +5,19 @@
 #' Resolve url/auth from an odk_connection or explicit args
 #' @keywords internal
 .odk_creds <- function(con, url, auth) {
-  if (!is.null(con)) {
+  creds <- if (!is.null(con)) {
     if (!inherits(con, "odk_connection"))
       cli::cli_abort("{.arg con} must be an {.cls odk_connection} object from {.fn init_odk_connection}.")
     list(url = con$url, auth = con$token)
   } else {
     list(url = url, auth = auth)
   }
+  if (is.null(creds$auth) || is.na(creds$auth) || !nzchar(creds$auth))
+    cli::cli_abort(c(
+      "No ODK credentials resolved -- refusing to call the server.",
+      "i" = "Pass {.arg con} from {.fn init_odk_connection}, or set the {.envvar ODK_URL}/{.envvar ODK_TOKEN} environment variables."
+    ))
+  creds
 }
 
 #' Check an httr response and return parsed content, or abort on HTTP error
