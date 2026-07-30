@@ -179,6 +179,105 @@ flagged_tbl <- tibble::tibble(
   issue = "not an allowed value", status = "open", note = NA_character_
 )
 
+cross_flagged_tbl <- tibble::tibble(
+  sheet = "(cross-sheet)", disease = "rblf", data_type = "consistency",
+  log_path = "eth/rblf/programmatic/consistency/logs/dq.yaml",
+  flag_id = "eth/rblf/programmatic/consistency/logs/dq.yaml::1",
+  row = NA_integer_, excel_row = NA_integer_, column = "district", value = "Ari",
+  issue = "cross_consistency [rb_lf_pop_match]: RB and LF Treatment report different population",
+  status = "open", note = NA_character_, cross = TRUE
+)
+
+test_that("a cross-sheet flag (ADR-0024) gets a reduced menu (no 'fix in source'/'adjust schema') and a distinct header", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  flag_resolved      <- FALSE
+  schema_edit_called <- FALSE
+  fix_source_called  <- FALSE
+
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) cross_flagged_tbl,
+    eri_dq_flag_resolve = function(flag_id, status, note = NULL, data_con = NULL) {
+      flag_resolved <<- TRUE
+      expect_equal(status, "not_important")
+    },
+    eri_dq_schema_edit = function(...) { schema_edit_called <<- TRUE; "unused" },
+    .eri_dq_review_fix_in_source = function(...) { fix_source_called <<- TRUE },
+    eri_logs_resolve = function(...) invisible(NULL),
+    eri_approve_cmr = function(...) invisible(NULL),
+    # main menu: "Work through flags"; the cross flag's REDUCED menu (3 items,
+    # not 5): choice 1 = "Mark not important"; back at main menu: "Exit"
+    .eri_prompt_menu = scripted(list(1L, 1L, 6L)),
+    .eri_prompt_line = scripted(list("")),
+    .package = "erifunctions"
+  )
+
+  msgs <- testthat::capture_messages(
+    eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+  )
+  expect_true(any(grepl("cross-sheet check", msgs, fixed = TRUE)))
+  expect_true(flag_resolved)
+  expect_false(schema_edit_called)  # "Adjust the schema" was never offered, so never chosen
+  expect_false(fix_source_called)   # neither was "Fix in source"
+})
+
+test_that("re-running the DQ check drops the OLD cross-sheet flag row instead of duplicating it", {
+  withr::local_options(rlang_interactive = TRUE)
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+                         dest = "a", n_rows = 1L)
+  # First call: the RB Treatment flag plus a STALE cross flag ("Ari"). Rerun
+  # call (scoped to just RB Treatment): RB Treatment itself came back clean,
+  # and a FRESH cross flag with a different value ("Bale") -- if the stale
+  # one isn't dropped, both would coexist after the rerun.
+  first_call  <- dplyr::bind_rows(flagged_tbl, cross_flagged_tbl)
+  fresh_cross <- cross_flagged_tbl
+  fresh_cross$value <- "Bale"
+  rerun_call  <- fresh_cross
+
+  new_plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                             data_type = "treatment", dest = "a_fixed", n_rows = 1L)
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  writeLines("x", tmp)
+
+  dq_report_calls <- 0L
+  exported_flags  <- NULL
+  local_mocked_bindings(
+    eri_cmr_last_plan = function(...) plan,
+    eri_cmr_dq_report  = function(...) {
+      dq_report_calls <<- dq_report_calls + 1L
+      if (dq_report_calls == 1L) first_call else rerun_call
+    },
+    eri_split_cmr = function(...) new_plan,
+    .eri_open_file = function(...) invisible(NULL),
+    eri_logs_resolve = function(...) invisible(NULL),
+    eri_approve_cmr = function(...) invisible(NULL),
+    # eri_dq_export() is what .eri_dq_review_print_report() hands the CURRENT
+    # in-memory flags tibble to -- capturing it here is a direct, robust
+    # assertion on the actual data, instead of scraping printed console text
+    # (which would also show the pre-rerun "Ari" honestly, since it prints
+    # the state as it walks through a flag before you choose to skip it).
+    eri_dq_export = function(flags, ...) { exported_flags <<- flags; invisible("fake.html") },
+    # main: "Work through flags"; RB Treatment flag: "Fix in source" (sets the
+    # local path .eri_dq_review_rerun() needs); cross flag's reduced menu:
+    # "Skip to the next flag"; main: "Re-run the DQ check"; rerun sub-menu:
+    # "Yes"; main (now just the fresh cross flag left): "Print report"; main: "Exit"
+    .eri_prompt_menu = scripted(list(1L, 1L, 3L, 2L, 1L, 5L, 6L)),
+    .eri_prompt_line = scripted(list(tmp)),
+    .package = "erifunctions"
+  )
+
+  eri_dq_review("sdn", "202605", data_con = structure(list(), class = "mock"))
+
+  expect_equal(dq_report_calls, 2L)
+  cross_only <- exported_flags[exported_flags$cross %in% TRUE, , drop = FALSE]
+  # exactly one cross-sheet row survives -- the fresh one ("Bale") -- not both
+  # the stale ("Ari") and fresh row
+  expect_equal(nrow(cross_only), 1L)
+  expect_equal(cross_only$value, "Bale")
+})
+
 test_that("eri_dq_review marking the only flag not_important closes out the entry so approve can proceed", {
   withr::local_options(rlang_interactive = TRUE)
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",

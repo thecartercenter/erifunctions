@@ -319,11 +319,16 @@ flags <- eri_cmr_dq_report("uga", "202406")
 #> ✔ Logged 1 DQ flag (needs_review).
 #> ✔ Logged 0 DQ flags (clean).
 flags
-#> # A tibble: 1 × 11
-#>   sheet        disease data_type log_path      flag_id        row column value issue         status note
-#>   <chr>        <chr>   <chr>     <chr>         <chr>        <int> <chr>  <chr> <chr>         <chr>  <chr>
-#> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open   <NA>
+#> # A tibble: 1 × 13
+#>   sheet        disease data_type log_path      flag_id        row excel_row column value issue         status note  cross
+#>   <chr>        <chr>   <chr>     <chr>         <chr>        <int>     <int> <chr>  <chr> <chr>         <chr>  <chr> <lgl>
+#> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4         9 target 0     out of range  open   <NA>  FALSE
 ```
+
+If the country's CMR routing schema declares `cross_consistency:` rules (Ethiopia, as of this
+writing), a flag comparing data *across* sheets can also show up here, with `sheet =
+"(cross-sheet)"`, a blank `excel_row`, and `cross = TRUE` -- see the
+[DQ review guide](da-dq-review-guide.html#split) for what that means and how to work through one.
 
 Work through it **issue by issue**, not measure by measure: mark each flag `"not_important"`,
 `"fixed"`, or `"noted"`, with a note explaining what you did or decided:

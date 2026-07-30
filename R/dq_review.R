@@ -179,17 +179,38 @@
   resolved <- list()
   for (i in seq_len(nrow(open_flags))) {
     f <- open_flags[i, ]
-    cli::cli_h3("Flag {i}/{nrow(open_flags)}: {f$sheet} row {f$excel_row}")
+    # "cross" %in% names() first: a tibble without the column returns NULL
+    # from `$`, which isTRUE() handles fine, but also emits a spurious
+    # "unknown column" warning -- avoided entirely by checking first.
+    is_cross <- "cross" %in% names(f) && isTRUE(f$cross)
+    if (is_cross) {
+      cli::cli_h3("Flag {i}/{nrow(open_flags)}: cross-sheet check")
+    } else {
+      cli::cli_h3("Flag {i}/{nrow(open_flags)}: {f$sheet} row {f$excel_row}")
+    }
     cli::cli_text("{.field {f$column}}: {.val {f$value}} -- {f$issue}")
 
-    choice <- .eri_prompt_menu("What do you want to do with this flag?", c(
-      "Fix in source (open/copy the workbook)",
-      "Adjust the schema (alias, allowed value, range...)",
-      "Mark not important",
-      "Mark noted",
-      "Skip to the next flag"
-    ))
-    if (choice == 0L || choice == 5L) next
+    # A cross-sheet flag (ADR-0024) has no single Excel row/sheet and no
+    # per-measure DQ schema to edit -- both "Fix in source" and "Adjust the
+    # schema" assume one, so the menu drops to the triage-only choices.
+    if (is_cross) {
+      choice <- .eri_prompt_menu("What do you want to do with this flag?", c(
+        "Mark not important",
+        "Mark noted",
+        "Skip to the next flag"
+      ))
+      if (choice == 0L || choice == 3L) next
+      choice <- choice + 2L  # re-align onto the full menu's 3/4 = not_important/noted
+    } else {
+      choice <- .eri_prompt_menu("What do you want to do with this flag?", c(
+        "Fix in source (open/copy the workbook)",
+        "Adjust the schema (alias, allowed value, range...)",
+        "Mark not important",
+        "Mark noted",
+        "Skip to the next flag"
+      ))
+      if (choice == 0L || choice == 5L) next
+    }
 
     if (choice == 1L) {
       .eri_dq_review_fix_in_source(f, local_path_env)
@@ -466,7 +487,20 @@ eri_dq_review_note <- function(country, period, note, data_con = NULL) {
       if (!is.null(rerun$rechecked) && nrow(rerun$rechecked) > 0L) {
         fresh <- eri_cmr_dq_report(country, period, plan = rerun$rechecked, data_con = data_con)
         key   <- function(p) paste(p$disease, p$data_type)
-        if (nrow(flags) > 0L) flags <- flags[!(key(flags) %in% key(rerun$rechecked)), , drop = FALSE]
+        if (nrow(flags) > 0L) {
+          # Cross-sheet flags (ADR-0024) are always freshly re-derived on
+          # every eri_cmr_dq_report() call (via its own fallback loader
+          # against the FULL measure set, not just this scoped re-check) --
+          # drop every old cross row unconditionally, since key()-based
+          # matching only targets the resplit measure(s) and never matches
+          # the "rblf"/"consistency" pseudo-measure a cross flag carries.
+          # `cross_col` defaults to (scalar) FALSE when the column is absent
+          # (e.g. a mocked eri_cmr_dq_report() predating this column) rather
+          # than erroring on `!flags$cross` (NULL on a tibble) or warning on
+          # a missing-column `$` access.
+          cross_col <- if ("cross" %in% names(flags)) flags$cross else FALSE
+          flags <- flags[!(key(flags) %in% key(rerun$rechecked)) & !cross_col, , drop = FALSE]
+        }
         flags <- dplyr::bind_rows(flags, fresh)
       }
     } else if (choice == 3L) {

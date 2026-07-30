@@ -9,6 +9,7 @@ eri_cmr_dq_report(
   period,
   plan = NULL,
   supersede = TRUE,
+  cross = TRUE,
   data_con = NULL
 )
 }
@@ -28,17 +29,26 @@ a "superseded by a newer run" note when this run logs a new one, so
 re-running doesn't pile up entries you have to close by hand. Set \code{FALSE}
 to keep every run's entry open until you resolve it yourself.}
 
+\item{cross}{\code{logical} Also evaluate the country's \verb{cross_consistency:}
+rules, if any. Default \code{TRUE}. Set \code{FALSE} to skip cross-sheet checks
+entirely (e.g. when re-checking one measure in isolation and cross-sheet
+context isn't needed).}
+
 \item{data_con}{Azure container for the \verb{data/} blob. If \code{NULL}, connects automatically.}
 }
 \value{
-A tibble with one row per flag across every measure: \code{sheet},
-\code{disease}, \code{data_type}, \code{log_path}, \code{flag_id}, \code{row} (the flag's index
-into the checked data, not the workbook), \code{excel_row} (the real row in
+A tibble with one row per flag across every measure: \code{sheet}
+(\code{"(cross-sheet)"} for a cross-consistency flag), \code{disease}, \code{data_type},
+\code{log_path}, \code{flag_id}, \code{row} (the flag's index into the checked data, not
+the workbook; \code{NA} for a cross-sheet flag), \code{excel_row} (the real row in
 the original Excel sheet -- use this one when telling a DA what to go
-fix), \code{column}, \code{value}, \code{issue}, \code{status} (all \code{"open"} on a fresh run),
-\code{note} (\code{NA} on a fresh run -- only set once a flag has been triaged via
-\code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}} and this function is re-run). Zero rows if every
-measure is clean.
+fix; \code{NA} for a cross-sheet flag, which has no single row), \code{column},
+\code{value}, \code{issue}, \code{status} (all \code{"open"} on a fresh run), \code{note} (\code{NA} on
+a fresh run -- only set once a flag has been triaged via
+\code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}} and this function is re-run), \code{cross} (\code{TRUE}
+for a cross-consistency flag, \code{FALSE} for an ordinary single-measure
+flag). Zero rows if every measure (and any cross-consistency rules) is
+clean.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -54,6 +64,17 @@ one place instead of twelve.
 Each row's \code{flag_id} is what you pass to \code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}} to triage
 that specific issue (\code{"not_important"}, \code{"fixed"}, or \code{"noted"}) before
 closing out the whole measure with \code{\link[=eri_logs_resolve]{eri_logs_resolve()}}.
+
+If the country's CMR routing schema (\verb{inst/schemas/cmr/\{country\}.yaml})
+declares a \verb{cross_consistency:} block, this also evaluates those rules --
+declarative checks that span more than one sheet (e.g. "population on the
+RB Treatment tab must match population on the LF Treatment tab for the
+same district"), which no single-sheet DQ schema can express (see
+ADR-0024). Findings are logged as one workbook-level \code{dq_flags} entry
+(\verb{\{country\}/rblf/programmatic/consistency/logs/}, not attributable to any
+one measure) and returned as rows with \code{sheet = "(cross-sheet)"} and
+\code{cross = TRUE}. Most countries have no \verb{cross_consistency:} block yet, in
+which case this step is a silent no-op.
 }
 \examples{
 \dontrun{
