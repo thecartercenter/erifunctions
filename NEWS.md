@@ -1,4 +1,31 @@
-# erifunctions 0.9.42
+# erifunctions 0.9.43
+
+## Cross-sheet DQ checks (`cross_consistency:`)
+
+Emalee reported (email, cc Hannah, no rush) three DQ checks needed while reviewing Ethiopia's most
+recent CMR, none of which the DQ engine could express until now -- each needs to compare data
+*across* sheets, not just within one:
+
+- Population reported for a district (IU) on the RB Treatment tab must equal population reported
+  for that same district on the LF Treatment tab.
+- For a country with CDD/CS/HW training tabs: if RB+LF treated for a district is > 0, CDD+CS+HW
+  training for that district must also be > 0 (and conversely, both must be 0 together).
+
+New declarative `cross_consistency:` block on the CMR routing schema
+(`inst/schemas/cmr/{country}.yaml`), evaluated by `eri_cmr_dq_report()` (new `cross = TRUE` arg) --
+see [ADR-0024](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0024-cross-sheet-dq-at-staged-layer.md)
+for the full design. Findings are workbook-level (not attributable to one measure), logged to
+`{country}/rblf/programmatic/consistency/logs/`, and surface through the same
+`eri_dq_review()`/`eri_dq_export()`/`eri_approve_cmr()` chain as any other DQ flag, with a new
+`cross` logical column marking them (`sheet = "(cross-sheet)"`, `excel_row`/`row` blank).
+`eri_approve_cmr()` now also blocks on an unresolved cross-consistency finding -- but only when one
+was actually logged, so a period from before this shipped, or a country with no `cross_consistency:`
+rules declared, is never retroactively blocked.
+
+Rules shipped for `eth` only; every other RBLF country's routing schema can opt in later by adding
+its own rules, since the sheet names and district-roster overlaps between diseases differ per
+country. New `R/dq_cross.R` (the engine), new registered `data_type: consistency` in
+`inst/registry/data_model.yaml`.
 
 ## `.odk_creds()` aborts on unresolved auth instead of a bare 401
 

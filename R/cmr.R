@@ -798,6 +798,12 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #' its `note` argument), and re-run this function -- it re-checks from
 #' scratch each time.
 #'
+#' Also blocks on an **unresolved** cross-consistency finding (ADR-0024) if
+#' [eri_cmr_dq_report()] logged one for this period -- unlike the per-measure
+#' checks, this does NOT require a cross-check to have run at all, since most
+#' countries have no `cross_consistency:` rules declared yet: a period with no
+#' cross-check log entry is never treated as outstanding on that basis alone.
+#'
 #' **A stale flag keeps blocking until it's explicitly resolved.** This checks
 #' every `dq_flags` log entry for the period, not just the most recent one: if
 #' an earlier [eri_dq_log()] run had unresolved flags and a later rerun for the
@@ -892,6 +898,41 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
       dq_reviewed <- c(dq_reviewed, dq_logs$log_path)
     }
   }
+
+  # Cross-consistency (ADR-0024) is a workbook-level check, not a measure --
+  # it blocks on an OPEN finding only, unlike the per-measure loop above,
+  # which also blocks on "never DQ-checked at all". Most countries have no
+  # cross_consistency: rules yet, so no entry ever gets logged for them; that
+  # must never be treated as outstanding, or every period approved before
+  # this feature shipped would retroactively become unapprovable. Skip the
+  # query entirely when the country declares no rules at all -- not just an
+  # optimization: it's what keeps this a true no-op for the 6 of 7 RBLF
+  # countries (and every non-CMR/non-oncho-LF country) that don't have any.
+  cmr_schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
+  has_cross_rules <- !is.null(cmr_schema$cross_consistency) && length(cmr_schema$cross_consistency) > 0L
+
+  cross_logs <- if (has_cross_rules) {
+    tryCatch(
+      eri_logs(country, "rblf", "programmatic", "consistency",
+              operation = "dq_flags", include_handled = TRUE, data_con = data_con),
+      error = function(e) NULL
+    )
+  } else NULL
+
+  if (!is.null(cross_logs) && nrow(cross_logs) > 0L) {
+    cross_logs <- cross_logs[!is.na(cross_logs$period) & cross_logs$period == period, ]
+    open_cross <- cross_logs[cross_logs$status == "needs_review" & !cross_logs$handled, ]
+    if (nrow(open_cross) > 0L) {
+      outstanding[[length(outstanding) + 1L]] <- tibble::tibble(
+        disease = "rblf", data_type = "consistency",
+        log_path = open_cross$log_path[[1]],
+        issue = paste0(open_cross$n_issues[[1]], " unresolved cross-sheet DQ flag(s)")
+      )
+    } else {
+      dq_reviewed <- c(dq_reviewed, cross_logs$log_path)
+    }
+  }
+
   outstanding_tbl <- if (length(outstanding) > 0L) dplyr::bind_rows(outstanding) else NULL
 
   if (!is.null(outstanding_tbl) && !isTRUE(force)) {
@@ -1010,6 +1051,17 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #' that specific issue (`"not_important"`, `"fixed"`, or `"noted"`) before
 #' closing out the whole measure with [eri_logs_resolve()].
 #'
+#' If the country's CMR routing schema (`inst/schemas/cmr/{country}.yaml`)
+#' declares a `cross_consistency:` block, this also evaluates those rules --
+#' declarative checks that span more than one sheet (e.g. "population on the
+#' RB Treatment tab must match population on the LF Treatment tab for the
+#' same district"), which no single-sheet DQ schema can express (see
+#' ADR-0024). Findings are logged as one workbook-level `dq_flags` entry
+#' (`{country}/rblf/programmatic/consistency/logs/`, not attributable to any
+#' one measure) and returned as rows with `sheet = "(cross-sheet)"` and
+#' `cross = TRUE`. Most countries have no `cross_consistency:` block yet, in
+#' which case this step is a silent no-op.
+#'
 #' @param country `str` Country code (e.g. `"sdn"`).
 #' @param period `str` Reporting period (e.g. `"202605"`).
 #' @param plan `tibble` or `NULL` The plan from [eri_split_cmr()] /
@@ -1021,15 +1073,23 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   a "superseded by a newer run" note when this run logs a new one, so
 #'   re-running doesn't pile up entries you have to close by hand. Set `FALSE`
 #'   to keep every run's entry open until you resolve it yourself.
+#' @param cross `logical` Also evaluate the country's `cross_consistency:`
+#'   rules, if any. Default `TRUE`. Set `FALSE` to skip cross-sheet checks
+#'   entirely (e.g. when re-checking one measure in isolation and cross-sheet
+#'   context isn't needed).
 #' @param data_con Azure container for the `data/` blob. If `NULL`, connects automatically.
-#' @returns A tibble with one row per flag across every measure: `sheet`,
-#'   `disease`, `data_type`, `log_path`, `flag_id`, `row` (the flag's index
-#'   into the checked data, not the workbook), `excel_row` (the real row in
+#' @returns A tibble with one row per flag across every measure: `sheet`
+#'   (`"(cross-sheet)"` for a cross-consistency flag), `disease`, `data_type`,
+#'   `log_path`, `flag_id`, `row` (the flag's index into the checked data, not
+#'   the workbook; `NA` for a cross-sheet flag), `excel_row` (the real row in
 #'   the original Excel sheet -- use this one when telling a DA what to go
-#'   fix), `column`, `value`, `issue`, `status` (all `"open"` on a fresh run),
-#'   `note` (`NA` on a fresh run -- only set once a flag has been triaged via
-#'   [eri_dq_flag_resolve()] and this function is re-run). Zero rows if every
-#'   measure is clean.
+#'   fix; `NA` for a cross-sheet flag, which has no single row), `column`,
+#'   `value`, `issue`, `status` (all `"open"` on a fresh run), `note` (`NA` on
+#'   a fresh run -- only set once a flag has been triaged via
+#'   [eri_dq_flag_resolve()] and this function is re-run), `cross` (`TRUE`
+#'   for a cross-consistency flag, `FALSE` for an ordinary single-measure
+#'   flag). Zero rows if every measure (and any cross-consistency rules) is
+#'   clean.
 #' @examples
 #' \dontrun{
 #' flags <- eri_cmr_dq_report("sdn", "202605")
@@ -1038,12 +1098,13 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #' }
 #' @family CMR pipeline functions
 #' @export
-eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, data_con = NULL) {
+eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cross = TRUE, data_con = NULL) {
   data_con <- .eri_logs_con(data_con)
 
   if (is.null(plan)) plan <- eri_cmr_last_plan(country, period, data_con = data_con)
 
-  rows <- list()
+  rows   <- list()
+  tables <- list()
   for (i in seq_len(nrow(plan))) {
     p <- plan[i, ]
     staged <- tryCatch(
@@ -1065,6 +1126,8 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
     if (is.null(schema)) next
 
     result       <- run_dq_checks(staged, schema)
+    tables[[length(tables) + 1L]] <- list(sheet = p$sheet, disease = p$disease,
+                                          data_type = p$data_type, data = result$data)
     p_source_hash <- if ("source_hash" %in% names(plan)) p$source_hash else NULL
     written <- .eri_dq_log_write(result, country, p$disease, "programmatic", p$data_type, period, data_con,
                                  source_hash = p_source_hash)
@@ -1102,8 +1165,50 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
         sheet = p$sheet, disease = p$disease, data_type = p$data_type,
         log_path = written$log_path, flag_id = paste0(written$log_path, "::", f$index),
         row = f$row, excel_row = excel_row_val, column = f$column, value = f$value,
-        issue = f$issue, status = f$status, note = .eri_na_chr(f$note)
+        issue = f$issue, status = f$status, note = .eri_na_chr(f$note), cross = FALSE
       )
+    }
+  }
+
+  if (isTRUE(cross)) {
+    cross_flags <- .eri_cmr_cross_flags(country, period, tables, data_con)
+    if (!is.null(cross_flags)) {
+      cross_result <- structure(
+        list(data = tibble::tibble(), log = tibble::tibble(), flags = cross_flags,
+            schema_source = NA_character_, schema_hash = NA_character_),
+        class = "dq_result"
+      )
+      p_source_hash <- if ("source_hash" %in% names(plan) && nrow(plan) > 0L) plan$source_hash[[1]] else NULL
+      written <- .eri_dq_log_write(cross_result, country, "rblf", "programmatic", "consistency", period,
+                                   data_con, source_hash = p_source_hash)
+
+      if (isTRUE(supersede)) {
+        prior <- tryCatch(
+          eri_logs(country, "rblf", "programmatic", "consistency",
+                  operation = "dq_flags", status = "needs_review",
+                  include_handled = FALSE, data_con = data_con),
+          error = function(e) NULL
+        )
+        if (!is.null(prior) && nrow(prior) > 0L) {
+          prior <- prior[!is.na(prior$period) & prior$period == period &
+                         prior$log_path != written$log_path, , drop = FALSE]
+          for (lp in prior$log_path) {
+            eri_logs_resolve(
+              lp, note = paste0("Superseded by a newer eri_cmr_dq_report() run (", written$log_path, ")."),
+              data_con = data_con
+            )
+          }
+        }
+      }
+
+      for (f in written$flags) {
+        rows[[length(rows) + 1L]] <- tibble::tibble(
+          sheet = "(cross-sheet)", disease = "rblf", data_type = "consistency",
+          log_path = written$log_path, flag_id = paste0(written$log_path, "::", f$index),
+          row = NA_integer_, excel_row = NA_integer_, column = f$column, value = f$value,
+          issue = f$issue, status = f$status, note = .eri_na_chr(f$note), cross = TRUE
+        )
+      }
     }
   }
 
@@ -1113,7 +1218,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, da
       sheet = character(0), disease = character(0), data_type = character(0),
       log_path = character(0), flag_id = character(0), row = integer(0),
       excel_row = integer(0), column = character(0), value = character(0),
-      issue = character(0), status = character(0), note = character(0)
+      issue = character(0), status = character(0), note = character(0), cross = logical(0)
     ))
   }
 

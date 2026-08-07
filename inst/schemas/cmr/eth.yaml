@@ -233,3 +233,51 @@ sheets:
       - "#rb_ento_surv_adm2_id"
       - "#rb_ento_surv_adm3"
       - "#rb_ento_surv_disease"
+
+# Cross-sheet DQ checks (ADR-0024) -- rules that need to compare data across
+# more than one sheet, which no single-measure DQ schema can express. Reported
+# by Emalee (email, cc Hannah, 2026-07-30), from the most recent Ethiopia CMR.
+# Evaluated by eri_cmr_dq_report() against each sheet's own already-canonical
+# (post run_dq_checks()) data -- see R/dq_cross.R for the schema format and
+# aggregation semantics.
+cross_consistency:
+  rb_lf_pop_match:
+    description: >
+      Population reported for a district (IU) on the RB Treatment tab must
+      match population reported for that same district on the LF Treatment
+      tab. LF only covers a subset of RB's endemic districts -- a district
+      appearing on only one tab is a coverage difference, not a mismatch, and
+      is never flagged (no missing_as on either side).
+    join_key: district
+    lhs:
+      agg: unique
+      sources:
+        - {disease: oncho, data_type: treatment, column: population}
+    rhs:
+      agg: unique
+      sources:
+        - {disease: lf, data_type: treatment, column: population}
+    op: "=="
+    message: "RB and LF Treatment report different population for this district"
+  treatment_implies_training:
+    description: >
+      If a district's RB+LF treated total is > 0, its CDD+CS+HW training
+      total must also be > 0 (and conversely, both must be 0 together). Only
+      evaluated where at least one of those training sheets has real data
+      this period -- a country/period with none of them present skips this
+      rule entirely, not a false flag.
+    join_key: district
+    lhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: oncho, data_type: treatment, column: treated}
+        - {disease: lf, data_type: treatment, column: treated}
+    rhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: rblf, data_type: training, column: tot,
+          sheets: ["CDD Training", "CS Training", "HW Training"]}
+    op: same_sign
+    message: "treatment and training activity disagree on whether this district had any activity this period"
