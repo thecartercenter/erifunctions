@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,32 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.42/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.44" id="erifunctions-0944">erifunctions 0.9.44<a class="anchor" aria-label="anchor" href="#erifunctions-0944"></a></h2>
+<div class="section level3">
+<h3 id="brazilvenezuela-oepa-oncho-cmr-onboarding-0-9-44">Brazil/Venezuela (OEPA oncho) CMR onboarding<a class="anchor" aria-label="anchor" href="#brazilvenezuela-oepa-oncho-cmr-onboarding-0-9-44"></a></h3>
+<p><code><a href="../reference/eri_do.html">eri_do()</a></code>’s CMR flow can now bring in Brazil and Venezuela’s monthly reports (OEPA oncho program, Amazonas/Yanomami and South/Orinoco foci) the same way as any RB-expansion country.</p>
+<ul><li>CMR routing schemas (<code>inst/schemas/cmr/bra.yaml</code>/<code>ven.yaml</code>, oncho-only subset of sheets) and DQ schemas (<code>inst/schemas/{bra,ven}_oncho_programmatic_{treatment,prevalence,entomology}.yaml</code>, real ADM2 district <code>allowed_values</code>) authored and validated against real June 2026 submissions – routes and stages clean, DQ passes with no unexpected flags.</li>
+<li>
+<code>bra</code>/<code>ven</code> registered in <code>inst/registry/data_model.yaml</code> and, the piece that actually gates <code><a href="../reference/eri_do.html">eri_do()</a></code>, added to the <code>rb-expansion</code> pipeline’s <code>country_map</code> (<code>R/dal.R</code>) – without this a DA could not select either country in the wizard at all. They share the same <code>health-rb-country-expansion-dev</code> raw-drop convention as the African rb-expansion countries; this isn’t a separate legacy pipeline.</li>
+<li>Mirroring to the legacy contractor pipeline is on by default for both, same as every other non-cutover-tracked country (<code>.eri_wizard_should_mirror_cmr()</code>’s existing behavior – no code change needed).</li>
+</ul><p>Closes <a href="https://github.com/thecartercenter/erifunctions/issues/325" class="external-link">#325</a>.</p>
+</div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.43" id="erifunctions-0943">erifunctions 0.9.43<a class="anchor" aria-label="anchor" href="#erifunctions-0943"></a></h2>
+<div class="section level3">
+<h3 id="cross-sheet-dq-checks-cross_consistency-0-9-43">Cross-sheet DQ checks (<code>cross_consistency:</code>)<a class="anchor" aria-label="anchor" href="#cross-sheet-dq-checks-cross_consistency-0-9-43"></a></h3>
+<p>Emalee reported (email, cc Hannah, no rush) three DQ checks needed while reviewing Ethiopia’s most recent CMR, none of which the DQ engine could express until now – each needs to compare data <em>across</em> sheets, not just within one:</p>
+<ul><li>Population reported for a district (IU) on the RB Treatment tab must equal population reported for that same district on the LF Treatment tab.</li>
+<li>For a country with CDD/CS/HW training tabs: if RB+LF treated for a district is &gt; 0, CDD+CS+HW training for that district must also be &gt; 0 (and conversely, both must be 0 together).</li>
+</ul><p>New declarative <code>cross_consistency:</code> block on the CMR routing schema (<code>inst/schemas/cmr/{country}.yaml</code>), evaluated by <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> (new <code>cross = TRUE</code> arg) – see <a href="https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0024-cross-sheet-dq-at-staged-layer.md" class="external-link">ADR-0024</a> for the full design. Findings are workbook-level (not attributable to one measure), logged to <code>{country}/rblf/programmatic/consistency/logs/</code>, and surface through the same <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>/<code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code>/<code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> chain as any other DQ flag, with a new <code>cross</code> logical column marking them (<code>sheet = "(cross-sheet)"</code>, <code>excel_row</code>/<code>row</code> blank). <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> now also blocks on an unresolved cross-consistency finding – but only when one was actually logged, so a period from before this shipped, or a country with no <code>cross_consistency:</code> rules declared, is never retroactively blocked.</p>
+<p>Rules shipped for <code>eth</code> only; every other RBLF country’s routing schema can opt in later by adding its own rules, since the sheet names and district-roster overlaps between diseases differ per country. New <code>R/dq_cross.R</code> (the engine), new registered <code>data_type: consistency</code> in <code>inst/registry/data_model.yaml</code>.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.42" id="erifunctions-0942">erifunctions 0.9.42<a class="anchor" aria-label="anchor" href="#erifunctions-0942"></a></h2>
 <div class="section level3">

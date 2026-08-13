@@ -40,6 +40,8 @@ eri_data_model()
 #> • uga -- Uganda
 #> • mad -- Madagascar
 #> • tcd -- Chad
+#> • bra -- Brazil (OEPA oncho program, Amazonas focus)
+#> • ven -- Venezuela (OEPA oncho program, South/Orinoco focus)
 #> • atlantis -- (training sandbox) Synthetic country for teaching/testing; not a
 #>   real ERI program.
 #> 
@@ -78,6 +80,9 @@ eri_data_model()
 #> • tas -- Transmission assessment survey (LF).
 #> • prevalence -- Prevalence survey (e.g. Kato-Katz, skin snip).
 #> • entomology -- Vector / entomological surveillance (e.g. larval prospection).
+#> • consistency -- Cross-sheet/cross-measure consistency check spanning multiple
+#>   measures of one CMR workbook (not a single-sheet measure itself; see
+#>   ADR-0024).
 #> 
 #> ── format (input shape of a programmatic source) ──
 #> 

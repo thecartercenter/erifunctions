@@ -22,6 +22,17 @@ to triage that specific issue (`"not_important"`, `"fixed"`, or
 `"noted"`) before closing out the whole measure with
 [`eri_logs_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_logs_resolve.md).
 
+If the country's CMR routing schema (`inst/schemas/cmr/{country}.yaml`)
+declares a `cross_consistency:` block, this also evaluates those rules –
+declarative checks that span more than one sheet (e.g. "population on
+the RB Treatment tab must match population on the LF Treatment tab for
+the same district"), which no single-sheet DQ schema can express (see
+ADR-0024). Findings are logged as one workbook-level `dq_flags` entry
+(`{country}/rblf/programmatic/consistency/logs/`, not attributable to
+any one measure) and returned as rows with `sheet = "(cross-sheet)"` and
+`cross = TRUE`. Most countries have no `cross_consistency:` block yet,
+in which case this step is a silent no-op.
+
 ## Usage
 
 ``` r
@@ -30,6 +41,7 @@ eri_cmr_dq_report(
   period,
   plan = NULL,
   supersede = TRUE,
+  cross = TRUE,
   data_con = NULL
 )
 ```
@@ -65,6 +77,13 @@ eri_cmr_dq_report(
   close by hand. Set `FALSE` to keep every run's entry open until you
   resolve it yourself.
 
+- cross:
+
+  `logical` Also evaluate the country's `cross_consistency:` rules, if
+  any. Default `TRUE`. Set `FALSE` to skip cross-sheet checks entirely
+  (e.g. when re-checking one measure in isolation and cross-sheet
+  context isn't needed).
+
 - data_con:
 
   Azure container for the `data/` blob. If `NULL`, connects
@@ -72,14 +91,19 @@ eri_cmr_dq_report(
 
 ## Value
 
-A tibble with one row per flag across every measure: `sheet`, `disease`,
+A tibble with one row per flag across every measure: `sheet`
+(`"(cross-sheet)"` for a cross-consistency flag), `disease`,
 `data_type`, `log_path`, `flag_id`, `row` (the flag's index into the
-checked data, not the workbook), `excel_row` (the real row in the
-original Excel sheet – use this one when telling a DA what to go fix),
-`column`, `value`, `issue`, `status` (all `"open"` on a fresh run),
-`note` (`NA` on a fresh run – only set once a flag has been triaged via
+checked data, not the workbook; `NA` for a cross-sheet flag),
+`excel_row` (the real row in the original Excel sheet – use this one
+when telling a DA what to go fix; `NA` for a cross-sheet flag, which has
+no single row), `column`, `value`, `issue`, `status` (all `"open"` on a
+fresh run), `note` (`NA` on a fresh run – only set once a flag has been
+triaged via
 [`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
-and this function is re-run). Zero rows if every measure is clean.
+and this function is re-run), `cross` (`TRUE` for a cross-consistency
+flag, `FALSE` for an ordinary single-measure flag). Zero rows if every
+measure (and any cross-consistency rules) is clean.
 
 ## See also
 

@@ -22,6 +22,13 @@ attention. Review each, close it out with
 (passing what you did/decided via its `note` argument), and re-run this
 function – it re-checks from scratch each time.
 
+Also blocks on an **unresolved** cross-consistency finding (ADR-0024) if
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+logged one for this period – unlike the per-measure checks, this does
+NOT require a cross-check to have run at all, since most countries have
+no `cross_consistency:` rules declared yet: a period with no cross-check
+log entry is never treated as outstanding on that basis alone.
+
 **A stale flag keeps blocking until it's explicitly resolved.** This
 checks every `dq_flags` log entry for the period, not just the most
 recent one: if an earlier

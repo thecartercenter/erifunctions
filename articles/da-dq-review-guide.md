@@ -142,6 +142,19 @@ flags[, c("excel_row", "column", "value", "issue", "status")]
 Two flags, one measure. Now forget that tibble exists – from here on,
 one function.
 
+> **A note on cross-sheet flags.** For a country whose CMR routing
+> schema declares `cross_consistency:` rules (Ethiopia, as of this
+> writing – e.g. “population must match between the RB and LF Treatment
+> tabs for the same district”),
+> [`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+> also compares data *across* sheets, not just within one. Those flags
+> show `sheet = "(cross-sheet)"` and a blank `excel_row` – there’s no
+> single cell to point at, since the issue is a relationship between two
+> (or more) sheets, not a bad value in one.
+> [`eri_dq_review()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_review.md)’s
+> menu for one of these drops “Fix in source” and “Adjust the schema”
+> accordingly; you can still mark it not important or noted.
+
 ## 3. Run the review
 
 ``` r

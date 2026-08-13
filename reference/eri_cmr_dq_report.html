@@ -9,7 +9,17 @@ tibble spanning every flag from every measure – sortable/filterable in
 one place instead of twelve.
 Each row's flag_id is what you pass to eri_dq_flag_resolve() to triage
 that specific issue (&quot;not_important&quot;, &quot;fixed&quot;, or &quot;noted&quot;) before
-closing out the whole measure with eri_logs_resolve()."><meta property="og:description" content="
+closing out the whole measure with eri_logs_resolve().
+If the country's CMR routing schema (inst/schemas/cmr/{country}.yaml)
+declares a cross_consistency: block, this also evaluates those rules –
+declarative checks that span more than one sheet (e.g. &quot;population on the
+RB Treatment tab must match population on the LF Treatment tab for the
+same district&quot;), which no single-sheet DQ schema can express (see
+ADR-0024). Findings are logged as one workbook-level dq_flags entry
+({country}/rblf/programmatic/consistency/logs/, not attributable to any
+one measure) and returned as rows with sheet = &quot;(cross-sheet)&quot; and
+cross = TRUE. Most countries have no cross_consistency: block yet, in
+which case this step is a silent no-op."><meta property="og:description" content="
 eri_split_cmr() fans one CMR workbook out into many disease/measure
 datasets; checking each with run_dq_checks() one at a time means reading
 twelve separate dq_report() printouts. This runs DQ checks for every
@@ -19,7 +29,17 @@ tibble spanning every flag from every measure – sortable/filterable in
 one place instead of twelve.
 Each row's flag_id is what you pass to eri_dq_flag_resolve() to triage
 that specific issue (&quot;not_important&quot;, &quot;fixed&quot;, or &quot;noted&quot;) before
-closing out the whole measure with eri_logs_resolve()."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
+closing out the whole measure with eri_logs_resolve().
+If the country's CMR routing schema (inst/schemas/cmr/{country}.yaml)
+declares a cross_consistency: block, this also evaluates those rules –
+declarative checks that span more than one sheet (e.g. &quot;population on the
+RB Treatment tab must match population on the LF Treatment tab for the
+same district&quot;), which no single-sheet DQ schema can express (see
+ADR-0024). Findings are logged as one workbook-level dq_flags entry
+({country}/rblf/programmatic/consistency/logs/, not attributable to any
+one measure) and returned as rows with sheet = &quot;(cross-sheet)&quot; and
+cross = TRUE. Most countries have no cross_consistency: block yet, in
+which case this step is a silent no-op."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -27,7 +47,7 @@ closing out the whole measure with eri_logs_resolve()."><meta property="og:image
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,7 +111,7 @@ closing out the whole measure with eri_logs_resolve()."><meta property="og:image
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Run and log DQ checks for a whole CMR workbook, one combined report</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.42/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_cmr_dq_report.Rd</code></div>
     </div>
 
@@ -107,6 +127,16 @@ one place instead of twelve.</p>
 <p>Each row's <code>flag_id</code> is what you pass to <code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> to triage
 that specific issue (<code>"not_important"</code>, <code>"fixed"</code>, or <code>"noted"</code>) before
 closing out the whole measure with <code><a href="eri_logs_resolve.html">eri_logs_resolve()</a></code>.</p>
+<p>If the country's CMR routing schema (<code>inst/schemas/cmr/{country}.yaml</code>)
+declares a <code>cross_consistency:</code> block, this also evaluates those rules –
+declarative checks that span more than one sheet (e.g. "population on the
+RB Treatment tab must match population on the LF Treatment tab for the
+same district"), which no single-sheet DQ schema can express (see
+ADR-0024). Findings are logged as one workbook-level <code>dq_flags</code> entry
+(<code>{country}/rblf/programmatic/consistency/logs/</code>, not attributable to any
+one measure) and returned as rows with <code>sheet = "(cross-sheet)"</code> and
+<code>cross = TRUE</code>. Most countries have no <code>cross_consistency:</code> block yet, in
+which case this step is a silent no-op.</p>
     </div>
 
     <div class="section level2">
@@ -116,6 +146,7 @@ closing out the whole measure with <code><a href="eri_logs_resolve.html">eri_log
 <span>  <span class="va">period</span>,</span>
 <span>  plan <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  supersede <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cross <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  data_con <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -147,20 +178,31 @@ re-running doesn't pile up entries you have to close by hand. Set <code>FALSE</c
 to keep every run's entry open until you resolve it yourself.</p></dd>
 
 
+<dt id="arg-cross">cross<a class="anchor" aria-label="anchor" href="#arg-cross"></a></dt>
+<dd><p><code>logical</code> Also evaluate the country's <code>cross_consistency:</code>
+rules, if any. Default <code>TRUE</code>. Set <code>FALSE</code> to skip cross-sheet checks
+entirely (e.g. when re-checking one measure in isolation and cross-sheet
+context isn't needed).</p></dd>
+
+
 <dt id="arg-data-con">data_con<a class="anchor" aria-label="anchor" href="#arg-data-con"></a></dt>
 <dd><p>Azure container for the <code>data/</code> blob. If <code>NULL</code>, connects automatically.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with one row per flag across every measure: <code>sheet</code>,
-<code>disease</code>, <code>data_type</code>, <code>log_path</code>, <code>flag_id</code>, <code>row</code> (the flag's index
-into the checked data, not the workbook), <code>excel_row</code> (the real row in
+    <p>A tibble with one row per flag across every measure: <code>sheet</code>
+(<code>"(cross-sheet)"</code> for a cross-consistency flag), <code>disease</code>, <code>data_type</code>,
+<code>log_path</code>, <code>flag_id</code>, <code>row</code> (the flag's index into the checked data, not
+the workbook; <code>NA</code> for a cross-sheet flag), <code>excel_row</code> (the real row in
 the original Excel sheet – use this one when telling a DA what to go
-fix), <code>column</code>, <code>value</code>, <code>issue</code>, <code>status</code> (all <code>"open"</code> on a fresh run),
-<code>note</code> (<code>NA</code> on a fresh run – only set once a flag has been triaged via
-<code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> and this function is re-run). Zero rows if every
-measure is clean.</p>
+fix; <code>NA</code> for a cross-sheet flag, which has no single row), <code>column</code>,
+<code>value</code>, <code>issue</code>, <code>status</code> (all <code>"open"</code> on a fresh run), <code>note</code> (<code>NA</code> on
+a fresh run – only set once a flag has been triaged via
+<code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> and this function is re-run), <code>cross</code> (<code>TRUE</code>
+for a cross-consistency flag, <code>FALSE</code> for an ordinary single-measure
+flag). Zero rows if every measure (and any cross-consistency rules) is
+clean.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

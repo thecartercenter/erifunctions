@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Uploading and processing a monthly country report (CMR) (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.42/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-cmr-guide.Rmd" class="external-link"><code>vignettes/da-cmr-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-cmr-guide.Rmd</code></div>
     </div>
 
@@ -473,10 +473,16 @@ every flag from every measure – instead of twelve separate
 <span><span class="co">#&gt; ✔ Logged 1 DQ flag (needs_review).</span></span>
 <span><span class="co">#&gt; ✔ Logged 0 DQ flags (clean).</span></span>
 <span><span class="va">flags</span></span>
-<span><span class="co">#&gt; # A tibble: 1 × 11</span></span>
-<span><span class="co">#&gt;   sheet        disease data_type log_path      flag_id        row column value issue         status note</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;         &lt;chr&gt;        &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;         &lt;chr&gt;  &lt;chr&gt;</span></span>
-<span><span class="co">#&gt; 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4 target 0     out of range  open   &lt;NA&gt;</span></span></code></pre></div>
+<span><span class="co">#&gt; # A tibble: 1 × 13</span></span>
+<span><span class="co">#&gt;   sheet        disease data_type log_path      flag_id        row excel_row column value issue         status note  cross</span></span>
+<span><span class="co">#&gt;   &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;         &lt;chr&gt;        &lt;int&gt;     &lt;int&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;         &lt;chr&gt;  &lt;chr&gt; &lt;lgl&gt;</span></span>
+<span><span class="co">#&gt; 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4         9 target 0     out of range  open   &lt;NA&gt;  FALSE</span></span></code></pre></div>
+<p>If the country’s CMR routing schema declares
+<code>cross_consistency:</code> rules (Ethiopia, as of this writing), a
+flag comparing data <em>across</em> sheets can also show up here, with
+<code>sheet = "(cross-sheet)"</code>, a blank <code>excel_row</code>,
+and <code>cross = TRUE</code> – see the <a href="da-dq-review-guide.html#split">DQ review guide</a> for what that
+means and how to work through one.</p>
 <p>Work through it <strong>issue by issue</strong>, not measure by
 measure: mark each flag <code>"not_important"</code>,
 <code>"fixed"</code>, or <code>"noted"</code>, with a note explaining

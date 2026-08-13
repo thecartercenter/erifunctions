@@ -13,6 +13,11 @@ a task list: one row per measure still needing attention. Review each,
 close it out with eri_logs_resolve() (passing what you did/decided via
 its note argument), and re-run this function – it re-checks from
 scratch each time.
+Also blocks on an unresolved cross-consistency finding (ADR-0024) if
+eri_cmr_dq_report() logged one for this period – unlike the per-measure
+checks, this does NOT require a cross-check to have run at all, since most
+countries have no cross_consistency: rules declared yet: a period with no
+cross-check log entry is never treated as outstanding on that basis alone.
 A stale flag keeps blocking until it's explicitly resolved. This checks
 every dq_flags log entry for the period, not just the most recent one: if
 an earlier eri_dq_log() run had unresolved flags and a later rerun for the
@@ -46,6 +51,11 @@ a task list: one row per measure still needing attention. Review each,
 close it out with eri_logs_resolve() (passing what you did/decided via
 its note argument), and re-run this function – it re-checks from
 scratch each time.
+Also blocks on an unresolved cross-consistency finding (ADR-0024) if
+eri_cmr_dq_report() logged one for this period – unlike the per-measure
+checks, this does NOT require a cross-check to have run at all, since most
+countries have no cross_consistency: rules declared yet: a period with no
+cross-check log entry is never treated as outstanding on that basis alone.
 A stale flag keeps blocking until it's explicitly resolved. This checks
 every dq_flags log entry for the period, not just the most recent one: if
 an earlier eri_dq_log() run had unresolved flags and a later rerun for the
@@ -73,7 +83,7 @@ as an ordinary approval."><meta property="og:image" content="https://thecarterce
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -137,7 +147,7 @@ as an ordinary approval."><meta property="og:image" content="https://thecarterce
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Approve every disease/measure one CMR workbook routed to, in one call</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.42/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_approve_cmr.Rd</code></div>
     </div>
 
@@ -156,6 +166,11 @@ a task list: one row per measure still needing attention. Review each,
 close it out with <code><a href="eri_logs_resolve.html">eri_logs_resolve()</a></code> (passing what you did/decided via
 its <code>note</code> argument), and re-run this function – it re-checks from
 scratch each time.</p>
+<p>Also blocks on an <strong>unresolved</strong> cross-consistency finding (ADR-0024) if
+<code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> logged one for this period – unlike the per-measure
+checks, this does NOT require a cross-check to have run at all, since most
+countries have no <code>cross_consistency:</code> rules declared yet: a period with no
+cross-check log entry is never treated as outstanding on that basis alone.</p>
 <p><strong>A stale flag keeps blocking until it's explicitly resolved.</strong> This checks
 every <code>dq_flags</code> log entry for the period, not just the most recent one: if
 an earlier <code><a href="eri_dq_log.html">eri_dq_log()</a></code> run had unresolved flags and a later rerun for the

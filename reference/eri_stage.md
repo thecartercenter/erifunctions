@@ -17,7 +17,7 @@ for each collision and the file is overwritten.
 |----|----|----|
 | Name | Project folder | Countries |
 | `hsp-mal` | health-hsp-malaria-dev | `"dr"`, `"ht"` |
-| `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"` |
+| `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"`, `"bra"`, `"ven"` |
 
 ## Usage
 

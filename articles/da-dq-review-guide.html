@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.42</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.44</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging and handing back DQ flags, interactively (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.42/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-dq-review-guide.Rmd</code></div>
     </div>
 
@@ -240,6 +240,19 @@ in depth in the <a href="da-cmr-guide.html#dq-check">CMR guide</a>.</p>
 <span><span class="co">#&gt; 2         8 district Atlantis City Value not in allowed_values list       open</span></span></code></pre></div>
 <p>Two flags, one measure. Now forget that tibble exists – from here on,
 one function.</p>
+<blockquote>
+<p><strong>A note on cross-sheet flags.</strong> For a country whose CMR
+routing schema declares <code>cross_consistency:</code> rules (Ethiopia,
+as of this writing – e.g. “population must match between the RB and LF
+Treatment tabs for the same district”), <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code>
+also compares data <em>across</em> sheets, not just within one. Those
+flags show <code>sheet = "(cross-sheet)"</code> and a blank
+<code>excel_row</code> – there’s no single cell to point at, since the
+issue is a relationship between two (or more) sheets, not a bad value in
+one. <code><a href="../reference/eri_dq_review.html">eri_dq_review()</a></code>’s menu for one of these drops “Fix in
+source” and “Adjust the schema” accordingly; you can still mark it not
+important or noted.</p>
+</blockquote>
 </div>
 <div class="section level2">
 <h2 id="review">3. Run the review<a class="anchor" aria-label="anchor" href="#review"></a>
