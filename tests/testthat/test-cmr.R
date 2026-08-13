@@ -323,7 +323,7 @@ test_that("eri_ingest_cmr alias resolution works without country (no alias looku
 })
 
 test_that("load_cmr_schema each sheet has field_code_prefix and required_fields", {
-  for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       sheet_def <- schema$sheets[[sheet]]
@@ -338,7 +338,7 @@ test_that("load_cmr_schema each sheet has field_code_prefix and required_fields"
 })
 
 test_that("load_cmr_schema required_fields all start with #", {
-  for (country in c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       fields <- schema$sheets[[sheet]]$required_fields
@@ -464,7 +464,7 @@ test_that("eri_split_cmr keeps the per-row program code as a column (no disease 
 
 test_that("every country's CMR schema routes at least one sheet to a registered measure", {
   measures <- names(erifunctions:::.eri_data_model()$data_types)
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     routed <- Filter(function(s) !is.null(s$disease) && !is.null(s$data_type), schema$sheets)
     expect_gt(length(routed), 0L,
@@ -481,7 +481,7 @@ test_that("every bundled CMR sheet declares routing keys (no silently-skipped da
   # Bundled CMR schemas only contain data sheets (reference tabs with no field
   # codes are excluded at generation), so every sheet must declare disease +
   # data_type or eri_split_cmr() would silently drop its data.
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       sd <- schema$sheets[[sheet]]

@@ -1,3 +1,25 @@
+# erifunctions 0.9.44
+
+## Brazil/Venezuela (OEPA oncho) CMR onboarding
+
+`eri_do()`'s CMR flow can now bring in Brazil and Venezuela's monthly reports (OEPA oncho
+program, Amazonas/Yanomami and South/Orinoco foci) the same way as any RB-expansion country.
+
+- CMR routing schemas (`inst/schemas/cmr/bra.yaml`/`ven.yaml`, oncho-only subset of sheets)
+  and DQ schemas (`inst/schemas/{bra,ven}_oncho_programmatic_{treatment,prevalence,entomology}.yaml`,
+  real ADM2 district `allowed_values`) authored and validated against real June 2026
+  submissions -- routes and stages clean, DQ passes with no unexpected flags.
+- `bra`/`ven` registered in `inst/registry/data_model.yaml` and, the piece that actually
+  gates `eri_do()`, added to the `rb-expansion` pipeline's `country_map` (`R/dal.R`) --
+  without this a DA could not select either country in the wizard at all. They share the
+  same `health-rb-country-expansion-dev` raw-drop convention as the African rb-expansion
+  countries; this isn't a separate legacy pipeline.
+- Mirroring to the legacy contractor pipeline is on by default for both, same as every
+  other non-cutover-tracked country (`.eri_wizard_should_mirror_cmr()`'s existing behavior
+  -- no code change needed).
+
+Closes [#325](https://github.com/thecartercenter/erifunctions/issues/325).
+
 # erifunctions 0.9.43
 
 ## Cross-sheet DQ checks (`cross_consistency:`)
@@ -26,6 +48,8 @@ Rules shipped for `eth` only; every other RBLF country's routing schema can opt 
 its own rules, since the sheet names and district-roster overlaps between diseases differ per
 country. New `R/dq_cross.R` (the engine), new registered `data_type: consistency` in
 `inst/registry/data_model.yaml`.
+
+# erifunctions 0.9.42
 
 ## `.odk_creds()` aborts on unresolved auth instead of a bare 401
 

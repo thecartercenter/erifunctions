@@ -1,0 +1,141 @@
+# Built 2026-07-23 against the real CMR field codes (#rbtrt_* prefix) and real
+# ADMIN1/ADMIN2 names, via read-only recon (admin-unit names only -- no
+# treatment/population counts read or persisted) against the real VEN 2026 June
+# submission. Numeric ranges are generic placeholders (not fitted to a real
+# max, unlike eth's/uga's, since count columns weren't read this pass) -- tighten
+# once a real submission's values are reviewed.
+
+country: ven
+disease: oncho
+data_source: programmatic
+data_type: treatment
+version: '1.0'
+description: Venezuela (OEPA) oncho MDA coverage, 'RB Treatment' sheet of the monthly CMR
+language: en
+time_grain: annual
+temporal:
+  year_col: year
+  period_col: treatment_round
+preprocessing:
+  - remove_smart_quotes
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases:
+      - Year
+      - YEAR
+      - '#rbtrt_year'
+    range: [1990, 2035]
+  focus:
+    required: false
+    type: character
+    aliases:
+      - Focus
+      - Region
+      - adm1
+      - '#rbtrt_adm1'
+  district:
+    required: true
+    type: character
+    aliases:
+      - District
+      - district_name
+      - adm2
+      - '#rbtrt_adm2'
+    allowed_values:
+      - Caura
+      - Chalbaud
+      - Guaharibos
+      - Mavaca
+      - Ocamo
+      - Orinoquito
+      - Padamo
+      - Parima
+      - Platanal
+      - Siapa
+      - Uasadi
+      - Ventuari
+  sub_district:
+    required: false
+    type: character
+    aliases:
+      - SubDistrict
+      - sub_district
+      - adm3
+      - '#rbtrt_adm3'
+  disease_reported:
+    required: false
+    type: character
+    aliases:
+      - '#rbtrt_disease'
+  population:
+    required: false
+    type: numeric
+    aliases:
+      - Population
+      - '#rbtrt_pop'
+    range: [0, 50000]
+  treatment_round:
+    required: false
+    type: numeric
+    aliases:
+      - Round
+      - MDA_round
+      - treatment_round
+      - '#rbtrt_trtrd'
+    range: [0, 10]
+  target_pop:
+    required: false
+    type: numeric
+    aliases:
+      - TargetPop
+      - target_population
+      - eligible_pop
+      - '#rbtrt_trttarget'
+    range: [0, 50000]
+  village_target:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_villagetarget'
+    range: [0, 200]
+  male_treated:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_male_tot'
+    range: [0, 50000]
+  female_treated:
+    required: false
+    type: numeric
+    aliases:
+      - '#rbtrt_fem_tot'
+    range: [0, 50000]
+  treated:
+    required: true
+    type: numeric
+    aliases:
+      - Treated
+      - people_treated
+      - '#rbtrt_tot'
+    range: [0, 50000]
+  coverage_pct:
+    required: false
+    type: numeric
+    aliases:
+      - CoveragePct
+      - coverage
+      - '#rbtrt_coverage'
+    range: [0, 150]
+consistency:
+  implausible_overcoverage:
+    lhs: treated
+    op: <=
+    rhs: target_pop
+    message: treated exceeds target_pop (over 100% raw coverage)
+  treated_nonneg:
+    lhs: treated
+    op: '>='
+    rhs_value: 0.0
+    message: Negative treated count

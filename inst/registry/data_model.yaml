@@ -26,6 +26,8 @@ countries:
   uga:      "Uganda"
   mad:      "Madagascar"
   tcd:      "Chad"
+  bra:      "Brazil (OEPA oncho program, Amazonas focus)"
+  ven:      "Venezuela (OEPA oncho program, South/Orinoco focus)"
   atlantis: "(training sandbox) Synthetic country for teaching/testing; not a real ERI program."
 
 diseases:

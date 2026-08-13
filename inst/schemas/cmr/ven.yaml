@@ -1,0 +1,64 @@
+country: venezuela
+country_code: ven
+language: en
+template: english_cmr
+
+# Generated 2026-07-23 from the real CMR field codes (structure/sheet names/admin-unit
+# names only -- no treatment/survey counts read or persisted), against the real VEN
+# 2026 Country Monthly Report (June 2026 submission). Venezuela's OEPA oncho template
+# is an oncho-only, 3-sheet subset of the full RBLF template (no SCH/LF/training sheets
+# -- expected for the Americas oncho-elimination program, not a gap in this routing
+# list). Field codes are identical to the African RBLF countries' RB Treatment/RB Epi
+# Surveys/RB Ento Surveys sheets (#rbtrt_*, #rb_epi_surv_*, #rb_ento_surv_*), so the
+# same eri_ingest_cmr()/eri_split_cmr() pipeline applies unchanged.
+#
+# KNOWN BLOCKER (ADR-0022): the real VEN workbook's "RB Ento Surveys" sheet has the
+# same recurring duplicate-field-code template defect seen in sdn/ssd/uga (and bra)
+# (#rb_ento_surv_otz and #rb_ento_surv_notes_jan each typed twice in row 5). Per
+# ADR-0022 this aborts the WHOLE workbook, not just that sheet -- eri_split_cmr() will
+# not stage this file until Carter Center's template maintainers correct the master
+# template. This schema is ready; the source file is not.
+
+sheets:
+  "RB Treatment":
+    field_code_prefix: "#rbtrt_"
+    disease: oncho
+    data_type: treatment
+    required_fields:
+      - "#rbtrt_year"
+      - "#rbtrt_adm0"
+      - "#rbtrt_adm0_id"
+      - "#rbtrt_adm1"
+      - "#rbtrt_adm1_id"
+      - "#rbtrt_adm2"
+      - "#rbtrt_adm2_id"
+      - "#rbtrt_adm3"
+      - "#rbtrt_disease"
+  "RB Epi Surveys":
+    field_code_prefix: "#rb_epi_surv_"
+    disease: oncho
+    data_type: prevalence
+    required_fields:
+      - "#rb_epi_surv_year"
+      - "#rb_epi_surv_adm0"
+      - "#rb_epi_surv_adm0_id"
+      - "#rb_epi_surv_adm1"
+      - "#rb_epi_surv_adm1_id"
+      - "#rb_epi_surv_adm2"
+      - "#rb_epi_surv_adm2_id"
+      - "#rb_epi_surv_adm3"
+      - "#rb_epi_surv_disease"
+  "RB Ento Surveys":
+    field_code_prefix: "#rb_ento_surv_"
+    disease: oncho
+    data_type: entomology
+    required_fields:
+      - "#rb_ento_surv_year"
+      - "#rb_ento_surv_adm0"
+      - "#rb_ento_surv_adm0_id"
+      - "#rb_ento_surv_adm1"
+      - "#rb_ento_surv_adm1_id"
+      - "#rb_ento_surv_adm2"
+      - "#rb_ento_surv_adm2_id"
+      - "#rb_ento_surv_adm3"
+      - "#rb_ento_surv_disease"
