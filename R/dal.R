@@ -1230,7 +1230,7 @@ eri_trigger <- function(pipeline, country, disease,
 #' | Name | Project folder | Countries |
 #' |------|---------------|-----------|
 #' | `hsp-mal` | health-hsp-malaria-dev | `"dr"`, `"ht"` |
-#' | `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"` |
+#' | `rb-expansion` | health-rb-country-expansion-dev | `"eth"`, `"nga"`, `"sdn"`, `"ssd"`, `"uga"`, `"mad"`, `"tcd"`, `"bra"`, `"ven"` |
 #'
 #' @param pipeline `str` Registered pipeline name: `"hsp-mal"` or `"rb-expansion"`.
 #' @param country `str` Country code (e.g. `"dr"`, `"ht"`).
@@ -1653,7 +1653,11 @@ eri_ingest <- function(path, country, disease,
       "ssd" = "ssd",
       "uga" = "uga",
       "mad" = "mad",
-      "tcd" = "tcd"
+      "tcd" = "tcd",
+      # OEPA oncho program (issue #325) -- same shared raw-drop convention as the
+      # African rb-expansion countries above, not a separate legacy pipeline.
+      "bra" = "bra",
+      "ven" = "ven"
     )
   )
 )

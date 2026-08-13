@@ -1,0 +1,63 @@
+country: ven
+disease: oncho
+data_source: programmatic
+data_type: entomology
+version: "1.0"
+description: "Venezuela (OEPA) onchocerciasis entomological (blackfly) surveys, RB Ento Surveys sheet of the monthly CMR"
+language: en
+time_grain: annual
+
+# Built 2026-07-23 against the real district values in Venezuela's "RB Ento Surveys"
+# sheet (2026 June submission, #rb_ento_surv_* prefix), via read-only recon (admin-
+# unit names only -- no counts read or persisted).
+#
+# This sheet has the known duplicate field-code template defect ("#rb_ento_surv_otz"
+# and "#rb_ento_surv_notes_jan" each typed twice) shared with sdn/ssd/uga/eth/bra,
+# which blocks eri_ingest_cmr() from building a clean data frame for it (ADR-0022) --
+# and, per ADR-0022, aborts the WHOLE workbook, not just this sheet. That doesn't
+# block reading a SPECIFIC column directly, though -- the district list below was
+# read straight from the raw sheet (readxl, no dedup/cleanup needed for a single
+# column), bypassing eri_ingest_cmr() entirely rather than waiting on the template
+# fix. 12 real districts (same roster as Venezuela's RB Treatment/RB Epi Surveys
+# sheets).
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#rb_ento_surv_year"]
+    range: [1990, 2035]
+
+  focus:
+    required: false
+    type: character
+    aliases: [Focus, Region, adm1, "#rb_ento_surv_adm1"]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, district_name, adm2, "#rb_ento_surv_adm2"]
+    allowed_values: [Caura, Chalbaud, Guaharibos, Mavaca, Ocamo, Orinoquito, Padamo,
+      Parima, Platanal, Siapa, Uasadi, Ventuari]
+
+  sub_district:
+    required: false
+    type: character
+    aliases: [SubDistrict, sub_district, adm3, "#rb_ento_surv_adm3"]
+
+  otz:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_otz"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#rb_ento_surv_disease"]
