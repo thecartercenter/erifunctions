@@ -54,6 +54,12 @@ close it out with \code{\link[=eri_logs_resolve]{eri_logs_resolve()}} (passing w
 its \code{note} argument), and re-run this function -- it re-checks from
 scratch each time.
 
+Also blocks on an \strong{unresolved} cross-consistency finding (ADR-0024) if
+\code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} logged one for this period -- unlike the per-measure
+checks, this does NOT require a cross-check to have run at all, since most
+countries have no \verb{cross_consistency:} rules declared yet: a period with no
+cross-check log entry is never treated as outstanding on that basis alone.
+
 \strong{A stale flag keeps blocking until it's explicitly resolved.} This checks
 every \code{dq_flags} log entry for the period, not just the most recent one: if
 an earlier \code{\link[=eri_dq_log]{eri_dq_log()}} run had unresolved flags and a later rerun for the

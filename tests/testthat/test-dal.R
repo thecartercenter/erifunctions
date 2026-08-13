@@ -207,7 +207,13 @@ test_that("rb-expansion registry has correct project_folder and all CMR countrie
   reg <- .eri_pipeline_registry[["rb-expansion"]]
   expect_false(is.null(reg))
   expect_equal(reg$project_folder, "health-rb-country-expansion-dev")
-  expect_true(all(c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd") %in% names(reg$country_map)))
+  # Exact set, not a subset check (issue #325 review) -- a subset check passes
+  # regardless of extras and would silently miss a future accidental removal
+  # of bra/ven from the registry.
+  expect_setequal(
+    names(reg$country_map),
+    c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd", "bra", "ven")
+  )
 })
 
 #### Tests for eri_stage_cmr error paths (no Azure needed) ####

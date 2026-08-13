@@ -83,6 +83,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0021](adr/0021-mirror-filename-period-leading.md) | Legacy `projects`-blob mirror filename leads with period (`{period}_{country}_{timestamp}`), matching the real convention | CMR pilot-session filename mismatch |
 | [0022](adr/0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet; reverses the v0.9.8 per-sheet-tolerant behavior | CMR pilot-session template-defect handling |
 | [0023](adr/0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row, so a combined schema (e.g. training) can discriminate its sources | `training_type` discriminator for rolled-up measures |
+| [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
 
 ---
 
@@ -291,6 +292,19 @@ item, which now hands it the in-session flags tibble (including any `status`/`no
 session) instead of only printing to console. Closes the loop the whole redesign started from: a DA's
 DQ triage now produces a structured, attributable handback artifact instead of an ad hoc table. All 8
 phases of the DQ workflow redesign are now shipped.
+
+**Cross-sheet DQ checks (shipped, 2026-07-30, follow-on to the DQ workflow redesign):** every check
+above still operates on one already-loaded sheet at a time. Emalee's report from Ethiopia's most
+recent CMR (population must match between the RB and LF Treatment tabs for the same district;
+treatment activity for a district should imply training activity, and vice versa) needed something
+none of the 8 phases built: a check that spans *multiple* sheets. Shipped as
+[ADR-0024](adr\0024-cross-sheet-dq-at-staged-layer.md): a new declarative `cross_consistency:` block
+on the CMR routing schema (`inst/schemas/cmr/{country}.yaml`, the one artifact that knows a whole
+workbook's sheet-to-measure map), evaluated by `eri_cmr_dq_report()` against each sheet's own
+already-canonical DQ output and surfaced as a workbook-level `dq_flags` entry (not attributable to
+one measure) through the same `eri_dq_review()`/`eri_dq_export()`/`eri_approve_cmr()` chain every
+other DQ flag already uses. Rules shipped for `eth` only; the engine (`R/dq_cross.R`) is general and
+every other RBLF country can opt in by editing its own routing schema's YAML.
 
 **Docs site & guidance system redesign (in progress):** the DQ workflow redesign's biggest lesson —
 collapsing "remember N functions in the right order" into "answer a guided menu" — prompted a second

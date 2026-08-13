@@ -67,3 +67,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0021](0021-mirror-filename-period-leading.md) | Legacy mirror filename leads with period, not country | Accepted |
 | [0022](0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet | Accepted — reverses v0.9.8 |
 | [0023](0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row | Accepted |
+| [0024](0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks: declared in the CMR routing schema, evaluated at staged-layer DQ time | Accepted |

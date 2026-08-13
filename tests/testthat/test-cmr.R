@@ -323,7 +323,7 @@ test_that("eri_ingest_cmr alias resolution works without country (no alias looku
 })
 
 test_that("load_cmr_schema each sheet has field_code_prefix and required_fields", {
-  for (country in c("eth", "nga", "sdn", "ssd", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       sheet_def <- schema$sheets[[sheet]]
@@ -338,7 +338,7 @@ test_that("load_cmr_schema each sheet has field_code_prefix and required_fields"
 })
 
 test_that("load_cmr_schema required_fields all start with #", {
-  for (country in c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       fields <- schema$sheets[[sheet]]$required_fields
@@ -464,7 +464,7 @@ test_that("eri_split_cmr keeps the per-row program code as a column (no disease 
 
 test_that("every country's CMR schema routes at least one sheet to a registered measure", {
   measures <- names(erifunctions:::.eri_data_model()$data_types)
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     routed <- Filter(function(s) !is.null(s$disease) && !is.null(s$data_type), schema$sheets)
     expect_gt(length(routed), 0L,
@@ -481,7 +481,7 @@ test_that("every bundled CMR sheet declares routing keys (no silently-skipped da
   # Bundled CMR schemas only contain data sheets (reference tabs with no field
   # codes are excluded at generation), so every sheet must declare disease +
   # data_type or eri_split_cmr() would silently drop its data.
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       sd <- schema$sheets[[sheet]]
@@ -1236,6 +1236,59 @@ test_that("eri_approve_cmr prints the registered next-step hint on success (task
   )
 })
 
+#### Tests for eri_approve_cmr()'s cross-consistency gate (ADR-0024) ####
+
+test_that("eri_approve_cmr blocks on an unresolved cross-consistency finding", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  approve_called <- FALSE
+  local_mocked_bindings(
+    load_cmr_schema = function(...) list(cross_consistency = list(rule1 = list())),  # declares rules
+    eri_logs = function(country, disease, data_source, data_type, ...) {
+      if (identical(data_type, "consistency")) {
+        tibble::tibble(log_path = "eth/rblf/programmatic/consistency/logs/x.yaml", period = "202606",
+                       status = "needs_review", handled = FALSE, n_issues = 2L)
+      } else {
+        tibble::tibble(log_path = "eth/oncho/programmatic/treatment/logs/x.yaml", period = "202606",
+                       status = "clean", handled = FALSE, n_issues = 0L)
+      }
+    },
+    eri_approve = function(...) { approve_called <<- TRUE },
+    .package = "erifunctions"
+  )
+
+  result <- eri_approve_cmr("eth", "202606", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_false(approve_called)
+  expect_true(any(result$data_type == "consistency"))
+  expect_match(result$issue[result$data_type == "consistency"], "2 unresolved cross-sheet DQ flag")
+})
+
+test_that("eri_approve_cmr does not block on a period that was never cross-checked, even when the country declares rules", {
+  plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
+                         data_type = "treatment", dest = "a", n_rows = 1L)
+  approve_called <- FALSE
+  local_mocked_bindings(
+    load_cmr_schema = function(...) list(cross_consistency = list(rule1 = list())),  # declares rules
+    eri_logs = function(country, disease, data_source, data_type, ...) {
+      if (identical(data_type, "consistency")) {
+        # no cross-check log entry at all for this period -- must NOT be
+        # treated as outstanding (decision: block only on unresolved findings)
+        tibble::tibble(log_path = character(0), period = character(0),
+                       status = character(0), handled = logical(0), n_issues = integer(0))
+      } else {
+        tibble::tibble(log_path = "eth/oncho/programmatic/treatment/logs/x.yaml", period = "202606",
+                       status = "clean", handled = FALSE, n_issues = 0L)
+      }
+    },
+    eri_approve = function(...) { approve_called <<- TRUE },
+    .package = "erifunctions"
+  )
+
+  result <- eri_approve_cmr("eth", "202606", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_true(approve_called)
+  expect_equal(nrow(result), 1L)  # only the real measure, no spurious "consistency" row
+})
+
 test_that("eri_approve_cmr records a dq_reviewed cross-reference in its own op-log", {
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
@@ -1596,4 +1649,266 @@ test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropp
 
   expect_equal(nrow(flags), 1L)
   expect_equal(flags$excel_row, 8L)   # NOT 2 (the post-drop row index) or 7 (pre-drop, wrong row)
+})
+
+#### Tests for eri_cmr_dq_report()'s cross_consistency evaluation (ADR-0024) ####
+
+test_that("eri_cmr_dq_report is a byte-identical no-op for cross-checking when the country has no cross_consistency block", {
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "a", n_rows = 1L
+  )
+  clean_result <- structure(list(data = tibble::tibble(x = 1), log = tibble::tibble(row = integer()),
+                                 flags = tibble::tibble(row = integer(), column = character(),
+                                                         value = character(), issue = character())),
+                            class = "dq_result")
+  dq_log_write_calls <- list()
+
+  local_mocked_bindings(
+    eri_read = function(...) tibble::tibble(x = 1),
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(...) clean_result,
+    load_cmr_schema = function(...) list(sheets = list("RB Treatment" = list())),  # no cross_consistency at all
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      dq_log_write_calls[[length(dq_log_write_calls) + 1L]] <<- list(disease = disease, data_type = data_type)
+      list(n_flags = 0L, status = "clean", log_path = "x.yaml", flags = list())
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(nrow(flags), 0L)
+  expect_true("cross" %in% names(flags))
+  # exactly the one per-measure call -- no second call for disease="rblf"/data_type="consistency"
+  expect_length(dq_log_write_calls, 1L)
+  expect_false(any(vapply(dq_log_write_calls, function(c) c$data_type == "consistency", logical(1L))))
+})
+
+test_that("eri_cmr_dq_report evaluates cross_consistency rules and returns extra rows with cross = TRUE", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"),
+    dest = c("eth/oncho/programmatic/treatment/staged/a.parquet",
+            "eth/lf/programmatic/treatment/staged/b.parquet"),
+    n_rows = c(1L, 1L)
+  )
+  rb_data <- tibble::tibble(district = "Ari", population = 1000)
+  lf_data <- tibble::tibble(district = "Ari", population = 900)  # mismatch
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+
+  cross_rule_schema <- list(
+    sheets = list("RB Treatment" = list(), "LF Treatment" = list()),
+    cross_consistency = list(pop_match = list(
+      join_key = "district",
+      lhs = list(sources = list(list(disease = "oncho", data_type = "treatment", column = "population"))),
+      rhs = list(sources = list(list(disease = "lf", data_type = "treatment", column = "population"))),
+      op = "=="
+    ))
+  )
+
+  local_mocked_bindings(
+    eri_read = function(path, ...) if (grepl("oncho", path, fixed = TRUE)) rb_data else lf_data,
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+          schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"
+    ),
+    load_cmr_schema = function(...) cross_rule_schema,
+    eri_cmr_last_plan = function(...) plan,  # nothing missing from `tables` -- fallback loader is a no-op
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      list(n_flags = nrow(result$flags), status = if (nrow(result$flags) > 0L) "needs_review" else "clean",
+          log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
+          flags = lapply(seq_len(nrow(result$flags)), function(i) list(
+            index = i, row = result$flags$row[i], column = result$flags$column[i],
+            value = result$flags$value[i], issue = result$flags$issue[i], status = "open"
+          )))
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("eth", "202606", plan = plan, data_con = structure(list(), class = "mock"))
+  cross_rows <- flags[flags$cross, , drop = FALSE]
+  expect_equal(nrow(cross_rows), 1L)
+  expect_equal(cross_rows$sheet, "(cross-sheet)")
+  expect_equal(cross_rows$disease, "rblf")
+  expect_equal(cross_rows$data_type, "consistency")
+  expect_true(is.na(cross_rows$excel_row))
+  expect_true(is.na(cross_rows$row))
+  expect_match(cross_rows$flag_id, "::\\d+$")
+  expect_equal(cross_rows$value, "Ari")
+})
+
+test_that("eri_cmr_dq_report(cross = FALSE) suppresses cross_consistency evaluation entirely", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+  rb_data <- tibble::tibble(district = "Ari", population = 1000)
+  lf_data <- tibble::tibble(district = "Ari", population = 900)
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  cross_schema_touched <- FALSE
+
+  local_mocked_bindings(
+    eri_read = function(path, ...) if (grepl("^a$", path)) rb_data else lf_data,
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+          schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"
+    ),
+    load_cmr_schema = function(...) { cross_schema_touched <<- TRUE; list() },
+    .eri_dq_log_write = function(...) list(n_flags = 0L, status = "clean", log_path = "x.yaml", flags = list()),
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("eth", "202606", plan = plan, cross = FALSE, data_con = structure(list(), class = "mock"))
+  expect_false(cross_schema_touched)  # load_cmr_schema() never even called
+  expect_false(any(flags$cross))
+})
+
+test_that("eri_cmr_dq_report writes a clean cross-consistency log entry when rules pass", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+  data_by_dest <- tibble::tibble(district = "Ari", population = 500)
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  cross_rule_schema <- list(
+    sheets = list("RB Treatment" = list(), "LF Treatment" = list()),
+    cross_consistency = list(pop_match = list(
+      join_key = "district",
+      lhs = list(sources = list(list(disease = "oncho", data_type = "treatment", column = "population"))),
+      rhs = list(sources = list(list(disease = "lf", data_type = "treatment", column = "population"))),
+      op = "=="
+    ))
+  )
+  cross_log_calls <- 0L
+
+  local_mocked_bindings(
+    eri_read = function(...) data_by_dest,
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+          schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"
+    ),
+    load_cmr_schema = function(...) cross_rule_schema,
+    eri_cmr_last_plan = function(...) plan,
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      if (identical(data_type, "consistency")) cross_log_calls <<- cross_log_calls + 1L
+      list(n_flags = nrow(result$flags), status = if (nrow(result$flags) > 0L) "needs_review" else "clean",
+          log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
+          flags = list())
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("eth", "202606", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(cross_log_calls, 1L)  # a clean cross-check still logs a "clean" entry
+  expect_false(any(flags$cross))     # but produces no flag ROWS
+})
+
+test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves a prior open cross-consistency entry", {
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+  data_by_dest <- tibble::tibble(district = "Ari", population = 500)
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  cross_rule_schema <- list(
+    sheets = list("RB Treatment" = list(), "LF Treatment" = list()),
+    cross_consistency = list(pop_match = list(
+      join_key = "district",
+      lhs = list(sources = list(list(disease = "oncho", data_type = "treatment", column = "population"))),
+      rhs = list(sources = list(list(disease = "lf", data_type = "treatment", column = "population"))),
+      op = "=="
+    ))
+  )
+  resolved <- character(0)
+
+  local_mocked_bindings(
+    eri_read = function(...) data_by_dest,
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+          schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"
+    ),
+    load_cmr_schema = function(...) cross_rule_schema,
+    eri_cmr_last_plan = function(...) plan,
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      log_path <- if (identical(data_type, "consistency")) {
+        "eth/rblf/programmatic/consistency/logs/new.yaml"
+      } else {
+        paste0("eth/", disease, "/programmatic/", data_type, "/logs/new.yaml")
+      }
+      list(n_flags = 0L, status = "clean", log_path = log_path, flags = list())
+    },
+    eri_logs = function(country, disease, data_source, data_type, ...) {
+      if (identical(data_type, "consistency")) {
+        tibble::tibble(log_path = c("eth/rblf/programmatic/consistency/logs/old.yaml",
+                                    "eth/rblf/programmatic/consistency/logs/new.yaml"),
+                       period = c("202606", "202606"))
+      } else {
+        tibble::tibble(log_path = character(0), period = character(0))
+      }
+    },
+    eri_logs_resolve = function(log_path, note = NULL, ...) { resolved <<- c(resolved, log_path); invisible(TRUE) },
+    .package = "erifunctions"
+  )
+
+  eri_cmr_dq_report("eth", "202606", plan = plan, data_con = structure(list(), class = "mock"))
+  expect_equal(resolved, "eth/rblf/programmatic/consistency/logs/old.yaml")  # not the entry just written
+})
+
+test_that("eri_cmr_dq_report tops up a scoped plan via eri_cmr_last_plan so a cross rule still sees the sibling measure", {
+  # Simulates .eri_dq_review_loop()'s targeted re-run: `plan` only covers the ONE
+  # resplit measure (LF Treatment), but the cross rule also needs RB Treatment,
+  # which must come from the FULL last plan, not the scoped one passed in.
+  scoped_plan <- tibble::tibble(
+    sheet = "LF Treatment", disease = "lf", data_type = "treatment", dest = "b", n_rows = 1L
+  )
+  full_plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = c("treatment", "treatment"), dest = c("a", "b"), n_rows = c(1L, 1L)
+  )
+  rb_data <- tibble::tibble(district = "Ari", population = 1000)
+  lf_data <- tibble::tibble(district = "Ari", population = 900)
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  cross_rule_schema <- list(
+    sheets = list("RB Treatment" = list(), "LF Treatment" = list()),
+    cross_consistency = list(pop_match = list(
+      join_key = "district",
+      lhs = list(sources = list(list(disease = "oncho", data_type = "treatment", column = "population"))),
+      rhs = list(sources = list(list(disease = "lf", data_type = "treatment", column = "population"))),
+      op = "=="
+    ))
+  )
+  last_plan_called <- FALSE
+
+  local_mocked_bindings(
+    eri_read = function(path, ...) if (identical(path, "a")) rb_data else lf_data,
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+          schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"
+    ),
+    load_cmr_schema = function(...) cross_rule_schema,
+    eri_cmr_last_plan = function(...) { last_plan_called <<- TRUE; full_plan },
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      list(n_flags = nrow(result$flags), status = if (nrow(result$flags) > 0L) "needs_review" else "clean",
+          log_path = "x.yaml",
+          flags = lapply(seq_len(nrow(result$flags)), function(i) list(
+            index = i, row = result$flags$row[i], column = result$flags$column[i],
+            value = result$flags$value[i], issue = result$flags$issue[i], status = "open"
+          )))
+    },
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("eth", "202606", plan = scoped_plan, data_con = structure(list(), class = "mock"))
+  expect_true(last_plan_called)
+  expect_equal(nrow(flags[flags$cross, , drop = FALSE]), 1L)  # the mismatch was still caught
 })
