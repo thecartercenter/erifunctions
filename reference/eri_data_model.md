@@ -83,6 +83,9 @@ eri_data_model()
 #> • consistency -- Cross-sheet/cross-measure consistency check spanning multiple
 #>   measures of one CMR workbook (not a single-sheet measure itself; see
 #>   ADR-0024).
+#> • mental_health -- Psychosocial/morbidity support for LF hydrocele/lymphoedema
+#>   patients (home visits, support group meetings) -- distinct from mmdp's
+#>   surgical/patient-training focus; first seen in Haiti's CMR (issue #329).
 #> 
 #> ── format (input shape of a programmatic source) ──
 #> 
