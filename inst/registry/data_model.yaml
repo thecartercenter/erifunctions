@@ -63,6 +63,7 @@ data_types:
   prevalence: "Prevalence survey (e.g. Kato-Katz, skin snip)."
   entomology: "Vector / entomological surveillance (e.g. larval prospection)."
   consistency: "Cross-sheet/cross-measure consistency check spanning multiple measures of one CMR workbook (not a single-sheet measure itself; see ADR-0024)."
+  mental_health: "Psychosocial/morbidity support for LF hydrocele/lymphoedema patients (home visits, support group meetings) -- distinct from mmdp's surgical/patient-training focus; first seen in Haiti's CMR (issue #329)."
 
 formats:
   cmr:      "Country Monitoring Report Excel template (a programmatic input format)."

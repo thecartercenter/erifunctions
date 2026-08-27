@@ -464,7 +464,7 @@ test_that("eri_split_cmr keeps the per-row program code as a column (no disease 
 
 test_that("every country's CMR schema routes at least one sheet to a registered measure", {
   measures <- names(erifunctions:::.eri_data_model()$data_types)
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven", "ht")) {
     schema <- load_cmr_schema(country)
     routed <- Filter(function(s) !is.null(s$disease) && !is.null(s$data_type), schema$sheets)
     expect_gt(length(routed), 0L,
@@ -481,7 +481,7 @@ test_that("every bundled CMR sheet declares routing keys (no silently-skipped da
   # Bundled CMR schemas only contain data sheets (reference tabs with no field
   # codes are excluded at generation), so every sheet must declare disease +
   # data_type or eri_split_cmr() would silently drop its data.
-  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven")) {
+  for (country in c("eth", "nga", "sdn", "ssd", "tcd", "mad", "uga", "bra", "ven", "ht")) {
     schema <- load_cmr_schema(country)
     for (sheet in names(schema$sheets)) {
       sd <- schema$sheets[[sheet]]
@@ -576,6 +576,41 @@ test_that("eri_stage_cmr records a source_hash on each staged file's op-log step
   expect_length(stage_steps, 1L)
   expect_false(is.null(stage_steps[[1]]$source_hash))
   expect_true(nzchar(stage_steps[[1]]$source_hash))
+})
+
+test_that("eri_stage_cmr looks under the country_map subfolder, not the raw country code (issue #329)", {
+  # ht's raw-drop folder is "hti" (matching hsp-mal's existing dr/ht -> dom/hti
+  # convention), NOT "ht" -- the wizard-facing code and the projects-blob
+  # subfolder diverge for the first time in rb-expansion's country_map (every
+  # prior entry, including bra/ven, mapped to itself). eri_stage_cmr()'s
+  # src_base must read the subfolder, not `country` verbatim, or it looks in
+  # the wrong folder entirely.
+  mock_con <- structure(list(), class = "mock")
+  seen_dirs <- character(0)
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    list_storage_files  = function(container, dir, ...) {
+      seen_dirs <<- c(seen_dirs, dir)
+      tibble::tibble(name = paste0(dir, "/ht_cmr_202607.xlsx"), isdir = FALSE)
+    },
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_read   = function(con, src, dest, ...) { writeLines("fixed content", dest); invisible(dest) },
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    .eri_analyst_id  = function(...) "tester",
+    get_azure_storage_connection = function(...) mock_con,
+    .package = "erifunctions"
+  )
+
+  eri_stage_cmr("ht", "202607", data_con = mock_con)
+
+  expect_true(any(grepl("/hti/202607$", seen_dirs)))
+  expect_false(any(grepl("/ht/202607$", seen_dirs)))
 })
 
 test_that("eri_split_cmr writes one parquet per routed sheet to the data blob", {

@@ -1,0 +1,177 @@
+country: haiti
+country_code: ht
+language: en
+template: english_cmr
+
+# Generated 2026-08-27 from the real CMR field codes (structure/sheet names/admin-unit
+# names only -- no treatment/patient counts read or persisted), against the real HTI
+# 2026 Country Monthly Report (July 2026 submission, filed under the raw-drop's "hti"
+# folder -- the wizard-facing country code stays "ht", matching the hsp-mal registry's
+# existing dr/ht <-> dom/hti convention; see R/dal.R's rb-expansion country_map).
+#
+# Haiti's LF program CMR is an LF-only subset of the full RBLF template (no RB
+# Treatment/RB Epi/RB Ento oncho sheets -- expected, Haiti runs LF elimination only,
+# not oncho). Field codes for the sheets shared with the African RBLF countries
+# (LF Treatment/#lftrt_, LF MMDP/#lfdmdi_, LF Surveys/#lfsurv_, and the training
+# sheets) are identical to Ethiopia's, so the same eri_ingest_cmr()/eri_split_cmr()
+# pipeline applies unchanged.
+#
+# "Mental Health" is a sheet not seen in any other onboarded country's CMR --
+# psychosocial/morbidity support for LF hydrocele/lymphoedema patients (home visits,
+# support group meetings), distinct from "LF MMDP"'s surgical/patient-training focus.
+# Routed to a new `mental_health` data_type (registered in
+# inst/registry/data_model.yaml) rather than folded into `mmdp`.
+#
+# TWO files were dropped for the 202607 period: the original
+# "...Template_July.xlsx" and a same-day "...Template_July_updated08272026.xlsx".
+# The original's "Mental Health" sheet had its row-5 field codes wrongly copy-pasted
+# from "LF Treatment" (#lftrt_year/#lftrt_adm0/etc. reused verbatim instead of the
+# sheet's own #lfmh_* prefix) -- a template defect, not a data problem, and NOT the
+# ADR-0022 duplicate-in-one-sheet pattern (each sheet's own row 5 has no internal
+# dupes, so eri_ingest_cmr()'s existing check doesn't catch it). The "_updated" file
+# corrects "Mental Health" to its own #lfmh_* prefix and is otherwise identical; this
+# schema (and the ht_lf_programmatic_mental_health.yaml DQ schema) is built against
+# the corrected file. Confirmed in-memory against the ORIGINAL file (no Azure write):
+# eri_split_cmr()'s routing plan looks clean either way (row 5 just needs SOME "#"
+# code, whatever its prefix), but run_dq_checks() correctly catches the defect on the
+# original -- "year"/"district" required-column flags on the Mental Health measure,
+# since #lftrt_year/#lftrt_adm2 don't match this schema's #lfmh_* aliases. Not a
+# silent failure, but route the ORIGINAL file to whoever maintains the template if it
+# resurfaces from Haiti in a future month rather than relying on a DA to catch two
+# missing-column flags.
+#
+# No ADR-0022 duplicate-field-code defect found in any sheet of the corrected file
+# (unlike bra/ven's known blocker on "RB Ento Surveys") -- this file is ready to
+# split as-is.
+
+sheets:
+  "LF Treatment":
+    field_code_prefix: "#lftrt_"
+    disease: lf
+    data_type: treatment
+    required_fields:
+      - "#lftrt_year"
+      - "#lftrt_adm0"
+      - "#lftrt_adm0_id"
+      - "#lftrt_adm1"
+      - "#lftrt_adm1_id"
+      - "#lftrt_adm2"
+      - "#lftrt_adm2_id"
+      - "#lftrt_adm3"
+      - "#lftrt_disease"
+  "LF MMDP":
+    field_code_prefix: "#lfdmdi_"
+    disease: lf
+    data_type: mmdp
+    required_fields:
+      - "#lfdmdi_year"
+      - "#lfdmdi_adm0"
+      - "#lfdmdi_adm0_id"
+      - "#lfdmdi_adm1"
+      - "#lfdmdi_adm1_id"
+      - "#lfdmdi_adm2"
+      - "#lfdmdi_adm2_id"
+      - "#lfdmdi_adm3"
+      - "#lfdmdi_disease"
+  "Mental Health":
+    field_code_prefix: "#lfmh_"
+    disease: lf
+    data_type: mental_health
+    required_fields:
+      - "#lfmh_year"
+      - "#lfmh_adm0"
+      - "#lfmh_adm0_id"
+      - "#lfmh_adm1"
+      - "#lfmh_adm1_id"
+      - "#lfmh_adm2"
+      - "#lfmh_adm2_id"
+      - "#lfmh_adm3"
+      - "#lfmh_disease"
+  "CDD Training":
+    field_code_prefix: "#cddtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#cddtrn_year"
+      - "#cddtrn_adm0"
+      - "#cddtrn_adm0_id"
+      - "#cddtrn_adm1"
+      - "#cddtrn_adm1_id"
+      - "#cddtrn_adm2"
+      - "#cddtrn_adm2_id"
+      - "#cddtrn_adm3"
+      - "#cddtrn_disease"
+  "CS Training":
+    field_code_prefix: "#cstrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#cstrn_year"
+      - "#cstrn_adm0"
+      - "#cstrn_adm0_id"
+      - "#cstrn_adm1"
+      - "#cstrn_adm1_id"
+      - "#cstrn_adm2"
+      - "#cstrn_adm2_id"
+      - "#cstrn_adm3"
+      - "#cstrn_disease"
+  "MMDP (patient) Training":
+    field_code_prefix: "#dmditrnpt_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#dmditrnpt_year"
+      - "#dmditrnpt_adm0"
+      - "#dmditrnpt_adm0_id"
+      - "#dmditrnpt_adm1"
+      - "#dmditrnpt_adm1_id"
+      - "#dmditrnpt_adm2"
+      - "#dmditrnpt_adm2_id"
+      - "#dmditrnpt_adm3"
+      - "#dmditrnpt_disease"
+  "Field Ento Training":
+    field_code_prefix: "#entotrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#entotrn_year"
+      - "#entotrn_adm0"
+      - "#entotrn_adm0_id"
+      - "#entotrn_adm1"
+      - "#entotrn_adm1_id"
+      - "#entotrn_adm2"
+      - "#entotrn_adm2_id"
+      - "#entotrn_adm3"
+      - "#entotrn_disease"
+  "Hope Group Leader Training":
+    field_code_prefix: "#hgtrn_"
+    disease: rblf
+    data_type: training
+    required_fields:
+      - "#hgtrn_year"
+      - "#hgtrn_adm0"
+      - "#hgtrn_adm0_id"
+      - "#hgtrn_adm1"
+      - "#hgtrn_adm1_id"
+      - "#hgtrn_adm2"
+      - "#hgtrn_adm2_id"
+      - "#hgtrn_adm3"
+      - "#hgtrn_disease"
+  "LF Surveys":
+    field_code_prefix: "#lfsurv_"
+    disease: lf
+    data_type: tas
+    required_fields:
+      - "#lfsurv_year"
+      - "#lfsurv_adm0"
+      - "#lfsurv_adm0_id"
+      - "#lfsurv_adm1"
+      - "#lfsurv_adm1_id"
+      - "#lfsurv_adm2"
+      - "#lfsurv_adm2_id"
+      - "#lfsurv_adm3"
+      - "#lfsurv_disease"
+  # Reference tabs, no field codes -- skipped by eri_split_cmr() (no disease/data_type
+  # declared). "ALL Admin Levels" is the source of this schema's and the DQ schemas'
+  # ADM1/ADM2 allowed_values (140 communes across 10 departments); "Dropdowns" is the
+  # source of the LF Trt Program Status / LF Survey Type / LF Outcomes enumerations.

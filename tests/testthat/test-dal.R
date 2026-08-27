@@ -209,11 +209,15 @@ test_that("rb-expansion registry has correct project_folder and all CMR countrie
   expect_equal(reg$project_folder, "health-rb-country-expansion-dev")
   # Exact set, not a subset check (issue #325 review) -- a subset check passes
   # regardless of extras and would silently miss a future accidental removal
-  # of bra/ven from the registry.
+  # of bra/ven/ht from the registry.
   expect_setequal(
     names(reg$country_map),
-    c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd", "bra", "ven")
+    c("eth", "nga", "sdn", "ssd", "uga", "mad", "tcd", "bra", "ven", "ht")
   )
+  # ht's raw-drop folder is "hti" (3-letter, matching hsp-mal's existing dr/ht ->
+  # dom/hti convention) while the wizard-facing/schema-lookup code stays "ht" --
+  # unlike bra/ven where the two happen to be identical (issue #329).
+  expect_equal(reg$country_map[["ht"]], "hti")
 })
 
 #### Tests for eri_stage_cmr error paths (no Azure needed) ####

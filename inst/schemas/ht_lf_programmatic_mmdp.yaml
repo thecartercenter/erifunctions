@@ -1,24 +1,24 @@
-# Built 2026-08-27 against the real CMR field codes (#lftrt_* prefix) and real
-# ADMIN1/ADMIN2 names + dropdown enumerations (from the corrected
-# "...Template_July_updated08272026.xlsx" workbook's "ALL Admin Levels"/"Dropdowns"
-# reference sheets), via read-only recon (structure/admin-unit names/dropdown
-# categories only -- no treatment counts read or persisted) against the real HTI
+# Built 2026-08-27 against the real CMR field codes (#lfdmdi_* prefix) and real
+# ADMIN1/ADMIN2 names (from the corrected "...Template_July_updated08272026.xlsx"
+# workbook's "ALL Admin Levels" reference sheet), via read-only recon (structure/
+# admin-unit names only -- no MMDP counts read or persisted) against the real HTI
 # 2026 July submission. Numeric ranges are generic placeholders sized to Ethiopia's
-# LF schema (same program, same field shape), NOT fitted to a real Haiti max, since
-# count columns weren't read this pass -- tighten once a real submission's values
-# are reviewed (same caveat as bra/ven's schemas).
+# LF MMDP schema (same program, same field shape), NOT fitted to a real Haiti max,
+# since count columns weren't read this pass -- tighten once a real submission's
+# values are reviewed (same caveat as bra/ven's schemas).
 
 country: ht
 disease: lf
 data_source: programmatic
-data_type: treatment
+data_type: mmdp
 version: '1.0'
-description: Haiti lf MDA coverage, 'LF Treatment' sheet of the monthly CMR
+description: Haiti lf morbidity management and disability prevention (MMDP), 'LF
+  MMDP' sheet of the monthly CMR
 language: en
 time_grain: annual
 temporal:
   year_col: year
-  period_col: treatment_round
+  period_col: year
 preprocessing:
   - remove_smart_quotes
 columns:
@@ -28,7 +28,7 @@ columns:
     aliases:
       - Year
       - YEAR
-      - '#lftrt_year'
+      - '#lfdmdi_year'
     range: [1990, 2035]
   department:
     required: false
@@ -37,7 +37,7 @@ columns:
       - Department
       - Region
       - adm1
-      - '#lftrt_adm1'
+      - '#lfdmdi_adm1'
     allowed_values:
       - Artibonite
       - Centre
@@ -57,7 +57,7 @@ columns:
       - Commune
       - district_name
       - adm2
-      - '#lftrt_adm2'
+      - '#lfdmdi_adm2'
     allowed_values:
       - Abricots
       - Acul du Nord
@@ -206,103 +206,70 @@ columns:
       - SubDistrict
       - sub_county
       - adm3
-      - '#lftrt_adm3'
+      - '#lfdmdi_adm3'
   disease_reported:
     required: false
     type: character
     aliases:
-      - '#lftrt_disease'
-  program_status:
+      - '#lfdmdi_disease'
+  # Facility-level identifiers (specific to LF MMDP, no equivalent in LF Treatment).
+  health_facility:
     required: false
     type: character
     aliases:
-      - program_status
-      - '#lftrt_programstatus'
-    allowed_values:
-      - MDA Not Started
-      - MDA Started
-      - Passed EMS
-      - Passed TAS1
-      - Passed TAS2
-      - Passed TAS3
-  population:
+      - '#lfdmdi_healthfac'
+  health_facility_dmdp:
+    required: false
+    type: character
+    aliases:
+      - '#lfdmdi_healthfac_dmdi'
+  surgery_target:
     required: false
     type: numeric
     aliases:
-      - Population
-      - '#lftrt_pop'
-    range: [0, 500000]
-  treatment_round:
-    required: false
-    type: numeric
-    aliases:
-      - Round
-      - MDA_round
-      - treatment_round
-      - '#lftrt_trtrd'
-    range: [0, 10]
-  target_pop:
-    required: false
-    type: numeric
-    aliases:
-      - TargetPop
-      - target_population
-      - eligible_pop
-      - '#lftrt_trttarget'
-    range: [1, 500000]
-    range_overrides:
-      - when:
-          column: program_status
-          op: in
-          value: [MDA Not Started, MDA Started, Passed EMS]
-        range: [1, 500000]
-      - when:
-          column: program_status
-          op: in
-          value: [Passed TAS1, Passed TAS2, Passed TAS3]
-        range: [0, 0]
+      - '#lfdmdi_surgeytarget'
+    range: [0, 50000]
   village_target:
     required: false
     type: numeric
     aliases:
-      - '#lftrt_villagetarget'
+      - '#lfdmdi_villagetarget'
     range: [0, 5000]
-  male_treated:
+  male_managed:
     required: false
     type: numeric
     aliases:
-      - '#lftrt_male_tot'
+      - '#lfdmdi_male_tot'
     range: [0, 500000]
-  female_treated:
+  female_managed:
     required: false
     type: numeric
     aliases:
-      - '#lftrt_fem_tot'
+      - '#lfdmdi_fem_tot'
     range: [0, 500000]
-  treated:
+  tot:
     required: true
     type: numeric
     aliases:
       - Treated
-      - people_treated
-      - '#lftrt_tot'
+      - people_managed
+      - '#lfdmdi_tot'
     range: [0, 500000]
-  coverage_pct:
+  households_managed:
     required: false
     type: numeric
     aliases:
-      - CoveragePct
-      - coverage
-      - '#lftrt_coverage'
-    range: [0, 150]
-consistency:
-  implausible_overcoverage:
-    lhs: treated
-    op: <=
-    rhs: target_pop
-    message: treated exceeds target_pop (over 100% raw coverage)
-  treated_nonneg:
-    lhs: treated
-    op: '>='
-    rhs_value: 0.0
-    message: Negative treated count
+      - '#lfdmdi_hh_tot'
+    range: [0, 500000]
+  surgeries_done:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_tot'
+    range: [0, 50000]
+  surgeries_achieved_pct:
+    required: false
+    type: numeric
+    aliases:
+      - '#lfdmdi_sx_achieved'
+    range: [0, 2]
