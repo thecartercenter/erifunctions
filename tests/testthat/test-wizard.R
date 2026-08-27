@@ -83,6 +83,16 @@ test_that(".eri_derive_cmr_destination matches the real rb-expansion registry en
   expect_equal(dest, "health-rb-country-expansion-dev/raw/filled_templates/uga/202406/uga_cmr_2024_06.xlsx")
 })
 
+test_that(".eri_derive_cmr_destination uses the country_map subfolder for a divergent code (issue #329)", {
+  # ht's raw-drop folder is "hti", not "ht" -- the first non-identity entry in
+  # rb-expansion's country_map (bra/ven, like every prior entry, map to
+  # themselves). Reading `country` verbatim here would silently drift from
+  # eri_stage_cmr()'s own subfolder lookup and split Haiti's raw archive
+  # across two folders.
+  dest <- .eri_derive_cmr_destination("ht", "202607", "ht_cmr_2026_07.xlsx")
+  expect_equal(dest, "health-rb-country-expansion-dev/raw/filled_templates/hti/202607/ht_cmr_2026_07.xlsx")
+})
+
 test_that(".eri_prompt_pick_file falls back to a typed path when the dialog is unavailable/cancelled", {
   # .eri_wizard_raw_file_dialog() -- NOT file.choose()/rstudioapi::selectFile() directly -- is
   # mocked here on purpose: those are real, blocking GUI calls that can't be safely intercepted

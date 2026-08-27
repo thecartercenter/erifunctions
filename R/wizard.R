@@ -194,12 +194,17 @@
 }
 
 # Builds the projects-blob destination path the exact same way eri_stage_cmr() itself expects to
-# find it (raw/filled_templates/{country}/{period}/{filename}) -- reading the SAME registry entry,
-# so the wizard and the core can't drift into two different conventions.
+# find it (raw/filled_templates/{subfolder}/{period}/{filename}) -- reading the SAME registry
+# entry AND the same country_map subfolder lookup, so the wizard and the core can't drift into
+# two different conventions. The subfolder is usually identical to the wizard-facing `country`
+# code (e.g. bra/ven), but not always -- ht's raw-drop folder is "hti", matching hsp-mal's
+# existing dr/ht -> dom/hti convention (issue #329); using `country` verbatim here would silently
+# split Haiti's raw archive across two different folders depending on which code path wrote it.
 #' @keywords internal
 .eri_derive_cmr_destination <- function(country, period, filename) {
-  reg <- .eri_pipeline_registry[["rb-expansion"]]
-  paste(c(reg$project_folder, reg$raw_dir, country, period, filename), collapse = "/")
+  reg       <- .eri_pipeline_registry[["rb-expansion"]]
+  subfolder <- reg$country_map[[country]] %||% country
+  paste(c(reg$project_folder, reg$raw_dir, subfolder, period, filename), collapse = "/")
 }
 
 # Auto-detects whether this workbook's split should also mirror to the legacy hsp-mal-era

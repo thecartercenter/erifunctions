@@ -1,24 +1,30 @@
-# Built 2026-08-27 against the real CMR field codes (#lftrt_* prefix) and real
-# ADMIN1/ADMIN2 names + dropdown enumerations (from the corrected
-# "...Template_July_updated08272026.xlsx" workbook's "ALL Admin Levels"/"Dropdowns"
-# reference sheets), via read-only recon (structure/admin-unit names/dropdown
-# categories only -- no treatment counts read or persisted) against the real HTI
-# 2026 July submission. Numeric ranges are generic placeholders sized to Ethiopia's
-# LF schema (same program, same field shape), NOT fitted to a real Haiti max, since
-# count columns weren't read this pass -- tighten once a real submission's values
-# are reviewed (same caveat as bra/ven's schemas).
+# Built 2026-08-27 against the real CMR field codes (#lfsurv_* prefix) and real
+# ADMIN1/ADMIN2 names (from the corrected "...Template_July_updated08272026.xlsx"
+# workbook's "ALL Admin Levels" reference sheet), via read-only recon (structure/
+# admin-unit names only -- no survey counts read or persisted) against the real HTI
+# 2026 July submission.
+#
+# Scoped to the identifier spine only (year/department/district/sub_district),
+# matching eth/sdn/ssd's precedent for this sheet shape: monthly-wide survey-result
+# blocks (#lfsurv_type_jan/#lfsurv_passfail_jan/etc, repeated per month) with no
+# single annual roll-up column to validate a range against. The sheet's "LF Survey
+# Type"/"LF Outcomes" Dropdowns enumerations are recorded here for reference should
+# a future pass add per-month column validation:
+#   survey_type: EMS, TAS1, TAS2, TAS3, IIS1, IIS2, IIS3, Other, PES/PVS
+#   outcome:     Pass, Fail, "Incomplete / Did not reach sample size",
+#                "Other (explain in notes column)"
 
 country: ht
 disease: lf
 data_source: programmatic
-data_type: treatment
+data_type: tas
 version: '1.0'
-description: Haiti lf MDA coverage, 'LF Treatment' sheet of the monthly CMR
+description: Haiti lf tas surveys, 'LF Surveys' sheet of the monthly CMR
 language: en
 time_grain: annual
 temporal:
   year_col: year
-  period_col: treatment_round
+  period_col: year
 preprocessing:
   - remove_smart_quotes
 columns:
@@ -28,7 +34,7 @@ columns:
     aliases:
       - Year
       - YEAR
-      - '#lftrt_year'
+      - '#lfsurv_year'
     range: [1990, 2035]
   department:
     required: false
@@ -37,7 +43,7 @@ columns:
       - Department
       - Region
       - adm1
-      - '#lftrt_adm1'
+      - '#lfsurv_adm1'
     allowed_values:
       - Artibonite
       - Centre
@@ -57,7 +63,7 @@ columns:
       - Commune
       - district_name
       - adm2
-      - '#lftrt_adm2'
+      - '#lfsurv_adm2'
     allowed_values:
       - Abricots
       - Acul du Nord
@@ -206,103 +212,9 @@ columns:
       - SubDistrict
       - sub_county
       - adm3
-      - '#lftrt_adm3'
+      - '#lfsurv_adm3'
   disease_reported:
     required: false
     type: character
     aliases:
-      - '#lftrt_disease'
-  program_status:
-    required: false
-    type: character
-    aliases:
-      - program_status
-      - '#lftrt_programstatus'
-    allowed_values:
-      - MDA Not Started
-      - MDA Started
-      - Passed EMS
-      - Passed TAS1
-      - Passed TAS2
-      - Passed TAS3
-  population:
-    required: false
-    type: numeric
-    aliases:
-      - Population
-      - '#lftrt_pop'
-    range: [0, 500000]
-  treatment_round:
-    required: false
-    type: numeric
-    aliases:
-      - Round
-      - MDA_round
-      - treatment_round
-      - '#lftrt_trtrd'
-    range: [0, 10]
-  target_pop:
-    required: false
-    type: numeric
-    aliases:
-      - TargetPop
-      - target_population
-      - eligible_pop
-      - '#lftrt_trttarget'
-    range: [1, 500000]
-    range_overrides:
-      - when:
-          column: program_status
-          op: in
-          value: [MDA Not Started, MDA Started, Passed EMS]
-        range: [1, 500000]
-      - when:
-          column: program_status
-          op: in
-          value: [Passed TAS1, Passed TAS2, Passed TAS3]
-        range: [0, 0]
-  village_target:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_villagetarget'
-    range: [0, 5000]
-  male_treated:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_male_tot'
-    range: [0, 500000]
-  female_treated:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_fem_tot'
-    range: [0, 500000]
-  treated:
-    required: true
-    type: numeric
-    aliases:
-      - Treated
-      - people_treated
-      - '#lftrt_tot'
-    range: [0, 500000]
-  coverage_pct:
-    required: false
-    type: numeric
-    aliases:
-      - CoveragePct
-      - coverage
-      - '#lftrt_coverage'
-    range: [0, 150]
-consistency:
-  implausible_overcoverage:
-    lhs: treated
-    op: <=
-    rhs: target_pop
-    message: treated exceeds target_pop (over 100% raw coverage)
-  treated_nonneg:
-    lhs: treated
-    op: '>='
-    rhs_value: 0.0
-    message: Negative treated count
+      - '#lfsurv_disease'
