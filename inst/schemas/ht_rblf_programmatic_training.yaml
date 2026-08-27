@@ -1,0 +1,145 @@
+# Built 2026-08-27 against the real CMR field codes (#cddtrn_* / #cstrn_* /
+# #dmditrnpt_* / #entotrn_* / #hgtrn_*) and real ADMIN1/ADMIN2 names (from the
+# corrected "...Template_July_updated08272026.xlsx" workbook's "ALL Admin Levels"
+# reference sheet), via read-only recon (structure/admin-unit names only -- no
+# training counts read or persisted) against the real HTI 2026 July submission.
+#
+# ONE schema covers all 5 training sheets inst/schemas/cmr/ht.yaml routes to
+# rblf/training (CDD Training, CS Training, MMDP (patient) Training, Field Ento
+# Training, Hope Group Leader Training) -- same combined-schema approach as
+# eth_rblf_programmatic_training.yaml (load_dq_schema() resolves one file per
+# (country, disease, data_source, data_type); eri_split_cmr() routes all 5 to the
+# same rblf/training combo). Haiti's training roster is a SUBSET of Ethiopia's 10
+# sheets -- no "MMDP (surgery) Training", "HW Training", "Lab Training", "ToT
+# Regional/Zonal" in this workbook, so their aliases/allowed_values are simply
+# absent here rather than carried over unused.
+#
+# training_type discriminates which of the 5 sheets a row came from (aliased to
+# `sheet`, stamped by eri_ingest_cmr()) -- same convention as eth's schema.
+#
+# Numeric ranges (goal/tot) start from eth's BASE ranges (not eth's CDD/CS-widened
+# override, which was fitted to real Ethiopia 202606 values Haiti's own submission
+# hasn't been reviewed against) -- generic placeholders, tighten once a real
+# Haiti submission's values are reviewed.
+
+country: ht
+disease: rblf
+data_source: programmatic
+data_type: training
+version: "1.0"
+description: "Haiti RB+LF programme trainings, combined training sheets of the monthly CMR"
+language: en
+time_grain: annual
+
+temporal:
+  year_col: year
+  period_col: year
+
+preprocessing:
+  - remove_smart_quotes
+
+columns:
+  training_type:
+    required: true
+    type: character
+    aliases: [sheet]
+    allowed_values: ["CDD Training", "CS Training", "MMDP (patient) Training",
+      "Field Ento Training", "Hope Group Leader Training"]
+
+  year:
+    required: true
+    type: numeric
+    aliases: [Year, YEAR, "#cddtrn_year", "#cstrn_year", "#dmditrnpt_year",
+      "#entotrn_year", "#hgtrn_year"]
+
+  department:
+    required: false
+    type: character
+    aliases: [Department, Region, adm1, "#cddtrn_adm1", "#cstrn_adm1",
+      "#dmditrnpt_adm1", "#entotrn_adm1", "#hgtrn_adm1"]
+    allowed_values: ["Artibonite", Centre, "Grande'Anse", Nippes, North,
+      "North-East", "North-West", South, "South-East", West]
+
+  district:
+    required: true
+    type: character
+    aliases: [District, Commune, district_name, adm2, "#cddtrn_adm2", "#cstrn_adm2",
+      "#dmditrnpt_adm2", "#entotrn_adm2", "#hgtrn_adm2"]
+    allowed_values: [Abricots, "Acul du Nord", "Anse Rouge", "Anse a Galets",
+      "Anse-a-Foleur", "Anse-a-Pitre", "Anse-a-Veau", "Anse d'Hainault", Aquin,
+      Arcahaie, Arniquet, Arnaud, Bahon, "Baie de Henne", Bainet, Baraderes,
+      "Bas Limbe", "Bassin Bleu", Beaumont, Belladere, "Belle Anse",
+      Bombardopolis, Bonbon, Borgne, "Boucan Carre", Cabaret, "Camp-Perrin",
+      "Cap-Haitien", Capotille, Caracol, Carice, Carrefour, Cavaillon,
+      "Cayes-Jacmel", "Cerca Carvajal", "Cerca La Source", Chambellan,
+      Chamsolme, Chantal, Chardonnieres, "Cite Soleil", Corail,
+      "Cornillon / Grand Bois", Coteaux, "Cotes de Fer", "Croix-Des-Bouquets",
+      "Dame Marie", Delmas, Desdunes, Dessalines, Dondon, Ennery,
+      "Fonds des Negres", "Fonds-Verrettes", "Fort-Liberte", Ferrier, Ganthier,
+      Gonaives, "Grand Gosier", "Grand-Boucan", "Grand-Goave",
+      "Grande Riviere Du Nord", "Grande Saline", Gressier, "Gros Morne", Hinche,
+      "Ile a Vache", Jacmel, "Jean Rabel", Jeremie, Kenscoff, "L'Asile",
+      "L'Estere", "La Chapelle", "La Tortue", "La Vallee", "La Victoire",
+      Lascahobas, Leogane, "Les Anglais", "Les Cayes", "Les Irois", Limbe,
+      Limonade, Maissade, Maniche, Marigot, Marmelade, Milot, Miragoane,
+      Mirebalais,
+      "Mole Saint Nicolas", "Mombin Crochu", "Mont-Organise", Moron,
+      Ouanaminthe, Paillant, Perches, Pestel, "Petion-Ville",
+      "Petit Trou de Nippes", "Petit-Goave", "Petite Riviere de Nippes",
+      "Petite Riviere de l'Artibonite", Pignon, Pilate, "Plaine du Nord",
+      Plaisance, "Plaisance du Sud", "Pointe a Raquette", "Port-Salut",
+      "Port-a-Piment", "Port-au-Prince", "Port-Margot", "Port-de-Paix",
+      "Quartier Morin", Ranquitte, "Roche a Bateau", Roseaux,
+      "Saint Jean du Sud", "Saint Louis du Sud", "Saint-Louis du Nord",
+      "Saint-Marc", "Saint-Michel de l'Attalaye", "Saint-Raphael",
+      "Sainte Suzanne", "Saut d'Eau", Savanette, Tabarre, "Terre Neuve",
+      "Terrier Rouge", Thiotte, Thomassique, Thomazeau, Thomonde, Tiburon,
+      Torbeck, "Trou du Nord", Vallieres, Verrettes]
+
+  sub_district:
+    required: false
+    type: character
+    aliases: [SubDistrict, sub_county, adm3, "#cddtrn_adm3", "#cstrn_adm3",
+      "#dmditrnpt_adm3", "#entotrn_adm3", "#hgtrn_adm3"]
+
+  disease_reported:
+    required: false
+    type: character
+    aliases: ["#cddtrn_disease", "#cstrn_disease", "#dmditrnpt_disease",
+      "#entotrn_disease", "#hgtrn_disease"]
+
+  goal:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_goal", "#cstrn_goal", "#dmditrnpt_goal", "#entotrn_goal",
+      "#hgtrn_goal"]
+    range: [0, 5000]
+
+  male_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_male", "#cstrn_tot_male", "#dmditrnpt_tot_male",
+      "#entotrn_tot_male", "#hgtrn_tot_male"]
+    range: [0, 1000]
+
+  female_trained:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_tot_fem", "#cstrn_tot_fem", "#dmditrnpt_tot_fem",
+      "#entotrn_tot_fem", "#hgtrn_tot_fem"]
+    range: [0, 1000]
+
+  tot:
+    required: true
+    type: numeric
+    aliases: [Trained, "#cddtrn_tot", "#cstrn_tot", "#dmditrnpt_tot",
+      "#entotrn_tot", "#hgtrn_tot"]
+    range: [0, 1000]
+
+  achieved_pct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_achieved", "#cstrn_achieved", "#dmditrnpt_achieved",
+      "#entotrn_achieved", "#hgtrn_achieved"]
+    # Proportion scale, not percentage.
+    range: [0, 2]

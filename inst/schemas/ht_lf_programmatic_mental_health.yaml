@@ -1,24 +1,33 @@
-# Built 2026-08-27 against the real CMR field codes (#lftrt_* prefix) and real
-# ADMIN1/ADMIN2 names + dropdown enumerations (from the corrected
-# "...Template_July_updated08272026.xlsx" workbook's "ALL Admin Levels"/"Dropdowns"
-# reference sheets), via read-only recon (structure/admin-unit names/dropdown
-# categories only -- no treatment counts read or persisted) against the real HTI
-# 2026 July submission. Numeric ranges are generic placeholders sized to Ethiopia's
-# LF schema (same program, same field shape), NOT fitted to a real Haiti max, since
-# count columns weren't read this pass -- tighten once a real submission's values
-# are reviewed (same caveat as bra/ven's schemas).
+# Built 2026-08-27 against the real CMR field codes and real ADMIN1/ADMIN2 names
+# (from the corrected "...Template_July_updated08272026.xlsx" workbook's "ALL Admin
+# Levels" reference sheet), via read-only recon (structure/admin-unit names only --
+# no counts read or persisted) against the real HTI 2026 July submission.
+#
+# "Mental Health" is a sheet not seen in any other onboarded country's CMR --
+# psychosocial/morbidity support for LF hydrocele/lymphoedema patients (home visits,
+# support group meetings), distinct from "LF MMDP"'s surgical/patient-training
+# focus. First `mental_health` DQ schema; see inst/registry/data_model.yaml for the
+# data_type registration and inst/schemas/cmr/ht.yaml for the sheet-routing note
+# (the ORIGINAL "...Template_July.xlsx" had this sheet's field codes wrongly
+# copy-pasted from "LF Treatment" -- #lftrt_* instead of #lfmh_* -- this schema is
+# built against the CORRECTED file's own #lfmh_* prefix).
+#
+# Numeric ranges are generic placeholders (no comparable country's schema to size
+# against, and count columns weren't read this pass) -- tighten once a real
+# submission's values are reviewed.
 
 country: ht
 disease: lf
 data_source: programmatic
-data_type: treatment
+data_type: mental_health
 version: '1.0'
-description: Haiti lf MDA coverage, 'LF Treatment' sheet of the monthly CMR
+description: Haiti lf psychosocial/morbidity support (home visits, support group
+  meetings), 'Mental Health' sheet of the monthly CMR
 language: en
 time_grain: annual
 temporal:
   year_col: year
-  period_col: treatment_round
+  period_col: year
 preprocessing:
   - remove_smart_quotes
 columns:
@@ -28,7 +37,7 @@ columns:
     aliases:
       - Year
       - YEAR
-      - '#lftrt_year'
+      - '#lfmh_year'
     range: [1990, 2035]
   department:
     required: false
@@ -37,7 +46,7 @@ columns:
       - Department
       - Region
       - adm1
-      - '#lftrt_adm1'
+      - '#lfmh_adm1'
     allowed_values:
       - Artibonite
       - Centre
@@ -57,7 +66,7 @@ columns:
       - Commune
       - district_name
       - adm2
-      - '#lftrt_adm2'
+      - '#lfmh_adm2'
     allowed_values:
       - Abricots
       - Acul du Nord
@@ -206,103 +215,27 @@ columns:
       - SubDistrict
       - sub_county
       - adm3
-      - '#lftrt_adm3'
+      - '#lfmh_adm3'
   disease_reported:
     required: false
     type: character
     aliases:
-      - '#lftrt_disease'
-  program_status:
-    required: false
-    type: character
-    aliases:
-      - program_status
-      - '#lftrt_programstatus'
-    allowed_values:
-      - MDA Not Started
-      - MDA Started
-      - Passed EMS
-      - Passed TAS1
-      - Passed TAS2
-      - Passed TAS3
-  population:
+      - '#lfmh_disease'
+  home_visits:
     required: false
     type: numeric
     aliases:
-      - Population
-      - '#lftrt_pop'
-    range: [0, 500000]
-  treatment_round:
+      - '#homevisits_tot'
+    range: [0, 10000]
+  support_group_meetings:
     required: false
     type: numeric
     aliases:
-      - Round
-      - MDA_round
-      - treatment_round
-      - '#lftrt_trtrd'
-    range: [0, 10]
-  target_pop:
+      - '#supportgroupmtgs_tot'
+    range: [0, 10000]
+  support_group_patients:
     required: false
     type: numeric
     aliases:
-      - TargetPop
-      - target_population
-      - eligible_pop
-      - '#lftrt_trttarget'
-    range: [1, 500000]
-    range_overrides:
-      - when:
-          column: program_status
-          op: in
-          value: [MDA Not Started, MDA Started, Passed EMS]
-        range: [1, 500000]
-      - when:
-          column: program_status
-          op: in
-          value: [Passed TAS1, Passed TAS2, Passed TAS3]
-        range: [0, 0]
-  village_target:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_villagetarget'
-    range: [0, 5000]
-  male_treated:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_male_tot'
-    range: [0, 500000]
-  female_treated:
-    required: false
-    type: numeric
-    aliases:
-      - '#lftrt_fem_tot'
-    range: [0, 500000]
-  treated:
-    required: true
-    type: numeric
-    aliases:
-      - Treated
-      - people_treated
-      - '#lftrt_tot'
-    range: [0, 500000]
-  coverage_pct:
-    required: false
-    type: numeric
-    aliases:
-      - CoveragePct
-      - coverage
-      - '#lftrt_coverage'
-    range: [0, 150]
-consistency:
-  implausible_overcoverage:
-    lhs: treated
-    op: <=
-    rhs: target_pop
-    message: treated exceeds target_pop (over 100% raw coverage)
-  treated_nonneg:
-    lhs: treated
-    op: '>='
-    rhs_value: 0.0
-    message: Negative treated count
+      - '#supportgrouppatients_tot'
+    range: [0, 10000]

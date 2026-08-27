@@ -50,7 +50,7 @@ each collision and the file is overwritten.
 \subsection{Registered pipelines}{\tabular{lll}{
    Name \tab Project folder \tab Countries \cr
    \code{hsp-mal} \tab health-hsp-malaria-dev \tab \code{"dr"}, \code{"ht"} \cr
-   \code{rb-expansion} \tab health-rb-country-expansion-dev \tab \code{"eth"}, \code{"nga"}, \code{"sdn"}, \code{"ssd"}, \code{"uga"}, \code{"mad"}, \code{"tcd"}, \code{"bra"}, \code{"ven"} \cr
+   \code{rb-expansion} \tab health-rb-country-expansion-dev \tab \code{"eth"}, \code{"nga"}, \code{"sdn"}, \code{"ssd"}, \code{"uga"}, \code{"mad"}, \code{"tcd"}, \code{"bra"}, \code{"ven"}, \code{"ht"} \cr
 }
 
 }

@@ -1289,7 +1289,13 @@ eri_stage_cmr <- function(country,
     )
   }
 
-  src_base <- paste(c(reg$project_folder, reg$raw_dir, country), collapse = "/")
+  # Look up the raw-drop subfolder the same way eri_split_cmr()'s mirror_pipeline handling
+  # does (R/dal.R's country_map) -- usually identical to `country` (bra/ven), but not always:
+  # ht's raw-drop folder is "hti", matching hsp-mal's existing dr/ht -> dom/hti convention
+  # (issue #329). Using `country` verbatim here would look in the wrong folder for any
+  # country whose subfolder differs from its wizard-facing code.
+  subfolder <- reg$country_map[[country]] %||% country
+  src_base  <- paste(c(reg$project_folder, reg$raw_dir, subfolder), collapse = "/")
 
   if (is.null(period)) {
     period_listing <- AzureStor::list_storage_files(projects_con, src_base) |>
