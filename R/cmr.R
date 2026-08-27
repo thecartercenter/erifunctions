@@ -491,9 +491,10 @@ eri_split_cmr <- function(path, country, data_con = NULL,
     if (!is.null(mirror)) {
       mirror_dir <- paste(c(mirror$reg$project_folder, mirror$reg$raw_dir,
                              mirror$subfolder, mirror$period), collapse = "/")
+      mirror_code_preview <- toupper(mirror$subfolder)
       cli::cli_inform(c(
-        "i" = "Would also mirror raw file -> {.path {mirror_dir}}/{mirror$period}_{country}_<timestamp>.{tools::file_ext(path)}",
-        " " = "(the timestamp is generated fresh at write time, not reused from this preview)"
+        "i" = "Would also mirror raw file -> {.path {mirror_dir}}/{mirror$period}_<upload-date>_{mirror_code_preview}.{tools::file_ext(path)}",
+        " " = "(the upload date is generated fresh at write time, not reused from this preview)"
       ))
     }
 
@@ -657,12 +658,30 @@ eri_split_cmr <- function(path, country, data_con = NULL,
       # on this upload while the slugified parquet upload succeeded). A
       # generated name is also self-timestamping, so the DA doesn't need to
       # rename the local file to embed the period.
-      # Leading YYYYMM_ -- the real filename convention the legacy pipeline
-      # expects -- confirmed 2026-07-15 (was previously country_period_..., a
-      # tested but wrong order: period must lead, not follow the country).
-      mirror_ext  <- tools::file_ext(path)
-      mirror_ts   <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
-      mirror_name <- paste0(mirror$period, "_", country, "_", mirror_ts,
+      # {period}_{upload_YYYYMMDD}_{COUNTRY} -- the real filename convention
+      # the legacy pipeline's owner (Zack) confirmed his side expects
+      # (eri_feedback #8, reported by Emalee 2026-07-27): report period, then
+      # upload date, then the 3-letter country code, uppercase. Previously
+      # {period}_{country}_{full timestamp} -- wrong field order (his pipeline
+      # picks up "the most recent file" by this convention, so period-then-
+      # country-then-timestamp didn't parse the way he needed), a full
+      # HHMMSS timestamp where he only wants the date, and the wizard-facing
+      # `country` code verbatim rather than the 3-letter code -- identical for
+      # every country except `ht` (raw-drop folder "hti", but `country` here
+      # would still write "..._ht_...", inconsistent with the folder itself
+      # and short of Zack's stated 3-letter requirement). Uses `mirror$subfolder`
+      # (the same country_map lookup eri_stage_cmr()'s src_base and
+      # .eri_derive_cmr_destination() already use -- R/dal.R's country_map),
+      # not `country`, for exactly that reason.
+      # Trade-off, not fixed here: dropping the time-of-day component means a
+      # second mirror upload of the same country/period on the same calendar
+      # day overwrites the first (same as any other overwrite path in this
+      # function -- warns via the existing check below, doesn't silently lose
+      # data, and matches what Zack's format literally asks for).
+      mirror_ext   <- tools::file_ext(path)
+      mirror_date  <- format(Sys.time(), "%Y%m%d", tz = "UTC")
+      mirror_code  <- toupper(mirror$subfolder)
+      mirror_name  <- paste0(mirror$period, "_", mirror_date, "_", mirror_code,
                             if (nzchar(mirror_ext)) paste0(".", mirror_ext) else "")
       mirror_dest <- paste0(mirror_dir, "/", mirror_name)
       if (!AzureStor::storage_dir_exists(projects_con, mirror_dir)) {
