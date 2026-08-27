@@ -104,6 +104,143 @@ test_that("add_anomaly_consistency uses Haiti schema rules correctly", {
   expect_equal(out$column, "NumMicroPos")
 })
 
+#### Tests for lhs_sum/rhs_sum (issue #334) ####
+
+test_that("add_anomaly_consistency flags a lhs_sum vs rhs_sum mismatch", {
+  schema <- list(
+    consistency = list(
+      gender_matches_type = list(
+        lhs_sum = list("male_tot", "female_tot"),
+        op      = "==",
+        rhs_sum = list("new_male", "new_fem", "refresh_male", "refresh_fem"),
+        message = "gender sum != type sum"
+      )
+    )
+  )
+  df <- tibble::tibble(
+    male_tot     = c(10L, 10L),
+    female_tot   = c(5L,  5L),
+    new_male     = c(8L,  10L),
+    new_fem      = c(4L,  5L),
+    refresh_male = c(2L,  0L),
+    refresh_fem  = c(1L,  0L)
+    # row 1: 10+5=15 vs 8+4+2+1=15 -> matches, not flagged.
+    # row 2: 10+5=15 vs 10+5+0+0=15 -> matches, not flagged.
+  )
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 0L)
+
+  df2 <- df
+  df2$new_male[1] <- 100L   # row 1 now: 10+5=15 vs 100+4+2+1=107 -> mismatch
+  out2 <- add_anomaly_consistency(df2, schema)
+  expect_equal(out2$row, 1L)
+  expect_equal(out2$column, "sum(male_tot + female_tot)")
+})
+
+test_that("add_anomaly_consistency's summed side treats a row's missing columns as 0, not NA", {
+  schema <- list(
+    consistency = list(
+      r = list(lhs_sum = list("a", "b"), op = "==", rhs = "total")
+    )
+  )
+  df <- tibble::tibble(
+    a     = c(3L, NA_integer_),
+    b     = c(NA_integer_, NA_integer_),
+    total = c(3L, 0L)
+    # row 1: a=3, b=NA -> sums as 3 (b's NA -> 0) -> matches total=3, not flagged.
+    # row 2: a=NA, b=NA -> BOTH NA -> whole side is NA -> skipped, not flagged
+    #        (even though total=0 would "match" a fabricated 0 -- the point is
+    #        this row has no data on the lhs side to compare at all).
+  )
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_consistency skips a lhs_sum rule when none of its columns exist in the data", {
+  # Same combined-schema situation add_anomaly_consistency's single-column
+  # `lhs` already handles: a schema shared across several sheet shapes where
+  # only one prefix's columns are ever populated on a given ingest.
+  schema <- list(
+    consistency = list(
+      r = list(lhs_sum = list("only_in_other_sheet_a", "only_in_other_sheet_b"),
+               op = "==", rhs_value = 0)
+    )
+  )
+  df <- tibble::tibble(unrelated_col = 1:3)
+  # add_anomaly_consistency()'s "not found" notice is a cli_alert_warning
+  # (styled console output via message()), not an R warning() condition --
+  # matches this function's pre-existing convention for its other skip paths.
+  expect_message(
+    out <- add_anomaly_consistency(df, schema),
+    "not found"
+  )
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("add_anomaly_consistency's rhs_sum works the same way as lhs_sum", {
+  schema <- list(
+    consistency = list(
+      r = list(lhs = "total", op = "==", rhs_sum = list("part_a", "part_b"))
+    )
+  )
+  df <- tibble::tibble(total = c(10L, 10L), part_a = c(4L, 4L), part_b = c(6L, 5L))
+  out <- add_anomaly_consistency(df, schema)
+  expect_equal(out$row, 2L)   # 4+5=9 != 10
+})
+
+test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule passes clean data (issue #334)", {
+  schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#cddtrn_year`          = "2026",
+    `#cddtrn_adm2`          = "Agnua",
+    `#cddtrn_tot_male`      = "10",
+    `#cddtrn_tot_fem`       = "5",
+    `#cddtrn_new_male_jan`  = "10",
+    `#cddtrn_new_fem_jan`   = "5",
+    sheet                   = "CDD Training"
+  )
+  res <- run_dq_checks(df, schema)
+  res <- add_anomaly_consistency(res, schema)
+  expect_equal(sum(grepl("gender_sum_matches_type_sum", res$flags$issue)), 0L)
+})
+
+test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule catches a real mismatch (issue #334)", {
+  schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#cddtrn_year`          = "2026",
+    `#cddtrn_adm2`          = "Agnua",
+    `#cddtrn_tot_male`      = "10",   # annual total says 10 male trained
+    `#cddtrn_tot_fem`       = "5",
+    `#cddtrn_new_male_jan`  = "8",    # but new+refresher only sums to 8 male, 5 female
+    `#cddtrn_new_fem_jan`   = "5",
+    sheet                   = "CDD Training"
+  )
+  res <- run_dq_checks(df, schema)
+  res <- add_anomaly_consistency(res, schema)
+  hit <- res$flags[grepl("gender_sum_matches_type_sum", res$flags$issue), ]
+  expect_equal(nrow(hit), 1L)
+  expect_equal(hit$column, "sum(male_trained + female_trained)")
+})
+
+test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule skips a ToT sheet (no monthly breakdown at all)", {
+  # "ToT Regional"/"ToT Zonal" have no new_/refresh_ monthly columns whatsoever
+  # (see the schema's header note) -- confirm they're skipped, not flagged as a
+  # false mismatch, since every rhs_sum column is entirely absent from that
+  # ingest, not just NA-valued.
+  schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#tot_reg_trn_year`         = "2026",
+    `#tot_reg_trn_adm1`         = "Amhara",
+    `#tot_reg_trn_tot_reg__male` = "5",
+    `#tot_reg_trn_tot_reg__fem`  = "3",
+    `#tot_reg_trn_tot_reg_`      = "8",
+    sheet = "ToT Regional"
+  )
+  res <- run_dq_checks(df, schema)
+  res <- add_anomaly_consistency(res, schema)
+  expect_equal(sum(grepl("gender_sum_matches_type_sum", res$flags$issue)), 0L)
+})
+
 #### Shared helpers ####
 
 make_surveillance <- function() {

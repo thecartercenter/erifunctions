@@ -84,6 +84,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0022](adr/0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet; reverses the v0.9.8 per-sheet-tolerant behavior | CMR pilot-session template-defect handling |
 | [0023](adr/0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row, so a combined schema (e.g. training) can discriminate its sources | `training_type` discriminator for rolled-up measures |
 | [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
+| [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
 
 ---
 

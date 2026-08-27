@@ -1126,6 +1126,18 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     if (is.null(schema)) next
 
     result       <- run_dq_checks(staged, schema)
+    # ADR-0026: run_dq_checks() does NOT evaluate a schema's `consistency:`
+    # block on its own (add_anomaly_consistency() is a separate, chainable
+    # step -- see its own roxygen) -- chain it here so every schema's
+    # consistency rules (implausible_overcoverage/treated_nonneg and friends,
+    # plus the new lhs_sum/rhs_sum rules from issue #334) actually run during
+    # real CMR DQ review, not just when a caller happens to chain it by hand.
+    # Guarded on the block actually being present so a schema with none
+    # doesn't print an unconditional "No consistency rules defined" notice on
+    # every single DQ report run.
+    if (!is.null(schema$consistency)) {
+      result <- add_anomaly_consistency(result, schema)
+    }
     tables[[length(tables) + 1L]] <- list(sheet = p$sheet, disease = p$disease,
                                           data_type = p$data_type, data = result$data)
     p_source_hash <- if ("source_hash" %in% names(plan)) p$source_hash else NULL

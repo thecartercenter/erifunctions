@@ -1686,6 +1686,79 @@ test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropp
   expect_equal(flags$excel_row, 8L)   # NOT 2 (the post-drop row index) or 7 (pre-drop, wrong row)
 })
 
+test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block (ADR-0026)", {
+  # Before ADR-0026, run_dq_checks() alone (what eri_cmr_dq_report() called) never
+  # evaluates consistency: rules -- add_anomaly_consistency() has to be chained
+  # separately, and nothing in the CMR pipeline ever did. Confirm the chain now
+  # actually fires and its flags reach the same tibble every other flag does.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated", "#rbtrt_target"),
+    data_rows = list(c("2024", "North", "150", "100"))   # treated (150) > target (100)
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year       = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated"),
+    target_pop = list(required = FALSE, type = "numeric", aliases = "#rbtrt_target")
+  ),
+  consistency = list(
+    implausible_overcoverage = list(lhs = "treated", op = "<=", rhs = "target_pop",
+                                    message = "treated exceeds target_pop")
+  ))
+
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+
+  expect_equal(nrow(flags), 1L)
+  expect_true(grepl("implausible_overcoverage", flags$issue))
+})
+
+test_that("eri_cmr_dq_report() skips add_anomaly_consistency() cleanly for a schema with no consistency: block", {
+  # Guards against the "No consistency rules defined in schema" notice printing
+  # on every single DQ report run for the (common) schemas with no
+  # consistency: block at all.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows = list(c("2024", "North", "50"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated", range = c(0, 100))
+  ))   # no consistency: block
+
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  expect_no_message(
+    flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock")),
+    message = "No consistency rules defined"
+  )
+  expect_equal(nrow(flags), 0L)
+})
+
 #### Tests for eri_cmr_dq_report()'s cross_consistency evaluation (ADR-0024) ####
 
 test_that("eri_cmr_dq_report is a byte-identical no-op for cross-checking when the country has no cross_consistency block", {
