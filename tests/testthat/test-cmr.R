@@ -948,6 +948,34 @@ test_that("eri_split_cmr mirror_pipeline uses the 3-letter subfolder code, not t
   expect_match(legacy_dest, "202607_[0-9]{8}_HTI\\.xlsx$")
 })
 
+test_that("eri_split_cmr mirror_pipeline warns (not silently overwrites) on a same-day mirror collision (ADR-0025)", {
+  # A date-only (not full timestamp) mirror filename means two mirror uploads
+  # of the same country/period on the same calendar day now produce the same
+  # name -- confirm the second one still warns via the existing overwrite path
+  # rather than silently clobbering the first (ADR-0025's accepted trade-off).
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) TRUE,   # simulates today's mirror file already present
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202406"),
+    "Overwriting existing legacy raw file"
+  )
+})
+
 test_that("eri_split_cmr mirror_pipeline auto-detects the period from a YYYYMM_ filename", {
   tmp <- withr::local_tempfile(pattern = "202605_report", fileext = ".xlsx")
   make_uga_cmr(tmp)
