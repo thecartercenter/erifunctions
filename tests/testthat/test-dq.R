@@ -492,6 +492,36 @@ test_that("uga_oncho schema flags a NONzero target_pop for round == 0 (issue #33
   expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
 })
 
+test_that("uga_sch schema flags a NONzero target_pop for round == 0 (issue #335 / eri_feedback #13)", {
+  # uga_sch got the identical range_when -> range_overrides conversion as
+  # uga_oncho, but had no target_pop/treatment_round test at all before this
+  # PR (its only existing test is a field-code/alias smoke check) -- close
+  # that gap rather than relying on the two schemas' hand-verified similarity.
+  schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#schtrt_year` = c("2026", "2026"),
+    `#schtrt_adm2` = c("Adjumani", "Adjumani"),
+    `#schtrt_tot`  = c("0", "0"),
+    `#schtrt_trtrd`     = c("0", "0"),
+    `#schtrt_trttarget` = c("500", "0")   # row 1: nonzero target for round 0 -> flagged
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_sch schema does not flag a zero target_pop for round 1 or an unreported round (conversion regression guard)", {
+  schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#schtrt_year` = c("2026", "2026"),
+    `#schtrt_adm2` = c("Adjumani", "Adjumani"),
+    `#schtrt_tot`  = c("100", "200"),
+    `#schtrt_trtrd`     = c("1", NA_character_),
+    `#schtrt_trttarget` = c("0", "0")
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
+})
+
 test_that("nga_oncho schema flags target_pop > 0 with a round == 0 (eri_feedback #13, issue #335)", {
   schema <- load_dq_schema("nga", "oncho", "programmatic", "treatment", azcontainer = NULL)
   df <- tibble::tibble(
@@ -652,6 +682,20 @@ test_that("allowed_values_when warns and falls back to an unconditional check on
     "unrecognized op"
   )
   expect_equal(nrow(res$flags[res$flags$column == "treatment_round", ]), 1L)
+})
+
+test_that("allowed_values_when without a base allowed_values does not partial-match onto the gate list", {
+  # `allowed_values` is a prefix of `allowed_values_when` -- `$`/default `[[`
+  # would silently resolve a column def with ONLY allowed_values_when (no
+  # base allowed_values) to the gate's own column/op/value list and use THAT
+  # as the allowed set. Regression guard for the review-agent-caught bug.
+  schema <- list(columns = list(
+    treatment_round = list(type = "numeric",
+                           allowed_values_when = list(column = "target_pop", op = ">", value = 0))
+  ))
+  df <- tibble::tibble(treatment_round = 3, target_pop = 500)
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "treatment_round", ]), 0L)
 })
 
 test_that("a column with no allowed_values_when still checks allowed_values unconditionally (unchanged default behavior)", {

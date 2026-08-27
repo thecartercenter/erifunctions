@@ -400,7 +400,12 @@
   for (col in names(cols_schema)) {
     if (!col %in% names(data)) next
     col_def <- cols_schema[[col]]
-    allowed <- col_def$allowed_values
+    # Exact matching, not `$`/default `[[`: `allowed_values` is a prefix of
+    # `allowed_values_when` -- a column declaring only the latter would
+    # otherwise have `allowed_values` silently partial-match onto the gate's
+    # own `column`/`op`/`value` list, exactly the trap `range`/`range_overrides`
+    # is already hardened against above (.dq_check_ranges()).
+    allowed <- col_def[["allowed_values", exact = TRUE]]
     if (is.null(allowed)) next
 
     vals     <- data[[col]]
