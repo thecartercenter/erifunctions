@@ -228,6 +228,15 @@ Ingesting the August 2026 consultancy close-out established three things that un
 `projects/` is therefore **not** legacy space we are migrating off. It is a live system of record
 that erifunctions will write to deliberately.
 
+**On dev/prod storage.** This roadmap has no dev-versus-prod storage-account concept, and
+`eridev` is a compiled-in constant (`R/dal.R:17`). The contractor's own plan named a second,
+currently **empty and never-credentialed** account, `eriprod`, as the candidate target for a prod
+cutover, alongside the alternative of using the bare (non-`-dev`) prefix on `eridev`. Both
+contractor pipelines presently read and write the dev prefixes, and their reporting publishes from
+the dev data area. We are inheriting that state, not resolving it: no prod cutover is planned in
+these stages, and taking one on would mean flipping storage on both pipeline repos together.
+Recording it here so a successor can tell "deliberately deferred" from "never considered".
+
 ### The contract
 
 For RBLF it is exactly three files, in the `projects` container:
