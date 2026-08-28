@@ -671,12 +671,33 @@ eri_schema_validate <- function(schema_path) {
           )))
         }
         when_op <- defn$range_when$op %||% "=="
-        if (!when_op %in% c("<=", ">=", "==", "<", ">", "!=")) {
+        if (!when_op %in% .ERI_DQ_RANGE_OPS) {
           issues <- c(issues, list(list(
             issue_type = "invalid_value",
             field      = paste0("columns.", col, ".range_when.op"),
             message    = paste0("Column '", col, "'s range_when has invalid op '", when_op,
-                                "'. Valid: <=, >=, ==, <, >, !=.")
+                                "'. Valid: ", paste(.ERI_DQ_RANGE_OPS, collapse = ", "), ".")
+          )))
+        }
+      }
+      avw <- defn[["allowed_values_when", exact = TRUE]]
+      if (!is.null(avw)) {
+        when_col <- avw$column
+        if (is.null(when_col) || !when_col %in% col_names) {
+          issues <- c(issues, list(list(
+            issue_type = "unknown_column_reference",
+            field      = paste0("columns.", col, ".allowed_values_when.column"),
+            message    = paste0("Column '", col, "'s allowed_values_when references unknown column '",
+                                when_col %||% "(missing)", "'.")
+          )))
+        }
+        when_op <- avw$op %||% "=="
+        if (!when_op %in% .ERI_DQ_RANGE_OPS) {
+          issues <- c(issues, list(list(
+            issue_type = "invalid_value",
+            field      = paste0("columns.", col, ".allowed_values_when.op"),
+            message    = paste0("Column '", col, "'s allowed_values_when has invalid op '", when_op,
+                                "'. Valid: ", paste(.ERI_DQ_RANGE_OPS, collapse = ", "), ".")
           )))
         }
       }

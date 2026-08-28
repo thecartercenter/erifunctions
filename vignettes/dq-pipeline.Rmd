@@ -127,7 +127,10 @@ The pipeline runs these steps in order:
    a condition -- rows where the gate column is missing or `NA` are out of scope, not flagged.
 6. **Translations and corrections**: applies the lookup maps silently,
    logging each change to `$log`.
-7. **Allowed-values check**: flags values not in the `allowed_values` list.
+7. **Allowed-values check**: flags values not in the `allowed_values` list. A column can add
+   `allowed_values_when` (`column`/`op`/`value`, same shape as `range_when`) to only apply the
+   check to rows where another column meets a condition -- rows where the gate column is missing
+   or `NA` are out of scope, not flagged.
 8. **NA fill**: fills `NA` in `na_fill`-annotated columns with the specified
    default and logs the change.
 9. **Temporal cross-check**: flags rows where `year(date_col) != year_col`.

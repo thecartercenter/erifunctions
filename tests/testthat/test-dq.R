@@ -631,6 +631,100 @@ test_that("uga_oncho schema does not flag a zero target_pop for round 1 or an un
   expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
 })
 
+test_that("uga_oncho schema flags a NONzero target_pop for round == 0 (issue #335 / eri_feedback #13)", {
+  # The round == 0 override was added alongside the pre-existing round > 1
+  # override (both converted from a single range_when) -- confirm round == 0
+  # is now checked (round == 0 -> target_pop must be exactly 0), not silently
+  # dropped by the range_when -> range_overrides conversion.
+  schema <- load_dq_schema("uga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026"),
+    `#rbtrt_adm2` = c("Arua", "Gulu"),
+    `#rbtrt_tot`  = c("0", "0"),
+    `#rbtrt_trtrd`     = c("0", "0"),
+    `#rbtrt_trttarget` = c("500", "0")   # row 1: nonzero target for round 0 -> flagged
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_sch schema flags a NONzero target_pop for round == 0 (issue #335 / eri_feedback #13)", {
+  # uga_sch got the identical range_when -> range_overrides conversion as
+  # uga_oncho, but had no target_pop/treatment_round test at all before this
+  # PR (its only existing test is a field-code/alias smoke check) -- close
+  # that gap rather than relying on the two schemas' hand-verified similarity.
+  schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#schtrt_year` = c("2026", "2026"),
+    `#schtrt_adm2` = c("Adjumani", "Adjumani"),
+    `#schtrt_tot`  = c("0", "0"),
+    `#schtrt_trtrd`     = c("0", "0"),
+    `#schtrt_trttarget` = c("500", "0")   # row 1: nonzero target for round 0 -> flagged
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("uga_sch schema does not flag a zero target_pop for round 1 or an unreported round (conversion regression guard)", {
+  schema <- load_dq_schema("uga", "sch", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#schtrt_year` = c("2026", "2026"),
+    `#schtrt_adm2` = c("Adjumani", "Adjumani"),
+    `#schtrt_tot`  = c("100", "200"),
+    `#schtrt_trtrd`     = c("1", NA_character_),
+    `#schtrt_trttarget` = c("0", "0")
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 0L)
+})
+
+test_that("nga_oncho schema flags target_pop > 0 with a round == 0 (eri_feedback #13, issue #335)", {
+  schema <- load_dq_schema("nga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026"),
+    `#rbtrt_adm2` = c("Aboh-Mbaise", "Aboh-Mbaise"),
+    `#rbtrt_tot`  = c("0", "0"),
+    `#rbtrt_trtrd`     = c("0", "2"),
+    `#rbtrt_trttarget` = c("100", "100")   # row 1: round 0 with nonzero target -> flagged
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "target_pop"], 1L)
+})
+
+test_that("nga_oncho schema flags treatment_round outside {1,2,4} only when target_pop > 0 (issue #335)", {
+  schema <- load_dq_schema("nga", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year` = c("2026", "2026", "2026"),
+    `#rbtrt_adm2` = c("Aboh-Mbaise", "Aboh-Mbaise", "Aboh-Mbaise"),
+    `#rbtrt_tot`  = c("0", "0", "0"),
+    `#rbtrt_trtrd`     = c("3", "3", "1"),
+    `#rbtrt_trttarget` = c("100", "0", "100")
+    # row 1: target_pop > 0, round 3 (not in {1,2,4}) -> flagged.
+    # row 2: target_pop == 0 -> gate false -> round 3 not checked.
+    # row 3: target_pop > 0, round 1 (in {1,2,4}) -> not flagged.
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "treatment_round"], 1L)
+})
+
+test_that("eth_oncho schema's round == 0 override takes priority over program_status (issue #335)", {
+  # A row can have program_status "Transmission ongoing" (which alone would
+  # expect a nonzero target_pop) AND treatment_round == 0 (no round happened
+  # yet this period) -- the round == 0 override is listed first specifically
+  # so it wins this conflict, since round == 0 is the more direct signal.
+  schema <- load_dq_schema("eth", "oncho", "programmatic", "treatment", azcontainer = NULL)
+  df <- tibble::tibble(
+    `#rbtrt_year`  = "2026",
+    `#rbtrt_adm2`  = "Agnua",
+    `#rbtrt_tot`   = "0",
+    `#rbtrt_trtrd` = "0",
+    `#rbtrt_programstatus` = "Transmission ongoing",
+    `#rbtrt_trttarget`     = "500"   # nonzero target for round 0 -> flagged, despite "ongoing" status
+  )
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "target_pop", ]), 1L)
+})
+
 test_that("range_when treats an entirely absent gate column as out of scope, not flagged", {
   schema <- list(columns = list(
     target_pop = list(type = "numeric", range = list(1, 100),
@@ -705,6 +799,68 @@ test_that("range_when accepts an `in` op for list-membership gates", {
                        status     = c("ongoing", "suppressed", "interrupted"))
   res <- run_dq_checks(df, schema)
   expect_equal(sort(res$flags$row[res$flags$column == "target_pop"]), c(1L, 2L))
+})
+
+test_that("allowed_values_when only checks allowed_values on rows where the gate condition holds", {
+  schema <- list(columns = list(
+    treatment_round = list(type = "numeric", allowed_values = list(1, 2, 4),
+                           allowed_values_when = list(column = "target_pop", op = ">", value = 0))
+  ))
+  df <- tibble::tibble(
+    treatment_round = c(3, 3, NA_real_),
+    target_pop      = c(500, 0, 500)
+  )
+  res <- run_dq_checks(df, schema)
+  # row 1: target_pop > 0 -> gate true -> 3 not in {1,2,4} -> flagged.
+  # row 2: target_pop == 0 -> gate false -> not flagged even though 3 isn't allowed either.
+  # row 3: treatment_round itself is NA -> never flagged regardless of the gate.
+  expect_equal(res$flags$row[res$flags$column == "treatment_round"], 1L)
+})
+
+test_that("allowed_values_when treats an entirely absent gate column as out of scope, not flagged", {
+  schema <- list(columns = list(
+    treatment_round = list(type = "numeric", allowed_values = list(1, 2, 4),
+                           allowed_values_when = list(column = "target_pop", op = ">", value = 0))
+  ))
+  df <- tibble::tibble(treatment_round = 3)   # target_pop doesn't exist in this sheet at all
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "treatment_round", ]), 0L)
+})
+
+test_that("allowed_values_when warns and falls back to an unconditional check on an unrecognized op", {
+  schema <- list(columns = list(
+    treatment_round = list(type = "numeric", allowed_values = list(1, 2, 4),
+                           allowed_values_when = list(column = "target_pop", op = "gte", value = 0))
+  ))
+  df <- tibble::tibble(treatment_round = 3, target_pop = 500)
+  expect_warning(
+    res <- run_dq_checks(df, schema),
+    "unrecognized op"
+  )
+  expect_equal(nrow(res$flags[res$flags$column == "treatment_round", ]), 1L)
+})
+
+test_that("allowed_values_when without a base allowed_values does not partial-match onto the gate list", {
+  # `allowed_values` is a prefix of `allowed_values_when` -- `$`/default `[[`
+  # would silently resolve a column def with ONLY allowed_values_when (no
+  # base allowed_values) to the gate's own column/op/value list and use THAT
+  # as the allowed set. Regression guard for the review-agent-caught bug.
+  schema <- list(columns = list(
+    treatment_round = list(type = "numeric",
+                           allowed_values_when = list(column = "target_pop", op = ">", value = 0))
+  ))
+  df <- tibble::tibble(treatment_round = 3, target_pop = 500)
+  res <- run_dq_checks(df, schema)
+  expect_equal(nrow(res$flags[res$flags$column == "treatment_round", ]), 0L)
+})
+
+test_that("a column with no allowed_values_when still checks allowed_values unconditionally (unchanged default behavior)", {
+  schema <- list(columns = list(
+    status = list(type = "character", allowed_values = list("ongoing", "interrupted"))
+  ))
+  df <- tibble::tibble(status = c("ongoing", "unknown"))
+  res <- run_dq_checks(df, schema)
+  expect_equal(res$flags$row[res$flags$column == "status"], 2L)
 })
 
 test_that("range_overrides applies a different range per training_type, first match wins", {

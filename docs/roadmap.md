@@ -80,10 +80,11 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0018](adr/0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution (local → Azure → bundled), hash-based expiry, never-silent envelope markers | DQ schema override lifecycle (DQ workflow redesign, phase 3) |
 | [0019](adr/0019-odk-zero-row-parent-clears-raw-set.md) | A zero-row ODK parent clears the whole raw set by default (`overwrite = TRUE`); amends ADR-0010 point 4 | Delete-and-resync workflow correctness (#303) |
 | [0020](adr/0020-canonical-country-disease-codes.md) | Canonical, normalized (lowercase + trim) `country`/`disease`, validated against a registry; amends ADR-0012 point 5 | Prevent case-drift path duplication (#303/#306) |
-| [0021](adr/0021-mirror-filename-period-leading.md) | Legacy `projects`-blob mirror filename leads with period (`{period}_{country}_{timestamp}`), matching the real convention | CMR pilot-session filename mismatch |
+| [0021](adr/0021-mirror-filename-period-leading.md) | Legacy `projects`-blob mirror filename leads with period (`{period}_{country}_{timestamp}`), matching the real convention — superseded by ADR-0025 | CMR pilot-session filename mismatch |
 | [0022](adr/0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet; reverses the v0.9.8 per-sheet-tolerant behavior | CMR pilot-session template-defect handling |
 | [0023](adr/0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row, so a combined schema (e.g. training) can discriminate its sources | `training_type` discriminator for rolled-up measures |
 | [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
+| [0025](adr/0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename corrected to `{period}_{upload_date}_{3-letter country code}`, matching the legacy pipeline owner's actual parsing convention | `eri_feedback` #8 (Zack's pipeline couldn't find the most recent file) |
 | [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
 
 ---

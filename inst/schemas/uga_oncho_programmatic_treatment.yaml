@@ -72,22 +72,45 @@ columns:
     type: numeric
     aliases: [Round, MDA_round, treatment_round, "#rbtrt_trtrd"]
     range: [0, 10]
+    # If a real treatment goal is reported (target_pop > 0), the round must be
+    # a real MDA frequency -- annual/biannual/quarterly -- not an arbitrary
+    # sequential count. Reported by Emalee, 2026-08-27 (relayed by Nishant);
+    # issue #335.
+    allowed_values: [1, 2, 4]
+    allowed_values_when:
+      column: target_pop
+      op: ">"
+      value: 0
 
   target_pop:
     required: false
     type: numeric
     aliases: [TargetPop, target_population, eligible_pop, "#rbtrt_trttarget"]
     # A present target of 0 (or negative) is implausible once a treatment round
-    # is actually underway, and is what this range floor catches; a MISSING
-    # target is common (roughly half of historical rows) and is not flagged,
-    # since it is not required. Gated on treatment_round > 1 -- round 1
-    # legitimately reports 0 in many districts before scale-up, confirmed
-    # 2026-07-15 against live UGA data.
-    range: [1, 2000000]
-    range_when:
-      column: treatment_round
-      op: ">"
-      value: 1
+    # is actually underway; a MISSING target is common (roughly half of
+    # historical rows) and is not flagged, since it is not required.
+    # Converted from a single `range_when` (round > 1) to `range_overrides`
+    # 2026-08-27 to add the round == 0 rule below -- `range_overrides`
+    # presence disables `range_when` entirely (R/dq.R's .dq_check_ranges()),
+    # so both rules have to live in the overrides list. Rows with round == 1
+    # or missing round still fall through both overrides unmatched, with no
+    # base `range` set here -- exactly the original "only checked when round >
+    # 1" behavior (round 1 legitimately reports 0 in many districts before
+    # scale-up, confirmed 2026-07-15 against live UGA data), not a regression.
+    range_overrides:
+      # A round of 0 means no MDA round happened this period at all -- a real
+      # target for it is a contradiction. Reported by Hannah (eri_feedback
+      # #13, 2026-08-13, "for all countries"); issue #335.
+      - when:
+          column: treatment_round
+          op: "=="
+          value: 0
+        range: [0, 0]
+      - when:
+          column: treatment_round
+          op: ">"
+          value: 1
+        range: [1, 2000000]
 
   village_target:
     required: false
