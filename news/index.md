@@ -60,49 +60,6 @@ mirrors to the legacy contractor pipeline is now named
 `{period}_{country}_{timestamp}` order and precision was preventing
 that. Reported by Emalee.
 
-### Haiti LF CMR onboarding
-
-[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)’s
-CMR flow can now bring in Haiti’s monthly LF (lymphatic filariasis)
-programme reports, the same way as any RB-expansion country.
-
-- CMR routing schema (`inst/schemas/cmr/ht.yaml`, an LF-only 9-sheet
-  subset of the full RBLF template – no RB Treatment/oncho sheets,
-  expected for Haiti’s LF-elimination-only program) and DQ schemas
-  (`inst/schemas/ht_lf_programmatic_{treatment,mmdp,tas,mental_health}.yaml`,
-  `inst/schemas/ht_rblf_programmatic_training.yaml`) authored and
-  validated against the real HTI 2026 July submission – structure,
-  admin-unit names (140 communes across 10 departments), and dropdown
-  enumerations only, no treatment/patient counts read or persisted. Both
-  `eri_split_cmr(dry_run = TRUE)` routing and an in-memory
-  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
-  pass (no Azure write) came back clean on all 9 measures.
-- `ht` registered in the `rb-expansion` pipeline’s `country_map`
-  (`R/dal.R`) – the piece that actually gates
-  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
-  – mapping the wizard-facing `"ht"` code to the raw-drop’s `"hti"`
-  subfolder (same split as the `hsp-mal` registry’s existing `dr`/`ht`
-  -\> `dom`/`hti` convention; unlike bra/ven, Haiti’s wizard code and
-  raw-drop folder aren’t identical).
-- New `mental_health` `data_type` registered in
-  `inst/registry/data_model.yaml` for Haiti’s “Mental Health” sheet –
-  psychosocial/morbidity support for LF hydrocele/lymphoedema patients
-  (home visits, support group meetings), not seen in any other onboarded
-  country’s CMR and distinct from `mmdp`’s surgical/patient-training
-  focus.
-- Two files arrived for the 202607 period; the original had a template
-  defect (the “Mental Health” sheet’s row-5 field codes wrongly
-  copy-pasted from “LF Treatment”) that a same-day corrected file fixed.
-  Confirmed
-  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
-  catches the defect cleanly (two required-column flags) rather than
-  silently misrouting – see `inst/schemas/cmr/ht.yaml`’s header note.
-- Mirroring to the legacy contractor pipeline is on by default, same as
-  every other non-cutover-tracked country.
-
-Closes
-[\#329](https://github.com/thecartercenter/erifunctions/issues/329).
-
 ## erifunctions 0.9.45
 
 ### Haiti LF CMR onboarding
