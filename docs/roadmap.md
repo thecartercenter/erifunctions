@@ -85,6 +85,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0023](adr/0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row, so a combined schema (e.g. training) can discriminate its sources | `training_type` discriminator for rolled-up measures |
 | [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
 | [0025](adr/0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename corrected to `{period}_{upload_date}_{3-letter country code}`, matching the legacy pipeline owner's actual parsing convention | `eri_feedback` #8 (Zack's pipeline couldn't find the most recent file) |
+| [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
 
 ---
 
