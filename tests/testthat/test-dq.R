@@ -177,6 +177,25 @@ test_that("add_anomaly_consistency skips a lhs_sum rule when none of its columns
   expect_equal(nrow(out), 0L)
 })
 
+test_that("add_anomaly_consistency's summed side fails gracefully (not a raw rowSums error) on non-numeric data", {
+  # add_anomaly_consistency() is a documented, independently-exported,
+  # chainable function -- called on data that hasn't been through
+  # run_dq_checks()'s type coercion first, a non-numeric summed column would
+  # otherwise hit a raw base-R rowSums() error instead of this function's
+  # usual cli_alert_warning + skip.
+  schema <- list(
+    consistency = list(
+      r = list(lhs_sum = list("a", "b"), op = "==", rhs_value = 0)
+    )
+  )
+  df <- tibble::tibble(a = c("not", "numeric"), b = c("data", "here"))
+  expect_message(
+    out <- add_anomaly_consistency(df, schema),
+    "could not be summed"
+  )
+  expect_equal(nrow(out), 0L)
+})
+
 test_that("add_anomaly_consistency's rhs_sum works the same way as lhs_sum", {
   schema <- list(
     consistency = list(

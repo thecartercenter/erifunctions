@@ -753,12 +753,29 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
     # can speak to -- stays NA (skipped downstream like any other NA
     # operand), not fabricated as 0. A row where some are present and others
     # NA treats the NA ones as 0 (a month with nothing reported legitimately
-    # contributes 0 to the sum, same reasoning as .dq_na_fill() for a single
-    # count column).
-    all_na      <- apply(mat, 1, function(r) all(is.na(r)))
-    vals        <- rowSums(mat, na.rm = TRUE)
-    vals[all_na] <- NA_real_
-    return(vals)
+    # contributes 0 to the sum -- similar reasoning to .dq_na_fill()'s
+    # NA-filling for a single count column, though that path is an explicit,
+    # schema-declared, logged correction and this one is neither).
+    #
+    # rowSums() errors hard (not a graceful cli message) on a non-numeric
+    # column. add_anomaly_consistency() is called inside the CMR pipeline
+    # AFTER run_dq_checks() has already coerced types, where this can't
+    # happen, but it's also a documented, independently-exported function a
+    # DA/script could call directly on uncoerced data -- catch it here so
+    # that gets the same "skipping" notice as this function's other failure
+    # paths, not a raw base-R error.
+    result <- tryCatch({
+      all_na       <- apply(mat, 1, function(r) all(is.na(r)))
+      vals         <- rowSums(mat, na.rm = TRUE)
+      vals[all_na] <- NA_real_
+      vals
+    }, error = function(e) {
+      cli::cli_alert_warning(
+        "Consistency rule's summed columns ({.val {present}}) could not be summed ({conditionMessage(e)}) -- skipping."
+      )
+      NULL
+    })
+    return(result)
   }
   if (!is.null(col) && col %in% names(df)) return(df[[col]])
   NULL
