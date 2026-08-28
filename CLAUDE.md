@@ -25,8 +25,14 @@ data/{country}/{disease}/{data_type}/{layer}/
 
 - **`eri_approve()` is the human gate.** Nothing reaches `processed/` without it; it writes an
   approval log and registers the file in the data catalog (`_catalog/data_catalog.yaml`).
-- The `projects/` blob is the legacy contractor (hsp-mal) space; V2 is migrating authority to
-  `data/` (see roadmap Phase 3).
+- The `projects/` blob is **a live system of record, not dead legacy space.** It holds the
+  contractor pipelines' working data and the Power BI inputs the dashboards read. `data/` is the
+  governed analyst-facing layer and is where new work belongs, but `projects/` is written
+  deliberately — erifunctions is taking over the Power BI output contract there (roadmap Phase 3).
+  Treat any change to it as a change to a live production feed.
+- **Container selection should be explicit.** Bare DAL verbs resolve `ERIFUNCTIONS_STORAGE_NAME`,
+  which the documented team `.Renviron` sets to `projects` — so `eri_write(x, eri_data_path(...))`
+  does *not* land in `data/` by default. Pass `storage_name` deliberately. See issue #331.
 - Metadata stores (catalog, ODK registry, artifact registry) are YAML blobs — see ADR-0002
   for the concurrency rules when touching them.
 
