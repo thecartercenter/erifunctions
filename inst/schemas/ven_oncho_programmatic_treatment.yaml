@@ -85,6 +85,15 @@ columns:
       - treatment_round
       - '#rbtrt_trtrd'
     range: [0, 10]
+    # If a real treatment goal is reported (target_pop > 0), the round must be
+    # a real MDA frequency -- annual/biannual/quarterly -- not an arbitrary
+    # sequential count. Reported by Emalee, 2026-08-27 (relayed by Nishant);
+    # issue #335.
+    allowed_values: [1, 2, 4]
+    allowed_values_when:
+      column: target_pop
+      op: ">"
+      value: 0
   target_pop:
     required: false
     type: numeric
@@ -94,6 +103,15 @@ columns:
       - eligible_pop
       - '#rbtrt_trttarget'
     range: [0, 50000]
+    # A round of 0 means no MDA round happened this period -- a real target
+    # for it is a contradiction, not a legitimate report. Reported by Hannah
+    # (eri_feedback #13, 2026-08-13, "for all countries"); issue #335.
+    range_overrides:
+      - when:
+          column: treatment_round
+          op: "=="
+          value: 0
+        range: [0, 0]
   village_target:
     required: false
     type: numeric

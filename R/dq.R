@@ -399,11 +399,35 @@
 
   for (col in names(cols_schema)) {
     if (!col %in% names(data)) next
-    allowed <- cols_schema[[col]]$allowed_values
+    col_def <- cols_schema[[col]]
+    # Exact matching, not `$`/default `[[`: `allowed_values` is a prefix of
+    # `allowed_values_when` -- a column declaring only the latter would
+    # otherwise have `allowed_values` silently partial-match onto the gate's
+    # own `column`/`op`/`value` list, exactly the trap `range`/`range_overrides`
+    # is already hardened against above (.dq_check_ranges()).
+    allowed <- col_def[["allowed_values", exact = TRUE]]
     if (is.null(allowed)) next
 
-    vals <- data[[col]]
-    bad  <- which(!is.na(vals) & !vals %in% allowed)
+    vals     <- data[[col]]
+    in_scope <- !is.na(vals)
+
+    # Optional gate, same shape and semantics as `range_when` (.dq_check_ranges()
+    # above): only check this column's allowed_values on rows where another
+    # column satisfies a condition (e.g. treatment_round only needs to be a real
+    # MDA frequency -- 1/2/4 -- once target_pop shows a round is actually
+    # targeted; a genuinely untargeted round legitimately reports 0/NA). A gate
+    # column absent from this sheet, or NA on a given row, means the condition
+    # can't be confirmed, so those rows are treated as out of scope rather than
+    # flagged.
+    when <- col_def[["allowed_values_when", exact = TRUE]]
+    if (!is.null(when) && !is.null(when$column)) {
+      cond_ok <- .dq_eval_condition(data, when, col, "allowed_values_when")
+      if (!is.null(cond_ok)) in_scope <- in_scope & cond_ok
+      # else: unrecognized op -- ignore the gate (check unconditionally), the
+      # safer failure direction; never firing could hide a real problem.
+    }
+
+    bad <- which(in_scope & !vals %in% allowed)
     if (length(bad) > 0) {
       state <- .dq_log_flag(state, rows = bad, column = col,
                             value = as.character(vals[bad]),
