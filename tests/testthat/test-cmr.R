@@ -903,10 +903,77 @@ test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-
   expect_length(legacy_dest, 1L)
   expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
   # Generated name, not the raw local filename (which can carry characters
-  # that break the storage REST call) -- period_country_timestamp.ext, period
-  # leading to match the legacy pipeline's real YYYYMM_ filename convention.
-  expect_match(legacy_dest, "202406_uga_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
+  # that break the storage REST call) -- {period}_{upload_date}_{COUNTRY}.ext,
+  # the format Zack's legacy pipeline expects (eri_feedback #8, issue #336).
+  expect_match(legacy_dest, "202406_[0-9]{8}_UGA\\.xlsx$")
   expect_false(grepl(basename(tmp), legacy_dest, fixed = TRUE))
+})
+
+test_that("eri_split_cmr mirror_pipeline uses the 3-letter subfolder code, not the wizard code, for a divergent country (issue #336)", {
+  # ht's raw-drop subfolder is "hti", not "ht" -- the mirror filename's country
+  # chunk must match the folder it's written into and Zack's stated 3-letter
+  # requirement, not the 2-letter wizard-facing code.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  # "LF MMDP" is the one sheet name ht.yaml's routing schema actually declares
+  # that this fixture can cheaply provide -- only the split/mirror step is
+  # under test here, not DQ/alias resolution, so the fake field codes are fine.
+  writexl::write_xlsx(list(
+    "LF MMDP" = make_cmr_sheet_df(
+      c("#lfdmdi_year", "#lfdmdi_disease"),
+      list(c("2026", "LF")))
+  ), tmp)
+
+  mirrored <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { mirrored <<- c(mirrored, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "ht", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202607")
+  )
+
+  legacy_dest <- mirrored[grepl("raw/filled_templates", mirrored)]
+  expect_length(legacy_dest, 1L)
+  expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/hti/202607/")
+  expect_match(legacy_dest, "202607_[0-9]{8}_HTI\\.xlsx$")
+})
+
+test_that("eri_split_cmr mirror_pipeline warns (not silently overwrites) on a same-day mirror collision (ADR-0025)", {
+  # A date-only (not full timestamp) mirror filename means two mirror uploads
+  # of the same country/period on the same calendar day now produce the same
+  # name -- confirm the second one still warns via the existing overwrite path
+  # rather than silently clobbering the first (ADR-0025's accepted trade-off).
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) TRUE,   # simulates today's mirror file already present
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202406"),
+    "Overwriting existing legacy raw file"
+  )
 })
 
 test_that("eri_split_cmr mirror_pipeline auto-detects the period from a YYYYMM_ filename", {
