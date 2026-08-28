@@ -30,9 +30,13 @@ data/{country}/{disease}/{data_type}/{layer}/
   governed analyst-facing layer and is where new work belongs, but `projects/` is written
   deliberately — erifunctions is taking over the Power BI output contract there (roadmap Phase 3).
   Treat any change to it as a change to a live production feed.
-- **Container selection should be explicit.** Bare DAL verbs resolve `ERIFUNCTIONS_STORAGE_NAME`,
-  which the documented team `.Renviron` sets to `projects` — so `eri_write(x, eri_data_path(...))`
-  does *not* land in `data/` by default. Pass `storage_name` deliberately. See issue #331.
+- **Know which container a DAL call lands in.** The verb wrappers (`eri_read()`, `eri_write()`,
+  `eri_list()`, `eri_file_exists()`, …) take `azcontainer`, not `storage_name`; when it is `NULL`
+  they call `get_azure_storage_connection()`, which resolves `ERIFUNCTIONS_STORAGE_NAME`. Where
+  that is set to `projects`, `eri_write(x, eri_data_path(...))` does *not* land in `data/`. To
+  target a container explicitly, build the connection yourself:
+  `eri_write(x, path, azcontainer = get_azure_storage_connection(storage_name = "data"))`.
+  Whether the default should change is open — see issue #331.
 - Metadata stores (catalog, ODK registry, artifact registry) are YAML blobs — see ADR-0002
   for the concurrency rules when touching them.
 
