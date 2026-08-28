@@ -1,6 +1,6 @@
 # ADR-0021 — Legacy mirror filename leads with period, not country
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0025](0025-mirror-filename-upload-date-3letter-code.md)
 - **Date:** 2026-07-15
 
 ## Context

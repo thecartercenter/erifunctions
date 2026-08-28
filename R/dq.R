@@ -399,11 +399,35 @@
 
   for (col in names(cols_schema)) {
     if (!col %in% names(data)) next
-    allowed <- cols_schema[[col]]$allowed_values
+    col_def <- cols_schema[[col]]
+    # Exact matching, not `$`/default `[[`: `allowed_values` is a prefix of
+    # `allowed_values_when` -- a column declaring only the latter would
+    # otherwise have `allowed_values` silently partial-match onto the gate's
+    # own `column`/`op`/`value` list, exactly the trap `range`/`range_overrides`
+    # is already hardened against above (.dq_check_ranges()).
+    allowed <- col_def[["allowed_values", exact = TRUE]]
     if (is.null(allowed)) next
 
-    vals <- data[[col]]
-    bad  <- which(!is.na(vals) & !vals %in% allowed)
+    vals     <- data[[col]]
+    in_scope <- !is.na(vals)
+
+    # Optional gate, same shape and semantics as `range_when` (.dq_check_ranges()
+    # above): only check this column's allowed_values on rows where another
+    # column satisfies a condition (e.g. treatment_round only needs to be a real
+    # MDA frequency -- 1/2/4 -- once target_pop shows a round is actually
+    # targeted; a genuinely untargeted round legitimately reports 0/NA). A gate
+    # column absent from this sheet, or NA on a given row, means the condition
+    # can't be confirmed, so those rows are treated as out of scope rather than
+    # flagged.
+    when <- col_def[["allowed_values_when", exact = TRUE]]
+    if (!is.null(when) && !is.null(when$column)) {
+      cond_ok <- .dq_eval_condition(data, when, col, "allowed_values_when")
+      if (!is.null(cond_ok)) in_scope <- in_scope & cond_ok
+      # else: unrecognized op -- ignore the gate (check unconditionally), the
+      # safer failure direction; never firing could hide a real problem.
+    }
+
+    bad <- which(in_scope & !vals %in% allowed)
     if (length(bad) > 0) {
       state <- .dq_log_flag(state, rows = bad, column = col,
                             value = as.character(vals[bad]),
@@ -736,14 +760,59 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
   gaps
 }
 
+# Resolves one side of a consistency rule to a numeric vector, or NULL if
+# neither a single column (`col`) nor any column in a summed list
+# (`sum_cols`) is present in `df`. Exactly one of `col`/`sum_cols` is expected
+# non-NULL per call site -- `col` is the existing `lhs`/`rhs` single-column
+# shape, `sum_cols` the new `lhs_sum`/`rhs_sum` shape (a list of column names,
+# summed row-wise). See add_anomaly_consistency()'s roxygen for the NA
+# semantics of a summed side.
+.dq_consistency_side <- function(df, col, sum_cols) {
+  if (!is.null(sum_cols)) {
+    cols    <- unlist(sum_cols)
+    present <- intersect(cols, names(df))
+    if (length(present) == 0) return(NULL)
+    mat <- as.data.frame(df[present])
+    # A row where every PRESENT column is NA has genuinely no data this side
+    # can speak to -- stays NA (skipped downstream like any other NA
+    # operand), not fabricated as 0. A row where some are present and others
+    # NA treats the NA ones as 0 (a month with nothing reported legitimately
+    # contributes 0 to the sum -- similar reasoning to .dq_na_fill()'s
+    # NA-filling for a single count column, though that path is an explicit,
+    # schema-declared, logged correction and this one is neither).
+    #
+    # rowSums() errors hard (not a graceful cli message) on a non-numeric
+    # column. add_anomaly_consistency() is called inside the CMR pipeline
+    # AFTER run_dq_checks() has already coerced types, where this can't
+    # happen, but it's also a documented, independently-exported function a
+    # DA/script could call directly on uncoerced data -- catch it here so
+    # that gets the same "skipping" notice as this function's other failure
+    # paths, not a raw base-R error.
+    result <- tryCatch({
+      all_na       <- apply(mat, 1, function(r) all(is.na(r)))
+      vals         <- rowSums(mat, na.rm = TRUE)
+      vals[all_na] <- NA_real_
+      vals
+    }, error = function(e) {
+      cli::cli_alert_warning(
+        "Consistency rule's summed columns ({.val {present}}) could not be summed ({conditionMessage(e)}) -- skipping."
+      )
+      NULL
+    })
+    return(result)
+  }
+  if (!is.null(col) && col %in% names(df)) return(df[[col]])
+  NULL
+}
+
 #' Flag cross-field consistency violations defined in a schema
 #'
 #' @description
 #' `r lifecycle::badge("experimental")`
 #'
 #' Evaluates named consistency rules from the schema's `consistency` block and
-#' flags rows where a rule is violated. Each rule specifies a `lhs` column, a
-#' comparison `op`, and either a `rhs` column or a `rhs_value` constant.
+#' flags rows where a rule is violated. Each rule specifies a `lhs` side, a
+#' comparison `op`, and a `rhs` side.
 #'
 #' Schema format (add a `consistency:` block to any YAML schema):
 #' ```yaml
@@ -758,7 +827,28 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #'     op: ">="
 #'     rhs_value: 0
 #'     message: "Age is negative"
+#'   gender_sum_matches_type_sum:
+#'     lhs_sum: [male_trained, female_trained]
+#'     op: "=="
+#'     rhs_sum: [new_male_jan, new_fem_jan, refresh_male_jan, refresh_fem_jan, "..."]
+#'     message: "Sum of male+female trained does not equal sum of new+refresher trained"
 #' ```
+#' Each side is exactly one of: a single column (`lhs`/`rhs`), a constant
+#' (`rhs_value`), or a list of columns summed row-wise with `na.rm = TRUE`
+#' (`lhs_sum`/`rhs_sum`) -- for a measure with no single annual roll-up column
+#' to compare against another single column, e.g. a monthly-wide sheet where
+#' the total-by-gender columns should equal the sum of many monthly
+#' new/refresher columns. A row where *every* column on a summed side is `NA`
+#' stays `NA` (genuinely no data that side can speak to, not a fabricated 0)
+#' and is skipped like any other `NA` operand; a row where *some* columns are
+#' present and others `NA` treats the missing ones as 0 (a month with nothing
+#' reported legitimately contributes 0 to the sum, same reasoning as
+#' `.dq_na_fill()` for a single count column). A summed side where none of its
+#' columns exist in the data at all skips the whole rule for that side (e.g. a
+#' schema shared across several sheet shapes, where only one prefix's columns
+#' are ever populated on a given ingest -- same "not found" skip as a missing
+#' `lhs`/`rhs`).
+#'
 #' Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`.
 #' Missing values (`NA`) in either operand skip the check for that row.
 #'
@@ -795,28 +885,44 @@ add_anomaly_consistency <- function(data, schema) {
 
   for (rule_name in names(rules)) {
     rule <- rules[[rule_name]]
-    lhs  <- rule$lhs
     op   <- rule$op %||% "=="
 
-    if (is.null(lhs) || !lhs %in% names(df)) {
+    # Exact matching throughout this block, not `$`/default `[[` -- `lhs` is a
+    # prefix of `lhs_sum`, and `rhs` is a prefix of BOTH `rhs_sum` and
+    # `rhs_value`. `rule$rhs` would silently partial-match `rhs_value` (or
+    # `rhs_sum`) on any rule that only declares one of those, exactly the trap
+    # documented for `range`/`range_overrides` elsewhere in this file.
+    rule_lhs     <- rule[["lhs", exact = TRUE]]
+    rule_lhs_sum <- rule[["lhs_sum", exact = TRUE]]
+    rule_rhs     <- rule[["rhs", exact = TRUE]]
+    rule_rhs_sum <- rule[["rhs_sum", exact = TRUE]]
+    rule_rhs_val <- rule[["rhs_value", exact = TRUE]]
+
+    lhs      <- .dq_consistency_side(df, rule_lhs, rule_lhs_sum)
+    lhs_desc <- rule_lhs %||% paste0("sum(", paste(unlist(rule_lhs_sum), collapse = " + "), ")")
+    if (is.null(lhs)) {
       cli::cli_alert_warning(
-        "Consistency rule {.val {rule_name}}: column {.val {lhs}} not found, skipping."
+        "Consistency rule {.val {rule_name}}: {.field lhs}/{.field lhs_sum} column(s) not found, skipping."
       )
       next
     }
 
-    rhs_vals <- if (!is.null(rule$rhs) && rule$rhs %in% names(df)) {
-      df[[rule$rhs]]
-    } else if (!is.null(rule$rhs_value)) {
-      rule$rhs_value
+    rhs <- if (!is.null(rule_rhs) || !is.null(rule_rhs_sum)) {
+      .dq_consistency_side(df, rule_rhs, rule_rhs_sum)
+    } else if (!is.null(rule_rhs_val)) {
+      rule_rhs_val
     } else {
+      NULL
+    }
+    if (is.null(rhs)) {
       cli::cli_alert_warning(
-        "Consistency rule {.val {rule_name}}: no valid {.arg rhs} or {.arg rhs_value}, skipping."
+        "Consistency rule {.val {rule_name}}: no valid {.arg rhs}/{.arg rhs_sum}/{.arg rhs_value}, skipping."
       )
       next
     }
 
-    lhs_vals   <- df[[lhs]]
+    lhs_vals   <- lhs
+    rhs_vals   <- rhs
     applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
 
     ok <- switch(op,
@@ -831,13 +937,14 @@ add_anomaly_consistency <- function(data, schema) {
 
     violated <- which(applicable & !ok)
     if (length(violated) > 0) {
-      rhs_desc <- rule$rhs %||% as.character(rule$rhs_value)
-      msg      <- rule$message %||% paste0(lhs, " ", op, " ", rhs_desc)
+      rhs_desc <- rule_rhs %||% rule_rhs_val %||%
+        paste0("sum(", paste(unlist(rule_rhs_sum), collapse = " + "), ")")
+      msg      <- rule$message %||% paste0(lhs_desc, " ", op, " ", rhs_desc)
       all_flags <- dplyr::bind_rows(
         all_flags,
         tibble::tibble(
           row    = violated,
-          column = lhs,
+          column = lhs_desc,
           value  = as.character(lhs_vals[violated]),
           issue  = paste0("consistency [", rule_name, "]: ", msg)
         )

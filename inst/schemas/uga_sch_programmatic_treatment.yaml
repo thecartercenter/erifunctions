@@ -66,14 +66,29 @@ columns:
     required: false
     type: numeric
     aliases: [TargetPop, target_population, eligible_pop, "#schtrt_trttarget"]
-    # Gated on treatment_round > 1 -- round 1 legitimately reports 0 in many
-    # districts before scale-up, confirmed 2026-07-15 against live UGA data
-    # (see uga_oncho_programmatic_treatment.yaml's target_pop for the same rule).
-    range: [1, 2000000]
-    range_when:
-      column: treatment_round
-      op: ">"
-      value: 1
+    # Converted from a single `range_when` (round > 1) to `range_overrides`
+    # 2026-08-27 to add the round == 0 rule below -- `range_overrides`
+    # presence disables `range_when` entirely (R/dq.R's .dq_check_ranges()),
+    # so both rules have to live in the overrides list. Rows with round == 1
+    # or missing round still fall through both overrides unmatched, with no
+    # base `range` set here -- exactly the original "only checked when round >
+    # 1" behavior (round 1 legitimately reports 0 in many districts before
+    # scale-up, confirmed 2026-07-15 against live UGA data; see
+    # uga_oncho_programmatic_treatment.yaml's target_pop for the same rule).
+    range_overrides:
+      # A round of 0 means no MDA round happened this period at all -- a real
+      # target for it is a contradiction. Reported by Hannah (eri_feedback
+      # #13, 2026-08-13, "for all countries"); issue #335.
+      - when:
+          column: treatment_round
+          op: "=="
+          value: 0
+        range: [0, 0]
+      - when:
+          column: treatment_round
+          op: ">"
+          value: 1
+        range: [1, 2000000]
 
   village_target:
     required: false

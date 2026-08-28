@@ -93,7 +93,22 @@ consistency:
     op: "<="
     rhs: n_tested
     message: "Positives exceed tested"
+  gender_sum_matches_type_sum:
+    lhs_sum: [male_trained, female_trained]
+    op: "=="
+    rhs_sum: [new_male_jan, new_fem_jan, refresh_male_jan, refresh_fem_jan, "..."]
+    message: "Sum of male+female trained does not equal sum of new+refresher trained"
 ```
+
+Each side of a `consistency:` rule is exactly one of: a single column (`lhs`/`rhs`), a constant
+(`rhs_value`), or a list of columns summed row-wise with `na.rm = TRUE` (`lhs_sum`/`rhs_sum`) --
+for a measure with no single annual roll-up column to compare against another single column (e.g.
+a monthly-wide sheet where a total-by-gender column should equal the sum of many monthly
+new/refresher columns). A row where *every* column on a summed side is `NA` stays `NA` (genuinely
+no data that side can speak to) and is skipped like any other `NA` operand; a row where *some*
+columns are present and others `NA` treats the missing ones as 0. A summed side where none of its
+columns exist in the data at all skips the whole rule (e.g. a schema shared across several sheet
+shapes, where only one prefix's columns are ever populated on a given ingest).
 
 ## What `run_dq_checks()` does
 
@@ -112,7 +127,10 @@ The pipeline runs these steps in order:
    a condition -- rows where the gate column is missing or `NA` are out of scope, not flagged.
 6. **Translations and corrections**: applies the lookup maps silently,
    logging each change to `$log`.
-7. **Allowed-values check**: flags values not in the `allowed_values` list.
+7. **Allowed-values check**: flags values not in the `allowed_values` list. A column can add
+   `allowed_values_when` (`column`/`op`/`value`, same shape as `range_when`) to only apply the
+   check to rows where another column meets a condition -- rows where the gate column is missing
+   or `NA` are out of scope, not flagged.
 8. **NA fill**: fills `NA` in `na_fill`-annotated columns with the specified
    default and logs the change.
 9. **Temporal cross-check**: flags rows where `year(date_col) != year_col`.

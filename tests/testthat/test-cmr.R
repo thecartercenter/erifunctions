@@ -903,10 +903,77 @@ test_that("eri_split_cmr mirror_pipeline uploads the raw file to the legacy raw-
   expect_length(legacy_dest, 1L)
   expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/uga/202406/")
   # Generated name, not the raw local filename (which can carry characters
-  # that break the storage REST call) -- period_country_timestamp.ext, period
-  # leading to match the legacy pipeline's real YYYYMM_ filename convention.
-  expect_match(legacy_dest, "202406_uga_[0-9]{8}T[0-9]{6}Z\\.xlsx$")
+  # that break the storage REST call) -- {period}_{upload_date}_{COUNTRY}.ext,
+  # the format Zack's legacy pipeline expects (eri_feedback #8, issue #336).
+  expect_match(legacy_dest, "202406_[0-9]{8}_UGA\\.xlsx$")
   expect_false(grepl(basename(tmp), legacy_dest, fixed = TRUE))
+})
+
+test_that("eri_split_cmr mirror_pipeline uses the 3-letter subfolder code, not the wizard code, for a divergent country (issue #336)", {
+  # ht's raw-drop subfolder is "hti", not "ht" -- the mirror filename's country
+  # chunk must match the folder it's written into and Zack's stated 3-letter
+  # requirement, not the 2-letter wizard-facing code.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  # "LF MMDP" is the one sheet name ht.yaml's routing schema actually declares
+  # that this fixture can cheaply provide -- only the split/mirror step is
+  # under test here, not DQ/alias resolution, so the fake field codes are fine.
+  writexl::write_xlsx(list(
+    "LF MMDP" = make_cmr_sheet_df(
+      c("#lfdmdi_year", "#lfdmdi_disease"),
+      list(c("2026", "LF")))
+  ), tmp)
+
+  mirrored <- character(0)
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) FALSE,
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(con, src, dest, ...) { mirrored <<- c(mirrored, dest); invisible(NULL) },
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  suppressWarnings(
+    eri_split_cmr(tmp, "ht", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202607")
+  )
+
+  legacy_dest <- mirrored[grepl("raw/filled_templates", mirrored)]
+  expect_length(legacy_dest, 1L)
+  expect_match(legacy_dest, "^health-rb-country-expansion-dev/raw/filled_templates/hti/202607/")
+  expect_match(legacy_dest, "202607_[0-9]{8}_HTI\\.xlsx$")
+})
+
+test_that("eri_split_cmr mirror_pipeline warns (not silently overwrites) on a same-day mirror collision (ADR-0025)", {
+  # A date-only (not full timestamp) mirror filename means two mirror uploads
+  # of the same country/period on the same calendar day now produce the same
+  # name -- confirm the second one still warns via the existing overwrite path
+  # rather than silently clobbering the first (ADR-0025's accepted trade-off).
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_uga_cmr(tmp)
+
+  local_mocked_bindings(
+    storage_dir_exists  = function(...) TRUE,
+    storage_file_exists = function(...) TRUE,   # simulates today's mirror file already present
+    .package = "AzureStor"
+  )
+  local_mocked_bindings(
+    .eri_blob_write  = function(...) invisible(NULL),
+    .eri_write_log   = function(...) invisible(NULL),
+    .eri_log_session = function(...) invisible(NULL),
+    get_azure_storage_connection = function(...) structure(list(), class = "mock"),
+    .package = "erifunctions"
+  )
+
+  expect_warning(
+    eri_split_cmr(tmp, "uga", data_con = structure(list(), class = "mock"),
+                  mirror_pipeline = "rb-expansion", period = "202406"),
+    "Overwriting existing legacy raw file"
+  )
 })
 
 test_that("eri_split_cmr mirror_pipeline auto-detects the period from a YYYYMM_ filename", {
@@ -1684,6 +1751,79 @@ test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropp
 
   expect_equal(nrow(flags), 1L)
   expect_equal(flags$excel_row, 8L)   # NOT 2 (the post-drop row index) or 7 (pre-drop, wrong row)
+})
+
+test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block (ADR-0026)", {
+  # Before ADR-0026, run_dq_checks() alone (what eri_cmr_dq_report() called) never
+  # evaluates consistency: rules -- add_anomaly_consistency() has to be chained
+  # separately, and nothing in the CMR pipeline ever did. Confirm the chain now
+  # actually fires and its flags reach the same tibble every other flag does.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated", "#rbtrt_target"),
+    data_rows = list(c("2024", "North", "150", "100"))   # treated (150) > target (100)
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year       = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated"),
+    target_pop = list(required = FALSE, type = "numeric", aliases = "#rbtrt_target")
+  ),
+  consistency = list(
+    implausible_overcoverage = list(lhs = "treated", op = "<=", rhs = "target_pop",
+                                    message = "treated exceeds target_pop")
+  ))
+
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+
+  expect_equal(nrow(flags), 1L)
+  expect_true(grepl("implausible_overcoverage", flags$issue))
+})
+
+test_that("eri_cmr_dq_report() skips add_anomaly_consistency() cleanly for a schema with no consistency: block", {
+  # Guards against the "No consistency rules defined in schema" notice printing
+  # on every single DQ report run for the (common) schemas with no
+  # consistency: block at all.
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows = list(c("2024", "North", "50"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated", range = c(0, 100))
+  ))   # no consistency: block
+
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  expect_no_message(
+    flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock")),
+    message = "No consistency rules defined"
+  )
+  expect_equal(nrow(flags), 0L)
 })
 
 #### Tests for eri_cmr_dq_report()'s cross_consistency evaluation (ADR-0024) ####
