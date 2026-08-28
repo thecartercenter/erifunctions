@@ -37,6 +37,13 @@ data/{country}/{disease}/{data_type}/{layer}/
   target a container explicitly, build the connection yourself:
   `eri_write(x, path, azcontainer = get_azure_storage_connection(storage_name = "data"))`.
   Whether the default should change is open — see issue #331.
+- **Phase 3 work is tracked outside this repo.** erifunctions is taking over the Power BI output
+  contract from the departing contractor's pipelines (ADR-0027, roadmap Phase 3). Items live on the
+  [ERI systems handover board](https://github.com/orgs/thecartercenter/projects/1); the ownership,
+  credential, and Azure detail that cannot go in a public repo lives in the private
+  [`eri-ops`](https://github.com/thecartercenter/eri-ops) repo, along with the standing worker
+  guardrails. Verify any claim about the contractor's repos with `gh api` against current `main` —
+  the local clones in `gitrepos/` are months stale.
 - Metadata stores (catalog, ODK registry, artifact registry) are YAML blobs — see ADR-0002
   for the concurrency rules when touching them.
 
