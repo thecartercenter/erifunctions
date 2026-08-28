@@ -73,6 +73,11 @@ Key decisions to make for each column:
   condition.
 - **`allowed_values`** – for categorical columns; triggers a flag if a
   value is unexpected
+- **`allowed_values_when`** – optional; only apply `allowed_values` to
+  rows where another column meets a condition, same shape and semantics
+  as `range_when` above (e.g. a treatment frequency column only needs to
+  be a real MDA frequency – 1/2/4 – once a treatment goal shows a round
+  is actually targeted).
 - **`translations`** – map raw variants to a canonical value
   (e.g. `"YES"` -\> `"Yes"`)
 

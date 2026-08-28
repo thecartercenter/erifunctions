@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.45</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.46</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Data Quality Pipeline</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.45/vignettes/dq-pipeline.Rmd" class="external-link"><code>vignettes/dq-pipeline.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/dq-pipeline.Rmd" class="external-link"><code>vignettes/dq-pipeline.Rmd</code></a></small>
       <div class="d-none name"><code>dq-pipeline.Rmd</code></div>
     </div>
 
@@ -188,7 +188,27 @@ optionally in Azure <code>schemas/</code>). The key blocks are:</p>
 <span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a><span class="at">    </span><span class="fu">lhs</span><span class="kw">:</span><span class="at"> n_positive</span></span>
 <span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="at">    </span><span class="fu">op</span><span class="kw">:</span><span class="at"> </span><span class="st">"&lt;="</span></span>
 <span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a><span class="at">    </span><span class="fu">rhs</span><span class="kw">:</span><span class="at"> n_tested</span></span>
-<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">"Positives exceed tested"</span></span></code></pre></div>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a><span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">"Positives exceed tested"</span></span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a><span class="at">  </span><span class="fu">gender_sum_matches_type_sum</span><span class="kw">:</span></span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a><span class="at">    </span><span class="fu">lhs_sum</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">male_trained</span><span class="kw">,</span><span class="at"> female_trained</span><span class="kw">]</span></span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a><span class="at">    </span><span class="fu">op</span><span class="kw">:</span><span class="at"> </span><span class="st">"=="</span></span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a><span class="at">    </span><span class="fu">rhs_sum</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">new_male_jan</span><span class="kw">,</span><span class="at"> new_fem_jan</span><span class="kw">,</span><span class="at"> refresh_male_jan</span><span class="kw">,</span><span class="at"> refresh_fem_jan</span><span class="kw">,</span><span class="at"> </span><span class="st">"..."</span><span class="kw">]</span></span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a><span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">"Sum of male+female trained does not equal sum of new+refresher trained"</span></span></code></pre></div>
+<p>Each side of a <code>consistency:</code> rule is exactly one of: a
+single column (<code>lhs</code>/<code>rhs</code>), a constant
+(<code>rhs_value</code>), or a list of columns summed row-wise with
+<code>na.rm = TRUE</code> (<code>lhs_sum</code>/<code>rhs_sum</code>) –
+for a measure with no single annual roll-up column to compare against
+another single column (e.g. a monthly-wide sheet where a total-by-gender
+column should equal the sum of many monthly new/refresher columns). A
+row where <em>every</em> column on a summed side is <code>NA</code>
+stays <code>NA</code> (genuinely no data that side can speak to) and is
+skipped like any other <code>NA</code> operand; a row where
+<em>some</em> columns are present and others <code>NA</code> treats the
+missing ones as 0. A summed side where none of its columns exist in the
+data at all skips the whole rule (e.g. a schema shared across several
+sheet shapes, where only one prefix’s columns are ever populated on a
+given ingest).</p>
 </div>
 <div class="section level2">
 <h2 id="what-run_dq_checks-does">What <code>run_dq_checks()</code> does<a class="anchor" aria-label="anchor" href="#what-run_dq_checks-does"></a>
@@ -222,7 +242,12 @@ flagged.</li>
 maps silently, logging each change to <code>$log</code>.</li>
 <li>
 <strong>Allowed-values check</strong>: flags values not in the
-<code>allowed_values</code> list.</li>
+<code>allowed_values</code> list. A column can add
+<code>allowed_values_when</code>
+(<code>column</code>/<code>op</code>/<code>value</code>, same shape as
+<code>range_when</code>) to only apply the check to rows where another
+column meets a condition – rows where the gate column is missing or
+<code>NA</code> are out of scope, not flagged.</li>
 <li>
 <strong>NA fill</strong>: fills <code>NA</code> in
 <code>na_fill</code>-annotated columns with the specified default and

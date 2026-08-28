@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.45</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.46</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,42 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.45/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.46" id="erifunctions-0946">erifunctions 0.9.46<a class="anchor" aria-label="anchor" href="#erifunctions-0946"></a></h2>
+<div class="section level3">
+<h3 id="behavior-change-consistency-dq-rules-now-actually-run-adr-0-9-46">Behavior change: <code>consistency:</code> DQ rules now actually run (ADR-0026)<a class="anchor" aria-label="anchor" href="#behavior-change-consistency-dq-rules-now-actually-run-adr-0-9-46"></a></h3>
+<p><strong>Every schema’s <code>consistency:</code> block – not a new one, every existing one – now actually gets checked during real CMR DQ review.</strong> <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> (the function <code><a href="../reference/eri_do.html">eri_do()</a></code>’s DQ-review step and every direct check of staged CMR data runs) never called the engine that evaluates <code>consistency:</code> rules; it’s been silently inert since the feature shipped. This is now fixed.</p>
+<p>If your country’s treatment schema has an <code>implausible_overcoverage</code> or <code>treated_nonneg</code> rule (most do), the <em>next</em> CMR upload for that country may surface flags that are newly checked, not newly wrong – the underlying data issue, if any, was always there, just never actually looked at. This is the intended fix, not a bug: review any new flags the way you would any other DQ flag.</p>
+</div>
+<div class="section level3">
+<h3 id="training-tabs-sum-of-malefemale-trained-must-equal-sum-of-newrefresher-trained-0-9-46">Training tabs: sum of male+female trained must equal sum of new+refresher trained<a class="anchor" aria-label="anchor" href="#training-tabs-sum-of-malefemale-trained-must-equal-sum-of-newrefresher-trained-0-9-46"></a></h3>
+<p>Emalee reported mismatches on Ethiopia’s training tabs: the sum of male+female trained should equal the sum of new+refresher trained, and hasn’t always. <code><a href="../reference/eri_do.html">eri_do()</a></code>‘s DQ review now checks this for Ethiopia’s 8 training types that report a monthly new/refresher breakdown (CDD, CS, MMDP surgery/patient, Field Ento, Hope Group Leader, HW, Lab – not the ToT sheets, which don’t have one). Other countries’ combined training schemas can add the same rule later; the underlying DQ engine capability (<code>lhs_sum</code>/<code>rhs_sum</code> on a <code>consistency:</code> rule – summing several columns, for a measure with no single roll-up column to compare against another) is now available to any schema.</p>
+</div>
+<div class="section level3">
+<h3 id="treatment-frequency-and-treatment-goal-must-agree-0-9-46">Treatment frequency and treatment goal must agree<a class="anchor" aria-label="anchor" href="#treatment-frequency-and-treatment-goal-must-agree-0-9-46"></a></h3>
+<p>Two related DQ rules on every RB(oncho)/LF Treatment sheet, and (the second one) every SCH/STH Treatment sheet too:</p>
+<ul><li>If a treatment goal is reported (<code>target_pop</code> &gt; 0), the treatment frequency (<code>treatment_round</code>) must be 1, 2, or 4 – a real annual/biannual/quarterly MDA schedule, not an arbitrary count. Reported by Emalee.</li>
+<li>If the treatment frequency is 0 (no round happened this period), the treatment goal must be 0 too – a real target for a round that didn’t happen is a contradiction. Reported by Hannah, “this should be updated for all countries.”</li>
+</ul></div>
+<div class="section level3">
+<h3 id="legacy-pipeline-mirror-filename-fixed-for-zacks-pipeline-0-9-46">Legacy pipeline mirror filename fixed for Zack’s pipeline<a class="anchor" aria-label="anchor" href="#legacy-pipeline-mirror-filename-fixed-for-zacks-pipeline-0-9-46"></a></h3>
+<p>The raw CMR file <code><a href="../reference/eri_do.html">eri_do()</a></code> mirrors to the legacy contractor pipeline is now named <code>{period}_{upload date}_{3-letter country code}</code> (e.g. <code>202607_20260827_HTI.xlsx</code>), matching what that pipeline’s owner (Zack) actually needs to pick up the most recent file – the previous <code>{period}_{country}_{timestamp}</code> order and precision was preventing that. Reported by Emalee.</p>
+</div>
+<div class="section level3">
+<h3 id="haiti-lf-cmr-onboarding-0-9-46">Haiti LF CMR onboarding<a class="anchor" aria-label="anchor" href="#haiti-lf-cmr-onboarding-0-9-46"></a></h3>
+<p><code><a href="../reference/eri_do.html">eri_do()</a></code>’s CMR flow can now bring in Haiti’s monthly LF (lymphatic filariasis) programme reports, the same way as any RB-expansion country.</p>
+<ul><li>CMR routing schema (<code>inst/schemas/cmr/ht.yaml</code>, an LF-only 9-sheet subset of the full RBLF template – no RB Treatment/oncho sheets, expected for Haiti’s LF-elimination-only program) and DQ schemas (<code>inst/schemas/ht_lf_programmatic_{treatment,mmdp,tas,mental_health}.yaml</code>, <code>inst/schemas/ht_rblf_programmatic_training.yaml</code>) authored and validated against the real HTI 2026 July submission – structure, admin-unit names (140 communes across 10 departments), and dropdown enumerations only, no treatment/patient counts read or persisted. Both <code>eri_split_cmr(dry_run = TRUE)</code> routing and an in-memory <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> pass (no Azure write) came back clean on all 9 measures.</li>
+<li>
+<code>ht</code> registered in the <code>rb-expansion</code> pipeline’s <code>country_map</code> (<code>R/dal.R</code>) – the piece that actually gates <code><a href="../reference/eri_do.html">eri_do()</a></code> – mapping the wizard-facing <code>"ht"</code> code to the raw-drop’s <code>"hti"</code> subfolder (same split as the <code>hsp-mal</code> registry’s existing <code>dr</code>/<code>ht</code> -&gt; <code>dom</code>/<code>hti</code> convention; unlike bra/ven, Haiti’s wizard code and raw-drop folder aren’t identical).</li>
+<li>New <code>mental_health</code> <code>data_type</code> registered in <code>inst/registry/data_model.yaml</code> for Haiti’s “Mental Health” sheet – psychosocial/morbidity support for LF hydrocele/lymphoedema patients (home visits, support group meetings), not seen in any other onboarded country’s CMR and distinct from <code>mmdp</code>’s surgical/patient-training focus.</li>
+<li>Two files arrived for the 202607 period; the original had a template defect (the “Mental Health” sheet’s row-5 field codes wrongly copy-pasted from “LF Treatment”) that a same-day corrected file fixed. Confirmed <code><a href="../reference/run_dq_checks.html">run_dq_checks()</a></code> catches the defect cleanly (two required-column flags) rather than silently misrouting – see <code>inst/schemas/cmr/ht.yaml</code>’s header note.</li>
+<li>Mirroring to the legacy contractor pipeline is on by default, same as every other non-cutover-tracked country.</li>
+</ul><p>Closes <a href="https://github.com/thecartercenter/erifunctions/issues/329" class="external-link">#329</a>.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.45" id="erifunctions-0945">erifunctions 0.9.45<a class="anchor" aria-label="anchor" href="#erifunctions-0945"></a></h2>
 <div class="section level3">

@@ -1,5 +1,108 @@
 # Changelog
 
+## erifunctions 0.9.46
+
+### Behavior change: `consistency:` DQ rules now actually run (ADR-0026)
+
+**Every schema’s `consistency:` block – not a new one, every existing
+one – now actually gets checked during real CMR DQ review.**
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+(the function
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)’s
+DQ-review step and every direct check of staged CMR data runs) never
+called the engine that evaluates `consistency:` rules; it’s been
+silently inert since the feature shipped. This is now fixed.
+
+If your country’s treatment schema has an `implausible_overcoverage` or
+`treated_nonneg` rule (most do), the *next* CMR upload for that country
+may surface flags that are newly checked, not newly wrong – the
+underlying data issue, if any, was always there, just never actually
+looked at. This is the intended fix, not a bug: review any new flags the
+way you would any other DQ flag.
+
+### Training tabs: sum of male+female trained must equal sum of new+refresher trained
+
+Emalee reported mismatches on Ethiopia’s training tabs: the sum of
+male+female trained should equal the sum of new+refresher trained, and
+hasn’t always.
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)‘s
+DQ review now checks this for Ethiopia’s 8 training types that report a
+monthly new/refresher breakdown (CDD, CS, MMDP surgery/patient, Field
+Ento, Hope Group Leader, HW, Lab – not the ToT sheets, which don’t have
+one). Other countries’ combined training schemas can add the same rule
+later; the underlying DQ engine capability (`lhs_sum`/`rhs_sum` on a
+`consistency:` rule – summing several columns, for a measure with no
+single roll-up column to compare against another) is now available to
+any schema.
+
+### Treatment frequency and treatment goal must agree
+
+Two related DQ rules on every RB(oncho)/LF Treatment sheet, and (the
+second one) every SCH/STH Treatment sheet too:
+
+- If a treatment goal is reported (`target_pop` \> 0), the treatment
+  frequency (`treatment_round`) must be 1, 2, or 4 – a real
+  annual/biannual/quarterly MDA schedule, not an arbitrary count.
+  Reported by Emalee.
+- If the treatment frequency is 0 (no round happened this period), the
+  treatment goal must be 0 too – a real target for a round that didn’t
+  happen is a contradiction. Reported by Hannah, “this should be updated
+  for all countries.”
+
+### Legacy pipeline mirror filename fixed for Zack’s pipeline
+
+The raw CMR file
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+mirrors to the legacy contractor pipeline is now named
+`{period}_{upload date}_{3-letter country code}`
+(e.g. `202607_20260827_HTI.xlsx`), matching what that pipeline’s owner
+(Zack) actually needs to pick up the most recent file – the previous
+`{period}_{country}_{timestamp}` order and precision was preventing
+that. Reported by Emalee.
+
+### Haiti LF CMR onboarding
+
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)’s
+CMR flow can now bring in Haiti’s monthly LF (lymphatic filariasis)
+programme reports, the same way as any RB-expansion country.
+
+- CMR routing schema (`inst/schemas/cmr/ht.yaml`, an LF-only 9-sheet
+  subset of the full RBLF template – no RB Treatment/oncho sheets,
+  expected for Haiti’s LF-elimination-only program) and DQ schemas
+  (`inst/schemas/ht_lf_programmatic_{treatment,mmdp,tas,mental_health}.yaml`,
+  `inst/schemas/ht_rblf_programmatic_training.yaml`) authored and
+  validated against the real HTI 2026 July submission – structure,
+  admin-unit names (140 communes across 10 departments), and dropdown
+  enumerations only, no treatment/patient counts read or persisted. Both
+  `eri_split_cmr(dry_run = TRUE)` routing and an in-memory
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+  pass (no Azure write) came back clean on all 9 measures.
+- `ht` registered in the `rb-expansion` pipeline’s `country_map`
+  (`R/dal.R`) – the piece that actually gates
+  [`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+  – mapping the wizard-facing `"ht"` code to the raw-drop’s `"hti"`
+  subfolder (same split as the `hsp-mal` registry’s existing `dr`/`ht`
+  -\> `dom`/`hti` convention; unlike bra/ven, Haiti’s wizard code and
+  raw-drop folder aren’t identical).
+- New `mental_health` `data_type` registered in
+  `inst/registry/data_model.yaml` for Haiti’s “Mental Health” sheet –
+  psychosocial/morbidity support for LF hydrocele/lymphoedema patients
+  (home visits, support group meetings), not seen in any other onboarded
+  country’s CMR and distinct from `mmdp`’s surgical/patient-training
+  focus.
+- Two files arrived for the 202607 period; the original had a template
+  defect (the “Mental Health” sheet’s row-5 field codes wrongly
+  copy-pasted from “LF Treatment”) that a same-day corrected file fixed.
+  Confirmed
+  [`run_dq_checks()`](https://thecartercenter.github.io/erifunctions/reference/run_dq_checks.md)
+  catches the defect cleanly (two required-column flags) rather than
+  silently misrouting – see `inst/schemas/cmr/ht.yaml`’s header note.
+- Mirroring to the legacy contractor pipeline is on by default, same as
+  every other non-cutover-tracked country.
+
+Closes
+[\#329](https://github.com/thecartercenter/erifunctions/issues/329).
+
 ## erifunctions 0.9.45
 
 ### Haiti LF CMR onboarding
