@@ -86,6 +86,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
 | [0025](adr/0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename corrected to `{period}_{upload_date}_{3-letter country code}`, matching the legacy pipeline owner's actual parsing convention | `eri_feedback` #8 (Zack's pipeline couldn't find the most recent file) |
 | [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
+| [0028](adr/0028-explicit-auth-outranks-ambient-service-principal.md) | An explicitly supplied `auth` outranks ambient service principal credentials, and the connection announces the identity it authenticated as (approvals were mis-attributable to the SP) | Maintainer silently authenticated as the service principal (issue #357) |
 
 ---
 

@@ -1,3 +1,29 @@
+# erifunctions 0.9.47
+
+## Bug fix: you can now authenticate as yourself when SP credentials are set (ADR-0028)
+
+`get_azure_storage_connection()` accepts an `auth` argument, but the service-principal branch ran
+first and never looked at it. So if `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
+were set in your session, passing `auth = "authorization_code"` **did nothing** — you silently got
+a service principal token, and the only way to act as yourself was to delete the environment
+variables.
+
+This matters beyond convenience: `eri_approve()` is the human gate and writes an approval log. If
+the caller is silently the service principal rather than the human, approvals record the wrong
+actor and stop being attributable.
+
+- **An explicitly supplied `auth` is now binding** and outranks ambient SP environment credentials.
+  `get_azure_storage_connection(auth = "authorization_code")` gets you interactive browser sign-in
+  as yourself, whatever is in the environment.
+- **The connection now announces which identity it used** — service principal (naming the client
+  id) or interactive user. The silence was the actual harm: you could only discover you were the SP
+  by printing the container object and reading `Authentication method:`.
+- New `quiet = FALSE` argument suppresses that message for callers that connect in a loop.
+
+**Not a breaking change.** CI and unattended pipelines that set the two environment variables and
+call with no `auth` argument behave exactly as before, as do internal callers like
+`.eri_spatial_con()`. See ADR-0028 for the wrapper caveat around `missing(auth)`.
+
 # erifunctions 0.9.46
 
 ## Behavior change: `consistency:` DQ rules now actually run (ADR-0026)

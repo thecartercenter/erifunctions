@@ -661,3 +661,93 @@ test_that("eri_approve errors when no files match period", {
     }
   )
 })
+
+#### Tests for get_azure_storage_connection() identity selection (#357) ####
+
+# Every one of these mocks all three network entry points -- get_azure_token,
+# storage_endpoint and storage_container -- so no test here can reach the live tenant.
+local_auth_capture <- function(env = parent.frame()) {
+  captured <- new.env(parent = emptyenv())
+  testthat::local_mocked_bindings(
+    get_azure_token = function(resource, tenant, app, auth_type, ...) {
+      captured$auth_type <- auth_type
+      captured$app <- app
+      "mock_token"
+    },
+    .package = "AzureAuth",
+    .env = env
+  )
+  testthat::local_mocked_bindings(
+    storage_endpoint = function(endpoint, token, ...) "mock_endpoint",
+    storage_container = function(endpoint, name, ...) "mock_container",
+    .package = "AzureStor",
+    .env = env
+  )
+  captured
+}
+
+test_that("ambient SP env vars are used when auth is left at its default", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  cap <- local_auth_capture()
+  expect_message(
+    get_azure_storage_connection(storage_name = "data"),
+    "service principal"
+  )
+  # unattended/CI behaviour preserved: no code change needed to pick up SP creds
+  expect_equal(cap$auth_type, "client_credentials")
+  expect_equal(cap$app, "sp-id")
+})
+
+test_that("an explicit auth= outranks ambient SP env vars (#357)", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  cap <- local_auth_capture()
+  suppressMessages(
+    get_azure_storage_connection(storage_name = "data", auth = "authorization_code")
+  )
+  # the regression: this used to silently return a client_credentials token
+  expect_equal(cap$auth_type, "authorization_code")
+  expect_false(identical(cap$app, "sp-id"))
+})
+
+test_that("explicitly asking for client_credentials still uses the SP env vars", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  cap <- local_auth_capture()
+  suppressMessages(
+    get_azure_storage_connection(storage_name = "data", auth = "client_credentials")
+  )
+  expect_equal(cap$auth_type, "client_credentials")
+  expect_equal(cap$app, "sp-id")
+})
+
+test_that("interactive auth is used when no SP credentials are present", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = ""
+  )
+  cap <- local_auth_capture()
+  expect_message(
+    get_azure_storage_connection(storage_name = "data"),
+    "interactive user"
+  )
+  expect_equal(cap$auth_type, "authorization_code")
+})
+
+test_that("the acting identity is announced, and quiet = TRUE suppresses it", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  cap <- local_auth_capture()
+  # the silence was the actual harm in #357: nothing told the user which identity they got
+  expect_message(get_azure_storage_connection(storage_name = "data"), "sp-id")
+  expect_no_message(get_azure_storage_connection(storage_name = "data", quiet = TRUE))
+})

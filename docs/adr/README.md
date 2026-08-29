@@ -70,3 +70,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0024](0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks: declared in the CMR routing schema, evaluated at staged-layer DQ time | Accepted |
 | [0025](0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename: `{period}_{upload_date}_{3-letter country code}` | Accepted — supersedes ADR-0021 |
 | [0026](0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` actually evaluates a schema's `consistency:` block (was silently never called) | Accepted |
+| [0028](0028-explicit-auth-outranks-ambient-service-principal.md) | An explicitly supplied `auth` outranks ambient service principal credentials; the connection announces its identity | Accepted |

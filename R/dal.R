@@ -118,17 +118,26 @@
 #' `ERIFUNCTIONS_RESOURCE_ENDPOINT` env var, or the team `eridev` ADLS endpoint when unset.
 #' @param storage_name `str` Name of the storage blob.
 #' Defaults to `Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")`.
-#' @param auth `str` Authorization type defaults to `"authorization_code"`,
-#' this can be changed if you have a service principal.
+#' @param auth `str` Authorization type. Defaults to `"authorization_code"` (interactive
+#' browser sign-in, i.e. *you*).
 #'
 #' Valid values are:`"authorization_code"`, `"device_code"`,
 #' `"client_credentials"`, `"resource_owner"`, `"on_behalf_of"`.
+#'
+#' **Supplying this argument explicitly is binding.** If you pass
+#' `auth = "authorization_code"`, you get interactive sign-in as yourself even when service
+#' principal credentials are present in the environment. Only when `auth` is left at its
+#' default do ambient service principal credentials take over -- which is what lets
+#' unattended/CI contexts authenticate with no code change. See ADR-0028.
 #'
 #' See **Details** of [AzureAuth::get_azure_token()] for further details.
 #' @param creds_yaml_path `str` Path to a YAML credentials file containing service principal
 #' credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). If `NULL` (default) and
 #' the environment variables `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
-#' are set, those are used automatically. Otherwise falls back to interactive auth via `auth`.
+#' are set, those are used automatically -- unless `auth` was supplied explicitly.
+#' @param quiet `lgl` If `TRUE`, suppress the message naming the identity used. Default `FALSE`:
+#' the connection always announces whether it authenticated as a service principal or as an
+#' interactive user, so the acting identity is never silent.
 #' @param ... additional parameters passed to [AzureAuth::get_azure_token()].
 #' @returns Azure container object
 #' @examples
@@ -144,12 +153,29 @@ get_azure_storage_connection <- function(
     storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
     auth = "authorization_code",
     creds_yaml_path = NULL,
+    quiet = FALSE,
     ...) {
 
   sp_client_id     <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_ID")
   sp_client_secret <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_SECRET")
 
-  if (nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0) {
+  # An explicitly supplied `auth` is binding and outranks ambient service principal
+  # credentials (ADR-0028). Previously the env-var branch ran unconditionally, so a caller
+  # asking for `auth = "authorization_code"` was silently authenticated as the service
+  # principal instead -- which mis-attributes every write behind the `eri_approve()` gate.
+  auth_explicit <- !missing(auth)
+  sp_env_available <- nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0
+  use_sp_env <- sp_env_available &&
+    (!auth_explicit || identical(auth, "client_credentials"))
+
+  if (sp_env_available && auth_explicit && !identical(auth, "client_credentials") && !quiet) {
+    cli::cli_alert_info(
+      "Service principal credentials found in the environment, but {.code auth = {.val {auth}}} was
+       supplied explicitly -- authenticating as an interactive user."
+    )
+  }
+
+  if (use_sp_env) {
     mytoken <- AzureAuth::get_azure_token(
       resource  = "https://storage.azure.com/",
       tenant    = tenant_id,
@@ -157,6 +183,9 @@ get_azure_storage_connection <- function(
       auth_type = "client_credentials",
       password  = sp_client_secret
     )
+    if (!quiet) {
+      cli::cli_alert_info("Authenticated as {.strong service principal} {.val {sp_client_id}}.")
+    }
   } else if (!is.null(creds_yaml_path)) {
     creds <- yaml::read_yaml(creds_yaml_path)
     mytoken <- AzureAuth::get_azure_token(
@@ -166,6 +195,11 @@ get_azure_storage_connection <- function(
       auth_type = "client_credentials",
       password  = creds$tcc_azure$client_secret
     )
+    if (!quiet) {
+      cli::cli_alert_info(
+        "Authenticated as {.strong service principal} {.val {creds$tcc_azure$client_id}} from {.path {creds_yaml_path}}."
+      )
+    }
   } else {
     mytoken <- AzureAuth::get_azure_token(
       resource  = "https://storage.azure.com/",
@@ -173,6 +207,9 @@ get_azure_storage_connection <- function(
       app       = app_id,
       auth_type = auth
     )
+    if (!quiet) {
+      cli::cli_alert_info("Authenticated as {.strong interactive user} ({.code auth = {.val {auth}}}).")
+    }
   }
 
   endptoken <- AzureStor::storage_endpoint(endpoint = resource_endpoint, token = mytoken)

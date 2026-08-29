@@ -12,6 +12,7 @@ get_azure_storage_connection(
   storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
   auth = "authorization_code",
   creds_yaml_path = NULL,
+  quiet = FALSE,
   ...
 )
 }
@@ -29,18 +30,28 @@ or -- when unset -- Microsoft's first-party Azure CLI public client
 \item{storage_name}{\code{str} Name of the storage blob.
 Defaults to \code{Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")}.}
 
-\item{auth}{\code{str} Authorization type defaults to \code{"authorization_code"},
-this can be changed if you have a service principal.
+\item{auth}{\code{str} Authorization type. Defaults to \code{"authorization_code"} (interactive
+browser sign-in, i.e. \emph{you}).
 
 Valid values are:\code{"authorization_code"}, \code{"device_code"},
 \code{"client_credentials"}, \code{"resource_owner"}, \code{"on_behalf_of"}.
+
+\strong{Supplying this argument explicitly is binding.} If you pass
+\code{auth = "authorization_code"}, you get interactive sign-in as yourself even when service
+principal credentials are present in the environment. Only when \code{auth} is left at its
+default do ambient service principal credentials take over -- which is what lets
+unattended/CI contexts authenticate with no code change. See ADR-0028.
 
 See \strong{Details} of \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}} for further details.}
 
 \item{creds_yaml_path}{\code{str} Path to a YAML credentials file containing service principal
 credentials (\code{tcc_azure$client_id}, \code{tcc_azure$client_secret}). If \code{NULL} (default) and
 the environment variables \code{ERIFUNCTIONS_SP_CLIENT_ID} / \code{ERIFUNCTIONS_SP_CLIENT_SECRET}
-are set, those are used automatically. Otherwise falls back to interactive auth via \code{auth}.}
+are set, those are used automatically -- unless \code{auth} was supplied explicitly.}
+
+\item{quiet}{\code{lgl} If \code{TRUE}, suppress the message naming the identity used. Default \code{FALSE}:
+the connection always announces whether it authenticated as a service principal or as an
+interactive user, so the acting identity is never silent.}
 
 \item{...}{additional parameters passed to \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}}.}
 }
