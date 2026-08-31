@@ -707,8 +707,10 @@ test_that("an explicit auth= outranks ambient SP env vars (#357)", {
     ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
   )
   cap <- local_auth_capture()
-  suppressMessages(
-    get_azure_storage_connection(storage_name = "data", auth = "authorization_code")
+  # the override is stated, in one message, not applied silently
+  expect_message(
+    get_azure_storage_connection(storage_name = "data", auth = "authorization_code"),
+    "overriding"
   )
   # the regression: this used to silently return a client_credentials token
   expect_equal(cap$auth_type, "authorization_code")

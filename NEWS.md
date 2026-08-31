@@ -8,9 +8,11 @@ were set in your session, passing `auth = "authorization_code"` **did nothing** 
 a service principal token, and the only way to act as yourself was to delete the environment
 variables.
 
-This matters beyond convenience: `eri_approve()` is the human gate and writes an approval log. If
-the caller is silently the service principal rather than the human, approvals record the wrong
-actor and stop being attributable.
+This matters beyond convenience. `eri_approve()` is the human gate and writes an approval log,
+attributing it to the identity **verified** from your Azure AD token (ADR-0003). A service
+principal token carries no user claim, so that verification silently lapses and the log falls back
+to whatever `ERI_ANALYST_ID` says — a value anyone can set. Your approval then names you while
+Azure's own access record names the service principal, and nothing tells you the two disagree.
 
 - **An explicitly supplied `auth` is now binding** and outranks ambient SP environment credentials.
   `get_azure_storage_connection(auth = "authorization_code")` gets you interactive browser sign-in

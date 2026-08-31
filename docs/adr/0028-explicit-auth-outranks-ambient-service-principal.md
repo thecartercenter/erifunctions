@@ -27,11 +27,19 @@ Two things are wrong here, and they compound:
 
 - **An explicit argument was overridden by ambient environment state.** That inverts the normal
   precedence in this package, where arguments beat environment variables beat baked-in defaults.
-- **The acting identity was never announced.** `eri_approve()` is the human gate: it writes an
-  approval log and registers files in the data catalog. If the caller is silently the service
-  principal rather than the human, the approval gate records the wrong actor and stops being
-  attributable — the governance property the gate exists to provide. The same applies to
-  `eri_spatial_upload()` and every other write.
+- **The acting identity was never announced**, and that quietly downgrades the approval gate.
+  `eri_approve()` is the human gate: it writes an approval log and registers files in the data
+  catalog, resolving the actor through `.eri_analyst_id(azcontainer)`. Under ADR-0003 that prefers
+  the *verified* identity decoded from the connection's Azure AD token. A client-credentials token
+  carries no `upn` / `preferred_username` / `unique_name` / `email` claim, so
+  `.eri_token_identity()` returns `NULL` and the resolution falls through to the self-declared
+  `ERI_ANALYST_ID`, or to `"<os-user> (unverified)"`.
+
+  So the log does *not* record the service principal — it records whatever the human declared. The
+  harm is subtler and still serious: **ADR-0003's verified-token guarantee silently lapses to the
+  spoofable fallback path**, with nothing in the session saying so. The approval log then names a
+  human while Azure's own access record names the service principal, and the two disagree about who
+  performed the write. The same applies to `eri_spatial_upload()` and every other governed write.
 
 Ambient pickup itself is worth keeping: unattended and CI contexts authenticate by setting those
 two variables, with no code change and no interactive prompt. The defect is not that ambient
@@ -44,11 +52,11 @@ the caller left `auth` at its default (detected with `missing(auth)`), or explic
 `"client_credentials"`.
 
 **The connection always announces the identity it authenticated as** — service principal (naming
-the client id) or interactive user — via `cli::cli_alert_info()`. A new `quiet = FALSE` argument
+the client id) or the signed-in user — via `cli::cli_alert_info()`. A new `quiet = FALSE` argument
 suppresses it for callers that connect in a loop.
 
-When SP credentials are present but overridden by an explicit `auth`, the override is stated
-rather than applied silently.
+When SP credentials are present but overridden by an explicit `auth`, the override is named in that
+same line rather than applied silently.
 
 ## Consequences
 

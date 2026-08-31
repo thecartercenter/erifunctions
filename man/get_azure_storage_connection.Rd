@@ -50,8 +50,8 @@ the environment variables \code{ERIFUNCTIONS_SP_CLIENT_ID} / \code{ERIFUNCTIONS_
 are set, those are used automatically -- unless \code{auth} was supplied explicitly.}
 
 \item{quiet}{\code{lgl} If \code{TRUE}, suppress the message naming the identity used. Default \code{FALSE}:
-the connection always announces whether it authenticated as a service principal or as an
-interactive user, so the acting identity is never silent.}
+the connection always announces whether it authenticated as a service principal or as the
+signed-in user, so the acting identity is never silent.}
 
 \item{...}{additional parameters passed to \code{\link[AzureAuth:get_azure_token]{AzureAuth::get_azure_token()}}.}
 }

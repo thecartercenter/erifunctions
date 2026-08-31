@@ -136,8 +136,8 @@
 #' the environment variables `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
 #' are set, those are used automatically -- unless `auth` was supplied explicitly.
 #' @param quiet `lgl` If `TRUE`, suppress the message naming the identity used. Default `FALSE`:
-#' the connection always announces whether it authenticated as a service principal or as an
-#' interactive user, so the acting identity is never silent.
+#' the connection always announces whether it authenticated as a service principal or as the
+#' signed-in user, so the acting identity is never silent.
 #' @param ... additional parameters passed to [AzureAuth::get_azure_token()].
 #' @returns Azure container object
 #' @examples
@@ -167,13 +167,6 @@ get_azure_storage_connection <- function(
   sp_env_available <- nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0
   use_sp_env <- sp_env_available &&
     (!auth_explicit || identical(auth, "client_credentials"))
-
-  if (sp_env_available && auth_explicit && !identical(auth, "client_credentials") && !quiet) {
-    cli::cli_alert_info(
-      "Service principal credentials found in the environment, but {.code auth = {.val {auth}}} was
-       supplied explicitly -- authenticating as an interactive user."
-    )
-  }
 
   if (use_sp_env) {
     mytoken <- AzureAuth::get_azure_token(
@@ -208,7 +201,23 @@ get_azure_storage_connection <- function(
       auth_type = auth
     )
     if (!quiet) {
-      cli::cli_alert_info("Authenticated as {.strong interactive user} ({.code auth = {.val {auth}}}).")
+      # `resource_owner` and `on_behalf_of` carry a user identity but are not browser
+      # sign-ins, so only the two interactive flows are described as such.
+      who <- if (auth %in% c("authorization_code", "device_code")) {
+        "interactive user"
+      } else {
+        "signed-in user"
+      }
+      # Reaching here with SP credentials in the environment means an explicit `auth`
+      # overrode them (ADR-0028); say so in the same line rather than a second message.
+      if (sp_env_available) {
+        cli::cli_alert_info(
+          "Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}), overriding the \\
+           service principal credentials found in the environment."
+        )
+      } else {
+        cli::cli_alert_info("Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}).")
+      }
     }
   }
 
