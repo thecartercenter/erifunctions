@@ -1,5 +1,67 @@
 # Changelog
 
+## erifunctions 0.9.47
+
+### Bug fix: you can now authenticate as yourself when SP credentials are set (ADR-0028)
+
+[`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
+accepts an `auth` argument, but the service-principal branch ran first
+and never looked at it. So if `ERIFUNCTIONS_SP_CLIENT_ID` /
+`ERIFUNCTIONS_SP_CLIENT_SECRET` were set in your session, passing
+`auth = "authorization_code"` **did nothing** — you silently got a
+service principal token, and the only way to act as yourself was to
+delete the environment variables.
+
+This matters beyond convenience.
+[`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+is the human gate and writes an approval log, attributing it to the
+identity **verified** from your Azure AD token (ADR-0003). A service
+principal token carries no user claim, so that verification silently
+lapses and the log falls back to whatever `ERI_ANALYST_ID` says — a
+value anyone can set. Your approval then names you while Azure’s own
+access record names the service principal, and nothing tells you the two
+disagree.
+
+- **A supplied `auth` is now binding** and outranks ambient SP
+  environment credentials.
+  `get_azure_storage_connection(auth = "authorization_code")` gets you
+  interactive browser sign-in as yourself, whatever is in the
+  environment. `creds_yaml_path` is binding the same way — it also used
+  to lose to the environment variables.
+- **The connection now announces which identity it used** — service
+  principal (naming the client id) or the signed-in user. The silence
+  was the actual harm: you could only discover you were the SP by
+  printing the container object and reading `Authentication method:`.
+  Use `eri_verbosity("quiet")` if you connect in a loop and don’t want
+  the line.
+- **Governed actions now warn when your identity could not be
+  verified.** Announcing at connection time is not enough on its own,
+  because
+  [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+  and friends build their connection behind
+  [`suppressMessages()`](https://rdrr.io/r/base/message.html). So the
+  approval path itself now says, once per session, when the identity it
+  is about to stamp is self-declared rather than verified. It warns, it
+  does not block — unattended runs that approve as a service principal
+  keep working.
+
+**Not a breaking change.** CI and unattended pipelines that set the two
+environment variables and pass no `auth` behave exactly as before, as do
+internal callers like `.eri_spatial_con()`; they just emit one warning
+per session now. `auth` defaults to `NULL` (meaning “unspecified”)
+rather than the literal `"authorization_code"`, so a wrapper that
+forwards its own `NULL` default still gets ambient pickup. See ADR-0028.
+
+### Roadmap: Phase 3 redefined around the Power BI output contract (ADR-0027)
+
+Phase 3 was written around retiring the contractor pipeline on a streak
+of equivalent outputs. The consultancy has ended, so that streak has no
+operator. **ADR-0027 supersedes ADR-0015:** `erifunctions` owns the
+Power BI output contract and produces those inputs directly, with the
+contractor pipeline consolidating in stages and the adapters retiring at
+cutover rather than on a streak. No user-facing function changed; see
+`docs/roadmap.md` Phase 3 and ADR-0027 for the plan.
+
 ## erifunctions 0.9.46
 
 ### Behavior change: `consistency:` DQ rules now actually run (ADR-0026)

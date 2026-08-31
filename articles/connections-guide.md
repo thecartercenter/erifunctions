@@ -62,9 +62,15 @@ remembered for the rest of the session.
 ``` r
 
 # The first call this session opens your browser to sign in.
-# Nothing prints on success, you get a connection object back.
 data_con <- get_azure_storage_connection(storage_name = "data")
+#> ℹ Authenticated as interactive user (auth = "authorization_code").
 ```
+
+**Always read that line.** Every connection announces the identity it
+authenticated as, because it is the identity your approvals and logs get
+stamped with. If it says **service principal** instead, you are not
+acting as yourself, see the automation callout below.
+`eri_verbosity("quiet")` hides it if you connect in a loop.
 
 The `storage_name` picks **which blob you connect to**: `"data"` (the
 governed three-layer data system) or `"projects"` (the legacy contractor
@@ -97,6 +103,34 @@ just the leaf filenames.
 > [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
 > signs in non-interactively instead. The secret is the *only* true
 > secret here; the tenant, app, and endpoint are non-sensitive defaults.
+>
+> **Those variables are for unattended runs, not your laptop.** If they
+> are set in your interactive session, a plain
+> [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
+> picks them up and you act as the service principal, not as you. **What
+> you pass wins**, ask for `auth = "authorization_code"` explicitly and
+> you get browser sign-in as yourself whatever the environment holds
+> (ADR-0028), and the override is stated rather than applied silently:
+>
+> ``` r
+>
+> data_con <- get_azure_storage_connection(storage_name = "data", auth = "authorization_code")
+> ```
+>
+> This matters for governed actions.
+> [`eri_approve()`](https://thecartercenter.github.io/erifunctions/reference/eri_approve.md)
+> stamps its log with the identity **verified** from your token; a
+> service principal token has no user claim, so that verification falls
+> back to whatever `ERI_ANALYST_ID` says, and your approval log stops
+> agreeing with Azure’s own record of who wrote the file. `erifunctions`
+> warns you once per session when this happens:
+>
+>     ! This connection carries no verified user identity, so this action will be attributed to a
+>       self-declared id, not a signed-in one.
+>
+> That is expected and harmless in an unattended run. On your own
+> machine it means you are not signed in as yourself — reconnect with
+> `auth = "authorization_code"` above.
 
 > **`403 Forbidden`?** That is not a bug, it is Azure telling you your
 > account does not have access to that storage. Access is granted by an

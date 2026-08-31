@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.46</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="logo.png" class="logo" alt=""><h1>CLAUDE.md — erifunctions working memory</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.46/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
 <div id="claudemd--erifunctions-working-memory" class="section level1">
@@ -90,7 +90,11 @@
   processed/  analyst-approved, canonical</code></pre>
 <ul><li>
 <strong><code><a href="reference/eri_approve.html">eri_approve()</a></code> is the human gate.</strong> Nothing reaches <code>processed/</code> without it; it writes an approval log and registers the file in the data catalog (<code>_catalog/data_catalog.yaml</code>).</li>
-<li>The <code>projects/</code> blob is the legacy contractor (hsp-mal) space; V2 is migrating authority to <code>data/</code> (see roadmap Phase 3).</li>
+<li>The <code>projects/</code> blob is <strong>a live system of record, not dead legacy space.</strong> It holds the contractor pipelines’ working data and the Power BI inputs the dashboards read. <code>data/</code> is the governed analyst-facing layer and is where new work belongs, but <code>projects/</code> is written deliberately — erifunctions is taking over the Power BI output contract there (roadmap Phase 3). Treat any change to it as a change to a live production feed.</li>
+<li>
+<strong>Know which container a DAL call lands in.</strong> The verb wrappers (<code><a href="reference/eri_read.html">eri_read()</a></code>, <code><a href="reference/eri_write.html">eri_write()</a></code>, <code><a href="reference/eri_list.html">eri_list()</a></code>, <code><a href="reference/eri_file_exists.html">eri_file_exists()</a></code>, …) take <code>azcontainer</code>, not <code>storage_name</code>; when it is <code>NULL</code> they call <code><a href="reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code>, which resolves <code>ERIFUNCTIONS_STORAGE_NAME</code>. Where that is set to <code>projects</code>, <code>eri_write(x, eri_data_path(...))</code> does <em>not</em> land in <code>data/</code>. To target a container explicitly, build the connection yourself: <code>eri_write(x, path, azcontainer = get_azure_storage_connection(storage_name = "data"))</code>. Whether the default should change is open — see issue #331.</li>
+<li>
+<strong>Phase 3 work is tracked outside this repo.</strong> erifunctions is taking over the Power BI output contract from the departing contractor’s pipelines (ADR-0027, roadmap Phase 3). Items live on the <a href="https://github.com/orgs/thecartercenter/projects/1" class="external-link">ERI systems handover board</a>; the ownership, credential, and Azure detail that cannot go in a public repo lives in the private <a href="https://github.com/thecartercenter/eri-ops" class="external-link"><code>eri-ops</code></a> repo, along with the standing worker guardrails. Verify any claim about the contractor’s repos with <code>gh api</code> against current <code>main</code> — the local clones in <code>gitrepos/</code> are months stale.</li>
 <li>Metadata stores (catalog, ODK registry, artifact registry) are YAML blobs — see ADR-0002 for the concurrency rules when touching them.</li>
 </ul></div>
 <div class="section level2">

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.46</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,28 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.46/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.47" id="erifunctions-0947">erifunctions 0.9.47<a class="anchor" aria-label="anchor" href="#erifunctions-0947"></a></h2>
+<div class="section level3">
+<h3 id="bug-fix-you-can-now-authenticate-as-yourself-when-sp-credentials-are-set-adr-0-9-47">Bug fix: you can now authenticate as yourself when SP credentials are set (ADR-0028)<a class="anchor" aria-label="anchor" href="#bug-fix-you-can-now-authenticate-as-yourself-when-sp-credentials-are-set-adr-0-9-47"></a></h3>
+<p><code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> accepts an <code>auth</code> argument, but the service-principal branch ran first and never looked at it. So if <code>ERIFUNCTIONS_SP_CLIENT_ID</code> / <code>ERIFUNCTIONS_SP_CLIENT_SECRET</code> were set in your session, passing <code>auth = "authorization_code"</code> <strong>did nothing</strong> — you silently got a service principal token, and the only way to act as yourself was to delete the environment variables.</p>
+<p>This matters beyond convenience. <code><a href="../reference/eri_approve.html">eri_approve()</a></code> is the human gate and writes an approval log, attributing it to the identity <strong>verified</strong> from your Azure AD token (ADR-0003). A service principal token carries no user claim, so that verification silently lapses and the log falls back to whatever <code>ERI_ANALYST_ID</code> says — a value anyone can set. Your approval then names you while Azure’s own access record names the service principal, and nothing tells you the two disagree.</p>
+<ul><li>
+<strong>A supplied <code>auth</code> is now binding</strong> and outranks ambient SP environment credentials. <code>get_azure_storage_connection(auth = "authorization_code")</code> gets you interactive browser sign-in as yourself, whatever is in the environment. <code>creds_yaml_path</code> is binding the same way — it also used to lose to the environment variables.</li>
+<li>
+<strong>The connection now announces which identity it used</strong> — service principal (naming the client id) or the signed-in user. The silence was the actual harm: you could only discover you were the SP by printing the container object and reading <code>Authentication method:</code>. Use <code>eri_verbosity("quiet")</code> if you connect in a loop and don’t want the line.</li>
+<li>
+<strong>Governed actions now warn when your identity could not be verified.</strong> Announcing at connection time is not enough on its own, because <code><a href="../reference/eri_approve.html">eri_approve()</a></code> and friends build their connection behind <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>. So the approval path itself now says, once per session, when the identity it is about to stamp is self-declared rather than verified. It warns, it does not block — unattended runs that approve as a service principal keep working.</li>
+</ul><p><strong>Not a breaking change.</strong> CI and unattended pipelines that set the two environment variables and pass no <code>auth</code> behave exactly as before, as do internal callers like <code>.eri_spatial_con()</code>; they just emit one warning per session now. <code>auth</code> defaults to <code>NULL</code> (meaning “unspecified”) rather than the literal <code>"authorization_code"</code>, so a wrapper that forwards its own <code>NULL</code> default still gets ambient pickup. See ADR-0028.</p>
+</div>
+<div class="section level3">
+<h3 id="roadmap-phase-redefined-around-the-power-bi-output-contract-adr-0-9-47">Roadmap: Phase 3 redefined around the Power BI output contract (ADR-0027)<a class="anchor" aria-label="anchor" href="#roadmap-phase-redefined-around-the-power-bi-output-contract-adr-0-9-47"></a></h3>
+<p>Phase 3 was written around retiring the contractor pipeline on a streak of equivalent outputs. The consultancy has ended, so that streak has no operator. <strong>ADR-0027 supersedes ADR-0015:</strong> <code>erifunctions</code> owns the Power BI output contract and produces those inputs directly, with the contractor pipeline consolidating in stages and the adapters retiring at cutover rather than on a streak. No user-facing function changed; see <code>docs/roadmap.md</code> Phase 3 and ADR-0027 for the plan.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.46" id="erifunctions-0946">erifunctions 0.9.46<a class="anchor" aria-label="anchor" href="#erifunctions-0946"></a></h2>
 <div class="section level3">

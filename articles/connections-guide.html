@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.46</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Connecting to Azure, ODK Central, SharePoint, and Teams</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.46/vignettes/connections-guide.Rmd" class="external-link"><code>vignettes/connections-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/connections-guide.Rmd" class="external-link"><code>vignettes/connections-guide.Rmd</code></a></small>
       <div class="d-none name"><code>connections-guide.Rmd</code></div>
     </div>
 
@@ -221,8 +221,14 @@ you sign in with your Carter Center account, and the sign-in is
 remembered for the rest of the session.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The first call this session opens your browser to sign in.</span></span>
-<span><span class="co"># Nothing prints on success, you get a connection object back.</span></span>
-<span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; ℹ Authenticated as interactive user (auth = "authorization_code").</span></span></code></pre></div>
+<p><strong>Always read that line.</strong> Every connection announces
+the identity it authenticated as, because it is the identity your
+approvals and logs get stamped with. If it says <strong>service
+principal</strong> instead, you are not acting as yourself, see the
+automation callout below. <code>eri_verbosity("quiet")</code> hides it
+if you connect in a loop.</p>
 <p>The <code>storage_name</code> picks <strong>which blob you connect
 to</strong>: <code>"data"</code> (the governed three-layer data system)
 or <code>"projects"</code> (the legacy contractor space). Most analyst
@@ -252,6 +258,27 @@ no browser. Set a <strong>service principal</strong>,
 <code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> signs in non-interactively
 instead. The secret is the <em>only</em> true secret here; the tenant,
 app, and endpoint are non-sensitive defaults.</p>
+<p><strong>Those variables are for unattended runs, not your
+laptop.</strong> If they are set in your interactive session, a plain
+<code><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection()</a></code> picks them up and you act as
+the service principal, not as you. <strong>What you pass wins</strong>,
+ask for <code>auth = "authorization_code"</code> explicitly and you get
+browser sign-in as yourself whatever the environment holds (ADR-0028),
+and the override is stated rather than applied silently:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span>, auth <span class="op">=</span> <span class="st">"authorization_code"</span><span class="op">)</span></span></code></pre></div>
+<p>This matters for governed actions. <code><a href="../reference/eri_approve.html">eri_approve()</a></code> stamps
+its log with the identity <strong>verified</strong> from your token; a
+service principal token has no user claim, so that verification falls
+back to whatever <code>ERI_ANALYST_ID</code> says, and your approval log
+stops agreeing with Azure’s own record of who wrote the file.
+<code>erifunctions</code> warns you once per session when this
+happens:</p>
+<pre><code>! This connection carries no verified user identity, so this action will be attributed to a
+  self-declared id, not a signed-in one.</code></pre>
+<p>That is expected and harmless in an unattended run. On your own
+machine it means you are not signed in as yourself — reconnect with
+<code>auth = "authorization_code"</code> above.</p>
 </blockquote>
 <blockquote>
 <p><strong><code>403 Forbidden</code>?</strong> That is not a bug, it is
@@ -265,7 +292,7 @@ Ask your ERI admin to add you.</p>
 </h2>
 <p>ODK Central signs in with your <strong>email and password</strong>,
 so those go in your <code>.Renviron</code> once. Open it with:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">usethis</span><span class="fu">::</span><span class="fu">edit_r_environ</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>Add three lines, then <strong>save and restart R</strong>:</p>
 <pre><code>ODK_URL=https://your-odk-server.org/
@@ -273,12 +300,12 @@ ODK_USER=you@example.org
 ODK_PASS=your-password</code></pre>
 <p>Now connect, <code><a href="../reference/init_odk_connection.html">init_odk_connection()</a></code> reads those
 automatically, so your password never appears in a script:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/init_odk_connection.html">init_odk_connection</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ✔ Connected to &lt;https://your-odk-server.org/&gt;. Session expires 2026-06-26T20:00:45.690Z.</span></span></code></pre></div>
 <p><strong>Confirm it works</strong> by listing the projects you can
 see:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_odk_projects.html">list_odk_projects</a></span><span class="op">(</span>con <span class="op">=</span> <span class="va">con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 3 × 3</span></span>
 <span><span class="co">#&gt;   project_id project   description</span></span>
@@ -302,12 +329,12 @@ they fall back to <code>ODK_URL</code> + <code>ODK_TOKEN</code>.</p>
 <p>SharePoint uses the same browser sign-in as Azure (via
 <code>Microsoft365R</code>), so all you supply is the <strong>site
 URL</strong>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">site</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/eri_sharepoint_connect.html">eri_sharepoint_connect</a></span><span class="op">(</span><span class="st">"https://cartercenter.sharepoint.com/sites/ERI"</span><span class="op">)</span></span>
 <span><span class="co"># Browser opens on first use; the token is cached for the session.</span></span></code></pre></div>
 <p><strong>Confirm it works</strong> by listing a folder in the site’s
 document library:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_sharepoint_list.html">eri_sharepoint_list</a></span><span class="op">(</span><span class="va">site</span>, <span class="st">"Shared Documents/Malaria/2024"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 4 × 5</span></span>
 <span><span class="co">#&gt;   name              size modified            is_folder path</span></span>
@@ -336,7 +363,7 @@ owner for an <em>incoming webhook URL</em>, put it in your
 <code>.Renviron</code>, and you can post to that channel with no token
 at all:</p>
 <pre><code>ERIFUNCTIONS_TEAMS_WEBHOOK=https://outlook.office.com/webhook/…</code></pre>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_teams_send.html">eri_teams_send</a></span><span class="op">(</span>message <span class="op">=</span> <span class="st">"Hello from erifunctions."</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Sending Teams message via incoming webhook.</span></span></code></pre></div>
 <p><strong>For direct messages, use the Graph API.</strong>
@@ -348,10 +375,10 @@ interactive device-code sign-in. Unlike Azure, this path is
 (without it you’ll get a “No Teams token or app ID found” warning). Most
 people only need to post to a channel, which the webhook above already
 covers.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">token</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_teams_connection.html">get_teams_connection</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Confirm it works</strong> by sending yourself a DM:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/eri_teams_send.html">eri_teams_send</a></span><span class="op">(</span>message <span class="op">=</span> <span class="st">"Test message to myself."</span>, to <span class="op">=</span> <span class="st">"self"</span>, token <span class="op">=</span> <span class="va">token</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ℹ Sending Teams DM via Graph API.</span></span></code></pre></div>
 <blockquote>

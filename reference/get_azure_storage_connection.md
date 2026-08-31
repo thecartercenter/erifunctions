@@ -12,7 +12,7 @@ get_azure_storage_connection(
   resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT", unset =
     .ERI_DEFAULT_RESOURCE_ENDPOINT),
   storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
-  auth = "authorization_code",
+  auth = NULL,
   creds_yaml_path = NULL,
   ...
 )
@@ -45,11 +45,19 @@ get_azure_storage_connection(
 
 - auth:
 
-  `str` Authorization type defaults to `"authorization_code"`, this can
-  be changed if you have a service principal.
+  `str` Authorization type. `NULL` (the default) means *unspecified*:
+  ambient service principal credentials are used if present, otherwise
+  interactive browser sign-in (`"authorization_code"`), i.e. *you*.
 
   Valid values are:`"authorization_code"`, `"device_code"`,
   `"client_credentials"`, `"resource_owner"`, `"on_behalf_of"`.
+
+  **Supplying this argument is binding.** If you pass
+  `auth = "authorization_code"`, you get interactive sign-in as yourself
+  even when service principal credentials are present in the
+  environment. Only when `auth` is left `NULL` do ambient service
+  principal credentials take over – which is what lets unattended/CI
+  contexts authenticate with no code change. See ADR-0028.
 
   See **Details** of
   [`AzureAuth::get_azure_token()`](https://rdrr.io/pkg/AzureAuth/man/get_azure_token.html)
@@ -58,11 +66,12 @@ get_azure_storage_connection(
 - creds_yaml_path:
 
   `str` Path to a YAML credentials file containing service principal
-  credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). If
-  `NULL` (default) and the environment variables
-  `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET` are set,
-  those are used automatically. Otherwise falls back to interactive auth
-  via `auth`.
+  credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`).
+  Supplying it is binding in the same way `auth` is: an explicit
+  credentials file outranks the ambient `ERIFUNCTIONS_SP_CLIENT_ID` /
+  `ERIFUNCTIONS_SP_CLIENT_SECRET` environment variables. When `NULL`
+  (default) those environment variables are used automatically – unless
+  `auth` says otherwise.
 
 - ...:
 

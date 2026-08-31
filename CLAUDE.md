@@ -31,8 +31,36 @@ Data lives in the `data/` Azure blob under a canonical path built by
   is the human gate.** Nothing reaches `processed/` without it; it
   writes an approval log and registers the file in the data catalog
   (`_catalog/data_catalog.yaml`).
-- The `projects/` blob is the legacy contractor (hsp-mal) space; V2 is
-  migrating authority to `data/` (see roadmap Phase 3).
+- The `projects/` blob is **a live system of record, not dead legacy
+  space.** It holds the contractor pipelines’ working data and the Power
+  BI inputs the dashboards read. `data/` is the governed analyst-facing
+  layer and is where new work belongs, but `projects/` is written
+  deliberately — erifunctions is taking over the Power BI output
+  contract there (roadmap Phase 3). Treat any change to it as a change
+  to a live production feed.
+- **Know which container a DAL call lands in.** The verb wrappers
+  ([`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md),
+  [`eri_write()`](https://thecartercenter.github.io/erifunctions/reference/eri_write.md),
+  [`eri_list()`](https://thecartercenter.github.io/erifunctions/reference/eri_list.md),
+  [`eri_file_exists()`](https://thecartercenter.github.io/erifunctions/reference/eri_file_exists.md),
+  …) take `azcontainer`, not `storage_name`; when it is `NULL` they call
+  [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md),
+  which resolves `ERIFUNCTIONS_STORAGE_NAME`. Where that is set to
+  `projects`, `eri_write(x, eri_data_path(...))` does *not* land in
+  `data/`. To target a container explicitly, build the connection
+  yourself:
+  `eri_write(x, path, azcontainer = get_azure_storage_connection(storage_name = "data"))`.
+  Whether the default should change is open — see issue \#331.
+- **Phase 3 work is tracked outside this repo.** erifunctions is taking
+  over the Power BI output contract from the departing contractor’s
+  pipelines (ADR-0027, roadmap Phase 3). Items live on the [ERI systems
+  handover board](https://github.com/orgs/thecartercenter/projects/1);
+  the ownership, credential, and Azure detail that cannot go in a public
+  repo lives in the private
+  [`eri-ops`](https://github.com/thecartercenter/eri-ops) repo, along
+  with the standing worker guardrails. Verify any claim about the
+  contractor’s repos with `gh api` against current `main` — the local
+  clones in `gitrepos/` are months stale.
 - Metadata stores (catalog, ODK registry, artifact registry) are YAML
   blobs — see ADR-0002 for the concurrency rules when touching them.
 
