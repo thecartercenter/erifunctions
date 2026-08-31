@@ -118,26 +118,26 @@
 #' `ERIFUNCTIONS_RESOURCE_ENDPOINT` env var, or the team `eridev` ADLS endpoint when unset.
 #' @param storage_name `str` Name of the storage blob.
 #' Defaults to `Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")`.
-#' @param auth `str` Authorization type. Defaults to `"authorization_code"` (interactive
-#' browser sign-in, i.e. *you*).
+#' @param auth `str` Authorization type. `NULL` (the default) means *unspecified*: ambient
+#' service principal credentials are used if present, otherwise interactive browser sign-in
+#' (`"authorization_code"`), i.e. *you*.
 #'
 #' Valid values are:`"authorization_code"`, `"device_code"`,
 #' `"client_credentials"`, `"resource_owner"`, `"on_behalf_of"`.
 #'
-#' **Supplying this argument explicitly is binding.** If you pass
-#' `auth = "authorization_code"`, you get interactive sign-in as yourself even when service
-#' principal credentials are present in the environment. Only when `auth` is left at its
-#' default do ambient service principal credentials take over -- which is what lets
-#' unattended/CI contexts authenticate with no code change. See ADR-0028.
+#' **Supplying this argument is binding.** If you pass `auth = "authorization_code"`, you get
+#' interactive sign-in as yourself even when service principal credentials are present in the
+#' environment. Only when `auth` is left `NULL` do ambient service principal credentials take
+#' over -- which is what lets unattended/CI contexts authenticate with no code change.
+#' See ADR-0028.
 #'
 #' See **Details** of [AzureAuth::get_azure_token()] for further details.
 #' @param creds_yaml_path `str` Path to a YAML credentials file containing service principal
-#' credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). If `NULL` (default) and
-#' the environment variables `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET`
-#' are set, those are used automatically -- unless `auth` was supplied explicitly.
-#' @param quiet `lgl` If `TRUE`, suppress the message naming the identity used. Default `FALSE`:
-#' the connection always announces whether it authenticated as a service principal or as the
-#' signed-in user, so the acting identity is never silent.
+#' credentials (`tcc_azure$client_id`, `tcc_azure$client_secret`). Supplying it is binding in
+#' the same way `auth` is: an explicit credentials file outranks the ambient
+#' `ERIFUNCTIONS_SP_CLIENT_ID` / `ERIFUNCTIONS_SP_CLIENT_SECRET` environment variables. When
+#' `NULL` (default) those environment variables are used automatically -- unless `auth` says
+#' otherwise.
 #' @param ... additional parameters passed to [AzureAuth::get_azure_token()].
 #' @returns Azure container object
 #' @examples
@@ -151,22 +151,32 @@ get_azure_storage_connection <- function(
     app_id = Sys.getenv("ERIFUNCTIONS_APP_ID", unset = .ERI_DEFAULT_APP_ID),
     resource_endpoint = Sys.getenv("ERIFUNCTIONS_RESOURCE_ENDPOINT", unset = .ERI_DEFAULT_RESOURCE_ENDPOINT),
     storage_name = Sys.getenv("ERIFUNCTIONS_STORAGE_NAME"),
-    auth = "authorization_code",
+    auth = NULL,
     creds_yaml_path = NULL,
-    quiet = FALSE,
     ...) {
 
   sp_client_id     <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_ID")
   sp_client_secret <- Sys.getenv("ERIFUNCTIONS_SP_CLIENT_SECRET")
 
-  # An explicitly supplied `auth` is binding and outranks ambient service principal
-  # credentials (ADR-0028). Previously the env-var branch ran unconditionally, so a caller
-  # asking for `auth = "authorization_code"` was silently authenticated as the service
-  # principal instead -- which mis-attributes every write behind the `eri_approve()` gate.
-  auth_explicit <- !missing(auth)
+  # A supplied `auth` is binding and outranks ambient service principal credentials
+  # (ADR-0028). The env-var branch used to run unconditionally, so a caller asking for
+  # `auth = "authorization_code"` was silently authenticated as the service principal
+  # instead -- which lapses ADR-0003's verified-identity guarantee behind eri_approve().
+  #
+  # Explicitness is a property of the *value*, not of whether the argument was supplied,
+  # so it survives do.call() and wrapper forwarding. A wrapper that forwards its own NULL
+  # default preserves ambient pickup, which is what a forwarding wrapper should do.
+  auth_explicit    <- !is.null(auth)
   sp_env_available <- nchar(sp_client_id) > 0 && nchar(sp_client_secret) > 0
+
+  # An explicit credentials file is binding for the same reason (ADR-0028): it is an
+  # argument, and arguments beat ambient environment state.
   use_sp_env <- sp_env_available &&
+    is.null(creds_yaml_path) &&
     (!auth_explicit || identical(auth, "client_credentials"))
+
+  # Resolve the effective flow only after precedence is settled.
+  auth <- auth %||% "authorization_code"
 
   if (use_sp_env) {
     mytoken <- AzureAuth::get_azure_token(
@@ -176,9 +186,7 @@ get_azure_storage_connection <- function(
       auth_type = "client_credentials",
       password  = sp_client_secret
     )
-    if (!quiet) {
-      cli::cli_alert_info("Authenticated as {.strong service principal} {.val {sp_client_id}}.")
-    }
+    .eri_say_info("Authenticated as {.strong service principal} {.val {sp_client_id}}.")
   } else if (!is.null(creds_yaml_path)) {
     creds <- yaml::read_yaml(creds_yaml_path)
     mytoken <- AzureAuth::get_azure_token(
@@ -188,11 +196,10 @@ get_azure_storage_connection <- function(
       auth_type = "client_credentials",
       password  = creds$tcc_azure$client_secret
     )
-    if (!quiet) {
-      cli::cli_alert_info(
-        "Authenticated as {.strong service principal} {.val {creds$tcc_azure$client_id}} from {.path {creds_yaml_path}}."
-      )
-    }
+    .eri_say_info(
+      "Authenticated as {.strong service principal} {.val {creds$tcc_azure$client_id}} \\
+       from {.path {creds_yaml_path}}."
+    )
   } else {
     mytoken <- AzureAuth::get_azure_token(
       resource  = "https://storage.azure.com/",
@@ -200,24 +207,22 @@ get_azure_storage_connection <- function(
       app       = app_id,
       auth_type = auth
     )
-    if (!quiet) {
-      # `resource_owner` and `on_behalf_of` carry a user identity but are not browser
-      # sign-ins, so only the two interactive flows are described as such.
-      who <- if (auth %in% c("authorization_code", "device_code")) {
-        "interactive user"
-      } else {
-        "signed-in user"
-      }
-      # Reaching here with SP credentials in the environment means an explicit `auth`
-      # overrode them (ADR-0028); say so in the same line rather than a second message.
-      if (sp_env_available) {
-        cli::cli_alert_info(
-          "Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}), overriding the \\
-           service principal credentials found in the environment."
-        )
-      } else {
-        cli::cli_alert_info("Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}).")
-      }
+    # `resource_owner` and `on_behalf_of` carry a user identity but are not browser
+    # sign-ins, so only the two interactive flows are described as such.
+    who <- if (auth %in% c("authorization_code", "device_code")) {
+      "interactive user"
+    } else {
+      "signed-in user"
+    }
+    # Reaching here with SP credentials in the environment means an explicit `auth`
+    # overrode them (ADR-0028); say so in the same line rather than a second message.
+    if (sp_env_available) {
+      .eri_say_info(
+        "Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}), overriding the \\
+         service principal credentials found in the environment."
+      )
+    } else {
+      .eri_say_info("Authenticated as {.strong {who}} ({.code auth = {.val {auth}}}).")
     }
   }
 
@@ -1736,7 +1741,10 @@ eri_ingest <- function(path, country, disease,
 #' When a storage connection is supplied, prefers the **verified** identity from
 #' its Azure AD token (`.eri_token_identity()`, ADR-0003) — the trustworthy
 #' approver. Otherwise (or for service-principal connections with no user claim)
-#' returns `ERI_ANALYST_ID` when set. When it is not, the behaviour depends on
+#' returns `ERI_ANALYST_ID` when set — warning **once per R session** that the
+#' verified-identity guarantee has lapsed and the attribution is self-declared
+#' (ADR-0028, guarded by `options(erifunctions.warned_unverified_identity)`).
+#' When `ERI_ANALYST_ID` is not set, the behaviour depends on
 #' `ERI_REQUIRE_ANALYST_ID`: if that is truthy (`1`/`true`/`yes`/`on`), governed
 #' actions are **refused** (an error). Otherwise it falls back to
 #' `"<os-username> (unverified)"` — the OS account, explicitly **marked** so the
@@ -1751,6 +1759,28 @@ eri_ingest <- function(path, country, disease,
   if (!is.null(con)) {
     verified <- .eri_token_identity(con)
     if (!is.null(verified)) return(verified)
+
+    # A connection was supplied but carries no user claim -- a service-principal token,
+    # or a mock/SAS container. ADR-0003's verified-identity guarantee has therefore
+    # lapsed, and whatever we attribute this governed action to below is self-declared
+    # and spoofable. Say so once per session (ADR-0028).
+    #
+    # This is the *general* half of the #357 fix. Announcing the identity at connection
+    # time is not enough on its own: every internal auto-connect wraps
+    # get_azure_storage_connection() in suppressMessages() -- eri_approve() itself does,
+    # as do .eri_catalog_con(), .eri_logs_con(), .eri_research_con(), .eri_spatial_con()
+    # and the rest -- so on those paths the connection line never reaches the user.
+    # Warning here covers every governed write however the connection was built.
+    if (!isTRUE(getOption("erifunctions.warned_unverified_identity"))) {
+      options(erifunctions.warned_unverified_identity = TRUE)
+      cli::cli_warn(c(
+        "!" = "This connection carries no verified user identity, so this action will be \\
+               attributed to a {.strong self-declared} id, not a signed-in one.",
+        "i" = "That is expected for an unattended/CI run authenticating as a service principal.",
+        "i" = "If you meant to act as yourself, reconnect with \\
+               {.code get_azure_storage_connection(auth = \"authorization_code\")}."
+      ))
+    }
   }
 
   id <- Sys.getenv("ERI_ANALYST_ID", unset = "")

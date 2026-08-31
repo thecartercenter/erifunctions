@@ -743,13 +743,67 @@ test_that("interactive auth is used when no SP credentials are present", {
   expect_equal(cap$auth_type, "authorization_code")
 })
 
-test_that("the acting identity is announced, and quiet = TRUE suppresses it", {
+test_that("the acting identity is announced, and eri_verbosity('quiet') suppresses it", {
   withr::local_envvar(
     ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
     ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
   )
   cap <- local_auth_capture()
   # the silence was the actual harm in #357: nothing told the user which identity they got
+  withr::local_options(erifunctions.verbosity = "full")
   expect_message(get_azure_storage_connection(storage_name = "data"), "sp-id")
-  expect_no_message(get_azure_storage_connection(storage_name = "data", quiet = TRUE))
+  # ADR-0028: one verbosity control, not a second `quiet` argument beside it
+  withr::local_options(erifunctions.verbosity = "quiet")
+  expect_no_message(get_azure_storage_connection(storage_name = "data"))
+})
+
+test_that("an explicit creds_yaml_path outranks ambient SP env vars (ADR-0028)", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  creds <- withr::local_tempfile(fileext = ".yaml")
+  yaml::write_yaml(list(tcc_azure = list(client_id = "yaml-id", client_secret = "yaml-secret")), creds)
+
+  cap <- local_auth_capture()
+  suppressMessages(
+    get_azure_storage_connection(storage_name = "data", creds_yaml_path = creds)
+  )
+  # same defect class as #357: an argument must beat ambient environment state
+  expect_equal(cap$auth_type, "client_credentials")
+  expect_equal(cap$app, "yaml-id")
+})
+
+test_that("a wrapper forwarding a NULL default still gets ambient SP pickup (ADR-0028)", {
+  withr::local_envvar(
+    ERIFUNCTIONS_SP_CLIENT_ID = "sp-id",
+    ERIFUNCTIONS_SP_CLIENT_SECRET = "sp-secret"
+  )
+  # the reason `auth = NULL` beats `missing(auth)`: explicitness is a property of the
+  # value, so it survives forwarding and do.call()
+  wrapper <- function(auth = NULL) {
+    get_azure_storage_connection(storage_name = "data", auth = auth)
+  }
+  cap <- local_auth_capture()
+  suppressMessages(wrapper())
+  expect_equal(cap$auth_type, "client_credentials")
+  expect_equal(cap$app, "sp-id")
+
+  cap2 <- local_auth_capture()
+  suppressMessages(do.call(wrapper, list(auth = "authorization_code")))
+  expect_equal(cap2$auth_type, "authorization_code")
+})
+
+test_that(".eri_analyst_id() warns once when the connection carries no verified identity", {
+  withr::local_envvar(ERI_ANALYST_ID = "jane.doe")
+  withr::local_options(erifunctions.warned_unverified_identity = NULL)
+  # a mock container has no decodable token, the same shape a service-principal
+  # connection presents to .eri_token_identity(): no user claim
+  con <- structure(list(endpoint = list(token = NULL)), class = "mock_container")
+
+  expect_warning(.eri_analyst_id(con), "self-declared")
+  # once per session, not once per governed action
+  expect_no_warning(.eri_analyst_id(con))
+  # and it still resolves, it does not block (ADR-0028)
+  expect_equal(suppressWarnings(.eri_analyst_id(con)), "jane.doe")
 })

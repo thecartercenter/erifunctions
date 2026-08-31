@@ -14,17 +14,25 @@ principal token carries no user claim, so that verification silently lapses and 
 to whatever `ERI_ANALYST_ID` says — a value anyone can set. Your approval then names you while
 Azure's own access record names the service principal, and nothing tells you the two disagree.
 
-- **An explicitly supplied `auth` is now binding** and outranks ambient SP environment credentials.
+- **A supplied `auth` is now binding** and outranks ambient SP environment credentials.
   `get_azure_storage_connection(auth = "authorization_code")` gets you interactive browser sign-in
-  as yourself, whatever is in the environment.
+  as yourself, whatever is in the environment. `creds_yaml_path` is binding the same way — it also
+  used to lose to the environment variables.
 - **The connection now announces which identity it used** — service principal (naming the client
-  id) or interactive user. The silence was the actual harm: you could only discover you were the SP
-  by printing the container object and reading `Authentication method:`.
-- New `quiet = FALSE` argument suppresses that message for callers that connect in a loop.
+  id) or the signed-in user. The silence was the actual harm: you could only discover you were the
+  SP by printing the container object and reading `Authentication method:`. Use
+  `eri_verbosity("quiet")` if you connect in a loop and don't want the line.
+- **Governed actions now warn when your identity could not be verified.** Announcing at connection
+  time is not enough on its own, because `eri_approve()` and friends build their connection behind
+  `suppressMessages()`. So the approval path itself now says, once per session, when the identity
+  it is about to stamp is self-declared rather than verified. It warns, it does not block —
+  unattended runs that approve as a service principal keep working.
 
 **Not a breaking change.** CI and unattended pipelines that set the two environment variables and
-call with no `auth` argument behave exactly as before, as do internal callers like
-`.eri_spatial_con()`. See ADR-0028 for the wrapper caveat around `missing(auth)`.
+pass no `auth` behave exactly as before, as do internal callers like `.eri_spatial_con()`; they
+just emit one warning per session now. `auth` defaults to `NULL` (meaning "unspecified") rather
+than the literal `"authorization_code"`, so a wrapper that forwards its own `NULL` default still
+gets ambient pickup. See ADR-0028.
 
 # erifunctions 0.9.46
 

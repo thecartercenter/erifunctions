@@ -47,33 +47,64 @@ credentials are consulted, it is that they were consulted *unconditionally*.
 
 ## Decision
 
-**An explicitly supplied `auth` is binding.** Ambient SP environment credentials are used only when
-the caller left `auth` at its default (detected with `missing(auth)`), or explicitly asked for
-`"client_credentials"`.
+**Arguments beat ambient environment state.** Two arguments are made binding:
 
-**The connection always announces the identity it authenticated as** — service principal (naming
-the client id) or the signed-in user — via `cli::cli_alert_info()`. A new `quiet = FALSE` argument
-suppresses it for callers that connect in a loop.
+- **`auth`** now defaults to `NULL`, meaning *unspecified*. Ambient SP environment credentials
+  apply only when `auth` is `NULL`, or is explicitly `"client_credentials"`.
+- **`creds_yaml_path`** is binding the same way. It previously lost to the environment variables
+  because `use_sp_env` was evaluated first — the same defect class this ADR exists to fix, in the
+  branch immediately below it.
 
-When SP credentials are present but overridden by an explicit `auth`, the override is named in that
-same line rather than applied silently.
+Explicitness is a property of the **value**, not of whether the argument was supplied. We
+deliberately do *not* use `missing(auth)`: that would make the behaviour depend on the call
+syntax, so a wrapper forwarding `auth = auth` would read as explicit even when its own caller said
+nothing, and `do.call()` would differ from a direct call. A `NULL` default also matches the
+convention already used by `azcontainer`, `data_con` and `creds_yaml_path`, and lets a forwarding
+wrapper preserve ambient pickup simply by defaulting its own `auth` to `NULL`.
+
+**The connection announces the identity it authenticated as** — service principal (naming the
+client id) or the signed-in user. When SP credentials are present but overridden by an explicit
+`auth`, the override is named in that same line rather than applied silently. This goes through
+`.eri_say_info()`, so it honours the existing `eri_verbosity("quiet")` control (ADR-0018). We
+considered a dedicated `quiet =` argument and rejected it: it would have created two controls with
+one name, where `eri_verbosity("quiet")` did *not* silence this line but `quiet = TRUE` did.
+
+**Governed actions warn when the verified-identity guarantee has lapsed.** Announcing at
+connection time is necessary but not sufficient: every internal auto-connect wraps
+`get_azure_storage_connection()` in `suppressMessages()` — `eri_approve()` itself does, as do
+`.eri_catalog_con()`, `.eri_logs_con()`, `.eri_research_con()`, `.eri_spatial_con()`,
+`.eri_artifact_con()`, `.eri_cutover_con()`, `.eri_feedback_con()`, `.eri_template_con()` and
+`.onboarding_resolve_con()`. On those paths the identity line never reaches the user, which is
+exactly the silence this incident was about.
+
+So `.eri_analyst_id(con)` now warns **once per R session** when a connection is supplied but
+`.eri_token_identity(con)` returns `NULL`: the attribution about to be written is self-declared,
+not verified. It **warns rather than refuses** — refusing would break unattended pipelines that
+legitimately approve as a service principal, and the point is to make the lapse visible, not to
+forbid it. `ERI_REQUIRE_ANALYST_ID` remains the opt-in strict mode for teams that do want a hard
+stop.
 
 ## Consequences
 
 - **Easier:** A DA or maintainer on a machine that happens to carry SP credentials can act as
   themselves — `get_azure_storage_connection(auth = "authorization_code")` — without mutating their
   environment. The acting identity is visible at the point of connection rather than discoverable
-  only by inspecting the returned object.
-- **Unchanged:** CI and unattended pipelines that set the two environment variables and call with no
-  `auth` argument behave exactly as before. This is deliberately not a breaking change; internal
-  callers such as `.eri_spatial_con()` pass no `auth` and so continue to pick up ambient
-  credentials.
-- **Harder:** `missing(auth)` makes the behaviour depend on whether an argument was *supplied*, not
-  only on its value. A wrapper that forwards `auth = auth` unconditionally will be treated as
-  explicit even when its own caller said nothing. Wrappers that want to preserve ambient pickup must
-  omit the argument rather than forward a default.
-- Callers that parse connection output will see a new informational line; `quiet = TRUE` restores
-  the previous silence.
+  only by inspecting the returned object, and a lapsed verification is visible at the point of the
+  governed write however the connection was built.
+- **Unchanged:** CI and unattended pipelines that set the two environment variables and pass no
+  `auth` behave exactly as before. This is deliberately not a breaking change; internal callers
+  such as `.eri_spatial_con()` pass no `auth` and continue to pick up ambient credentials. They now
+  emit one warning per session, which is the intended signal.
+- **Changed:** `auth`'s default is `NULL` rather than the literal `"authorization_code"`. Anything
+  reading `formals(get_azure_storage_connection)$auth` sees `NULL`; the documented *effective*
+  default is unchanged.
+- Callers that parse connection output will see a new informational line; `eri_verbosity("quiet")`
+  restores the previous silence.
+
+**Still open, deliberately.** Whether `ERIFUNCTIONS_SP_CLIENT_ID` / `_SECRET` should ever be
+present in an analyst's *interactive* environment is an operational question this ADR does not
+settle. If the answer is "CI and `eri-ops` only", the durable fix is operational and this API rule
+is the belt rather than the braces.
 
 Regression coverage lives in `tests/testthat/test-dal.R` and mocks `AzureAuth::get_azure_token()`,
 `AzureStor::storage_endpoint()` and `AzureStor::storage_container()`, so no test in this group can

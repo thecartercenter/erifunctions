@@ -78,8 +78,8 @@ data_con <- get_azure_storage_connection(storage_name = "data")
 
 **Always read that line.** Every connection announces the identity it authenticated as, because it
 is the identity your approvals and logs get stamped with. If it says **service principal** instead,
-you are not acting as yourself, see the automation callout below. Pass `quiet = TRUE` to suppress
-the message in code that connects in a loop.
+you are not acting as yourself, see the automation callout below. `eri_verbosity("quiet")` hides it
+if you connect in a loop.
 
 The `storage_name` picks **which blob you connect to**: `"data"` (the governed three-layer data
 system) or `"projects"` (the legacy contractor space). Most analyst work is in `"data"`.
@@ -117,9 +117,17 @@ The `name` column holds the **full path** from the container root (so a deeper l
 > ```
 >
 > This matters for governed actions. `eri_approve()` stamps its log with the identity **verified**
-> from your token; a service principal token has no user claim, so that verification quietly falls
-> back to whatever `ERI_ANALYST_ID` says, and your approval log stops agreeing with Azure's own
-> record of who wrote the file.
+> from your token; a service principal token has no user claim, so that verification falls back to
+> whatever `ERI_ANALYST_ID` says, and your approval log stops agreeing with Azure's own record of
+> who wrote the file. `erifunctions` warns you once per session when this happens:
+>
+> ```
+> ! This connection carries no verified user identity, so this action will be attributed to a
+>   self-declared id, not a signed-in one.
+> ```
+>
+> That is expected and harmless in an unattended run. On your own machine it means you are not
+> signed in as yourself — reconnect with `auth = "authorization_code"` above.
 
 > **`403 Forbidden`?** That is not a bug, it is Azure telling you your account does not have access to
 > that storage. Access is granted by an administrator (Azure RBAC), not by the package. Ask your ERI
