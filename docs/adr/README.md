@@ -58,7 +58,7 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0012](0012-source-measure-data-model.md) | Data is addressed by source *and* measure (the 5-axis path model) | Accepted — point 5 amended by ADR-0020 |
 | [0013](0013-odk-submission-backfill.md) | Submission backfill: erifunctions writes records *into* ODK Central | Accepted |
 | [0014](0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob | Accepted |
-| [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | Accepted |
+| [0015](0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover criteria: N consecutive periods of equivalence | **Superseded by ADR-0027** |
 | [0016](0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes go through the blob endpoint | Accepted |
 | [0017](0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match | Accepted — mirror-filename cross-reference amended by ADR-0021 |
 | [0018](0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution, hash-based expiry | Accepted |
@@ -70,3 +70,5 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0024](0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks: declared in the CMR routing schema, evaluated at staged-layer DQ time | Accepted |
 | [0025](0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename: `{period}_{upload_date}_{3-letter country code}` | Accepted — supersedes ADR-0021 |
 | [0026](0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` actually evaluates a schema's `consistency:` block (was silently never called) | Accepted |
+| [0027](0027-erifunctions-owns-bi-output-contract.md) | erifunctions owns the Power BI output contract; consolidate the contractor pipeline in stages | Accepted — supersedes ADR-0015 |
+| [0028](0028-explicit-auth-outranks-ambient-service-principal.md) | A supplied `auth` (or `creds_yaml_path`) outranks ambient service principal credentials; the connection announces its identity, and governed actions warn when it is unverified | Accepted |
