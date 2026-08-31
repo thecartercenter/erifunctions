@@ -6,10 +6,13 @@
 > that keep development aligned with this roadmap, and [`vision.md`](vision.md) for the
 > founding brief this plan derives from.
 >
-> **Where we are (2026-06-30):** Phases 0–2 complete. **Phase 3 cutover/simulation tooling is
-> complete and offline-tested, the next step is a real-data *pilot* (parallel run), not more
-> building**; the actual cutover and legacy-adapter retirement wait on real CMR/malaria uploads.
-> Phase 4 (ODK live pilot + the "Mimic" dashboard) is the next build, pending a direction call.
+> **Where we are (2026-08-28):** Phases 0–2 complete. **Phase 3 has been redefined.** The data
+> science consultancy that built and operated the legacy pipelines ended in August 2026. Rather
+> than retiring those pipelines on an equivalence streak, erifunctions is **taking over the
+> Power BI output contract** and then consolidating the rest of that pipeline in stages, on our
+> own timetable. The streak-based cutover criteria are superseded by
+> [ADR-0027](adr/0027-erifunctions-owns-bi-output-contract.md). Phase 4 (ODK live pilot + the
+> "Mimic" dashboard) is unchanged and still pending a direction call.
 
 ## Context
 
@@ -40,7 +43,7 @@ flowchart TD
     P0["Phase 0: Governance scaffolding<br/>roadmap.md, ADRs, CLAUDE.md, pkgdown"]
     P1["Phase 1: dr_irs vertical slice<br/>Epi research workflow end-to-end"]
     P2["Phase 2: Architecture hardening<br/>concurrency, identity, query layer"]
-    P3["Phase 3: hsp-mal cutover + CMR<br/>eri_compare, authoritative data/ blob"]
+    P3["Phase 3: own the Power BI output contract<br/>then consolidate the contractor pipeline"]
     P4["Phase 4: ODK live pilot (Uganda)<br/>cleaning rules, edit tracking, dashboard"]
     P5["Phase 5: DA breadth helpers<br/>ad-hoc, log triage, new-dataset onboarding"]
     P0 --> P1 --> P2 --> P3 --> P4 --> P5
@@ -74,7 +77,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0012](adr/0012-source-measure-data-model.md) | Address data by 5 axes splitting data_source (channel) from data_type (measure); general ingest core + legacy adapters | Coherent data-addressing model (#175); supersedes ADR-0011 |
 | [0013](adr/0013-odk-submission-backfill.md) | Write records *into* ODK Central (submission backfill): deterministic instanceID idempotency, columns map by field name, repeats reuse ADR-0010 | `eri_odk_upload()` (Phase 4, #211) |
 | [0014](adr/0014-feedback-ticket-log.md) | In-package feedback / ticket log in the `data/` blob (capture now via `eri_feedback()`, reusing ADR-0002/0003); triage is a later feature | Tight adoption feedback loop (#237) |
-| [0015](adr/0015-hsp-mal-cutover-criteria.md) | hsp-mal cutover gate: per-stream value/row parity (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger; human-triggered | Objective Phase-3 cutover criteria (#245) |
+| [0015](adr/0015-hsp-mal-cutover-criteria.md) | ~~hsp-mal cutover gate: N=3 consecutive equivalent periods~~ **Superseded by ADR-0027** | Objective Phase-3 cutover criteria (#245) |
 | [0016](adr/0016-metadata-conditional-writes-blob-endpoint.md) | Conditional metadata writes (ETag optimistic concurrency) go through the blob endpoint, not the Data Lake Gen2 endpoint | ADR-0002 concurrency implementation detail |
 | [0017](adr/0017-cmr-staged-file-supersession.md) | Superseding staged CMR files: opt-in delete, anchored match; detect-and-report by default | CMR re-run hygiene (DQ workflow redesign, phase 2) |
 | [0018](adr/0018-dq-schema-local-overrides.md) | DQ schema local overrides: three-tier resolution (local → Azure → bundled), hash-based expiry, never-silent envelope markers | DQ schema override lifecycle (DQ workflow redesign, phase 3) |
@@ -86,7 +89,8 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0024](adr/0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks (`cross_consistency:`) declared on the CMR routing schema, evaluated at staged-layer DQ time, workbook-level findings | Cross-sheet DQ checks (DQ workflow redesign follow-on) |
 | [0025](adr/0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename corrected to `{period}_{upload_date}_{3-letter country code}`, matching the legacy pipeline owner's actual parsing convention | `eri_feedback` #8 (Zack's pipeline couldn't find the most recent file) |
 | [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
-| [0028](adr/0028-explicit-auth-outranks-ambient-service-principal.md) | An explicitly supplied `auth` outranks ambient service principal credentials, and the connection announces the identity it authenticated as (approvals were mis-attributable to the SP) | Maintainer silently authenticated as the service principal (issue #357) |
+| [0027](adr/0027-erifunctions-owns-bi-output-contract.md) | erifunctions produces the Power BI inputs directly; the contractor pipeline consolidates in stages, adapters retire at cutover rather than on a streak | The consultancy ended; the streak had no operator (#344) |
+| [0028](adr/0028-explicit-auth-outranks-ambient-service-principal.md) | A supplied `auth` or `creds_yaml_path` outranks ambient service principal credentials; the connection announces its identity, and governed actions warn when ADR-0003's verified-identity guarantee has lapsed to the self-declared fallback | Maintainer silently authenticated as the service principal (issue #357) |
 
 ---
 
@@ -183,15 +187,106 @@ datasets returns a correct join.
 
 ---
 
-## Phase 3: hsp-mal cutover tooling + CMR/surveillance pilot
+## Phase 3: take over the Power BI output contract; consolidate the contractor pipeline
 
-Make the `data/` blob authoritative and retire the contractor pipeline on evidence. Built
-against existing Azure data as a simulation; validated against real uploads when they land.
+erifunctions becomes the producer of the outputs the dashboards read, then absorbs the rest of
+the contractor pipeline in stages.
 
-> **Status (2026-06-30): the cutover *tooling* is COMPLETE. The next step is a real-data
-> pilot, not more building.** Everything below the line is shipped and offline-tested; what
-> remains (the parallel run, the equivalence streak, the adapter retirement) is operational
-> work that needs real CMR/malaria uploads and a maintainer at the trigger.
+*Orientation for readers new to this phase:* **RBLF** is the river blindness / lymphatic filariasis
+country-expansion programme, whose monthly country submissions one contractor pipeline processes;
+**Hispaniola malaria** is the other. **`{blob_prefix}`** is a pipeline's per-environment folder root
+inside the `projects` container. The **raw drop** is the blob folder where filled country templates
+land. The **portal** is the Entra-gated Azure Static Web App that serves the data-quality reports.
+
+> **Status (2026-08-28): REDEFINED.** The tooling listed below shipped and works. The *plan* it
+> served did not survive contact with the handover, and has been replaced.
+
+### Why this changed
+
+The original phase aimed to make `data/` authoritative and retire the contractor pipeline "on
+evidence" — an equivalence streak comparing our output against theirs, then adapter retirement
+([ADR-0015](adr/0015-hsp-mal-cutover-criteria.md), now superseded by
+[ADR-0027](adr/0027-erifunctions-owns-bi-output-contract.md)).
+Ingesting the August 2026 consultancy close-out established three things that undo that plan:
+
+1. **The reference side of the comparison had no operator.** ADR-0015's gate compares our
+   `data/staged` output against `projects/…/intermediate/` — the **output of the contractor
+   pipeline**. Earning the streak therefore requires running that pipeline every period for at
+   least three periods. Nobody was assigned to, and assigning someone would extend the legacy
+   system's life by months to earn evidence for retiring it. This is a staffing and cost
+   judgement, not a structural impossibility: the gate *could* be satisfied if we chose to staff
+   it. We are choosing not to. (The binding to `intermediate/` comes from ADR-0015's policy, not
+   from `eri_compare()`, which also accepts a plain data frame and remains useful for one-off
+   reconciliation.)
+2. **There is no continuity risk for the gate to protect against.** The repositories are
+   org-owned and already administered by the ERI team, and the pipelines are `workflow_dispatch`
+   Actions. We can run everything the contractor ran. The gate was designed to de-risk losing a
+   system we are not losing.
+3. **The real constraint is narrower than a pipeline.** The DAs are ready to work entirely in
+   erifunctions, but the outputs must keep landing where Power BI reads them. That is a contract
+   of a few files, not a system.
+
+`projects/` is therefore **not** legacy space we are migrating off. It is a live system of record
+that erifunctions will write to deliberately.
+
+**On dev/prod storage.** This roadmap has no dev-versus-prod storage-account concept, and
+`eridev` is a compiled-in constant (`R/dal.R:17`). The contractor's own plan named a second,
+currently **empty and never-credentialed** account, `eriprod`, as the candidate target for a prod
+cutover, alongside the alternative of using the bare (non-`-dev`) prefix on `eridev`. Both
+contractor pipelines presently read and write the dev prefixes, and their reporting publishes from
+the dev data area. We are inheriting that state, not resolving it: no prod cutover is planned in
+these stages, and taking one on would mean flipping storage on both pipeline repos together.
+Recording it here so a successor can tell "deliberately deferred" from "never considered".
+
+### The contract
+
+For RBLF it is exactly three files, in the `projects` container:
+
+```
+{blob_prefix}/BI_inputs/all_treatment.parquet    # discriminator column: disease
+{blob_prefix}/BI_inputs/all_training.parquet     # discriminator column: type
+{blob_prefix}/BI_inputs/all_dmdi.parquet
+```
+
+`eri_ingest(mirror_pipeline=)` already writes the `intermediate/` layer immediately upstream of
+those, so the gap is one consolidation step. The Hispaniola malaria contract is a different shape
+— a CSV bound onto a frozen 2015–2024 history — and is specified separately.
+
+### The stages
+
+| Stage | What | Tracking |
+|---|---|---|
+| 1 | Write the BI contract down as a reviewed spec. | #344 |
+| 2 | erifunctions writes `BI_inputs/`; the contractor pipeline's data path stops being needed. | #349 |
+| 3 | Remove the `eri_do("cmr")` round-trip through the contractor's raw drop. | #350 |
+| 4 | Resolve the template-config duplication; one authoritative representation. | #351 |
+| 5 | The malaria BI contract. | #354 |
+| 6 | Port the monitoring report and portal bundle; the portal becomes the Power BI replacement. | — |
+| 7 | Archive the contractor pipeline repo. | — |
+
+Standalone work the stages do not gate: the ISO3 country-code alignment (#345), absorbing the
+branding package (#346), CODAB admin boundaries into the spatial store (#347), service-principal-first
+auth (#348), deprecating `eri_trigger()` (#342), and the DAL container default (#331).
+
+Sequencing principle: the BI files are the only artefact with a hard external consumer. Everything
+else moves on our timetable. Tracked on the
+[ERI systems handover project board](https://github.com/orgs/thecartercenter/projects/1).
+
+### What stays coupled after Stage 2
+
+Writing the BI outputs cuts the *data* coupling, not these:
+
+- **The reporting chain** — the RBLF report publish triggers the malaria repo's site publish,
+  which deploys the portal. That is contractor code until Stage 6, and since the portal is the
+  Power BI replacement target it is the strategically heaviest piece, not the least important.
+- **The template-config duplication** — the contractor's `config/versions/{year}.yaml` and our
+  `inst/schemas/cmr/*.yaml` describe the same workbooks from two angles and have already drifted
+  once. Stage 4.
+
+### Shipped tooling, and what became of it
+
+Everything below shipped and is offline-tested. `eri_compare()` remains genuinely useful for
+one-off reconciliation; what is retired is the *policy* built on top of it.
 
 - ~~**`eri_compare()`**: diff `eri_ingest()`'s `data/staged` output against the
   `projects/intermediate` (hsp-mal) output.~~ **Shipped** (#244): keyed row+value reconciliation,
@@ -200,9 +295,12 @@ against existing Azure data as a simulation; validated against real uploads when
   ([ADR-0015](adr/0015-hsp-mal-cutover-criteria.md), #246): per-stream value/row parity
   (`strict_schema = FALSE`) for N=3 consecutive periods, recorded in a cutover ledger, human-triggered.
   Pins the `equivalent` semantics so policy and `eri_compare()` can't drift.
-- ~~**Cutover ledger**: record each period's comparison + compute the streak.~~ **Shipped** (#250):
-  `eri_cutover_check()` records a period (the cutover-standard comparison) and `eri_cutover_status()`
-  reports the streak vs N and eligibility, ordered by the data period.
+- ~~**Cutover ledger**: record each period's comparison + compute the streak.~~ **Shipped** (#250),
+  now **inert**: `eri_cutover_check()` records a period and `eri_cutover_status()` reports the streak
+  vs N. With ADR-0015 superseded, eligibility never accrues. That fails safe — `eri_do()` derives
+  `mirror_pipeline` from `eri_cutover_status()$eligible`, so the wizard keeps mirroring, which is
+  exactly the behaviour Stages 2–3 need. Their roxygen still describes the retired gate and needs
+  updating (#356).
 - ~~**Simulation harness**: anomaly-injection so the DQ and reconciliation paths are genuinely
   exercised against otherwise-clean data.~~ **Shipped**: `eri_inject_anomalies()` (#248) dirties clean
   data reproducibly; `eri_simulate_check()` (#254) injects + reconciles in one call to confirm the gate
@@ -218,13 +316,20 @@ against existing Azure data as a simulation; validated against real uploads when
   ingest, research) is a candidate for a future ADR rather than one fake schema per pipeline.
 - **Retire the legacy adapters** that [ADR-0012](adr/0012-source-measure-data-model.md) isolates: the
   `projects`-blob dual-write (`mirror_pipeline`), `.eri_pipeline_registry`, `.eri_schema_country_map`,
-  and the `rblf` combined code. **Deferred to the cutover itself** (irreversible; only once a stream's
-  streak is met and a maintainer triggers it).
+  and the `rblf` combined code. **Now gated on Stage 3**, not on a streak — the adapters come out once
+  erifunctions writes the BI outputs and the contractor pipeline no longer needs our raw-drop upload.
+- ~~Cutover criteria as an equivalence streak ([ADR-0015](adr/0015-hsp-mal-cutover-criteria.md)).~~
+  **Superseded by [ADR-0027](adr/0027-erifunctions-owns-bi-output-contract.md)** — the criteria
+  compare our output against a pipeline nobody is assigned to keep running. Correctness of the BI
+  outputs is now established by one comparison against the contractor consolidation over the same
+  inputs, before cutover, rather than an accruing multi-period streak.
 
-**Pilot (the next operational step):** run `eri_ingest(..., mirror_pipeline = "hsp-mal")` on the real
-periods as they arrive; `eri_cutover_check()` each one; watch `eri_cutover_status()` reach the N-period
-streak; only then retire the adapters for that stream. The toolchain is ready and end-to-end tested
-offline. It needs real uploads, not more code.
+**The next operational step** is Stage 1 (#344): write the BI output contract down as a spec and
+have its open questions answered while the contractor is still available to answer them. The most
+important of those is which country code values the BI files carry, because that decides whether the
+ISO3 alignment (#345) can emit `mdg` or must keep emitting `mad` — the code
+[`inst/registry/data_model.yaml`](../inst/registry/data_model.yaml) currently sanctions — until the
+dashboards are repointed.
 
 **DQ workflow redesign (shipped, pilot-feedback-driven):** the SDN/SSD CMR pilot surfaced a
 recurring pain point — a DA fixing DQ flags had no structured way to note *what* they fixed or *why*,

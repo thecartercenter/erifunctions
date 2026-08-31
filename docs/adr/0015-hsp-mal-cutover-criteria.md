@@ -1,6 +1,6 @@
 # ADR-0015 — hsp-mal cutover criteria
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0027](0027-erifunctions-owns-bi-output-contract.md)
 - **Date:** 2026-06-29
 
 ## Context
