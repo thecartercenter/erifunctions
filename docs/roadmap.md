@@ -90,6 +90,7 @@ brief's "Some Questions" section (see [`vision.md`](vision.md)).
 | [0025](adr/0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename corrected to `{period}_{upload_date}_{3-letter country code}`, matching the legacy pipeline owner's actual parsing convention | `eri_feedback` #8 (Zack's pipeline couldn't find the most recent file) |
 | [0026](adr/0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` now chains `add_anomaly_consistency()`, so every schema's `consistency:` block actually runs (was silently inert since the feature shipped) | Training-tabs consistency check surfaced the gap (issue #334) |
 | [0027](adr/0027-erifunctions-owns-bi-output-contract.md) | erifunctions produces the Power BI inputs directly; the contractor pipeline consolidates in stages, adapters retire at cutover rather than on a streak | The consultancy ended; the streak had no operator (#344) |
+| [0028](adr/0028-explicit-auth-outranks-ambient-service-principal.md) | A supplied `auth` or `creds_yaml_path` outranks ambient service principal credentials; the connection announces its identity, and governed actions warn when ADR-0003's verified-identity guarantee has lapsed to the self-declared fallback | Maintainer silently authenticated as the service principal (issue #357) |
 
 ---
 

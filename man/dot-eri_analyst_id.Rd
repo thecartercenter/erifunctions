@@ -10,7 +10,10 @@
 When a storage connection is supplied, prefers the \strong{verified} identity from
 its Azure AD token (\code{.eri_token_identity()}, ADR-0003) — the trustworthy
 approver. Otherwise (or for service-principal connections with no user claim)
-returns \code{ERI_ANALYST_ID} when set. When it is not, the behaviour depends on
+returns \code{ERI_ANALYST_ID} when set — warning \strong{once per R session} that the
+verified-identity guarantee has lapsed and the attribution is self-declared
+(ADR-0028, guarded by \code{options(erifunctions.warned_unverified_identity)}).
+When \code{ERI_ANALYST_ID} is not set, the behaviour depends on
 \code{ERI_REQUIRE_ANALYST_ID}: if that is truthy (\code{1}/\code{true}/\code{yes}/\code{on}), governed
 actions are \strong{refused} (an error). Otherwise it falls back to
 \code{"<os-username> (unverified)"} — the OS account, explicitly \strong{marked} so the

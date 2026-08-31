@@ -71,3 +71,4 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0025](0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename: `{period}_{upload_date}_{3-letter country code}` | Accepted — supersedes ADR-0021 |
 | [0026](0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` actually evaluates a schema's `consistency:` block (was silently never called) | Accepted |
 | [0027](0027-erifunctions-owns-bi-output-contract.md) | erifunctions owns the Power BI output contract; consolidate the contractor pipeline in stages | Accepted — supersedes ADR-0015 |
+| [0028](0028-explicit-auth-outranks-ambient-service-principal.md) | A supplied `auth` (or `creds_yaml_path`) outranks ambient service principal credentials; the connection announces its identity, and governed actions warn when it is unverified | Accepted |
