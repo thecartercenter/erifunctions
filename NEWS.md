@@ -34,6 +34,14 @@ just emit one warning per session now. `auth` defaults to `NULL` (meaning "unspe
 than the literal `"authorization_code"`, so a wrapper that forwards its own `NULL` default still
 gets ambient pickup. See ADR-0028.
 
+## Roadmap: Phase 3 redefined around the Power BI output contract (ADR-0027)
+
+Phase 3 was written around retiring the contractor pipeline on a streak of equivalent outputs.
+The consultancy has ended, so that streak has no operator. **ADR-0027 supersedes ADR-0015:**
+`erifunctions` owns the Power BI output contract and produces those inputs directly, with the
+contractor pipeline consolidating in stages and the adapters retiring at cutover rather than on a
+streak. No user-facing function changed; see `docs/roadmap.md` Phase 3 and ADR-0027 for the plan.
+
 # erifunctions 0.9.46
 
 ## Behavior change: `consistency:` DQ rules now actually run (ADR-0026)
