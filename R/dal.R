@@ -1207,21 +1207,23 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
 #' @returns Invisibly, the URL to the workflow's runs page on GitHub.
 #' @examples
 #' \dontrun{
+#' # deprecated -- this always errors, see @description
 #' eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
 #' }
 #' @export
 eri_trigger <- function(pipeline, country, disease,
                         year = NULL, phase = "prod", ref = "main") {
-  lifecycle::deprecate_warn(
-    when    = "0.9.48",
-    what    = "eri_trigger()",
-    details = paste(
-      "The registered workflow does not exist in health-hsp-malaria and this",
-      "function is not being repaired. erifunctions is taking over the Power BI",
-      "output contract directly (ADR-0027); there will be no pipeline left to",
-      "trigger once that lands."
-    )
-  )
+  # base R .Deprecated(), not lifecycle::deprecate_warn() -- matches eri_guide()'s
+  # convention (R/guide.R) and adds no new runtime dependency. lifecycle is only in
+  # Suggests, so a deprecate_warn() call here would fail hard with "there is no
+  # package called 'lifecycle'" on a plain install_github(), the opposite of the point.
+  .Deprecated(package = "erifunctions",
+              msg = paste(
+                "eri_trigger() is deprecated. The registered workflow does not exist in",
+                "health-hsp-malaria and this function is not being repaired -- erifunctions",
+                "is taking over the Power BI output contract directly (ADR-0027), after",
+                "which there is no pipeline left to trigger."
+              ))
   pat <- Sys.getenv("GITHUB_PAT")
   if (!nzchar(pat)) {
     cli::cli_abort(c(

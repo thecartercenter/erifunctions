@@ -43,6 +43,7 @@ and then fails the same way it always did once it reaches GitHub.
 }
 \examples{
 \dontrun{
+# deprecated -- this always errors, see @description
 eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
 }
 }

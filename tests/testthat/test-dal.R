@@ -147,7 +147,7 @@ test_that("eri_trigger warns that it is deprecated (#342)", {
   withr::with_envvar(list(GITHUB_PAT = ""), {
     expect_warning(
       expect_error(eri_trigger("hsp-mal", "dr", "malaria"), "GITHUB_PAT"),
-      class = "lifecycle_warning_deprecated"
+      "deprecated"
     )
   })
 })
