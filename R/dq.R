@@ -1157,6 +1157,12 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
 # canonical name ({country}_{disease}_{data_source}_{data_type}). Lets the legacy
 # two-argument load_dq_schema() form (and old filenames) keep resolving during the
 # migration.
+#
+# oepa_oncho_mda / oepa_oncho_prevalence removed (#327): those two schemas modeled
+# OEPA oncho as one shared Americas-wide rollup with `country` as a row value.
+# Superseded by real per-country schemas (bra/ven shipped, #325); "oepa" was never
+# a registered country in the data model, so no real staged/processed data existed
+# under that shape to migrate.
 #' @keywords internal
 .eri_schema_aliases <- c(
   dr_malaria_case            = "dr_malaria_surveillance_case",
@@ -1167,8 +1173,6 @@ add_anomaly_spatial <- function(data, schema, azcontainer = NULL) {
   dr_lf_tas                  = "dr_lf_research_tas",
   ht_lf_mda                  = "ht_lf_programmatic_treatment",
   ht_lf_tas                  = "ht_lf_research_tas",
-  oepa_oncho_mda             = "oepa_oncho_programmatic_treatment",
-  oepa_oncho_prevalence      = "oepa_oncho_research_prevalence",
   ug_rb_mda                  = "uga_oncho_programmatic_treatment",
   ug_rb_prevalence           = "uga_oncho_research_prevalence",
   schisto_mda                = "global_schisto_programmatic_treatment",
