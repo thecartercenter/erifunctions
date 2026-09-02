@@ -38,7 +38,7 @@ Two of them, `data_source` and `data_type`, are the ones people mix up. They are
 
 ## Answer these four, in order
 
-1. **country**: `dr`, `ht`, `eth`, `uga`, `nga`, `sdn`, `ssd`, `tcd`, `mad`, `oepa`, …
+1. **country**: `dr`, `ht`, `eth`, `uga`, `nga`, `sdn`, `ssd`, `tcd`, `mad`, `bra`, `ven`, …
 2. **disease**: `malaria`, `oncho`, `lf`, `sch`, `sth` (free text; lowercase).
 3. **data_source (channel)**: pick one:
    - **`surveillance`**: routine MoH feed (DR/Haiti malaria). Output: cases or aggregate counts.

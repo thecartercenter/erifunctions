@@ -1,3 +1,17 @@
+# erifunctions 0.9.50
+
+## Removed the redundant OEPA oncho rollup schemas (#327)
+
+`oepa_oncho_programmatic_treatment.yaml` and `oepa_oncho_research_prevalence.yaml` modeled OEPA
+oncho as one shared Americas-wide schema with `country` as a row value. Superseded by real
+per-country CMR schemas (bra/ven shipped in #325), and "oepa" was never a registered country in
+the data model, so there was no real staged/processed data under the old shape to migrate.
+
+- Removed both bundled schema files and their legacy-stem aliases (`oepa_oncho_mda`,
+  `oepa_oncho_prevalence`) from the schema-alias map.
+- `load_dq_schema("oepa", "oncho_mda")` / `load_dq_schema("oepa", "oncho_prevalence")` (and the
+  legacy stems) now fail with a clear "no schema found" rather than resolving to a deleted file.
+
 # erifunctions 0.9.49
 
 ## The general-purpose DAL verbs now warn when they land somewhere other than `data` (#331)
