@@ -24,6 +24,44 @@ test_that(".eri_create_azure_dir skips levels that already exist", {
   expect_equal(created, "a/b/c")
 })
 
+#### Tests for .eri_dal_verb_connect (#331) ####
+
+test_that(".eri_dal_verb_connect returns an explicit azcontainer unchanged, no warning, no connect", {
+  called <- FALSE
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) { called <<- TRUE; "should not be used" },
+    .package = "erifunctions"
+  )
+  mock_con <- structure(list(), class = "mock")
+  expect_no_warning(out <- .eri_dal_verb_connect(mock_con))
+  expect_identical(out, mock_con)
+  expect_false(called)
+})
+
+test_that(".eri_dal_verb_connect warns when the ambient container isn't 'data'", {
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = "projects"), {
+    expect_warning(.eri_dal_verb_connect(NULL), "not.*data")
+  })
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = ""), {
+    expect_warning(.eri_dal_verb_connect(NULL), "unset")
+  })
+})
+
+test_that(".eri_dal_verb_connect does not warn when the ambient container is already 'data'", {
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = "data"), {
+    expect_no_warning(out <- .eri_dal_verb_connect(NULL))
+    expect_equal(out, "mock_con")
+  })
+})
+
 #### Tests for eri_data_path ####
 
 test_that("eri_data_path builds correct paths without filename", {

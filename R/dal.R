@@ -474,6 +474,10 @@ erifunctions_io <- function(
 #' @param file_loc `str` Location to "read", "write", "exists.dir", "exists.file", "create" or "list".
 #' @param obj `robj` Object to be saved, needed for `"write"`. Defaults to `NULL`.
 #' @param azcontainer Azure container object returned from [get_azure_storage_connection()].
+#'   If `NULL` (default), one is created ambiently from [get_azure_storage_connection()]'s own
+#'   default -- which is *not* necessarily the `data` container production data lives in, and
+#'   a `cli_warn` fires when it isn't. Pass `azcontainer` explicitly to target a specific
+#'   container, e.g. `get_azure_storage_connection(storage_name = "data")`. See issue #331.
 #' @param force_delete `logical` Use delete io without confirmation prompt. Default `FALSE`.
 #' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
 #'   (suppressed). Set `TRUE` for a large single read/upload that needs visible feedback.
@@ -718,6 +722,40 @@ azure_io <- function(
 
 }
 
+#' Resolve the ambient connection for the general-purpose DAL verbs, warning if it
+#' isn't the `data` container
+#'
+#' Unlike almost every other subsystem in this package (catalog, artifacts, feedback,
+#' logs, odk_registry, cmr, dq, cutover -- all of which explicitly pass
+#' `storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")`), the
+#' verb-named DAL wrappers below call [get_azure_storage_connection()] with no
+#' `storage_name` at all, which resolves the *other*, legacy env var
+#' (`ERIFUNCTIONS_STORAGE_NAME`) and lands on whatever that happens to be set to --
+#' often the `projects` container, not `data`, where most production data actually
+#' lives. That produced a real false negative: `eri_file_exists()` answered `FALSE`
+#' immediately after a real upload, because it was asking the wrong container (#331).
+#'
+#' Whether the default itself should change to `data` is an open decision (#331,
+#' CLAUDE.md) -- not made here. This only makes the mismatch loud instead of silent,
+#' so a caller relying on the ambient connection finds out before a false negative (or
+#' an unintended write) looks like success.
+#' @keywords internal
+.eri_dal_verb_connect <- function(azcontainer) {
+  if (!is.null(azcontainer)) return(azcontainer)
+  storage_name <- Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")
+  if (!identical(storage_name, "data")) {
+    cli::cli_warn(c(
+      "!" = "No {.arg azcontainer} given, so this connects to the {.val \\
+             {if (nzchar(storage_name)) storage_name else '(unset)'}} container, not {.val data}.",
+      "i" = "Most production data lives in {.val data}. Pass {.code azcontainer = \\
+             get_azure_storage_connection(storage_name = \"data\")} explicitly if that's what \\
+             you meant.",
+      "i" = "Known gap, not yet resolved: issue #331."
+    ))
+  }
+  suppressMessages(get_azure_storage_connection())
+}
+
 #### 3) Verb-named wrappers ####
 
 #' Read a file
@@ -732,7 +770,7 @@ azure_io <- function(
 #' @export
 eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL, progress = FALSE) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer,
                   progress = progress, ...)
 }
@@ -748,7 +786,7 @@ eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL, progress =
 #' @export
 eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("write", obj = obj, file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
 
@@ -763,7 +801,7 @@ eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("list", file_loc = file_loc, full_names = full_names, azure = azure, azcontainer = azcontainer)
 }
 
@@ -778,7 +816,7 @@ eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer
 #' @export
 eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("exists.file", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -793,7 +831,7 @@ eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("exists.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -808,7 +846,7 @@ eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("create.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -825,7 +863,7 @@ eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("delete", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -848,7 +886,7 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
                            prune_catalog = azure) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   result <- erifunctions_io("delete.dir", file_loc = file_loc, azure = azure,
                             azcontainer = azcontainer)
   if (isTRUE(azure) && isTRUE(prune_catalog)) {
