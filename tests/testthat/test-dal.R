@@ -62,6 +62,25 @@ test_that(".eri_dal_verb_connect does not warn when the ambient container is alr
   })
 })
 
+test_that("eri_upload() routes its ambient connect through .eri_dal_verb_connect() (#331)", {
+  # eri_upload() is a 9th instance of the same pattern the other 8 verbs share, folded into
+  # this fix alongside them (not named in the original issue, but identical and equally broken).
+  connect_called_with <- "unset"
+  local_mocked_bindings(
+    .eri_dal_verb_connect = function(azcontainer) {
+      connect_called_with <<- azcontainer
+      "resolved_con"
+    },
+    erifunctions_io = function(io, obj, file_loc, azure, azcontainer) {
+      expect_equal(azcontainer, "resolved_con")
+      invisible(NULL)
+    },
+    .package = "erifunctions"
+  )
+  eri_upload("local.rds", "some/path.rds")
+  expect_null(connect_called_with)  # called with the caller's (here: default NULL) azcontainer
+})
+
 #### Tests for eri_data_path ####
 
 test_that("eri_data_path builds correct paths without filename", {

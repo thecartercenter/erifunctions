@@ -261,7 +261,14 @@ get_azure_storage_connection <- function(
 #' @param azure `logical` Whether the function should interact with the TCC Azure environment.
 #' Defaults to `TRUE`, otherwise, interacts with files locally.
 #' @param azcontainer `Azure container` A container object returned by
-#' [get_azure_storage_connection()].
+#' [get_azure_storage_connection()]. If `NULL` (the default), one is created ambiently from
+#' [get_azure_storage_connection()]'s own default -- which is *not* necessarily the `data`
+#' container production data lives in (issue #331). The verb-named wrappers ([eri_read()],
+#' [eri_write()], [eri_list()], [eri_file_exists()], [eri_dir_exists()], [eri_dir_create()],
+#' [eri_delete()], [eri_dir_delete()], [eri_upload()]) resolve this ambient connection through
+#' `.eri_dal_verb_connect()` and `cli_warn` when it lands somewhere other than `data`. Calling
+#' `erifunctions_io()` directly bypasses that warning; pass `azcontainer` explicitly to target a
+#' specific container, e.g. `get_azure_storage_connection(storage_name = "data")`.
 #' @param full_names `logical` If `io="list"`, include the full reference path. Default `TRUE`.
 #' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
 #'   (suppressed; erifunctions renders its own output). Set `TRUE` for a large single read/upload.
@@ -474,10 +481,11 @@ erifunctions_io <- function(
 #' @param file_loc `str` Location to "read", "write", "exists.dir", "exists.file", "create" or "list".
 #' @param obj `robj` Object to be saved, needed for `"write"`. Defaults to `NULL`.
 #' @param azcontainer Azure container object returned from [get_azure_storage_connection()].
-#'   If `NULL` (default), one is created ambiently from [get_azure_storage_connection()]'s own
-#'   default -- which is *not* necessarily the `data` container production data lives in, and
-#'   a `cli_warn` fires when it isn't. Pass `azcontainer` explicitly to target a specific
-#'   container, e.g. `get_azure_storage_connection(storage_name = "data")`. See issue #331.
+#'   If `NULL`, one is created ambiently from [get_azure_storage_connection()]'s own default --
+#'   which is *not* necessarily the `data` container production data lives in (issue #331).
+#'   Calling `azure_io()` directly, as opposed to through the verb-named wrappers
+#'   ([eri_read()] etc.), does **not** get the container-mismatch warning those add; pass
+#'   `azcontainer` explicitly here to target a specific container.
 #' @param force_delete `logical` Use delete io without confirmation prompt. Default `FALSE`.
 #' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
 #'   (suppressed). Set `TRUE` for a large single read/upload that needs visible feedback.
@@ -725,6 +733,12 @@ azure_io <- function(
 #' Resolve the ambient connection for the general-purpose DAL verbs, warning if it
 #' isn't the `data` container
 #'
+#' Used by the 9 verb-named wrappers ([eri_read()], [eri_write()], [eri_list()],
+#' [eri_file_exists()], [eri_dir_exists()], [eri_dir_create()], [eri_delete()],
+#' [eri_dir_delete()], [eri_upload()]) -- NOT by [erifunctions_io()] or [azure_io()]
+#' themselves when called directly, which keep their own unwarned ambient-connect default
+#' argument (see their own `@param azcontainer` docs).
+#'
 #' Unlike almost every other subsystem in this package (catalog, artifacts, feedback,
 #' logs, odk_registry, cmr, dq, cutover -- all of which explicitly pass
 #' `storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")`), the
@@ -929,11 +943,13 @@ eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
 #'
 #' @param local_path `str` Local path to the file to upload.
 #' @param file_loc `str` Destination path in Azure (including filename).
-#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#' @param azcontainer Azure container object from [get_azure_storage_connection()]. If `NULL`
+#'   (default), see [erifunctions_io()]'s `@param azcontainer` for the ambient-connect behaviour
+#'   and its container-mismatch warning (issue #331).
 #' @export
 eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
   .eri_log_session()
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
 

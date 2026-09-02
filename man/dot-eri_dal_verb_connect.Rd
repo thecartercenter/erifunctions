@@ -8,6 +8,13 @@ isn't the \code{data} container}
 .eri_dal_verb_connect(azcontainer)
 }
 \description{
+Used by the 9 verb-named wrappers (\code{\link[=eri_read]{eri_read()}}, \code{\link[=eri_write]{eri_write()}}, \code{\link[=eri_list]{eri_list()}},
+\code{\link[=eri_file_exists]{eri_file_exists()}}, \code{\link[=eri_dir_exists]{eri_dir_exists()}}, \code{\link[=eri_dir_create]{eri_dir_create()}}, \code{\link[=eri_delete]{eri_delete()}},
+\code{\link[=eri_dir_delete]{eri_dir_delete()}}, \code{\link[=eri_upload]{eri_upload()}}) -- NOT by \code{\link[=erifunctions_io]{erifunctions_io()}} or \code{\link[=azure_io]{azure_io()}}
+themselves when called directly, which keep their own unwarned ambient-connect default
+argument (see their own \verb{@param azcontainer} docs).
+}
+\details{
 Unlike almost every other subsystem in this package (catalog, artifacts, feedback,
 logs, odk_registry, cmr, dq, cutover -- all of which explicitly pass
 \code{storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")}), the
@@ -17,8 +24,7 @@ verb-named DAL wrappers below call \code{\link[=get_azure_storage_connection]{ge
 often the \code{projects} container, not \code{data}, where most production data actually
 lives. That produced a real false negative: \code{eri_file_exists()} answered \code{FALSE}
 immediately after a real upload, because it was asking the wrong container (#331).
-}
-\details{
+
 Whether the default itself should change to \code{data} is an open decision (#331,
 CLAUDE.md) -- not made here. This only makes the mismatch loud instead of silent,
 so a caller relying on the ambient connection finds out before a false negative (or
