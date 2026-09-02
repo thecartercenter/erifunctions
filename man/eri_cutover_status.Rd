@@ -28,13 +28,27 @@ Invisibly, a list with \code{eligible} (lgl), \code{streak} (int), \code{n}, and
 in checked order).
 }
 \description{
+\strong{This function's \code{eligible} result is load-bearing beyond its own name.}
+\code{\link[=eri_do]{eri_do()}} calls it internally (\code{.eri_wizard_should_mirror_cmr()} /
+\code{.eri_wizard_should_mirror_ingest()} in \code{R/wizard.R}) to decide whether to
+dual-write a stream to the legacy contractor pipeline as it processes a
+submission. ADR-0015's streak-based cutover gate this was built for is
+superseded by
+\href{https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md}{ADR-0027}:
+nothing currently records new entries (see \code{\link[=eri_cutover_check]{eri_cutover_check()}}), so the streak
+this reports will not grow. That is intentional, not a bug to chase — an
+\code{eligible = FALSE} that never flips keeps \code{\link[=eri_do]{eri_do()}} mirroring, which is the
+correct behaviour until erifunctions writes the BI outputs directly (Stages 2–3).
+If you're reading this to decide whether to \emph{raise} \code{n} or otherwise force
+eligibility: don't — that decision belongs to ADR-0027's stage plan, not this
+function's caller.
+
 Reads \verb{_cutover/cutover_log.yaml}, takes the most recent entry per \code{period} for
 the stream, and computes the \strong{streak}: the number of consecutive most-recent
-periods that are \code{equivalent} (ADR-0015). A stream is \emph{eligible} for cutover
-when the streak reaches \code{n}. Periods are ordered by the \strong{data \code{period}} (which
-for a stream uses one consistent, lexically-sortable label), and re-checking a
-period updates its standing — so backfilling an earlier period is handled
-correctly.
+periods that are \code{equivalent}. A stream is \emph{eligible} for cutover when the streak
+reaches \code{n}. Periods are ordered by the \strong{data \code{period}} (which for a stream uses
+one consistent, lexically-sortable label), and re-checking a period updates its
+standing — so backfilling an earlier period is handled correctly.
 }
 \examples{
 \dontrun{

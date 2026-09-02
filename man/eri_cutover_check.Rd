@@ -48,12 +48,20 @@ needs per-cell reconciliation).}
 The \code{\link[=eri_compare]{eri_compare()}} result (an \code{eri_comparison}), invisibly.
 }
 \description{
+\strong{The streak-based cutover gate this fed (ADR-0015) is superseded by
+\href{https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md}{ADR-0027}.}
+There is no ongoing parallel run generating per-period evidence to record, and
+nothing currently calls this function. It is kept, not removed, because
+\code{\link[=eri_do]{eri_do()}} derives whether it dual-writes to the legacy pipeline from
+\code{\link[=eri_cutover_status]{eri_cutover_status()}}'s streak — see that function's \verb{@description} for why a
+streak that never grows is the correct, fail-safe outcome right now. The
+comparison engine itself (\code{eri_compare()}) stays relevant for the one-time
+BI-output correctness check ADR-0027 calls for before cutover; this function is
+how that comparison would be run and recorded when the time comes.
+
 Runs the \strong{cutover-standard} comparison — \code{eri_compare(new, old, by, strict_schema = FALSE, tolerance, ignore)} — for one data stream's \code{period} and
-appends the outcome to \verb{_cutover/cutover_log.yaml} in the \verb{data/} blob. This is
-the per-period evidence the cutover gate is built on (ADR-0015): run it each
-period of the parallel run, then check the streak with \code{\link[=eri_cutover_status]{eri_cutover_status()}}.
-}
-\details{
+appends the outcome to \verb{_cutover/cutover_log.yaml} in the \verb{data/} blob.
+
 \code{strict_schema = FALSE} is fixed (not exposed): the cutover gate requires
 value/row parity but tolerates extra columns the new pipeline adds. The \code{by}
 keys and \code{tolerance} are recorded with the entry so the bar is auditable.
