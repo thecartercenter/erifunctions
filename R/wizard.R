@@ -209,9 +209,11 @@
 
 # Auto-detects whether this workbook's split should also mirror to the legacy hsp-mal-era
 # contractor pipeline (mirror_pipeline = "rb-expansion" for CMR) -- the DA is never asked. Mirrors
-# if ANY constituent disease/measure stream this workbook feeds hasn't yet proven ADR-0015 cutover
-# parity (eri_cutover_status()$eligible); an unrecorded/unknown stream defaults to mirroring, the
-# safe direction (an extra legacy copy never loses data; a missing one breaks the parallel run).
+# if ANY constituent disease/measure stream this workbook feeds hasn't yet proven cutover parity
+# (eri_cutover_status()$eligible); an unrecorded/unknown stream defaults to mirroring, the safe
+# direction (an extra legacy copy never loses data; a missing one breaks the parallel run).
+# ADR-0015's streak gate this reads is superseded by ADR-0027 -- see R/cutover.R's file header and
+# eri_cutover_status()'s @description for why the streak never accruing is intentional, not stale.
 # eri_cutover_status() narrates its own status report to the console (cli_h3()/cli_alert_*) for a
 # script author calling it directly -- that's noise inside the wizard, which only needs the
 # boolean, so it's suppressed here specifically, not changed for any other caller.
@@ -387,11 +389,12 @@
   }
 }
 
-# Same auto-detection posture as .eri_wizard_should_mirror_cmr(), for the general ingest pipeline's
-# legacy mirror ("hsp-mal", currently registered for dr/ht only -- see .eri_pipeline_registry).
-# Returns FALSE outright for a country that was never registered for this mirror at all (most
-# countries), since eri_ingest() itself would abort passing mirror_pipeline for an unregistered
-# country -- the wizard must never construct a call it knows will fail.
+# Same auto-detection posture as .eri_wizard_should_mirror_cmr() (see its comment for the
+# ADR-0015/ADR-0027 supersession note), for the general ingest pipeline's legacy mirror
+# ("hsp-mal", currently registered for dr/ht only -- see .eri_pipeline_registry). Returns FALSE
+# outright for a country that was never registered for this mirror at all (most countries), since
+# eri_ingest() itself would abort passing mirror_pipeline for an unregistered country -- the
+# wizard must never construct a call it knows will fail.
 #' @keywords internal
 .eri_wizard_should_mirror_ingest <- function(country, disease, data_source, data_type) {
   reg <- .eri_pipeline_registry[["hsp-mal"]]

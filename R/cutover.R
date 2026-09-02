@@ -1,4 +1,18 @@
-#### Cutover ledger — record + evaluate the hsp-mal cutover gate (ADR-0015) ####
+#### Cutover ledger — record + evaluate the hsp-mal cutover gate (ADR-0015, superseded) ####
+#
+# ADR-0015's streak-based cutover gate is superseded by ADR-0027: there is no parallel
+# run to generate per-period evidence for, so nothing calls `eri_cutover_check()`
+# anymore and the streak this file computes will not accrue. The ledger and this code
+# are kept in place rather than removed, because they are still load-bearing in one
+# way: `eri_do()` derives whether it dual-writes to the legacy pipeline
+# (`mirror_pipeline`) from `eri_cutover_status()$eligible` (see
+# `.eri_wizard_should_mirror_cmr()` / `.eri_wizard_should_mirror_ingest()` in
+# `R/wizard.R`). A streak that never accrues means `eligible` is always `FALSE`, which
+# means the wizard keeps mirroring — the correct, fail-safe behaviour until
+# erifunctions writes the BI outputs directly (ADR-0027 Stages 2–3). `eri_cutover_check()`
+# / `eri_compare()` remain relevant for the one-time BI-output correctness comparison
+# ADR-0027 §4 calls for before cutover; it's the *recurring streak* framing that's dead,
+# not the comparison engine itself.
 #
 # `eri_cutover_check()` runs the cutover-standard `eri_compare()` for one stream ×
 # period and records the outcome to `_cutover/cutover_log.yaml`. `eri_cutover_status()`
@@ -31,11 +45,21 @@
 
 #' Compare a stream's period and record it in the cutover ledger
 #'
+#' @description
+#' **The streak-based cutover gate this fed (ADR-0015) is superseded by
+#' [ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md).**
+#' There is no ongoing parallel run generating per-period evidence to record, and
+#' nothing currently calls this function. It is kept, not removed, because
+#' [eri_do()] derives whether it dual-writes to the legacy pipeline from
+#' [eri_cutover_status()]'s streak — see that function's `@description` for why a
+#' streak that never grows is the correct, fail-safe outcome right now. The
+#' comparison engine itself (`eri_compare()`) stays relevant for the one-time
+#' BI-output correctness check ADR-0027 calls for before cutover; this function is
+#' how that comparison would be run and recorded when the time comes.
+#'
 #' Runs the **cutover-standard** comparison — `eri_compare(new, old, by,
 #' strict_schema = FALSE, tolerance, ignore)` — for one data stream's `period` and
-#' appends the outcome to `_cutover/cutover_log.yaml` in the `data/` blob. This is
-#' the per-period evidence the cutover gate is built on (ADR-0015): run it each
-#' period of the parallel run, then check the streak with [eri_cutover_status()].
+#' appends the outcome to `_cutover/cutover_log.yaml` in the `data/` blob.
 #'
 #' `strict_schema = FALSE` is fixed (not exposed): the cutover gate requires
 #' value/row parity but tolerates extra columns the new pipeline adds. The `by`
@@ -134,13 +158,28 @@ eri_cutover_check <- function(new, old, country, disease, data_source, period, b
 
 #' Report a stream's cutover readiness from the ledger
 #'
+#' @description
+#' **This function's `eligible` result is load-bearing beyond its own name.**
+#' [eri_do()] calls it internally (`.eri_wizard_should_mirror_cmr()` /
+#' `.eri_wizard_should_mirror_ingest()` in `R/wizard.R`) to decide whether to
+#' dual-write a stream to the legacy contractor pipeline as it processes a
+#' submission. ADR-0015's streak-based cutover gate this was built for is
+#' superseded by
+#' [ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md):
+#' nothing currently records new entries (see [eri_cutover_check()]), so the streak
+#' this reports will not grow. That is intentional, not a bug to chase — an
+#' `eligible = FALSE` that never flips keeps [eri_do()] mirroring, which is the
+#' correct behaviour until erifunctions writes the BI outputs directly (Stages 2–3).
+#' If you're reading this to decide whether to *raise* `n` or otherwise force
+#' eligibility: don't — that decision belongs to ADR-0027's stage plan, not this
+#' function's caller.
+#'
 #' Reads `_cutover/cutover_log.yaml`, takes the most recent entry per `period` for
 #' the stream, and computes the **streak**: the number of consecutive most-recent
-#' periods that are `equivalent` (ADR-0015). A stream is *eligible* for cutover
-#' when the streak reaches `n`. Periods are ordered by the **data `period`** (which
-#' for a stream uses one consistent, lexically-sortable label), and re-checking a
-#' period updates its standing — so backfilling an earlier period is handled
-#' correctly.
+#' periods that are `equivalent`. A stream is *eligible* for cutover when the streak
+#' reaches `n`. Periods are ordered by the **data `period`** (which for a stream uses
+#' one consistent, lexically-sortable label), and re-checking a period updates its
+#' standing — so backfilling an earlier period is handled correctly.
 #'
 #' @param country,disease,data_source `chr` The stream's axes.
 #' @param data_type `chr` or `NULL` The measure, where it splits the stream.
