@@ -1,3 +1,22 @@
+# erifunctions 0.9.49
+
+## The general-purpose DAL verbs now warn when they land somewhere other than `data` (#331)
+
+`eri_read()`, `eri_write()`, `eri_list()`, `eri_file_exists()`, `eri_dir_exists()`,
+`eri_dir_create()`, `eri_delete()`, `eri_dir_delete()`, and `eri_upload()` connect ambiently when
+you don't pass `azcontainer` — but unlike almost every other subsystem in the package, they
+resolved the *legacy* `ERIFUNCTIONS_STORAGE_NAME` default rather than the `data` container most
+production data actually lives in. That produced a real false negative: `eri_file_exists()`
+answered `FALSE` immediately after a genuine upload, because it was asking the wrong container.
+
+**Not fixed yet, made loud instead.** Whether the ambient default itself should change to `data`
+is still an open decision (issue #331) — this only makes the mismatch visible: a `cli_warn` fires
+whenever one of these functions connects ambiently to something other than `data`, naming the
+container it actually landed on and how to target `data` explicitly.
+
+- **Not a breaking change.** Behavior is identical; only a new warning was added, and only when
+  `azcontainer` is left `NULL`.
+
 # erifunctions 0.9.48
 
 ## `eri_trigger()` is deprecated (#342)

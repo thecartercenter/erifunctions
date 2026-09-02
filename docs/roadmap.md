@@ -266,8 +266,10 @@ those, so the gap is one consolidation step. The Hispaniola malaria contract is 
 
 Standalone work the stages do not gate: the ISO3 country-code alignment (#345), absorbing the
 branding package (#346), CODAB admin boundaries into the spatial store (#347), service-principal-first
-auth (#348), and the DAL container default (#331). ~~Deprecating `eri_trigger()`~~ **Shipped** (#342,
-PR #362): it dispatched a workflow that no longer exists in `health-hsp-malaria`.
+auth (#348). ~~Deprecating `eri_trigger()`~~ **Shipped** (#342, PR #362): it dispatched a workflow
+that no longer exists in `health-hsp-malaria`. **The DAL container default (#331)** — warn-only
+half **shipped** (PR #363): the DAL verbs now `cli_warn` when their ambient connection lands
+outside `data`. Whether the default itself should change to `data` is still open (CLAUDE.md).
 
 Sequencing principle: the BI files are the only artefact with a hard external consumer. Everything
 else moves on our timetable. Tracked on the
