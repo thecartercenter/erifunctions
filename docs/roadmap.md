@@ -256,7 +256,7 @@ those, so the gap is one consolidation step. The Hispaniola malaria contract is 
 
 | Stage | What | Tracking |
 |---|---|---|
-| 1 | Write the BI contract down as a reviewed spec. | #344 |
+| 1 | Write the BI contract down as a reviewed spec. | #344, closed — ADR-0027 |
 | 2 | erifunctions writes `BI_inputs/`; the contractor pipeline's data path stops being needed. | #349 |
 | 3 | Remove the `eri_do("cmr")` round-trip through the contractor's raw drop. | #350 |
 | 4 | Resolve the template-config duplication; one authoritative representation. | #351 |
@@ -266,7 +266,8 @@ those, so the gap is one consolidation step. The Hispaniola malaria contract is 
 
 Standalone work the stages do not gate: the ISO3 country-code alignment (#345), absorbing the
 branding package (#346), CODAB admin boundaries into the spatial store (#347), service-principal-first
-auth (#348), deprecating `eri_trigger()` (#342), and the DAL container default (#331).
+auth (#348), and the DAL container default (#331). ~~Deprecating `eri_trigger()`~~ **Shipped** (#342,
+PR #362): it dispatched a workflow that no longer exists in `health-hsp-malaria`.
 
 Sequencing principle: the BI files are the only artefact with a hard external consumer. Everything
 else moves on our timetable. Tracked on the

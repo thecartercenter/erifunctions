@@ -12,7 +12,7 @@ Standardized data tools for the Epidemiology, Research and Innovation (ERI) team
 **New here, start there.** The documentation site has step-by-step guides, the full function
 reference, and the project roadmap. This README is the quick orientation.
 
-**Version:** 0.9.47 · **Status:** Active development
+**Version:** 0.9.48 · **Status:** Active development
 
 > 🛣️ **Where this is going:** see the
 > [V2 roadmap](https://github.com/thecartercenter/erifunctions/blob/main/docs/roadmap.md) and the
@@ -244,7 +244,7 @@ eri_catalog_verify()
 | `eri_approve(country, disease, data_source, period, data_type)` | Promote staged files to processed (human gate) |
 | `eri_stage(pipeline, country, disease)` | Pull pipeline output from projects blob into staged |
 | `eri_ingest(path, country, disease, data_source, data_type)` | DQ-check a local file and stage it (sandbox-runnable; opt-in `mirror_pipeline`) |
-| `eri_trigger(pipeline, country, disease)` | Dispatch a GitHub Actions pipeline |
+| `eri_trigger(pipeline, country, disease)` | **Deprecated** — dispatches a workflow that no longer exists; being retired, not repaired |
 
 ### Data quality
 
