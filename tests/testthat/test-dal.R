@@ -143,6 +143,15 @@ test_that(".eri_log_session is a no-op when flag is already set", {
 
 #### Tests for eri_trigger error paths (no Azure needed) ####
 
+test_that("eri_trigger warns that it is deprecated (#342)", {
+  withr::with_envvar(list(GITHUB_PAT = ""), {
+    expect_warning(
+      expect_error(eri_trigger("hsp-mal", "dr", "malaria"), "GITHUB_PAT"),
+      class = "lifecycle_warning_deprecated"
+    )
+  })
+})
+
 test_that("eri_trigger errors clearly when GITHUB_PAT is missing", {
   withr::with_envvar(list(GITHUB_PAT = ""), {
     expect_error(

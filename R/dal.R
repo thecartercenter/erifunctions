@@ -1186,16 +1186,16 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
 #' Trigger a registered GitHub Actions pipeline
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("deprecated")`
 #'
-#' Dispatches a `workflow_dispatch` event to a registered GitHub Actions
-#' pipeline from R.  Authenticates with a GitHub Personal Access Token stored
-#' in the `GITHUB_PAT` environment variable (needs `workflow` scope).
-#'
-#' ## Registered pipelines
-#' | Name | Repository | Workflow |
-#' |------|------------|---------|
-#' | `hsp-mal` | thecartercenter/health-hsp-malaria | data_ingestion.yml |
+#' **Deprecated, and every call fails.** The only registered pipeline dispatched a
+#' workflow (`data_ingestion.yml`) that does not exist in `health-hsp-malaria`; the
+#' real workflow there takes a different set of inputs and a different country
+#' vocabulary. Triggering the contractor's pipeline from R is a capability
+#' erifunctions is retiring, not repairing: erifunctions is taking over the Power BI
+#' output contract directly (see [ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md)),
+#' after which there is no pipeline left to trigger. Calling this function now warns
+#' and then fails the same way it always did once it reaches GitHub.
 #'
 #' @param pipeline `str` Registered pipeline name. Currently `"hsp-mal"`.
 #' @param country `str` Country code passed as a workflow input (e.g. `"dr"`).
@@ -1212,6 +1212,16 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
 #' @export
 eri_trigger <- function(pipeline, country, disease,
                         year = NULL, phase = "prod", ref = "main") {
+  lifecycle::deprecate_warn(
+    when    = "0.9.48",
+    what    = "eri_trigger()",
+    details = paste(
+      "The registered workflow does not exist in health-hsp-malaria and this",
+      "function is not being repaired. erifunctions is taking over the Power BI",
+      "output contract directly (ADR-0027); there will be no pipeline left to",
+      "trigger once that lands."
+    )
+  )
   pat <- Sys.getenv("GITHUB_PAT")
   if (!nzchar(pat)) {
     cli::cli_abort(c(

@@ -1,3 +1,12 @@
+# erifunctions 0.9.48
+
+## `eri_trigger()` is deprecated (#342)
+
+`eri_trigger()` dispatched a GitHub Actions workflow (`data_ingestion.yml`) that does not exist in
+`health-hsp-malaria`; every call has always failed. It is retired rather than repaired: erifunctions
+is taking over the Power BI output contract directly (ADR-0027), and once that lands there is no
+pipeline left to trigger. Calling it now warns before failing the same way it always did.
+
 # erifunctions 0.9.47
 
 ## Bug fix: you can now authenticate as yourself when SP credentials are set (ADR-0028)
