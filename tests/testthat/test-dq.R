@@ -1658,6 +1658,27 @@ test_that("re-chaining add_anomaly_consistency on a dq_result does not duplicate
 
 test_that("Ethiopia training rules declare skip_ok so the other layout's skip is expected (#374)", {
   schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
-  expect_true(isTRUE(schema$consistency$gender_sum_matches_type_sum$skip_ok))
-  expect_true(isTRUE(schema$consistency$monthly_gender_sum_matches_type_sum$skip_ok))
+  expect_true(isTRUE(schema$consistency[["gender_sum_matches_type_sum"]][["skip_ok"]]))
+  expect_true(isTRUE(schema$consistency[["monthly_gender_sum_matches_type_sum"]][["skip_ok"]]))
+})
+
+test_that("add_anomaly_consistency does not claim a full pass when rules were skipped (#374)", {
+  df <- tibble::tibble(a = 1, b = 2)
+  msgs <- function(schema) paste(cli::ansi_strip(testthat::capture_messages(add_anomaly_consistency(df, schema))), collapse = "\n")
+
+  m_bad <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "gone"))))
+  expect_match(m_bad, "not a full pass")
+  expect_no_match(m_bad, "All consistency checks passed")
+
+  m_ok <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "gone", skip_ok = TRUE))))
+  expect_match(m_ok, "not applicable here, by design")
+  expect_no_match(m_ok, "All consistency checks passed")
+
+  m_clean <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "b"))))
+  expect_match(m_clean, "All consistency checks passed")
+})
+
+test_that("Ethiopia training schema exempts only the ToT sheets from the all-rules-skipped warning (#374)", {
+  schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
+  expect_equal(unlist(schema[["consistency_not_applicable_sheets"]]), c("ToT Regional", "ToT Zonal"))
 })

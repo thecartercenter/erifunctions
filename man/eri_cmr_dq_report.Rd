@@ -56,8 +56,12 @@ it never ran, not because the data passed it. A rule whose schema entry
 says \verb{skip_ok: true} (written for one sheet layout, so skipping on another
 is by design) is shown as a quiet note with \code{expected = TRUE}; any other
 skip is a warning, and means the schema's column aliases probably don't
-match the file. The attribute is dropped by dplyr verbs such as
-\code{filter()}, so read it straight off the returned value.
+match the file. If \emph{every} rule skipped on a sheet, that is always a
+warning (no consistency check ran on it at all), unless the schema lists
+the sheet under \code{consistency_not_applicable_sheets}. Sheets that couldn't
+be read, or have no schema, are warned about separately and are not in
+this list. The attribute is dropped by dplyr verbs such as \code{filter()}, so
+read it straight off the returned value.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

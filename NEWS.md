@@ -17,7 +17,13 @@ with no flags — indistinguishable from "checked and clean".
   check that was skipped because its columns weren't found, per check and sheet. A skip that is
   expected (a check written for a different sheet layout, e.g. ToT sheets) appears as a quiet note; any
   other skip is a warning. If there are no flags but a check could not run, the report no longer says
-  "all clean".
+  "all clean". If a sheet had *no* check run on it at all, that is always a warning (the ToT sheets,
+  which have none by design, are exempted).
+- **This applies to every country, not just Ethiopia.** Only Ethiopia's CDD/CS/HW check is new, but
+  the "could not run" reporting covers every country's `consistency:` rules. If a check for another
+  country can't find its columns you will now see a warning where there was silence before — that is a
+  real finding (that check has not been running there), so pass the sheet name and check name to the
+  DQ schema maintainer. See the new section in the DQ review guide.
 - For scripts: skips are in `attr(flags, "skipped_rules")` (`eri_cmr_dq_report()`), `$skipped_rules`
   (`add_anomaly_consistency()` on a `dq_result`), or `attr(, "skipped_rules")` (on a plain tibble). A
   consistency rule can set `skip_ok: true` in its schema to mark such a skip as by design. Decision

@@ -80,9 +80,16 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
   design (the Ethiopia training rules, ToT sheets). Those skips are recorded (`expected = TRUE`) but shown
   as a quiet note, so a warning always means something unexpected. A rule without `skip_ok` that skips is
   a warning.
-- `cross_consistency:` skips (R/dq_cross.R) are **not** covered yet.
+- If **every** rule in a schema skips on a sheet, no consistency check ran on it at all: that is always
+  reported as unexpected (a warning) regardless of `skip_ok`, unless the schema lists the sheet under a
+  top-level `consistency_not_applicable_sheets:` key (Ethiopia: the ToT sheets). This closes the hole
+  where two layout-specific `skip_ok` rules both lose their columns and the report reads clean.
+- `add_anomaly_consistency()` no longer ends with "All consistency checks passed." when a rule was
+  skipped: it says "not a full pass" (unexpected skips) or "N not applicable here, by design".
+- `cross_consistency:` skips (R/dq_cross.R), sheets that cannot be read or have no schema, and rules that
+  run on a *partial* column match (some summed columns present, others absent) are **not** covered yet.
 
 **Consequences:** no change to which rows are flagged by existing rules. Newly checked Ethiopia
 CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of
 blast radius as the original wiring. Tradeoff accepted: a `skip_ok` rule whose aliases later drift is only
-a quiet note, not a warning, so reviewers should check that each sheet ran at least one rule it should have.
+a quiet note, not a warning, as long as another rule still ran on that sheet (the all-rules-skipped guard only catches the case where none did), so reviewers should still check that each sheet ran the rule it should have.

@@ -986,7 +986,20 @@ add_anomaly_consistency <- function(data, schema) {
   }
 
   n_flags <- nrow(all_flags)
-  if (n_flags == 0) cli::cli_alert_success("All consistency checks passed.")
+  if (n_flags == 0) {
+    n_bad_skips <- sum(!skipped$expected %in% TRUE)
+    if (n_bad_skips > 0L) {
+      cli::cli_alert_warning(
+        "No violations found, but {n_bad_skips} rule{?s} could not be run (above) -- not a full pass."
+      )
+    } else if (nrow(skipped) > 0L) {
+      cli::cli_alert_success(
+        "No violations in the rules that ran ({nrow(skipped)} not applicable here, by design)."
+      )
+    } else {
+      cli::cli_alert_success("All consistency checks passed.")
+    }
+  }
 
   if (is_dq) {
     data$flags         <- dplyr::bind_rows(data$flags, all_flags)
