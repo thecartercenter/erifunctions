@@ -48,7 +48,20 @@ a fresh run -- only set once a flag has been triaged via
 \code{\link[=eri_dq_flag_resolve]{eri_dq_flag_resolve()}} and this function is re-run), \code{cross} (\code{TRUE}
 for a cross-consistency flag, \code{FALSE} for an ordinary single-measure
 flag). Zero rows if every measure (and any cross-consistency rules) is
-clean.
+clean. Any \verb{consistency:} rule that could not be evaluated on a sheet
+(a column it needs wasn't found) is listed in the console after the flags
+and returned in \verb{attr(<result>, "skipped_rules")} (columns \code{sheet},
+\code{rule}, \code{reason}, \code{expected}) -- a skipped rule produced no flags because
+it never ran, not because the data passed it. A rule whose schema entry
+says \verb{skip_ok: true} (written for one sheet layout, so skipping on another
+is by design) is shown as a quiet note with \code{expected = TRUE}; any other
+skip is a warning, and means the schema's column aliases probably don't
+match the file. If \emph{every} rule skipped on a sheet, that is always a
+warning (no consistency check ran on it at all), unless the schema lists
+the sheet under \code{consistency_not_applicable_sheets}. Sheets that couldn't
+be read, or have no schema, are warned about separately and are not in
+this list. The attribute is dropped by dplyr verbs such as \code{filter()}, so
+read it straight off the returned value.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -84,7 +97,7 @@ eri_dq_flag_resolve(flags$flag_id[1], "fixed", note = "corrected upstream")
 }
 }
 \seealso{
-Other CMR pipeline functions: 
+Other CMR pipeline functions:
 \code{\link{eri_approve_cmr}()},
 \code{\link{eri_cmr_last_plan}()},
 \code{\link{eri_dq_review_note}()},

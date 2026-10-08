@@ -13,14 +13,15 @@
 # prefix under one canonical column set works: run_dq_checks() resolves whichever alias
 # matches the data actually present.
 #
-# CDD Training and CS Training's #cddtrn_/#cstrn_ aliases are added STRUCTURALLY, not
-# from a successfully-ingested sheet: Ethiopia's real 202605 submission has the same known
-# duplicate field-code template defect on both sheets ("#cddtrn_male_oct"/"#cstrn_male_oct"
-# each typed twice), which now blocks the whole workbook per ADR-0022 -- eri_ingest_cmr()
-# cannot read either sheet until the shared Carter Center master template is fixed. Their
-# field shape (year/adm0-3/disease/goal/tot_male/tot_fem/tot/achieved) is identical to the
-# other 6 already-verified training types per inst/schemas/cmr/eth.yaml's required_fields,
-# so the alias mapping is exact even though it wasn't recon-verified against live data.
+# CDD Training, CS Training and HW Training were first aliased STRUCTURALLY (before a
+# successful ingest), on the assumption that their field shape matched the other types'
+# (annual tot_male/tot_fem). Ethiopia's real 202608 files show it does not: they carry
+# monthly male_/fem_/tot_ columns and monthly new_/refresh_ columns (no annual tot_male/
+# tot_fem, no new-by-gender split) -- see the trained_*/new_*/refresh_* block and
+# monthly_gender_sum_matches_type_sum below (issue #374). The #cddtrn_/#cstrn_/#hwtrn_
+# tot_male/tot_fem aliases are kept because they are harmless and the template could
+# change. (CDD/CS also had a known duplicate field-code template defect, 202605, which
+# blocks the whole workbook per ADR-0022 -- see issue #315.)
 #
 # ToT Regional/Zonal ("Training of Trainers") are genuinely training data too, folded into
 # this same schema rather than a separate data_type -- eri_split_cmr() already routes them
@@ -188,8 +189,12 @@ columns:
 
   # Monthly new/refresher-by-gender breakdowns (issue #334) -- the real template has
   # NO annual "new total"/"refresher total" roll-up column, only these 12 monthly
-  # blocks per gender, for each of the 8 training types that report new/refresher
-  # (NOT "ToT Regional"/"ToT Zonal", which have no monthly breakdown at all -- see
+  # blocks per gender, for the 5 sheets with this layout (MMDP surgery/patient, Field
+  # Ento, Hope Group Leader, Lab). CDD/CS/HW use a different one -- see the
+  # trained_*/new_*/refresh_* block further down.
+  # (The #cddtrn_/#cstrn_/#hwtrn_ aliases on the columns below are structural and
+  # unused -- those three sheets have no new-by-gender columns.)
+  # (Not "ToT Regional"/"ToT Zonal" -- they have no monthly breakdown at all, see
   # the header note). Added specifically so the gender_sum_matches_type_sum
   # consistency rule below has something to sum against; not otherwise required
   # reading for this schema. Same aliasing pattern as every other column here: each
@@ -389,6 +394,210 @@ columns:
     type: numeric
     aliases: ["#cddtrn_refresh_fem_dec", "#cstrn_refresh_fem_dec", "#dmditrnsx_refresh_fem_dec", "#dmditrnpt_refresh_fem_dec", "#entotrn_refresh_fem_dec", "#hgtrn_refresh_fem_dec", "#hwtrn_refresh_fem_dec", "#labtrn_refresh_fem_dec"]
 
+  # Monthly gender-only and type-only breakdowns (issue #374) -- the CDD, CS and HW
+  # Training sheets use a DIFFERENT layout from the 5 types above: per month they
+  # carry gender-only columns (`#cddtrn_male_jan`, `#cddtrn_fem_jan`, ...) and
+  # type-only columns (`#cddtrn_new_jan`, `#cddtrn_refresh_jan`, ...), with NO annual
+  # `tot_male`/`tot_fem` and NO new-by-gender split. So `gender_sum_matches_type_sum`
+  # below can never run on them (no male_trained/female_trained, no new_male_* at all);
+  # `monthly_gender_sum_matches_type_sum` is the same check for this layout. Found
+  # when Ethiopia's August 2026 CMR had real mismatches that were not flagged.
+  # Only these three prefixes carry this layout (verified against the real 202608
+  # processed files); the other training types' monthly columns are the
+  # `tot_male_<mon>`/`new_male_<mon>` family above.
+  trained_male_jan:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_jan", "#cstrn_male_jan", "#hwtrn_male_jan"]
+  trained_fem_jan:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_jan", "#cstrn_fem_jan", "#hwtrn_fem_jan"]
+  trained_male_feb:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_feb", "#cstrn_male_feb", "#hwtrn_male_feb"]
+  trained_fem_feb:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_feb", "#cstrn_fem_feb", "#hwtrn_fem_feb"]
+  trained_male_mar:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_mar", "#cstrn_male_mar", "#hwtrn_male_mar"]
+  trained_fem_mar:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_mar", "#cstrn_fem_mar", "#hwtrn_fem_mar"]
+  trained_male_apr:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_apr", "#cstrn_male_apr", "#hwtrn_male_apr"]
+  trained_fem_apr:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_apr", "#cstrn_fem_apr", "#hwtrn_fem_apr"]
+  trained_male_may:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_may", "#cstrn_male_may", "#hwtrn_male_may"]
+  trained_fem_may:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_may", "#cstrn_fem_may", "#hwtrn_fem_may"]
+  trained_male_jun:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_jun", "#cstrn_male_jun", "#hwtrn_male_jun"]
+  trained_fem_jun:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_jun", "#cstrn_fem_jun", "#hwtrn_fem_jun"]
+  trained_male_jul:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_jul", "#cstrn_male_jul", "#hwtrn_male_jul"]
+  trained_fem_jul:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_jul", "#cstrn_fem_jul", "#hwtrn_fem_jul"]
+  trained_male_aug:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_aug", "#cstrn_male_aug", "#hwtrn_male_aug"]
+  trained_fem_aug:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_aug", "#cstrn_fem_aug", "#hwtrn_fem_aug"]
+  trained_male_sep:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_sep", "#cstrn_male_sep", "#hwtrn_male_sep"]
+  trained_fem_sep:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_sep", "#cstrn_fem_sep", "#hwtrn_fem_sep"]
+  trained_male_oct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_oct", "#cstrn_male_oct", "#hwtrn_male_oct"]
+  trained_fem_oct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_oct", "#cstrn_fem_oct", "#hwtrn_fem_oct"]
+  trained_male_nov:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_nov", "#cstrn_male_nov", "#hwtrn_male_nov"]
+  trained_fem_nov:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_nov", "#cstrn_fem_nov", "#hwtrn_fem_nov"]
+  trained_male_dec:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_male_dec", "#cstrn_male_dec", "#hwtrn_male_dec"]
+  trained_fem_dec:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_fem_dec", "#cstrn_fem_dec", "#hwtrn_fem_dec"]
+  new_jan:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_jan", "#cstrn_new_jan", "#hwtrn_new_jan"]
+  new_feb:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_feb", "#cstrn_new_feb", "#hwtrn_new_feb"]
+  new_mar:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_mar", "#cstrn_new_mar", "#hwtrn_new_mar"]
+  new_apr:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_apr", "#cstrn_new_apr", "#hwtrn_new_apr"]
+  new_may:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_may", "#cstrn_new_may", "#hwtrn_new_may"]
+  new_jun:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_jun", "#cstrn_new_jun", "#hwtrn_new_jun"]
+  new_jul:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_jul", "#cstrn_new_jul", "#hwtrn_new_jul"]
+  new_aug:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_aug", "#cstrn_new_aug", "#hwtrn_new_aug"]
+  new_sep:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_sep", "#cstrn_new_sep", "#hwtrn_new_sep"]
+  new_oct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_oct", "#cstrn_new_oct", "#hwtrn_new_oct"]
+  new_nov:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_nov", "#cstrn_new_nov", "#hwtrn_new_nov"]
+  new_dec:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_new_dec", "#cstrn_new_dec", "#hwtrn_new_dec"]
+  refresh_jan:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_jan", "#cstrn_refresh_jan", "#hwtrn_refresh_jan"]
+  refresh_feb:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_feb", "#cstrn_refresh_feb", "#hwtrn_refresh_feb"]
+  refresh_mar:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_mar", "#cstrn_refresh_mar", "#hwtrn_refresh_mar"]
+  refresh_apr:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_apr", "#cstrn_refresh_apr", "#hwtrn_refresh_apr"]
+  refresh_may:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_may", "#cstrn_refresh_may", "#hwtrn_refresh_may"]
+  refresh_jun:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_jun", "#cstrn_refresh_jun", "#hwtrn_refresh_jun"]
+  refresh_jul:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_jul", "#cstrn_refresh_jul", "#hwtrn_refresh_jul"]
+  refresh_aug:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_aug", "#cstrn_refresh_aug", "#hwtrn_refresh_aug"]
+  refresh_sep:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_sep", "#cstrn_refresh_sep", "#hwtrn_refresh_sep"]
+  refresh_oct:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_oct", "#cstrn_refresh_oct", "#hwtrn_refresh_oct"]
+  refresh_nov:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_nov", "#cstrn_refresh_nov", "#hwtrn_refresh_nov"]
+  refresh_dec:
+    required: false
+    type: numeric
+    aliases: ["#cddtrn_refresh_dec", "#cstrn_refresh_dec", "#hwtrn_refresh_dec"]
+
 # Cross-check (issue #334): the sum of male_trained + female_trained (the annual,
 # already-captured totals) should equal the sum of every monthly new + refresher
 # column above. Reported by Emalee (relayed by Nishant, 2026-08-27): "We've seen
@@ -397,13 +606,22 @@ columns:
 # engine's single-lhs/single-rhs consistency: block can't express "sum of many
 # columns vs sum of many other columns" on its own.
 #
-# Applies only to the 8 training types with a monthly new/refresher breakdown; a
+# Applies only to the 5 training types with a monthly new/refresher-by-gender
+# breakdown (CDD/CS/HW use a different layout and are covered by
+# monthly_gender_sum_matches_type_sum below, issue #374); a
 # row from "ToT Regional"/"ToT Zonal" (no such columns at all) has every rhs_sum
 # column absent/NA, so add_anomaly_consistency()'s "row where every column on a
 # summed side is NA stays NA, not fabricated as 0" rule correctly skips it rather
 # than flagging every ToT row as a false mismatch.
+#
+# Sheets with no monthly new/refresher columns at all, so neither rule below can run
+# on them. eri_cmr_dq_report() treats "every rule skipped on a sheet" as a warning
+# (no consistency check ran) EXCEPT for sheets listed here (issue #374).
+consistency_not_applicable_sheets: ["ToT Regional", "ToT Zonal"]
+
 consistency:
   gender_sum_matches_type_sum:
+    skip_ok: true   # by-gender layout only; skipping on the other sheets is by design
     lhs_sum: [male_trained, female_trained]
     op: "=="
     rhs_sum:
@@ -455,4 +673,61 @@ consistency:
       - refresh_fem_oct
       - refresh_fem_nov
       - refresh_fem_dec
-    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly, all 8 training types)"
+    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly, MMDP/Field Ento/Hope Group Leader/Lab Training)"
+
+  # Same check as above for the CDD/CS/HW layout (issue #374): every month's
+  # male + female trained should equal that month's new + refresher trained.
+  monthly_gender_sum_matches_type_sum:
+    skip_ok: true   # CDD/CS/HW layout only; skipping on the other sheets is by design
+    lhs_sum:
+      - trained_male_jan
+      - trained_male_feb
+      - trained_male_mar
+      - trained_male_apr
+      - trained_male_may
+      - trained_male_jun
+      - trained_male_jul
+      - trained_male_aug
+      - trained_male_sep
+      - trained_male_oct
+      - trained_male_nov
+      - trained_male_dec
+      - trained_fem_jan
+      - trained_fem_feb
+      - trained_fem_mar
+      - trained_fem_apr
+      - trained_fem_may
+      - trained_fem_jun
+      - trained_fem_jul
+      - trained_fem_aug
+      - trained_fem_sep
+      - trained_fem_oct
+      - trained_fem_nov
+      - trained_fem_dec
+    op: "=="
+    rhs_sum:
+      - new_jan
+      - new_feb
+      - new_mar
+      - new_apr
+      - new_may
+      - new_jun
+      - new_jul
+      - new_aug
+      - new_sep
+      - new_oct
+      - new_nov
+      - new_dec
+      - refresh_jan
+      - refresh_feb
+      - refresh_mar
+      - refresh_apr
+      - refresh_may
+      - refresh_jun
+      - refresh_jul
+      - refresh_aug
+      - refresh_sep
+      - refresh_oct
+      - refresh_nov
+      - refresh_dec
+    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly, CDD/CS/HW Training)"

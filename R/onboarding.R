@@ -705,9 +705,9 @@ eri_schema_validate <- function(schema_path) {
   }
 
   # Consistency rule checks
-  if (!is.null(schema$consistency)) {
-    for (rule_name in names(schema$consistency)) {
-      rule <- schema$consistency[[rule_name]]
+  if (!is.null(schema[["consistency", exact = TRUE]])) {
+    for (rule_name in names(schema[["consistency", exact = TRUE]])) {
+      rule <- schema[["consistency", exact = TRUE]][[rule_name]]
       for (side in c("lhs", "rhs")) {
         val <- rule[[side]]
         if (!is.null(val) && !val %in% col_names) {

@@ -855,13 +855,26 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #' Works on a plain tibble (returns a tibble of violations) or a `dq_result`
 #' (appends violations to `$flags`).
 #'
+#' A rule that cannot be evaluated at all (a column it needs is missing from
+#' the data) is skipped with a console message **and recorded**, so "the rule
+#' did not run" can be told apart from "the rule ran and found nothing": on a
+#' `dq_result` the skips are appended to `$skipped_rules` (columns `rule`,
+#' `reason`, `expected`); on a plain tibble they are returned in
+#' `attr(<result>, "skipped_rules")` (dplyr verbs such as `filter()` can drop
+#' that attribute -- read it straight off the returned value). A rule written
+#' for one sheet layout can set `skip_ok: true` to say that skipping on another
+#' layout is by design; it is still recorded, with `expected = TRUE`, but
+#' [eri_cmr_dq_report()] reports it as a quiet note rather than a warning.
+#' [eri_cmr_dq_report()] lists the skips after the flags.
+#'
 #' @param data A tibble or `dq_result` object.
 #' @param schema Named list from [load_dq_schema()].
 #'
 #' @returns A tibble of violations with columns `row`, `column`, `value`, and
 #'   `issue` (includes the rule name and message). If the input is a `dq_result`,
 #'   violations are appended to `$flags` and the updated `dq_result` is returned.
-#'   Returns an empty tibble when all rules pass.
+#'   Returns an empty tibble when all rules pass. Skipped rules are reported as
+#'   described above.
 #' @examples
 #' \dontrun{
 #' schema <- load_dq_schema("haiti", "malaria")
@@ -872,16 +885,33 @@ add_anomaly_consistency <- function(data, schema) {
   is_dq <- inherits(data, "dq_result")
   df    <- if (is_dq) data$data else tibble::as_tibble(data)
 
-  rules <- schema$consistency %||% list()
+  rules <- schema[["consistency", exact = TRUE]] %||% list()
   if (length(rules) == 0) {
     cli::cli_alert_info("No consistency rules defined in schema.")
-    if (is_dq) return(invisible(data))
-    return(tibble::tibble(row    = integer(), column = character(),
-                          value  = character(), issue  = character()))
+    no_skips <- tibble::tibble(rule = character(), reason = character(), expected = logical())
+    if (is_dq) {
+      data$skipped_rules <- dplyr::bind_rows(data$skipped_rules, no_skips)
+      return(invisible(data))
+    }
+    empty <- tibble::tibble(row    = integer(), column = character(),
+                            value  = character(), issue  = character())
+    attr(empty, "skipped_rules") <- no_skips
+    return(empty)
+  }
+
+  if (is.null(names(rules)) || any(!nzchar(names(rules)))) {
+    cli::cli_abort(c(
+      "Every {.field consistency} rule in the schema needs a name.",
+      "i" = "Write {.code consistency:} as a named map (rule_name: {{lhs, op, rhs}}), not a list."
+    ))
   }
 
   all_flags <- tibble::tibble(row    = integer(), column = character(),
                                value  = character(), issue  = character())
+  # Rules that could not be evaluated at all (a column missing, an unsummable
+  # column). Recorded -- not just printed -- so a caller can tell "rule did
+  # not run" from "rule ran and passed" (issue #374).
+  skipped   <- tibble::tibble(rule = character(), reason = character(), expected = logical())
 
   for (rule_name in names(rules)) {
     rule <- rules[[rule_name]]
@@ -897,6 +927,7 @@ add_anomaly_consistency <- function(data, schema) {
     rule_rhs     <- rule[["rhs", exact = TRUE]]
     rule_rhs_sum <- rule[["rhs_sum", exact = TRUE]]
     rule_rhs_val <- rule[["rhs_value", exact = TRUE]]
+    rule_skip_ok <- isTRUE(rule[["skip_ok", exact = TRUE]])
 
     lhs      <- .dq_consistency_side(df, rule_lhs, rule_lhs_sum)
     lhs_desc <- rule_lhs %||% paste0("sum(", paste(unlist(rule_lhs_sum), collapse = " + "), ")")
@@ -904,6 +935,9 @@ add_anomaly_consistency <- function(data, schema) {
       cli::cli_alert_warning(
         "Consistency rule {.val {rule_name}}: {.field lhs}/{.field lhs_sum} column(s) not found, skipping."
       )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = "lhs/lhs_sum column(s) not found or not summable",
+        expected = rule_skip_ok))
       next
     }
 
@@ -918,6 +952,9 @@ add_anomaly_consistency <- function(data, schema) {
       cli::cli_alert_warning(
         "Consistency rule {.val {rule_name}}: no valid {.arg rhs}/{.arg rhs_sum}/{.arg rhs_value}, skipping."
       )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = "rhs/rhs_sum column(s) not found or not summable",
+        expected = rule_skip_ok))
       next
     }
 
@@ -956,12 +993,31 @@ add_anomaly_consistency <- function(data, schema) {
   }
 
   n_flags <- nrow(all_flags)
-  if (n_flags == 0) cli::cli_alert_success("All consistency checks passed.")
+  if (n_flags == 0) {
+    n_bad_skips <- sum(!skipped$expected %in% TRUE)
+    if (nrow(skipped) >= length(rules)) {
+      # Not a green tick: nothing was actually checked. How serious that is
+      # (e.g. ToT sheets have no applicable rule by design) is eri_cmr_dq_report()'s call.
+      cli::cli_alert_info("None of the {length(rules)} consistency rule{?s} could be run on this data (see above) -- nothing was checked.")
+    } else if (n_bad_skips > 0L) {
+      cli::cli_alert_warning(
+        "No violations found, but {n_bad_skips} rule{?s} could not be run (above) -- not a full pass."
+      )
+    } else if (nrow(skipped) > 0L) {
+      cli::cli_alert_success(
+        "No violations in the rules that ran ({nrow(skipped)} not applicable here, by design)."
+      )
+    } else {
+      cli::cli_alert_success("All consistency checks passed.")
+    }
+  }
 
   if (is_dq) {
-    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    data$flags         <- dplyr::bind_rows(data$flags, all_flags)
+    data$skipped_rules <- dplyr::distinct(dplyr::bind_rows(data$skipped_rules, skipped))
     return(invisible(data))
   }
+  attr(all_flags, "skipped_rules") <- skipped
   all_flags
 }
 

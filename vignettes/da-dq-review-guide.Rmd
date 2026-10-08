@@ -326,6 +326,30 @@ That's the whole session: two flags, two different resolutions, a handback file,
 without calling `eri_dq_flag_resolve()`, `eri_logs_resolve()`, or `eri_approve_cmr()` yourself even
 once.
 
+### If the report says a data check "could not be run" {#skipped-checks}
+
+Some checks compare columns against each other (for example "male + female trained must equal
+new + refresher trained"). If a sheet doesn't have the columns a check needs, that check can't run,
+and the report tells you instead of staying quiet. For example (the check and sheet names here are illustrative):
+
+```
+! 1 data check could not be run on some sheets (the columns it needs weren't found):
+  "positives_le_tested": "RB Treatment" and "LF Treatment"
+ℹ No flags from a check that couldn't run does not mean the data passed. If this is unexpected,
+  the schema's column names probably don't match the file -- tell the DQ schema maintainer.
+```
+
+A check that couldn't run produced **no flags because it never ran**, not because your data was
+fine -- so don't read the absence of flags as an all-clear for that sheet. Two things you may also
+see:
+
+- `ℹ Not applicable to some sheets (by design ...)` -- a check written for a different sheet layout.
+  Nothing to do.
+- `... but N checks could not be run (above), so this is not a full all-clear` instead of
+  `all clean` -- at least one check that *should* have run didn't.
+
+The same list is available to scripts as `attr(flags, "skipped_rules")`.
+
 ## Cleaning up {#cleanup}
 
 Everything above lives under `atlantis`'s own namespace, so it's safe to leave -- but if you were
