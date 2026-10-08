@@ -1747,3 +1747,85 @@ test_that("every country training schema with the monthly sum rule is internally
     expect_equal(nrow(res$skipped_rules), 0L, info = cc)
   }
 })
+
+#### Alias-completeness guards for the monthly gender-vs-type rules (#374) ####
+
+.monthly_cols_std <- function() {
+  as.vector(t(outer(c("new_male", "new_fem", "refresh_male", "refresh_fem"),
+                    c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"), paste, sep = "_")))
+}
+
+# For every prefix, builds a balanced one-row-plus-48 data frame: row 1 balanced, row k+1 has column
+# k bumped by 1 (so lhs != rhs). Every one of those 48 rows must be flagged and row 1 must not, which
+# proves EVERY monthly column resolves through its alias AND is in the rule's sums, with the right op.
+.expect_every_column_wired <- function(schema, rule_name, prefixes, cols, lhs_cols, label) {
+  for (p in prefixes) {
+    base <- stats::setNames(as.list(rep(1, length(cols))), paste0(p, "_", cols))
+    for (lc in lhs_cols) base[[lc(p)]] <- 24
+    df <- tibble::as_tibble(base)
+    df <- df[rep(1L, length(cols) + 1L), ]
+    for (k in seq_along(cols)) df[[paste0(p, "_", cols[k])]][k + 1L] <- 2
+    res <- suppressMessages(add_anomaly_consistency(suppressMessages(run_dq_checks(df, schema)), schema))
+    f <- res$flags[grepl(paste0("[", rule_name, "]"), res$flags$issue, fixed = TRUE), ]
+    expect_setequal(f$row, 2:(length(cols) + 1L))
+    expect_false(rule_name %in% res$skipped_rules$rule, info = paste(label, p))
+  }
+}
+
+test_that("every country's gender_sum_matches_type_sum is wired for all 48 columns and all prefixes (#374)", {
+  expected <- .monthly_cols_std()
+  for (cc in c("eth", "ht", "nga", "sdn", "ssd", "uga")) {
+    schema <- yaml::read_yaml(system.file("schemas", paste0(cc, "_rblf_programmatic_training.yaml"), package = "erifunctions"))
+    rule <- schema$consistency[["gender_sum_matches_type_sum"]]
+    expect_equal(rule$op, "==", info = cc)
+    expect_equal(unlist(rule$lhs_sum), c("male_trained", "female_trained"), info = cc)
+    expect_setequal(unlist(rule$rhs_sum), expected)
+    expect_equal(anyDuplicated(unlist(rule$rhs_sum)), 0L, info = cc)
+
+    # male/female annual prefixes agree, and every monthly column carries exactly that prefix set.
+    mp <- sub("_tot_male$", "", grep("_tot_male$", unlist(schema$columns$male_trained$aliases), value = TRUE))
+    fp <- sub("_tot_fem$",  "", grep("_tot_fem$",  unlist(schema$columns$female_trained$aliases), value = TRUE))
+    expect_setequal(mp, fp)
+    for (cn in expected) {
+      al <- unlist(schema$columns[[cn]]$aliases)
+      expect_gt(length(al), 0L)
+      if (cc != "eth") expect_setequal(al, paste0(mp, "_", cn))
+    }
+
+    # Ethiopia's standard-layout rule only applies to the prefixes that actually carry the by-gender
+    # monthly columns (its CDD/CS/HW tabs use the other rule); every other country covers all its prefixes.
+    pfx <- if (cc == "eth") sub("_new_male_jan$", "", unlist(schema$columns$new_male_jan$aliases)) else mp
+    pfx <- setdiff(pfx, if (cc == "eth") c("#cddtrn", "#cstrn", "#hwtrn") else character())
+    .expect_every_column_wired(schema, "gender_sum_matches_type_sum", pfx, expected,
+                               list(function(p) paste0(p, "_tot_male"), function(p) paste0(p, "_tot_fem")), cc)
+  }
+})
+
+test_that("Ethiopia monthly_gender_sum_matches_type_sum is wired for all 48 columns on CDD/CS/HW (#374)", {
+  schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
+  rule <- schema$consistency[["monthly_gender_sum_matches_type_sum"]]
+  mons <- c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+  cols <- c(paste0("male_", mons), paste0("fem_", mons), paste0("new_", mons), paste0("refresh_", mons))
+  expect_equal(rule$op, "==")
+  expect_setequal(unlist(rule$lhs_sum), c(paste0("trained_male_", mons), paste0("trained_fem_", mons)))
+  expect_setequal(unlist(rule$rhs_sum), c(paste0("new_", mons), paste0("refresh_", mons)))
+
+  # Balanced row: every column 1 => gender side 24, type side 24. Bump column k => unbalanced.
+  for (p in c("#cddtrn", "#cstrn", "#hwtrn")) {
+    base <- stats::setNames(as.list(rep(1, length(cols))), paste0(p, "_", cols))
+    df <- tibble::as_tibble(base)[rep(1L, length(cols) + 1L), ]
+    for (k in seq_along(cols)) df[[paste0(p, "_", cols[k])]][k + 1L] <- 2
+    res <- suppressMessages(add_anomaly_consistency(suppressMessages(run_dq_checks(df, schema)), schema))
+    f <- res$flags[grepl("[monthly_gender_sum_matches_type_sum]", res$flags$issue, fixed = TRUE), ]
+    expect_setequal(f$row, 2:(length(cols) + 1L))
+    expect_true("gender_sum_matches_type_sum" %in% res$skipped_rules$rule)
+    expect_false("monthly_gender_sum_matches_type_sum" %in% res$skipped_rules$rule)
+  }
+})
+
+test_that("the 'not applicable' tier is an info line, not a warning (#374)", {
+  sk <- tibble::tibble(sheet = "ToT Regional", rule = "r", reason = "x", expected = TRUE)
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(.eri_cmr_report_skips(sk))), collapse = "\n")
+  expect_match(msgs, paste0(cli::symbol$info, " Not applicable to some sheets"), fixed = TRUE)
+  expect_no_match(msgs, "could not be run")
+})
