@@ -1666,11 +1666,13 @@ test_that("add_anomaly_consistency does not claim a full pass when rules were sk
   df <- tibble::tibble(a = 1, b = 2)
   msgs <- function(schema) paste(cli::ansi_strip(testthat::capture_messages(add_anomaly_consistency(df, schema))), collapse = "\n")
 
-  m_bad <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "gone"))))
+  m_bad <- msgs(list(consistency = list(ok = list(lhs = "a", op = "<=", rhs = "b"),
+                                         r  = list(lhs = "a", op = "<=", rhs = "gone"))))
   expect_match(m_bad, "not a full pass")
   expect_no_match(m_bad, "All consistency checks passed")
 
-  m_ok <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "gone", skip_ok = TRUE))))
+  m_ok <- msgs(list(consistency = list(ok = list(lhs = "a", op = "<=", rhs = "b"),
+                                        r  = list(lhs = "a", op = "<=", rhs = "gone", skip_ok = TRUE))))
   expect_match(m_ok, "not applicable here, by design")
   expect_no_match(m_ok, "All consistency checks passed")
 
@@ -1681,4 +1683,28 @@ test_that("add_anomaly_consistency does not claim a full pass when rules were sk
 test_that("Ethiopia training schema exempts only the ToT sheets from the all-rules-skipped warning (#374)", {
   schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
   expect_equal(unlist(schema[["consistency_not_applicable_sheets"]]), c("ToT Regional", "ToT Zonal"))
+})
+
+test_that("add_anomaly_consistency says nothing was checked when no rule could run, not a green tick (#374)", {
+  df <- tibble::tibble(a = 1)
+  m <- paste(cli::ansi_strip(testthat::capture_messages(
+    add_anomaly_consistency(df, list(consistency = list(r1 = list(lhs = "a", op = "<=", rhs = "gone"),
+                                                         r2 = list(lhs = "x", op = "<=", rhs = "y", skip_ok = TRUE))))
+  )), collapse = "\n")
+  expect_match(m, "None of the 2 consistency rules could be run")
+  expect_no_match(m, "All consistency checks passed|No violations in the rules that ran")
+})
+
+test_that("an unnamed consistency list is rejected loudly instead of silently passing (#374)", {
+  expect_error(
+    add_anomaly_consistency(tibble::tibble(a = 1), list(consistency = list(list(lhs = "a", op = "<=", rhs = "a")))),
+    "needs a name"
+  )
+})
+
+test_that("a schema with consistency_not_applicable_sheets but no consistency: block does not partial-match (#374)", {
+  s <- list(consistency_not_applicable_sheets = c("ToT Regional"))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1), s))
+  expect_equal(nrow(out), 0L)
+  expect_equal(nrow(attr(out, "skipped_rules")), 0L)
 })

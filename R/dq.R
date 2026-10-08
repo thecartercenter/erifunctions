@@ -885,7 +885,7 @@ add_anomaly_consistency <- function(data, schema) {
   is_dq <- inherits(data, "dq_result")
   df    <- if (is_dq) data$data else tibble::as_tibble(data)
 
-  rules <- schema$consistency %||% list()
+  rules <- schema[["consistency", exact = TRUE]] %||% list()
   if (length(rules) == 0) {
     cli::cli_alert_info("No consistency rules defined in schema.")
     no_skips <- tibble::tibble(rule = character(), reason = character(), expected = logical())
@@ -897,6 +897,13 @@ add_anomaly_consistency <- function(data, schema) {
                             value  = character(), issue  = character())
     attr(empty, "skipped_rules") <- no_skips
     return(empty)
+  }
+
+  if (is.null(names(rules)) || any(!nzchar(names(rules)))) {
+    cli::cli_abort(c(
+      "Every {.field consistency} rule in the schema needs a name.",
+      "i" = "Write {.code consistency:} as a named map (rule_name: {{lhs, op, rhs}}), not a list."
+    ))
   }
 
   all_flags <- tibble::tibble(row    = integer(), column = character(),
@@ -988,7 +995,11 @@ add_anomaly_consistency <- function(data, schema) {
   n_flags <- nrow(all_flags)
   if (n_flags == 0) {
     n_bad_skips <- sum(!skipped$expected %in% TRUE)
-    if (n_bad_skips > 0L) {
+    if (nrow(skipped) >= length(rules)) {
+      # Not a green tick: nothing was actually checked. How serious that is
+      # (e.g. ToT sheets have no applicable rule by design) is eri_cmr_dq_report()'s call.
+      cli::cli_alert_info("None of the {length(rules)} consistency rule{?s} could be run on this data (see above) -- nothing was checked.")
+    } else if (n_bad_skips > 0L) {
       cli::cli_alert_warning(
         "No violations found, but {n_bad_skips} rule{?s} could not be run (above) -- not a full pass."
       )

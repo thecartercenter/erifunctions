@@ -330,11 +330,11 @@ once.
 
 Some checks compare columns against each other (for example "male + female trained must equal
 new + refresher trained"). If a sheet doesn't have the columns a check needs, that check can't run,
-and the report tells you instead of staying quiet:
+and the report tells you instead of staying quiet. For example (the check and sheet names here are illustrative):
 
 ```
 ! 1 data check could not be run on some sheets (the columns it needs weren't found):
-  "gender_sum_matches_type_sum": "CDD Training", "CS Training", and "HW Training"
+  "positives_le_tested": "RB Treatment" and "LF Treatment"
 ℹ No flags from a check that couldn't run does not mean the data passed. If this is unexpected,
   the schema's column names probably don't match the file -- tell the DQ schema maintainer.
 ```

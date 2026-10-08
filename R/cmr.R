@@ -1168,7 +1168,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     # Guarded on the block actually being present so a schema with none
     # doesn't print an unconditional "No consistency rules defined" notice on
     # every single DQ report run.
-    if (!is.null(schema$consistency)) {
+    if (!is.null(schema[["consistency", exact = TRUE]])) {
       result <- add_anomaly_consistency(result, schema)
       sk <- result$skipped_rules
       if (NROW(sk) > 0L) {
@@ -1178,7 +1178,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
         # Ethiopia's ToT sheets, which have no monthly columns). Otherwise two
         # layout-specific skip_ok rules could both lose their columns and the
         # report would still read as clean (issue #374).
-        if (nrow(sk) >= length(schema$consistency) &&
+        if (nrow(sk) >= length(schema[["consistency", exact = TRUE]]) &&
             !(p$sheet %in% unlist(schema[["consistency_not_applicable_sheets", exact = TRUE]]))) {
           sk$expected <- FALSE
           sk$reason   <- paste0(sk$reason, "; no consistency rule ran on this sheet")

@@ -77,7 +77,7 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
 - `eri_cmr_dq_report()` aggregates them per rule and sheet, prints them after the flags, returns them as
   `attr(<result>, "skipped_rules")`, and does not print "all clean" when an unexpected skip exists.
 - A rule may declare `skip_ok: true` when it is written for one sheet layout and skipping on another is by
-  design (the Ethiopia training rules, ToT sheets). Those skips are recorded (`expected = TRUE`) but shown
+  design (`skip_ok` on the two Ethiopia training rules; the ToT sheets are covered separately, below). Those skips are recorded (`expected = TRUE`) but shown
   as a quiet note, so a warning always means something unexpected. A rule without `skip_ok` that skips is
   a warning.
 - If **every** rule in a schema skips on a sheet, no consistency check ran on it at all: that is always
@@ -92,4 +92,4 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
 **Consequences:** no change to which rows are flagged by existing rules. Newly checked Ethiopia
 CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of
 blast radius as the original wiring. Tradeoff accepted: a `skip_ok` rule whose aliases later drift is only
-a quiet note, not a warning, as long as another rule still ran on that sheet (the all-rules-skipped guard only catches the case where none did), so reviewers should still check that each sheet ran the rule it should have.
+a quiet note, not a warning, as long as another rule still ran on that sheet. The all-rules-skipped guard only catches the case where none did, so reviewers should still check that each sheet ran the rule it should have.
