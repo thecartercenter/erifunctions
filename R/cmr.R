@@ -1108,7 +1108,13 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   [eri_dq_flag_resolve()] and this function is re-run), `cross` (`TRUE`
 #'   for a cross-consistency flag, `FALSE` for an ordinary single-measure
 #'   flag). Zero rows if every measure (and any cross-consistency rules) is
-#'   clean.
+#'   clean. Any `consistency:` rule that could not be evaluated on a sheet
+#'   (a column it needs wasn't found) is listed in the console after the flags
+#'   and returned in `attr(<result>, "skipped_rules")` (columns `sheet`,
+#'   `rule`, `reason`) -- a skipped rule produced no flags because it never
+#'   ran, not because the data passed it. Some skips are expected (a rule
+#'   written for one sheet layout skips on another); an unexpected one means
+#'   the schema's column aliases don't match the file.
 #' @examples
 #' \dontrun{
 #' flags <- eri_cmr_dq_report("sdn", "202605")
@@ -1124,6 +1130,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
 
   rows   <- list()
   tables <- list()
+  skips  <- list()
   for (i in seq_len(nrow(plan))) {
     p <- plan[i, ]
     staged <- tryCatch(
@@ -1156,6 +1163,12 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     # every single DQ report run.
     if (!is.null(schema$consistency)) {
       result <- add_anomaly_consistency(result, schema)
+      if (NROW(result$skipped_rules) > 0L) {
+        skips[[length(skips) + 1L]] <- dplyr::bind_cols(
+          tibble::tibble(sheet = rep(p$sheet, nrow(result$skipped_rules))),
+          result$skipped_rules
+        )
+      }
     }
     tables[[length(tables) + 1L]] <- list(sheet = p$sheet, disease = p$disease,
                                           data_type = p$data_type, data = result$data)
@@ -1243,17 +1256,47 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     }
   }
 
+  skipped <- if (length(skips) > 0L) dplyr::bind_rows(skips) else
+    tibble::tibble(sheet = character(), rule = character(), reason = character())
+  .eri_cmr_report_skips(skipped)
+
   if (length(rows) == 0L) {
-    cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
-    return(tibble::tibble(
+    if (nrow(skipped) == 0L) {
+      cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
+    } else {
+      cli::cli_alert_warning(
+        "No DQ flags across {nrow(plan)} measure{?s} -- but {nrow(skipped)} rule check{?s} did not run (above), so this is not a full all-clear."
+      )
+    }
+    out <- tibble::tibble(
       sheet = character(0), disease = character(0), data_type = character(0),
       log_path = character(0), flag_id = character(0), row = integer(0),
       excel_row = integer(0), column = character(0), value = character(0),
       issue = character(0), status = character(0), note = character(0), cross = logical(0)
-    ))
+    )
+  } else {
+    out <- dplyr::bind_rows(rows)
   }
+  attr(out, "skipped_rules") <- skipped
+  out
+}
 
-  dplyr::bind_rows(rows)
+# Prints the consolidated "these consistency rules did not run" block that
+# eri_cmr_dq_report() shows after its flags (issue #374). One bullet per rule,
+# naming every sheet it was skipped on -- so a skip that is expected (a rule
+# written for one sheet layout, skipped on another) and one that isn't (the
+# schema's aliases don't match the file) are both visible, never mistaken for
+# "ran and passed".
+.eri_cmr_report_skips <- function(skipped) {
+  if (nrow(skipped) == 0L) return(invisible(NULL))
+  cli::cli_alert_warning(
+    "{length(unique(skipped$rule))} consistency rule{?s} did not run on some sheets (columns not found) -- no flags from them means they never ran, not that the data passed:"
+  )
+  for (rule in unique(skipped$rule)) {
+    sheets <- skipped$sheet[skipped$rule == rule]
+    cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+  }
+  invisible(NULL)
 }
 
 #' Stage CMR monthly report files into the data/ blob

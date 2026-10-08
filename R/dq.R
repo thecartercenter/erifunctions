@@ -855,13 +855,22 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #' Works on a plain tibble (returns a tibble of violations) or a `dq_result`
 #' (appends violations to `$flags`).
 #'
+#' A rule that cannot be evaluated at all (a column it needs is missing from
+#' the data) is skipped with a console message **and recorded**, so "the rule
+#' did not run" can be told apart from "the rule ran and found nothing": on a
+#' `dq_result` the skips are appended to `$skipped_rules` (columns `rule`,
+#' `reason`); on a plain tibble they are returned in
+#' `attr(<result>, "skipped_rules")`. [eri_cmr_dq_report()] lists them after
+#' the flags.
+#'
 #' @param data A tibble or `dq_result` object.
 #' @param schema Named list from [load_dq_schema()].
 #'
 #' @returns A tibble of violations with columns `row`, `column`, `value`, and
 #'   `issue` (includes the rule name and message). If the input is a `dq_result`,
 #'   violations are appended to `$flags` and the updated `dq_result` is returned.
-#'   Returns an empty tibble when all rules pass.
+#'   Returns an empty tibble when all rules pass. Skipped rules are reported as
+#'   described above.
 #' @examples
 #' \dontrun{
 #' schema <- load_dq_schema("haiti", "malaria")
@@ -882,6 +891,10 @@ add_anomaly_consistency <- function(data, schema) {
 
   all_flags <- tibble::tibble(row    = integer(), column = character(),
                                value  = character(), issue  = character())
+  # Rules that could not be evaluated at all (a column missing, an unsummable
+  # column). Recorded -- not just printed -- so a caller can tell "rule did
+  # not run" from "rule ran and passed" (issue #374).
+  skipped   <- tibble::tibble(rule = character(), reason = character())
 
   for (rule_name in names(rules)) {
     rule <- rules[[rule_name]]
@@ -904,6 +917,8 @@ add_anomaly_consistency <- function(data, schema) {
       cli::cli_alert_warning(
         "Consistency rule {.val {rule_name}}: {.field lhs}/{.field lhs_sum} column(s) not found, skipping."
       )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = "lhs/lhs_sum column(s) not found or not summable"))
       next
     }
 
@@ -918,6 +933,8 @@ add_anomaly_consistency <- function(data, schema) {
       cli::cli_alert_warning(
         "Consistency rule {.val {rule_name}}: no valid {.arg rhs}/{.arg rhs_sum}/{.arg rhs_value}, skipping."
       )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = "rhs/rhs_sum column(s) not found or not summable"))
       next
     }
 
@@ -959,9 +976,11 @@ add_anomaly_consistency <- function(data, schema) {
   if (n_flags == 0) cli::cli_alert_success("All consistency checks passed.")
 
   if (is_dq) {
-    data$flags <- dplyr::bind_rows(data$flags, all_flags)
+    data$flags         <- dplyr::bind_rows(data$flags, all_flags)
+    data$skipped_rules <- dplyr::bind_rows(data$skipped_rules, skipped)
     return(invisible(data))
   }
+  attr(all_flags, "skipped_rules") <- skipped
   all_flags
 }
 

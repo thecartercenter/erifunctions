@@ -1574,3 +1574,52 @@ test_that(".eri_dq_schema_diff reports a wholly new sub-block as added, not a cr
   out <- .eri_dq_schema_diff(base, edit)
   expect_true(any(grepl("^columns.b: added", out)))
 })
+
+#### Tests for skipped-rule visibility (issue #374) ####
+
+test_that("add_anomaly_consistency records a rule it could not evaluate, on a tibble and on a dq_result", {
+  schema <- list(consistency = list(
+    runs     = list(lhs = "a", op = "<=", rhs = "b"),
+    no_lhs   = list(lhs = "missing_col", op = "<=", rhs = "b"),
+    no_rhs   = list(lhs = "a", op = "<=", rhs = "missing_col"),
+    no_sum   = list(lhs_sum = list("x1", "x2"), op = "==", rhs = "b")
+  ))
+  df <- tibble::tibble(a = 1, b = 2)
+
+  out <- suppressMessages(add_anomaly_consistency(df, schema))
+  skipped <- attr(out, "skipped_rules")
+  expect_equal(skipped$rule, c("no_lhs", "no_rhs", "no_sum"))
+  expect_true(all(nzchar(skipped$reason)))
+
+  dqr <- structure(list(data = df, log = tibble::tibble(),
+                        flags = tibble::tibble(row = integer(), column = character(),
+                                               value = character(), issue = character())),
+                   class = "dq_result")
+  res <- suppressMessages(add_anomaly_consistency(dqr, schema))
+  expect_equal(res$skipped_rules$rule, c("no_lhs", "no_rhs", "no_sum"))
+})
+
+test_that("add_anomaly_consistency reports no skipped rules when every rule ran", {
+  schema <- list(consistency = list(ok = list(lhs = "a", op = "<=", rhs = "b")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1, b = 2), schema))
+  expect_equal(nrow(attr(out, "skipped_rules")), 0L)
+})
+
+test_that("Ethiopia training schema flags CDD/CS/HW monthly gender-vs-type mismatches (#374)", {
+  schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
+  for (pfx in c("cddtrn", "cstrn", "hwtrn")) {
+    # CDD/CS/HW layout: gender-only and type-only monthly columns, no annual tot_male/tot_fem.
+    df <- tibble::tibble(
+      !!paste0("#", pfx, "_male_jan")    := c(5, 5),
+      !!paste0("#", pfx, "_fem_jan")     := c(5, 5),
+      !!paste0("#", pfx, "_new_jan")     := c(6, 6),
+      !!paste0("#", pfx, "_refresh_jan") := c(4, 1)   # row 2: 10 by gender vs 7 by type
+    )
+    res <- suppressMessages(run_dq_checks(df, schema))
+    res <- suppressMessages(add_anomaly_consistency(res, schema))
+    f <- res$flags[grepl("monthly_gender_sum_matches_type_sum", res$flags$issue), ]
+    expect_equal(f$row, 2L, info = pfx)
+    # The Lab-layout rule has no columns here and is recorded as skipped, not passed.
+    expect_true("gender_sum_matches_type_sum" %in% res$skipped_rules$rule, info = pfx)
+  }
+})

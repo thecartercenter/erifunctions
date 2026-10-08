@@ -1,3 +1,27 @@
+# erifunctions (development version)
+
+## The Ethiopia training-sum check now runs on CDD, CS and HW Training — and a skipped DQ rule is no longer silent (#374)
+
+Reported on Ethiopia's August 2026 CMR: "the training discrepancies were not flagged." The
+`gender_sum_matches_type_sum` rule was not the wrong version and not failing — it **never ran** on
+CDD, CS or HW Training. Those three sheets use a different template layout (monthly male/female
+columns and monthly new/refresher columns, with no annual male/female totals and no new-by-gender
+split), so the rule couldn't find any of its columns, printed one console line, and the report came
+back with no flags — indistinguishable from "checked and clean".
+
+- **New rule `monthly_gender_sum_matches_type_sum`** in `eth_rblf_programmatic_training.yaml`, with
+  the matching monthly columns aliased for CDD/CS/HW: male + female trained must equal new +
+  refresher trained. On the real 202608 data it flags the three mismatches that were missed (CDD
+  row 16, CS rows 112 and 114). The original rule is unchanged and keeps covering the other five
+  sheets with the by-gender layout.
+- **Skipped rules are now visible.** `add_anomaly_consistency()` records any rule it couldn't
+  evaluate in `$skipped_rules` (or `attr(, "skipped_rules")` for a plain tibble), and
+  `eri_cmr_dq_report()` lists them after the flags, per rule and sheet, and returns them in
+  `attr(<result>, "skipped_rules")`. When there are no flags but rules were skipped, it no longer
+  says "all clean". A sheet normally skips the rule written for the *other* layout, so expect a
+  couple of entries; an unexpected one means the schema's aliases don't match the file.
+- Newly checked CDD/CS/HW sheets in Ethiopia may surface new flags.
+
 # erifunctions 0.9.50
 
 ## Removed the redundant OEPA oncho rollup schemas (#327)

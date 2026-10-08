@@ -15,7 +15,8 @@ add_anomaly_consistency(data, schema)
 A tibble of violations with columns \code{row}, \code{column}, \code{value}, and
 \code{issue} (includes the rule name and message). If the input is a \code{dq_result},
 violations are appended to \verb{$flags} and the updated \code{dq_result} is returned.
-Returns an empty tibble when all rules pass.
+Returns an empty tibble when all rules pass. Skipped rules are reported as
+described above.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
@@ -65,6 +66,14 @@ Missing values (\code{NA}) in either operand skip the check for that row.
 
 Works on a plain tibble (returns a tibble of violations) or a \code{dq_result}
 (appends violations to \verb{$flags}).
+
+A rule that cannot be evaluated at all (a column it needs is missing from
+the data) is skipped with a console message \strong{and recorded}, so "the rule
+did not run" can be told apart from "the rule ran and found nothing": on a
+\code{dq_result} the skips are appended to \verb{$skipped_rules} (columns \code{rule},
+\code{reason}); on a plain tibble they are returned in
+\verb{attr(<result>, "skipped_rules")}. \code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} lists them after
+the flags.
 }
 \examples{
 \dontrun{
