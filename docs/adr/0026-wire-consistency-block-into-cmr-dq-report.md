@@ -63,3 +63,26 @@ document `add_anomaly_consistency()` as an opt-in chained step for those callers
 - Issue #334 / the training-tabs `gender_sum_matches_type_sum` consistency rule that surfaced this.
 - `R/cmr.R`'s `eri_cmr_dq_report()`.
 - `R/dq.R`'s `add_anomaly_consistency()` and its `lhs_sum`/`rhs_sum` extension (same PR).
+
+## Addendum (issue #374): a consistency rule that cannot run must not look like one that passed
+
+**Found when:** Ethiopia's August 2026 CMR had real gender-vs-type training mismatches that were not
+flagged. The `gender_sum_matches_type_sum` rule was wired in correctly (this ADR) but could not find
+its columns on CDD/CS/HW Training, which use a different template layout, so it skipped with one
+console line. Wired-in-but-inert and ran-and-passed produced the same empty report.
+
+**Decision:**
+- `add_anomaly_consistency()` records every rule it cannot evaluate: `$skipped_rules` on a `dq_result`,
+  `attr(, "skipped_rules")` on a plain tibble (columns `rule`, `reason`, `expected`).
+- `eri_cmr_dq_report()` aggregates them per rule and sheet, prints them after the flags, returns them as
+  `attr(<result>, "skipped_rules")`, and does not print "all clean" when an unexpected skip exists.
+- A rule may declare `skip_ok: true` when it is written for one sheet layout and skipping on another is by
+  design (the Ethiopia training rules, ToT sheets). Those skips are recorded (`expected = TRUE`) but shown
+  as a quiet note, so a warning always means something unexpected. A rule without `skip_ok` that skips is
+  a warning.
+- `cross_consistency:` skips (R/dq_cross.R) are **not** covered yet.
+
+**Consequences:** no change to which rows are flagged by existing rules. Newly checked Ethiopia
+CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of
+blast radius as the original wiring. Tradeoff accepted: a `skip_ok` rule whose aliases later drift is only
+a quiet note, not a warning, so reviewers should check that each sheet ran at least one rule it should have.

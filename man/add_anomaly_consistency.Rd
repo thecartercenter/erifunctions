@@ -71,9 +71,13 @@ A rule that cannot be evaluated at all (a column it needs is missing from
 the data) is skipped with a console message \strong{and recorded}, so "the rule
 did not run" can be told apart from "the rule ran and found nothing": on a
 \code{dq_result} the skips are appended to \verb{$skipped_rules} (columns \code{rule},
-\code{reason}); on a plain tibble they are returned in
-\verb{attr(<result>, "skipped_rules")}. \code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} lists them after
-the flags.
+\code{reason}, \code{expected}); on a plain tibble they are returned in
+\verb{attr(<result>, "skipped_rules")} (dplyr verbs such as \code{filter()} can drop
+that attribute -- read it straight off the returned value). A rule written
+for one sheet layout can set \code{skip_ok: true} to say that skipping on another
+layout is by design; it is still recorded, with \code{expected = TRUE}, but
+\code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} reports it as a quiet note rather than a warning.
+\code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} lists the skips after the flags.
 }
 \examples{
 \dontrun{

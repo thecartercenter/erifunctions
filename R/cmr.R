@@ -1111,10 +1111,13 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   clean. Any `consistency:` rule that could not be evaluated on a sheet
 #'   (a column it needs wasn't found) is listed in the console after the flags
 #'   and returned in `attr(<result>, "skipped_rules")` (columns `sheet`,
-#'   `rule`, `reason`) -- a skipped rule produced no flags because it never
-#'   ran, not because the data passed it. Some skips are expected (a rule
-#'   written for one sheet layout skips on another); an unexpected one means
-#'   the schema's column aliases don't match the file.
+#'   `rule`, `reason`, `expected`) -- a skipped rule produced no flags because
+#'   it never ran, not because the data passed it. A rule whose schema entry
+#'   says `skip_ok: true` (written for one sheet layout, so skipping on another
+#'   is by design) is shown as a quiet note with `expected = TRUE`; any other
+#'   skip is a warning, and means the schema's column aliases probably don't
+#'   match the file. The attribute is dropped by dplyr verbs such as
+#'   `filter()`, so read it straight off the returned value.
 #' @examples
 #' \dontrun{
 #' flags <- eri_cmr_dq_report("sdn", "202605")
@@ -1257,15 +1260,17 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
   }
 
   skipped <- if (length(skips) > 0L) dplyr::bind_rows(skips) else
-    tibble::tibble(sheet = character(), rule = character(), reason = character())
+    tibble::tibble(sheet = character(), rule = character(), reason = character(),
+                   expected = logical())
   .eri_cmr_report_skips(skipped)
+  n_unexpected <- sum(!skipped$expected)
 
   if (length(rows) == 0L) {
-    if (nrow(skipped) == 0L) {
+    if (n_unexpected == 0L) {
       cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
     } else {
       cli::cli_alert_warning(
-        "No DQ flags across {nrow(plan)} measure{?s} -- but {nrow(skipped)} rule check{?s} did not run (above), so this is not a full all-clear."
+        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_unexpected} check{?s} could not be run (above), so this is not a full all-clear."
       )
     }
     out <- tibble::tibble(
@@ -1281,20 +1286,33 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
   out
 }
 
-# Prints the consolidated "these consistency rules did not run" block that
-# eri_cmr_dq_report() shows after its flags (issue #374). One bullet per rule,
-# naming every sheet it was skipped on -- so a skip that is expected (a rule
-# written for one sheet layout, skipped on another) and one that isn't (the
-# schema's aliases don't match the file) are both visible, never mistaken for
-# "ran and passed".
+# Prints the consolidated "these data checks did not run" block that
+# eri_cmr_dq_report() shows after its flags (issue #374). Two tiers, so a skip
+# that matters is not drowned by ones that are by design:
+# - unexpected (the schema's rule did not declare `skip_ok`): a warning -- most
+#   likely the schema's column aliases don't match the file, and no flags from
+#   that check means it never ran, not that the data passed.
+# - expected (`skip_ok: true`, e.g. a rule written for the other sheet layout):
+#   a quiet info line, still listed per rule and sheet.
 .eri_cmr_report_skips <- function(skipped) {
   if (nrow(skipped) == 0L) return(invisible(NULL))
-  cli::cli_alert_warning(
-    "{length(unique(skipped$rule))} consistency rule{?s} did not run on some sheets (columns not found) -- no flags from them means they never ran, not that the data passed:"
-  )
-  for (rule in unique(skipped$rule)) {
-    sheets <- skipped$sheet[skipped$rule == rule]
-    cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+  bad <- skipped[!skipped$expected, , drop = FALSE]
+  ok  <- skipped[skipped$expected, , drop = FALSE]
+  if (nrow(bad) > 0L) {
+    cli::cli_alert_warning(
+      "{length(unique(bad$rule))} data check{?s} could not be run on some sheets because the columns {?it needs/they need} were not found -- no flags from {?it/them} means {?it/they} never ran, not that the data passed. Ask the DQ schema maintainer if this is unexpected:"
+    )
+    for (rule in unique(bad$rule)) {
+      sheets <- bad$sheet[bad$rule == rule]
+      cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+    }
+  }
+  if (nrow(ok) > 0L) {
+    cli::cli_alert_info("Not applicable to some sheets (by design, e.g. a different sheet layout):")
+    for (rule in unique(ok$rule)) {
+      sheets <- ok$sheet[ok$rule == rule]
+      cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+    }
   }
   invisible(NULL)
 }

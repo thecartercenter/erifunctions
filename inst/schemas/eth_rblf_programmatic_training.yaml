@@ -13,14 +13,15 @@
 # prefix under one canonical column set works: run_dq_checks() resolves whichever alias
 # matches the data actually present.
 #
-# CDD Training and CS Training's #cddtrn_/#cstrn_ aliases are added STRUCTURALLY, not
-# from a successfully-ingested sheet: Ethiopia's real 202605 submission has the same known
-# duplicate field-code template defect on both sheets ("#cddtrn_male_oct"/"#cstrn_male_oct"
-# each typed twice), which now blocks the whole workbook per ADR-0022 -- eri_ingest_cmr()
-# cannot read either sheet until the shared Carter Center master template is fixed. Their
-# field shape (year/adm0-3/disease/goal/tot_male/tot_fem/tot/achieved) is identical to the
-# other 6 already-verified training types per inst/schemas/cmr/eth.yaml's required_fields,
-# so the alias mapping is exact even though it wasn't recon-verified against live data.
+# CDD Training, CS Training and HW Training were first aliased STRUCTURALLY (before a
+# successful ingest), on the assumption that their field shape matched the other types'
+# (annual tot_male/tot_fem). Ethiopia's real 202608 files show it does not: they carry
+# monthly male_/fem_/tot_ columns and monthly new_/refresh_ columns (no annual tot_male/
+# tot_fem, no new-by-gender split) -- see the trained_*/new_*/refresh_* block and
+# monthly_gender_sum_matches_type_sum below (issue #374). The #cddtrn_/#cstrn_/#hwtrn_
+# tot_male/tot_fem aliases are kept because they are harmless and the template could
+# change. (CDD/CS also had a known duplicate field-code template defect, 202605, which
+# blocks the whole workbook per ADR-0022 -- see issue #315.)
 #
 # ToT Regional/Zonal ("Training of Trainers") are genuinely training data too, folded into
 # this same schema rather than a separate data_type -- eri_split_cmr() already routes them
@@ -188,7 +189,9 @@ columns:
 
   # Monthly new/refresher-by-gender breakdowns (issue #334) -- the real template has
   # NO annual "new total"/"refresher total" roll-up column, only these 12 monthly
-  # blocks per gender, for the 5 training types with this layout (MMDP surgery/patient, Field Ento, Hope Group Leader, Lab; CDD/CS/HW use a different one, see below)
+  # blocks per gender, for the 5 sheets with this layout (MMDP surgery/patient, Field
+  # Ento, Hope Group Leader, Lab). CDD/CS/HW use a different one -- see the
+  # trained_*/new_*/refresh_* block further down.
   # (NOT "ToT Regional"/"ToT Zonal", which have no monthly breakdown at all -- see
   # the header note). Added specifically so the gender_sum_matches_type_sum
   # consistency rule below has something to sum against; not otherwise required
@@ -601,13 +604,16 @@ columns:
 # engine's single-lhs/single-rhs consistency: block can't express "sum of many
 # columns vs sum of many other columns" on its own.
 #
-# Applies only to the 5 training types with a monthly new/refresher-by-gender breakdown (CDD/CS/HW are covered by monthly_gender_sum_matches_type_sum below, issue #374); a
+# Applies only to the 5 training types with a monthly new/refresher-by-gender
+# breakdown (CDD/CS/HW use a different layout and are covered by
+# monthly_gender_sum_matches_type_sum below, issue #374); a
 # row from "ToT Regional"/"ToT Zonal" (no such columns at all) has every rhs_sum
 # column absent/NA, so add_anomaly_consistency()'s "row where every column on a
 # summed side is NA stays NA, not fabricated as 0" rule correctly skips it rather
 # than flagging every ToT row as a false mismatch.
 consistency:
   gender_sum_matches_type_sum:
+    skip_ok: true   # by-gender layout only; skipping on the other sheets is by design
     lhs_sum: [male_trained, female_trained]
     op: "=="
     rhs_sum:
@@ -659,11 +665,12 @@ consistency:
       - refresh_fem_oct
       - refresh_fem_nov
       - refresh_fem_dec
-    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly, Lab/MMDP/Field Ento/Hope Group Leader Training)"
+    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly, MMDP/Field Ento/Hope Group Leader/Lab Training)"
 
   # Same check as above for the CDD/CS/HW layout (issue #374): every month's
   # male + female trained should equal that month's new + refresher trained.
   monthly_gender_sum_matches_type_sum:
+    skip_ok: true   # CDD/CS/HW layout only; skipping on the other sheets is by design
     lhs_sum:
       - trained_male_jan
       - trained_male_feb

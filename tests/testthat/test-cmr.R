@@ -2115,10 +2115,81 @@ test_that("eri_cmr_dq_report() surfaces consistency rules that did not run (#374
 
   expect_message(
     flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock")),
-    "did not run"
+    "could not be run"
   )
   expect_equal(nrow(flags), 0L)
   skipped <- attr(flags, "skipped_rules")
   expect_equal(skipped$sheet, "RB Treatment")
   expect_equal(skipped$rule, "needs_target")
+})
+
+test_that("eri_cmr_dq_report() consolidates skips across sheets and separates expected from unexpected (#374)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows = list(c("2024", "North", "50"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  plan <- tibble::tibble(
+    sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
+    data_type = "treatment", dest = c("sdn/oncho/programmatic/treatment/staged/a.parquet",
+                                      "sdn/lf/programmatic/treatment/staged/b.parquet"),
+    n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated")
+  ),
+  consistency = list(
+    needs_target = list(lhs = "treated", op = "<=", rhs = "target_pop"),
+    other_layout = list(lhs = "treated", op = "<=", rhs = "other_col", skip_ok = TRUE)
+  ))
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+
+  msgs <- testthat::capture_messages(
+    flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  )
+  msgs <- paste(cli::ansi_strip(msgs), collapse = "\n")
+
+  skipped <- attr(flags, "skipped_rules")
+  expect_equal(nrow(skipped), 4L)                                   # 2 rules x 2 sheets
+  expect_equal(sum(skipped$expected), 2L)
+  expect_match(msgs, "could not be run")                            # unexpected -> warning block
+  expect_match(msgs, "Not applicable to some sheets")               # expected -> quiet note
+  expect_match(msgs, "needs_target.*RB Treatment.*LF Treatment")    # one bullet, both sheets
+  expect_no_match(msgs, "all clean")                                # not a full all-clear
+})
+
+test_that("eri_cmr_dq_report() says all clean when the only skips are expected (#374)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows = list(c("2024", "North", "50"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated")
+  ),
+  consistency = list(other_layout = list(lhs = "treated", op = "<=", rhs = "nope", skip_ok = TRUE)))
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(
+    flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  )), collapse = "\n")
+  expect_match(msgs, "all clean")
+  expect_equal(nrow(attr(flags, "skipped_rules")), 1L)
 })

@@ -1623,3 +1623,41 @@ test_that("Ethiopia training schema flags CDD/CS/HW monthly gender-vs-type misma
     expect_true("gender_sum_matches_type_sum" %in% res$skipped_rules$rule, info = pfx)
   }
 })
+
+test_that("a rule with skip_ok is recorded as an expected skip; others as unexpected (#374)", {
+  schema <- list(consistency = list(
+    by_design = list(lhs = "gone", op = "<=", rhs = "b", skip_ok = TRUE),
+    surprising = list(lhs = "a", op = "<=", rhs = "gone")
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1, b = 2), schema))
+  skipped <- attr(out, "skipped_rules")
+  expect_equal(skipped$rule, c("by_design", "surprising"))
+  expect_equal(skipped$expected, c(TRUE, FALSE))
+})
+
+test_that("add_anomaly_consistency attaches an empty skipped_rules when the schema has no rules (#374)", {
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1), list()))
+  expect_equal(nrow(attr(out, "skipped_rules")), 0L)
+  dqr <- structure(list(data = tibble::tibble(a = 1), log = tibble::tibble(),
+                        flags = tibble::tibble(row = integer(), column = character(),
+                                               value = character(), issue = character())),
+                   class = "dq_result")
+  expect_equal(nrow(suppressMessages(add_anomaly_consistency(dqr, list()))$skipped_rules), 0L)
+})
+
+test_that("re-chaining add_anomaly_consistency on a dq_result does not duplicate skipped_rules (#374)", {
+  schema <- list(consistency = list(r = list(lhs = "gone", op = "<=", rhs = "b")))
+  dqr <- structure(list(data = tibble::tibble(b = 1), log = tibble::tibble(),
+                        flags = tibble::tibble(row = integer(), column = character(),
+                                               value = character(), issue = character())),
+                   class = "dq_result")
+  once  <- suppressMessages(add_anomaly_consistency(dqr, schema))
+  twice <- suppressMessages(add_anomaly_consistency(once, schema))
+  expect_equal(nrow(twice$skipped_rules), 1L)
+})
+
+test_that("Ethiopia training rules declare skip_ok so the other layout's skip is expected (#374)", {
+  schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
+  expect_true(isTRUE(schema$consistency$gender_sum_matches_type_sum$skip_ok))
+  expect_true(isTRUE(schema$consistency$monthly_gender_sum_matches_type_sum$skip_ok))
+})

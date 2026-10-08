@@ -859,9 +859,13 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #' the data) is skipped with a console message **and recorded**, so "the rule
 #' did not run" can be told apart from "the rule ran and found nothing": on a
 #' `dq_result` the skips are appended to `$skipped_rules` (columns `rule`,
-#' `reason`); on a plain tibble they are returned in
-#' `attr(<result>, "skipped_rules")`. [eri_cmr_dq_report()] lists them after
-#' the flags.
+#' `reason`, `expected`); on a plain tibble they are returned in
+#' `attr(<result>, "skipped_rules")` (dplyr verbs such as `filter()` can drop
+#' that attribute -- read it straight off the returned value). A rule written
+#' for one sheet layout can set `skip_ok: true` to say that skipping on another
+#' layout is by design; it is still recorded, with `expected = TRUE`, but
+#' [eri_cmr_dq_report()] reports it as a quiet note rather than a warning.
+#' [eri_cmr_dq_report()] lists the skips after the flags.
 #'
 #' @param data A tibble or `dq_result` object.
 #' @param schema Named list from [load_dq_schema()].
@@ -884,9 +888,15 @@ add_anomaly_consistency <- function(data, schema) {
   rules <- schema$consistency %||% list()
   if (length(rules) == 0) {
     cli::cli_alert_info("No consistency rules defined in schema.")
-    if (is_dq) return(invisible(data))
-    return(tibble::tibble(row    = integer(), column = character(),
-                          value  = character(), issue  = character()))
+    no_skips <- tibble::tibble(rule = character(), reason = character(), expected = logical())
+    if (is_dq) {
+      data$skipped_rules <- dplyr::bind_rows(data$skipped_rules, no_skips)
+      return(invisible(data))
+    }
+    empty <- tibble::tibble(row    = integer(), column = character(),
+                            value  = character(), issue  = character())
+    attr(empty, "skipped_rules") <- no_skips
+    return(empty)
   }
 
   all_flags <- tibble::tibble(row    = integer(), column = character(),
@@ -894,7 +904,7 @@ add_anomaly_consistency <- function(data, schema) {
   # Rules that could not be evaluated at all (a column missing, an unsummable
   # column). Recorded -- not just printed -- so a caller can tell "rule did
   # not run" from "rule ran and passed" (issue #374).
-  skipped   <- tibble::tibble(rule = character(), reason = character())
+  skipped   <- tibble::tibble(rule = character(), reason = character(), expected = logical())
 
   for (rule_name in names(rules)) {
     rule <- rules[[rule_name]]
@@ -910,6 +920,7 @@ add_anomaly_consistency <- function(data, schema) {
     rule_rhs     <- rule[["rhs", exact = TRUE]]
     rule_rhs_sum <- rule[["rhs_sum", exact = TRUE]]
     rule_rhs_val <- rule[["rhs_value", exact = TRUE]]
+    rule_skip_ok <- isTRUE(rule[["skip_ok", exact = TRUE]])
 
     lhs      <- .dq_consistency_side(df, rule_lhs, rule_lhs_sum)
     lhs_desc <- rule_lhs %||% paste0("sum(", paste(unlist(rule_lhs_sum), collapse = " + "), ")")
@@ -918,7 +929,8 @@ add_anomaly_consistency <- function(data, schema) {
         "Consistency rule {.val {rule_name}}: {.field lhs}/{.field lhs_sum} column(s) not found, skipping."
       )
       skipped <- dplyr::bind_rows(skipped, tibble::tibble(
-        rule = rule_name, reason = "lhs/lhs_sum column(s) not found or not summable"))
+        rule = rule_name, reason = "lhs/lhs_sum column(s) not found or not summable",
+        expected = rule_skip_ok))
       next
     }
 
@@ -934,7 +946,8 @@ add_anomaly_consistency <- function(data, schema) {
         "Consistency rule {.val {rule_name}}: no valid {.arg rhs}/{.arg rhs_sum}/{.arg rhs_value}, skipping."
       )
       skipped <- dplyr::bind_rows(skipped, tibble::tibble(
-        rule = rule_name, reason = "rhs/rhs_sum column(s) not found or not summable"))
+        rule = rule_name, reason = "rhs/rhs_sum column(s) not found or not summable",
+        expected = rule_skip_ok))
       next
     }
 
@@ -977,7 +990,7 @@ add_anomaly_consistency <- function(data, schema) {
 
   if (is_dq) {
     data$flags         <- dplyr::bind_rows(data$flags, all_flags)
-    data$skipped_rules <- dplyr::bind_rows(data$skipped_rules, skipped)
+    data$skipped_rules <- dplyr::distinct(dplyr::bind_rows(data$skipped_rules, skipped))
     return(invisible(data))
   }
   attr(all_flags, "skipped_rules") <- skipped
