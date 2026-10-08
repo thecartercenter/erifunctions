@@ -18,10 +18,10 @@ with no flags — indistinguishable from "checked and clean".
   Uganda use the standard layout (annual male/female totals, monthly new/refresher by gender) on
   *all* their training tabs, CDD/CS/HW included; only Ethiopia's CDD, CS and HW tabs use the
   different monthly layout, so that is a template inconsistency in Ethiopia's file worth raising with
-  whoever maintains the master template. Our schema now handles both.
+  whoever maintains the master template. Our schema handles both.
 - **The check now exists for Haiti, Nigeria, Sudan, South Sudan and Uganda too** (they had no
   male + female vs new + refresher check at all). It ran cleanly on their latest periods: no mismatches
-  found, none skipped. Madagascar and Chad have no training data yet, so they are not set up.
+  found, none skipped. Madagascar and Chad have training schemas but no processed training files to check against yet, so they do not get the check until real data exists.
 - **A check that couldn't run is now reported.** `eri_cmr_dq_report()` lists, after the flags, any data
   check that was skipped because its columns weren't found, per check and sheet. A skip that is
   expected (a check written for a different sheet layout, e.g. ToT sheets) appears as a quiet note; any
@@ -33,6 +33,8 @@ with no flags — indistinguishable from "checked and clean".
   country can't find its columns you will now see a warning where there was silence before — that is a
   real finding (that check has not been running there), so pass the sheet name and check name to the
   DQ schema maintainer. See the new section in the DQ review guide.
+- A schema whose `consistency:` is written as an unnamed list now stops with a clear message instead of
+  silently running no checks.
 - For scripts: skips are in `attr(flags, "skipped_rules")` (`eri_cmr_dq_report()`), `$skipped_rules`
   (`add_anomaly_consistency()` on a `dq_result`), or `attr(, "skipped_rules")` (on a plain tibble). A
   consistency rule can set `skip_ok: true` in its schema to mark such a skip as by design. Decision

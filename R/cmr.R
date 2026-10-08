@@ -1279,13 +1279,14 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
                    expected = logical())
   .eri_cmr_report_skips(skipped)
   n_unexpected <- sum(!skipped$expected %in% TRUE)
+  n_bad_rules  <- length(unique(skipped$rule[!skipped$expected %in% TRUE]))
 
   if (length(rows) == 0L) {
     if (n_unexpected == 0L) {
       cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
     } else {
       cli::cli_alert_warning(
-        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_unexpected} check{?s} could not be run (above), so this is not a full all-clear."
+        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_bad_rules} data check{?s} could not be run (above), so this is not a full all-clear."
       )
     }
     out <- tibble::tibble(
@@ -1320,6 +1321,10 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     for (rule in unique(bad$rule)) {
       sheets <- bad$sheet[bad$rule == rule]
       cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+    }
+    noran <- unique(bad$sheet[grepl("no consistency rule ran", bad$reason, fixed = TRUE)])
+    if (length(noran) > 0L) {
+      cli::cli_bullets(c("!" = "No consistency check ran at all on: {.val {noran}}"))
     }
     cli::cli_bullets(c(
       "i" = "No flags from a check that couldn't run does not mean the data passed. If this is unexpected, the schema's column names probably don't match the file -- tell the DQ schema maintainer."

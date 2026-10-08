@@ -93,3 +93,9 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
 CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of
 blast radius as the original wiring. Tradeoff accepted: a `skip_ok` rule whose aliases later drift is only
 a quiet note, not a warning, as long as another rule still ran on that sheet. The all-rules-skipped guard only catches the case where none did, so reviewers should still check that each sheet ran the rule it should have.
+- **Duplicated per country, on purpose (for now).** The `gender_sum_matches_type_sum` rule and its 48
+  monthly columns are copied into the ht/nga/sdn/ssd/uga training schemas (and Ethiopia's), because
+  schemas have no include/inheritance mechanism and this is how every other shared column set is
+  already carried. Revisit a shared fragment if a seventh copy is needed. `mad` and `tcd` have training
+  schemas but no processed training files to verify against yet, so they do not get the rule until real
+  data exists (their sheets would otherwise be unverifiable guesses).

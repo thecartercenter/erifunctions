@@ -1633,6 +1633,11 @@ test_that("a rule with skip_ok is recorded as an expected skip; others as unexpe
   skipped <- attr(out, "skipped_rules")
   expect_equal(skipped$rule, c("by_design", "surprising"))
   expect_equal(skipped$expected, c(TRUE, FALSE))
+  # lhs-missing path also honours skip_ok (and defaults to unexpected)
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(b = 2), list(consistency = list(
+    lhs_gone_ok  = list(lhs = "gone", op = "<=", rhs = "b", skip_ok = TRUE),
+    lhs_gone_bad = list(lhs = "gone", op = "<=", rhs = "b")))))
+  expect_equal(attr(out2, "skipped_rules")$expected, c(TRUE, FALSE))
 })
 
 test_that("add_anomaly_consistency attaches an empty skipped_rules when the schema has no rules (#374)", {
@@ -1673,7 +1678,7 @@ test_that("add_anomaly_consistency does not claim a full pass when rules were sk
 
   m_ok <- msgs(list(consistency = list(ok = list(lhs = "a", op = "<=", rhs = "b"),
                                         r  = list(lhs = "a", op = "<=", rhs = "gone", skip_ok = TRUE))))
-  expect_match(m_ok, "not applicable here, by design")
+  expect_match(m_ok, "(1 not applicable here, by design)", fixed = TRUE)
   expect_no_match(m_ok, "All consistency checks passed")
 
   m_clean <- msgs(list(consistency = list(r = list(lhs = "a", op = "<=", rhs = "b"))))

@@ -194,7 +194,7 @@ columns:
   # trained_*/new_*/refresh_* block further down.
   # (The #cddtrn_/#cstrn_/#hwtrn_ aliases on the columns below are structural and
   # unused -- those three sheets have no new-by-gender columns.)
-  # (NOT "ToT Regional"/"ToT Zonal", which have no monthly breakdown at all -- see
+  # (Not "ToT Regional"/"ToT Zonal" -- they have no monthly breakdown at all, see
   # the header note). Added specifically so the gender_sum_matches_type_sum
   # consistency rule below has something to sum against; not otherwise required
   # reading for this schema. Same aliasing pattern as every other column here: each

@@ -2164,6 +2164,10 @@ test_that("eri_cmr_dq_report() consolidates skips across sheets and separates ex
   expect_match(msgs, "Not applicable to some sheets")               # expected -> quiet note
   expect_match(msgs, "\"needs_target\": \"RB Treatment\" and \"LF Treatment\"")   # one bullet, both sheets
   expect_no_match(msgs, "all clean")                                # not a full all-clear
+  expect_match(msgs, "not a full all-clear")                        # ... and says so
+  expect_equal(lengths(regmatches(msgs, gregexpr("\"needs_target\": \"RB Treatment\"", msgs))), 1L)   # one consolidated bullet, not one per sheet
+  expect_match(msgs, "\"other_layout\": \"RB Treatment\" and \"LF Treatment\"")        # quiet note lists its own sheets
+  expect_match(msgs, "1 data check could not be run")              # unique rules, not rule-by-sheet rows
 })
 
 test_that("eri_cmr_dq_report() says all clean when the only skips are expected (#374)", {
@@ -2237,6 +2241,8 @@ test_that("eri_cmr_dq_report() warns when EVERY rule skipped on a sheet, even if
   expect_false(any(res$skipped$expected))
   expect_match(res$msgs, "data checks? could not be run on some sheets")
   expect_no_match(res$msgs, "all clean")
+  expect_match(res$msgs, "No consistency check ran at all on")
+  expect_true(all(grepl("no consistency rule ran on this sheet", res$skipped$reason, fixed = TRUE)))
 
   # Sheet listed as not applicable -> stays a quiet note.
   res2 <- run(mk_schema(exempt = "RB Treatment"))
