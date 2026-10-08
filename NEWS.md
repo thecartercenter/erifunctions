@@ -1,6 +1,6 @@
 # erifunctions (development version)
 
-## Ethiopia CDD, CS and HW Training sums are now checked, and skipped DQ checks are reported (#374)
+## Training "male + female = new + refresher" is now checked for every country, and skipped DQ checks are reported (#374)
 
 Reported on Ethiopia's August 2026 CMR: "the training discrepancies were not flagged." The check for
 male + female trained vs new + refresher trained (`gender_sum_matches_type_sum`) was not out of date
@@ -13,6 +13,15 @@ with no flags — indistinguishable from "checked and clean".
   them. On the real 202608 data it flags the three mismatches that were missed: CDD Training Excel row
   16 and CS Training Excel rows 112 and 114. The original rule is unchanged and still covers the other
   five sheets. **Ethiopia CDD/CS/HW sheets may show new flags** on the next report.
+- **Ethiopia's CDD/CS/HW tabs differ from every other tab and country.** Checked against each
+  country's latest real training files (structure only): Haiti, Nigeria, Sudan, South Sudan and
+  Uganda use the standard layout (annual male/female totals, monthly new/refresher by gender) on
+  *all* their training tabs, CDD/CS/HW included; only Ethiopia's CDD, CS and HW tabs use the
+  different monthly layout, so that is a template inconsistency in Ethiopia's file worth raising with
+  whoever maintains the master template. Our schema now handles both.
+- **The check now exists for Haiti, Nigeria, Sudan, South Sudan and Uganda too** (they had no
+  male + female vs new + refresher check at all). It ran cleanly on their latest periods: no mismatches
+  found, none skipped. Madagascar and Chad have no training data yet, so they are not set up.
 - **A check that couldn't run is now reported.** `eri_cmr_dq_report()` lists, after the flags, any data
   check that was skipped because its columns weren't found, per check and sheet. A skip that is
   expected (a check written for a different sheet layout, e.g. ToT sheets) appears as a quiet note; any

@@ -1708,3 +1708,37 @@ test_that("a schema with consistency_not_applicable_sheets but no consistency: b
   expect_equal(nrow(out), 0L)
   expect_equal(nrow(attr(out, "skipped_rules")), 0L)
 })
+
+test_that("every country training schema with the monthly sum rule is internally consistent and flags a mismatch (#374)", {
+  for (cc in c("ht", "nga", "sdn", "ssd", "uga")) {
+    schema <- yaml::read_yaml(system.file("schemas", paste0(cc, "_rblf_programmatic_training.yaml"), package = "erifunctions"))
+    rule <- schema$consistency[["gender_sum_matches_type_sum"]]
+    expect_false(is.null(rule), info = cc)
+    rhs <- unlist(rule$rhs_sum)
+    expect_length(rhs, 48)
+    expect_true(all(rhs %in% names(schema$columns)), info = cc)
+    expect_true(all(unlist(rule$lhs_sum) %in% names(schema$columns)), info = cc)
+
+    # Every training prefix the annual-total column knows about must be aliased on the monthly
+    # columns too, or that sheet would silently skip the rule.
+    pfx <- unique(sub("_tot_male$", "", grep("_tot_male$", unlist(schema$columns$male_trained$aliases), value = TRUE)))
+    for (cn in c("new_male_jan", "refresh_fem_dec")) {
+      al <- unlist(schema$columns[[cn]]$aliases)
+      expect_setequal(sub(paste0("_", cn, "$"), "", al), pfx)
+    }
+
+    # End to end on a synthetic sheet for the first prefix: balanced row not flagged, unbalanced row flagged.
+    p <- pfx[1]
+    df <- tibble::tibble(
+      !!paste0(p, "_tot_male")        := c(3, 3),
+      !!paste0(p, "_tot_fem")         := c(2, 2),
+      !!paste0(p, "_new_male_jan")    := c(3, 3),
+      !!paste0(p, "_new_fem_jan")     := c(1, 1),
+      !!paste0(p, "_refresh_fem_jan") := c(1, 0)    # row 2: 5 by gender vs 4 by type
+    )
+    res <- suppressMessages(add_anomaly_consistency(suppressMessages(run_dq_checks(df, schema)), schema))
+    f <- res$flags[grepl("gender_sum_matches_type_sum", res$flags$issue), ]
+    expect_equal(f$row, 2L, info = cc)
+    expect_equal(nrow(res$skipped_rules), 0L, info = cc)
+  }
+})
