@@ -11,7 +11,9 @@ eri_upload(local_path, file_loc, azcontainer = NULL)
 
 \item{file_loc}{\code{str} Destination path in Azure (including filename).}
 
-\item{azcontainer}{Azure container object from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+\item{azcontainer}{Azure container object from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}. If \code{NULL}
+(default), see \code{\link[=erifunctions_io]{erifunctions_io()}}'s \verb{@param azcontainer} for the ambient-connect behaviour
+and its container-mismatch warning (issue #331).}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

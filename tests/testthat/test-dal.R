@@ -24,6 +24,63 @@ test_that(".eri_create_azure_dir skips levels that already exist", {
   expect_equal(created, "a/b/c")
 })
 
+#### Tests for .eri_dal_verb_connect (#331) ####
+
+test_that(".eri_dal_verb_connect returns an explicit azcontainer unchanged, no warning, no connect", {
+  called <- FALSE
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) { called <<- TRUE; "should not be used" },
+    .package = "erifunctions"
+  )
+  mock_con <- structure(list(), class = "mock")
+  expect_no_warning(out <- .eri_dal_verb_connect(mock_con))
+  expect_identical(out, mock_con)
+  expect_false(called)
+})
+
+test_that(".eri_dal_verb_connect warns when the ambient container isn't 'data'", {
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = "projects"), {
+    expect_warning(.eri_dal_verb_connect(NULL), "not.*data")
+  })
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = ""), {
+    expect_warning(.eri_dal_verb_connect(NULL), "unset")
+  })
+})
+
+test_that(".eri_dal_verb_connect does not warn when the ambient container is already 'data'", {
+  local_mocked_bindings(
+    get_azure_storage_connection = function(...) "mock_con",
+    .package = "erifunctions"
+  )
+  withr::with_envvar(list(ERIFUNCTIONS_STORAGE_NAME = "data"), {
+    expect_no_warning(out <- .eri_dal_verb_connect(NULL))
+    expect_equal(out, "mock_con")
+  })
+})
+
+test_that("eri_upload() routes its ambient connect through .eri_dal_verb_connect() (#331)", {
+  # eri_upload() is a 9th instance of the same pattern the other 8 verbs share, folded into
+  # this fix alongside them (not named in the original issue, but identical and equally broken).
+  connect_called_with <- "unset"
+  local_mocked_bindings(
+    .eri_dal_verb_connect = function(azcontainer) {
+      connect_called_with <<- azcontainer
+      "resolved_con"
+    },
+    erifunctions_io = function(io, obj, file_loc, azure, azcontainer) {
+      expect_equal(azcontainer, "resolved_con")
+      invisible(NULL)
+    },
+    .package = "erifunctions"
+  )
+  eri_upload("local.rds", "some/path.rds")
+  expect_null(connect_called_with)  # called with the caller's (here: default NULL) azcontainer
+})
+
 #### Tests for eri_data_path ####
 
 test_that("eri_data_path builds correct paths without filename", {
@@ -142,6 +199,15 @@ test_that(".eri_log_session is a no-op when flag is already set", {
 })
 
 #### Tests for eri_trigger error paths (no Azure needed) ####
+
+test_that("eri_trigger warns that it is deprecated (#342)", {
+  withr::with_envvar(list(GITHUB_PAT = ""), {
+    expect_warning(
+      expect_error(eri_trigger("hsp-mal", "dr", "malaria"), "GITHUB_PAT"),
+      "deprecated"
+    )
+  })
+})
 
 test_that("eri_trigger errors clearly when GITHUB_PAT is missing", {
   withr::with_envvar(list(GITHUB_PAT = ""), {

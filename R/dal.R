@@ -261,7 +261,14 @@ get_azure_storage_connection <- function(
 #' @param azure `logical` Whether the function should interact with the TCC Azure environment.
 #' Defaults to `TRUE`, otherwise, interacts with files locally.
 #' @param azcontainer `Azure container` A container object returned by
-#' [get_azure_storage_connection()].
+#' [get_azure_storage_connection()]. If `NULL` (the default), one is created ambiently from
+#' [get_azure_storage_connection()]'s own default -- which is *not* necessarily the `data`
+#' container production data lives in (issue #331). The verb-named wrappers ([eri_read()],
+#' [eri_write()], [eri_list()], [eri_file_exists()], [eri_dir_exists()], [eri_dir_create()],
+#' [eri_delete()], [eri_dir_delete()], [eri_upload()]) resolve this ambient connection through
+#' `.eri_dal_verb_connect()` and `cli_warn` when it lands somewhere other than `data`. Calling
+#' `erifunctions_io()` directly bypasses that warning; pass `azcontainer` explicitly to target a
+#' specific container, e.g. `get_azure_storage_connection(storage_name = "data")`.
 #' @param full_names `logical` If `io="list"`, include the full reference path. Default `TRUE`.
 #' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
 #'   (suppressed; erifunctions renders its own output). Set `TRUE` for a large single read/upload.
@@ -474,6 +481,11 @@ erifunctions_io <- function(
 #' @param file_loc `str` Location to "read", "write", "exists.dir", "exists.file", "create" or "list".
 #' @param obj `robj` Object to be saved, needed for `"write"`. Defaults to `NULL`.
 #' @param azcontainer Azure container object returned from [get_azure_storage_connection()].
+#'   If `NULL`, one is created ambiently from [get_azure_storage_connection()]'s own default --
+#'   which is *not* necessarily the `data` container production data lives in (issue #331).
+#'   Calling `azure_io()` directly, as opposed to through the verb-named wrappers
+#'   ([eri_read()] etc.), does **not** get the container-mismatch warning those add; pass
+#'   `azcontainer` explicitly here to target a specific container.
 #' @param force_delete `logical` Use delete io without confirmation prompt. Default `FALSE`.
 #' @param progress `logical` Show AzureStor's byte progress bar for the transfer. Default `FALSE`
 #'   (suppressed). Set `TRUE` for a large single read/upload that needs visible feedback.
@@ -718,6 +730,46 @@ azure_io <- function(
 
 }
 
+#' Resolve the ambient connection for the general-purpose DAL verbs, warning if it
+#' isn't the `data` container
+#'
+#' Used by the 9 verb-named wrappers ([eri_read()], [eri_write()], [eri_list()],
+#' [eri_file_exists()], [eri_dir_exists()], [eri_dir_create()], [eri_delete()],
+#' [eri_dir_delete()], [eri_upload()]) -- NOT by [erifunctions_io()] or [azure_io()]
+#' themselves when called directly, which keep their own unwarned ambient-connect default
+#' argument (see their own `@param azcontainer` docs).
+#'
+#' Unlike almost every other subsystem in this package (catalog, artifacts, feedback,
+#' logs, odk_registry, cmr, dq, cutover -- all of which explicitly pass
+#' `storage_name = Sys.getenv("ERIFUNCTIONS_DATA_STORAGE_NAME", unset = "data")`), the
+#' verb-named DAL wrappers below call [get_azure_storage_connection()] with no
+#' `storage_name` at all, which resolves the *other*, legacy env var
+#' (`ERIFUNCTIONS_STORAGE_NAME`) and lands on whatever that happens to be set to --
+#' often the `projects` container, not `data`, where most production data actually
+#' lives. That produced a real false negative: `eri_file_exists()` answered `FALSE`
+#' immediately after a real upload, because it was asking the wrong container (#331).
+#'
+#' Whether the default itself should change to `data` is an open decision (#331,
+#' CLAUDE.md) -- not made here. This only makes the mismatch loud instead of silent,
+#' so a caller relying on the ambient connection finds out before a false negative (or
+#' an unintended write) looks like success.
+#' @keywords internal
+.eri_dal_verb_connect <- function(azcontainer) {
+  if (!is.null(azcontainer)) return(azcontainer)
+  storage_name <- Sys.getenv("ERIFUNCTIONS_STORAGE_NAME")
+  if (!identical(storage_name, "data")) {
+    cli::cli_warn(c(
+      "!" = "No {.arg azcontainer} given, so this connects to the {.val \\
+             {if (nzchar(storage_name)) storage_name else '(unset)'}} container, not {.val data}.",
+      "i" = "Most production data lives in {.val data}. Pass {.code azcontainer = \\
+             get_azure_storage_connection(storage_name = \"data\")} explicitly if that's what \\
+             you meant.",
+      "i" = "Known gap, not yet resolved: issue #331."
+    ))
+  }
+  suppressMessages(get_azure_storage_connection())
+}
+
 #### 3) Verb-named wrappers ####
 
 #' Read a file
@@ -732,7 +784,7 @@ azure_io <- function(
 #' @export
 eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL, progress = FALSE) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("read", file_loc = file_loc, azure = azure, azcontainer = azcontainer,
                   progress = progress, ...)
 }
@@ -748,7 +800,7 @@ eri_read <- function(file_loc, ..., azure = TRUE, azcontainer = NULL, progress =
 #' @export
 eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("write", obj = obj, file_loc = file_loc, azure = azure, azcontainer = azcontainer, ...)
 }
 
@@ -763,7 +815,7 @@ eri_write <- function(obj, file_loc, ..., azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("list", file_loc = file_loc, full_names = full_names, azure = azure, azcontainer = azcontainer)
 }
 
@@ -778,7 +830,7 @@ eri_list <- function(file_loc = "", full_names = TRUE, azure = TRUE, azcontainer
 #' @export
 eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("exists.file", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -793,7 +845,7 @@ eri_file_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("exists.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -808,7 +860,7 @@ eri_dir_exists <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("create.dir", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -825,7 +877,7 @@ eri_dir_create <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 #' @export
 eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("delete", file_loc = file_loc, azure = azure, azcontainer = azcontainer)
 }
 
@@ -848,7 +900,7 @@ eri_delete <- function(file_loc, azure = TRUE, azcontainer = NULL) {
 eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
                            prune_catalog = azure) {
   if (azure) .eri_log_session()
-  if (azure && is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  if (azure) azcontainer <- .eri_dal_verb_connect(azcontainer)
   result <- erifunctions_io("delete.dir", file_loc = file_loc, azure = azure,
                             azcontainer = azcontainer)
   if (isTRUE(azure) && isTRUE(prune_catalog)) {
@@ -891,11 +943,13 @@ eri_dir_delete <- function(file_loc, azure = TRUE, azcontainer = NULL,
 #'
 #' @param local_path `str` Local path to the file to upload.
 #' @param file_loc `str` Destination path in Azure (including filename).
-#' @param azcontainer Azure container object from [get_azure_storage_connection()].
+#' @param azcontainer Azure container object from [get_azure_storage_connection()]. If `NULL`
+#'   (default), see [erifunctions_io()]'s `@param azcontainer` for the ambient-connect behaviour
+#'   and its container-mismatch warning (issue #331).
 #' @export
 eri_upload <- function(local_path, file_loc, azcontainer = NULL) {
   .eri_log_session()
-  if (is.null(azcontainer)) azcontainer <- suppressMessages(get_azure_storage_connection())
+  azcontainer <- .eri_dal_verb_connect(azcontainer)
   erifunctions_io("upload", obj = local_path, file_loc = file_loc, azure = TRUE, azcontainer = azcontainer)
 }
 
@@ -1186,16 +1240,16 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
 #' Trigger a registered GitHub Actions pipeline
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
+#' `r lifecycle::badge("deprecated")`
 #'
-#' Dispatches a `workflow_dispatch` event to a registered GitHub Actions
-#' pipeline from R.  Authenticates with a GitHub Personal Access Token stored
-#' in the `GITHUB_PAT` environment variable (needs `workflow` scope).
-#'
-#' ## Registered pipelines
-#' | Name | Repository | Workflow |
-#' |------|------------|---------|
-#' | `hsp-mal` | thecartercenter/health-hsp-malaria | data_ingestion.yml |
+#' **Deprecated, and every call fails.** The only registered pipeline dispatched a
+#' workflow (`data_ingestion.yml`) that does not exist in `health-hsp-malaria`; the
+#' real workflow there takes a different set of inputs and a different country
+#' vocabulary. Triggering the contractor's pipeline from R is a capability
+#' erifunctions is retiring, not repairing: erifunctions is taking over the Power BI
+#' output contract directly (see [ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md)),
+#' after which there is no pipeline left to trigger. Calling this function now warns
+#' and then fails the same way it always did once it reaches GitHub.
 #'
 #' @param pipeline `str` Registered pipeline name. Currently `"hsp-mal"`.
 #' @param country `str` Country code passed as a workflow input (e.g. `"dr"`).
@@ -1207,11 +1261,23 @@ eri_approve <- function(country, disease, data_source, period, data_type = NULL,
 #' @returns Invisibly, the URL to the workflow's runs page on GitHub.
 #' @examples
 #' \dontrun{
+#' # deprecated -- this always errors, see @description
 #' eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
 #' }
 #' @export
 eri_trigger <- function(pipeline, country, disease,
                         year = NULL, phase = "prod", ref = "main") {
+  # base R .Deprecated(), not lifecycle::deprecate_warn() -- matches eri_guide()'s
+  # convention (R/guide.R) and adds no new runtime dependency. lifecycle is only in
+  # Suggests, so a deprecate_warn() call here would fail hard with "there is no
+  # package called 'lifecycle'" on a plain install_github(), the opposite of the point.
+  .Deprecated(package = "erifunctions",
+              msg = paste(
+                "eri_trigger() is deprecated. The registered workflow does not exist in",
+                "health-hsp-malaria and this function is not being repaired -- erifunctions",
+                "is taking over the Power BI output contract directly (ADR-0027), after",
+                "which there is no pipeline left to trigger."
+              ))
   pat <- Sys.getenv("GITHUB_PAT")
   if (!nzchar(pat)) {
     cli::cli_abort(c(

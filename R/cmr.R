@@ -1108,7 +1108,20 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   [eri_dq_flag_resolve()] and this function is re-run), `cross` (`TRUE`
 #'   for a cross-consistency flag, `FALSE` for an ordinary single-measure
 #'   flag). Zero rows if every measure (and any cross-consistency rules) is
-#'   clean.
+#'   clean. Any `consistency:` rule that could not be evaluated on a sheet
+#'   (a column it needs wasn't found) is listed in the console after the flags
+#'   and returned in `attr(<result>, "skipped_rules")` (columns `sheet`,
+#'   `rule`, `reason`, `expected`) -- a skipped rule produced no flags because
+#'   it never ran, not because the data passed it. A rule whose schema entry
+#'   says `skip_ok: true` (written for one sheet layout, so skipping on another
+#'   is by design) is shown as a quiet note with `expected = TRUE`; any other
+#'   skip is a warning, and means the schema's column aliases probably don't
+#'   match the file. If *every* rule skipped on a sheet, that is always a
+#'   warning (no consistency check ran on it at all), unless the schema lists
+#'   the sheet under `consistency_not_applicable_sheets`. Sheets that couldn't
+#'   be read, or have no schema, are warned about separately and are not in
+#'   this list. The attribute is dropped by dplyr verbs such as `filter()`, so
+#'   read it straight off the returned value.
 #' @examples
 #' \dontrun{
 #' flags <- eri_cmr_dq_report("sdn", "202605")
@@ -1124,6 +1137,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
 
   rows   <- list()
   tables <- list()
+  skips  <- list()
   for (i in seq_len(nrow(plan))) {
     p <- plan[i, ]
     staged <- tryCatch(
@@ -1154,8 +1168,25 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     # Guarded on the block actually being present so a schema with none
     # doesn't print an unconditional "No consistency rules defined" notice on
     # every single DQ report run.
-    if (!is.null(schema$consistency)) {
+    if (!is.null(schema[["consistency", exact = TRUE]])) {
       result <- add_anomaly_consistency(result, schema)
+      sk <- result$skipped_rules
+      if (NROW(sk) > 0L) {
+        # Every rule skipping on a sheet means NO consistency check ran on it at
+        # all -- never "by design", whatever the individual rules say, unless the
+        # schema lists the sheet in `consistency_not_applicable_sheets` (e.g.
+        # Ethiopia's ToT sheets, which have no monthly columns). Otherwise two
+        # layout-specific skip_ok rules could both lose their columns and the
+        # report would still read as clean (issue #374).
+        if (nrow(sk) >= length(schema[["consistency", exact = TRUE]]) &&
+            !(p$sheet %in% unlist(schema[["consistency_not_applicable_sheets", exact = TRUE]]))) {
+          sk$expected <- FALSE
+          sk$reason   <- paste0(sk$reason, "; no consistency rule ran on this sheet")
+        }
+        skips[[length(skips) + 1L]] <- dplyr::bind_cols(
+          tibble::tibble(sheet = rep(p$sheet, nrow(sk))), sk
+        )
+      }
     }
     tables[[length(tables) + 1L]] <- list(sheet = p$sheet, disease = p$disease,
                                           data_type = p$data_type, data = result$data)
@@ -1243,17 +1274,70 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
     }
   }
 
+  skipped <- if (length(skips) > 0L) dplyr::bind_rows(skips) else
+    tibble::tibble(sheet = character(), rule = character(), reason = character(),
+                   expected = logical())
+  .eri_cmr_report_skips(skipped)
+  n_unexpected <- sum(!skipped$expected %in% TRUE)
+  n_bad_rules  <- length(unique(skipped$rule[!skipped$expected %in% TRUE]))
+
   if (length(rows) == 0L) {
-    cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
-    return(tibble::tibble(
+    if (n_unexpected == 0L) {
+      cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
+    } else {
+      cli::cli_alert_warning(
+        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_bad_rules} data check{?s} could not be run (above), so this is not a full all-clear."
+      )
+    }
+    out <- tibble::tibble(
       sheet = character(0), disease = character(0), data_type = character(0),
       log_path = character(0), flag_id = character(0), row = integer(0),
       excel_row = integer(0), column = character(0), value = character(0),
       issue = character(0), status = character(0), note = character(0), cross = logical(0)
+    )
+  } else {
+    out <- dplyr::bind_rows(rows)
+  }
+  attr(out, "skipped_rules") <- skipped
+  out
+}
+
+# Prints the consolidated "these data checks did not run" block that
+# eri_cmr_dq_report() shows after its flags (issue #374). Two tiers, so a skip
+# that matters is not drowned by ones that are by design:
+# - unexpected (the schema's rule did not declare `skip_ok`): a warning -- most
+#   likely the schema's column aliases don't match the file, and no flags from
+#   that check means it never ran, not that the data passed.
+# - expected (`skip_ok: true`, e.g. a rule written for the other sheet layout):
+#   a quiet info line, still listed per rule and sheet.
+.eri_cmr_report_skips <- function(skipped) {
+  if (nrow(skipped) == 0L) return(invisible(NULL))
+  bad <- skipped[!skipped$expected %in% TRUE, , drop = FALSE]
+  ok  <- skipped[skipped$expected %in% TRUE, , drop = FALSE]
+  if (nrow(bad) > 0L) {
+    cli::cli_alert_warning(
+      "{length(unique(bad$rule))} data check{?s} could not be run on some sheets (the columns {?it needs/they need} weren't found):"
+    )
+    for (rule in unique(bad$rule)) {
+      sheets <- bad$sheet[bad$rule == rule]
+      cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+    }
+    noran <- unique(bad$sheet[grepl("no consistency rule ran", bad$reason, fixed = TRUE)])
+    if (length(noran) > 0L) {
+      cli::cli_bullets(c("!" = "No consistency check ran at all on: {.val {noran}}"))
+    }
+    cli::cli_bullets(c(
+      "i" = "No flags from a check that couldn't run does not mean the data passed. If this is unexpected, the schema's column names probably don't match the file -- tell the DQ schema maintainer."
     ))
   }
-
-  dplyr::bind_rows(rows)
+  if (nrow(ok) > 0L) {
+    cli::cli_alert_info("Not applicable to some sheets (by design, e.g. a different sheet layout):")
+    for (rule in unique(ok$rule)) {
+      sheets <- ok$sheet[ok$rule == rule]
+      cli::cli_bullets(c(" " = "{.val {rule}}: {.val {sheets}}"))
+    }
+  }
+  invisible(NULL)
 }
 
 #' Stage CMR monthly report files into the data/ blob

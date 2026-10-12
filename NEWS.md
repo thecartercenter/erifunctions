@@ -1,3 +1,87 @@
+# erifunctions 0.9.51
+
+## Training "male + female = new + refresher" is now checked for every country, and skipped DQ checks are reported (#374)
+
+Reported on Ethiopia's August 2026 CMR: "the training discrepancies were not flagged." The check for
+male + female trained vs new + refresher trained (`gender_sum_matches_type_sum`) was not out of date
+and not failing — it **never ran** on CDD, CS or HW Training. Those three sheets are laid out
+differently (monthly male/female columns and monthly new/refresher columns, with no annual male/female
+totals), so the check couldn't find its columns, printed one console line, and the report came back
+with no flags — indistinguishable from "checked and clean".
+
+- **Those three sheets are now checked.** A new rule, `monthly_gender_sum_matches_type_sum`, covers
+  them. On the real 202608 data it flags the three mismatches that were missed: CDD Training Excel row
+  16 and CS Training Excel rows 112 and 114. The original rule is unchanged and still covers the other
+  five sheets. **Ethiopia CDD/CS/HW sheets may show new flags** on the next report.
+- **Ethiopia's CDD/CS/HW tabs differ from every other tab and country.** Checked against each
+  country's latest real training files (structure only): Haiti, Nigeria, Sudan, South Sudan and
+  Uganda use the standard layout (annual male/female totals, monthly new/refresher by gender) on
+  *all* their training tabs, CDD/CS/HW included; only Ethiopia's CDD, CS and HW tabs use the
+  different monthly layout, so that is a template inconsistency in Ethiopia's file worth raising with
+  whoever maintains the master template. Our schema handles both.
+- **The check now exists for Haiti, Nigeria, Sudan, South Sudan and Uganda too** (they had no
+  male + female vs new + refresher check at all). It ran cleanly on their latest periods: no mismatches
+  found, none skipped. Madagascar and Chad have training schemas but no processed training files to check against yet, so they do not get the check until real data exists.
+- **A check that couldn't run is now reported.** `eri_cmr_dq_report()` lists, after the flags, any data
+  check that was skipped because its columns weren't found, per check and sheet. A skip that is
+  expected (a check written for a different sheet layout, e.g. ToT sheets) appears as a quiet note; any
+  other skip is a warning. If there are no flags but a check could not run, the report no longer says
+  "all clean". If a sheet had *no* check run on it at all, that is always a warning (the ToT sheets,
+  which have none by design, are exempted).
+- **This applies to every country, not just Ethiopia.** Only Ethiopia's CDD/CS/HW check is new, but
+  the "could not run" reporting covers every country's `consistency:` rules. If a check for another
+  country can't find its columns you will now see a warning where there was silence before — that is a
+  real finding (that check has not been running there), so pass the sheet name and check name to the
+  DQ schema maintainer. See the new section in the DQ review guide.
+- A schema whose `consistency:` is written as an unnamed list now stops with a clear message instead of
+  silently running no checks.
+- For scripts: skips are in `attr(flags, "skipped_rules")` (`eri_cmr_dq_report()`), `$skipped_rules`
+  (`add_anomaly_consistency()` on a `dq_result`), or `attr(, "skipped_rules")` (on a plain tibble). A
+  consistency rule can set `skip_ok: true` in its schema to mark such a skip as by design. Decision
+  recorded as an addendum to ADR-0026.
+
+# erifunctions 0.9.50
+
+## Removed the redundant OEPA oncho rollup schemas (#327)
+
+`oepa_oncho_programmatic_treatment.yaml` and `oepa_oncho_research_prevalence.yaml` modeled OEPA
+oncho as one shared Americas-wide schema with `country` as a row value. Superseded by real
+per-country CMR schemas (bra/ven shipped in #325), and "oepa" was never a registered country in
+the data model, so there was no real staged/processed data under the old shape to migrate.
+
+- Removed both bundled schema files and their legacy-stem aliases (`oepa_oncho_mda`,
+  `oepa_oncho_prevalence`) from the schema-alias map.
+- `load_dq_schema("oepa", "oncho_mda")` / `load_dq_schema("oepa", "oncho_prevalence")` (and the
+  legacy stems) now fail with a clear "no schema found" rather than resolving to a deleted file.
+
+# erifunctions 0.9.49
+
+## The general-purpose DAL verbs now warn when they land somewhere other than `data` (#331)
+
+`eri_read()`, `eri_write()`, `eri_list()`, `eri_file_exists()`, `eri_dir_exists()`,
+`eri_dir_create()`, `eri_delete()`, `eri_dir_delete()`, and `eri_upload()` connect ambiently when
+you don't pass `azcontainer` — but unlike almost every other subsystem in the package, they
+resolved the *legacy* `ERIFUNCTIONS_STORAGE_NAME` default rather than the `data` container most
+production data actually lives in. That produced a real false negative: `eri_file_exists()`
+answered `FALSE` immediately after a genuine upload, because it was asking the wrong container.
+
+**Not fixed yet, made loud instead.** Whether the ambient default itself should change to `data`
+is still an open decision (issue #331) — this only makes the mismatch visible: a `cli_warn` fires
+whenever one of these functions connects ambiently to something other than `data`, naming the
+container it actually landed on and how to target `data` explicitly.
+
+- **Not a breaking change.** Behavior is identical; only a new warning was added, and only when
+  `azcontainer` is left `NULL`.
+
+# erifunctions 0.9.48
+
+## `eri_trigger()` is deprecated (#342)
+
+`eri_trigger()` dispatched a GitHub Actions workflow (`data_ingestion.yml`) that does not exist in
+`health-hsp-malaria`; every call has always failed. It is retired rather than repaired: erifunctions
+is taking over the Power BI output contract directly (ADR-0027), and once that lands there is no
+pipeline left to trigger. Calling it now warns before failing the same way it always did.
+
 # erifunctions 0.9.47
 
 ## Bug fix: you can now authenticate as yourself when SP credentials are set (ADR-0028)

@@ -228,3 +228,262 @@ columns:
       - '#labtrn_achieved'
     range: [0, 2]
 
+
+  # Monthly new/refresher-by-gender breakdowns (issue #374) -- the real CMR template has no
+  # annual "new total"/"refresher total" roll-up, only these 12 monthly blocks per gender.
+  # Added so the gender_sum_matches_type_sum consistency rule at the bottom of this file has
+  # something to sum against; not otherwise required. Verified against this country's latest
+  # real training sheets (structure only): every sheet carries these columns.
+  # Same aliasing pattern as every other column here: each ingested sheet only ever has ONE
+  # prefix's columns present.
+  new_male_jan:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_jan", "#pstrn_new_male_jan", "#lltrn_new_male_jan", "#sstrn_new_male_jan", "#dmditrnsx_new_male_jan", "#dmditrnpt_new_male_jan", "#entotrn_new_male_jan", "#labtrn_new_male_jan"]
+  new_male_feb:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_feb", "#pstrn_new_male_feb", "#lltrn_new_male_feb", "#sstrn_new_male_feb", "#dmditrnsx_new_male_feb", "#dmditrnpt_new_male_feb", "#entotrn_new_male_feb", "#labtrn_new_male_feb"]
+  new_male_mar:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_mar", "#pstrn_new_male_mar", "#lltrn_new_male_mar", "#sstrn_new_male_mar", "#dmditrnsx_new_male_mar", "#dmditrnpt_new_male_mar", "#entotrn_new_male_mar", "#labtrn_new_male_mar"]
+  new_male_apr:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_apr", "#pstrn_new_male_apr", "#lltrn_new_male_apr", "#sstrn_new_male_apr", "#dmditrnsx_new_male_apr", "#dmditrnpt_new_male_apr", "#entotrn_new_male_apr", "#labtrn_new_male_apr"]
+  new_male_may:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_may", "#pstrn_new_male_may", "#lltrn_new_male_may", "#sstrn_new_male_may", "#dmditrnsx_new_male_may", "#dmditrnpt_new_male_may", "#entotrn_new_male_may", "#labtrn_new_male_may"]
+  new_male_jun:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_jun", "#pstrn_new_male_jun", "#lltrn_new_male_jun", "#sstrn_new_male_jun", "#dmditrnsx_new_male_jun", "#dmditrnpt_new_male_jun", "#entotrn_new_male_jun", "#labtrn_new_male_jun"]
+  new_male_jul:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_jul", "#pstrn_new_male_jul", "#lltrn_new_male_jul", "#sstrn_new_male_jul", "#dmditrnsx_new_male_jul", "#dmditrnpt_new_male_jul", "#entotrn_new_male_jul", "#labtrn_new_male_jul"]
+  new_male_aug:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_aug", "#pstrn_new_male_aug", "#lltrn_new_male_aug", "#sstrn_new_male_aug", "#dmditrnsx_new_male_aug", "#dmditrnpt_new_male_aug", "#entotrn_new_male_aug", "#labtrn_new_male_aug"]
+  new_male_sep:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_sep", "#pstrn_new_male_sep", "#lltrn_new_male_sep", "#sstrn_new_male_sep", "#dmditrnsx_new_male_sep", "#dmditrnpt_new_male_sep", "#entotrn_new_male_sep", "#labtrn_new_male_sep"]
+  new_male_oct:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_oct", "#pstrn_new_male_oct", "#lltrn_new_male_oct", "#sstrn_new_male_oct", "#dmditrnsx_new_male_oct", "#dmditrnpt_new_male_oct", "#entotrn_new_male_oct", "#labtrn_new_male_oct"]
+  new_male_nov:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_nov", "#pstrn_new_male_nov", "#lltrn_new_male_nov", "#sstrn_new_male_nov", "#dmditrnsx_new_male_nov", "#dmditrnpt_new_male_nov", "#entotrn_new_male_nov", "#labtrn_new_male_nov"]
+  new_male_dec:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_male_dec", "#pstrn_new_male_dec", "#lltrn_new_male_dec", "#sstrn_new_male_dec", "#dmditrnsx_new_male_dec", "#dmditrnpt_new_male_dec", "#entotrn_new_male_dec", "#labtrn_new_male_dec"]
+  new_fem_jan:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_jan", "#pstrn_new_fem_jan", "#lltrn_new_fem_jan", "#sstrn_new_fem_jan", "#dmditrnsx_new_fem_jan", "#dmditrnpt_new_fem_jan", "#entotrn_new_fem_jan", "#labtrn_new_fem_jan"]
+  new_fem_feb:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_feb", "#pstrn_new_fem_feb", "#lltrn_new_fem_feb", "#sstrn_new_fem_feb", "#dmditrnsx_new_fem_feb", "#dmditrnpt_new_fem_feb", "#entotrn_new_fem_feb", "#labtrn_new_fem_feb"]
+  new_fem_mar:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_mar", "#pstrn_new_fem_mar", "#lltrn_new_fem_mar", "#sstrn_new_fem_mar", "#dmditrnsx_new_fem_mar", "#dmditrnpt_new_fem_mar", "#entotrn_new_fem_mar", "#labtrn_new_fem_mar"]
+  new_fem_apr:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_apr", "#pstrn_new_fem_apr", "#lltrn_new_fem_apr", "#sstrn_new_fem_apr", "#dmditrnsx_new_fem_apr", "#dmditrnpt_new_fem_apr", "#entotrn_new_fem_apr", "#labtrn_new_fem_apr"]
+  new_fem_may:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_may", "#pstrn_new_fem_may", "#lltrn_new_fem_may", "#sstrn_new_fem_may", "#dmditrnsx_new_fem_may", "#dmditrnpt_new_fem_may", "#entotrn_new_fem_may", "#labtrn_new_fem_may"]
+  new_fem_jun:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_jun", "#pstrn_new_fem_jun", "#lltrn_new_fem_jun", "#sstrn_new_fem_jun", "#dmditrnsx_new_fem_jun", "#dmditrnpt_new_fem_jun", "#entotrn_new_fem_jun", "#labtrn_new_fem_jun"]
+  new_fem_jul:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_jul", "#pstrn_new_fem_jul", "#lltrn_new_fem_jul", "#sstrn_new_fem_jul", "#dmditrnsx_new_fem_jul", "#dmditrnpt_new_fem_jul", "#entotrn_new_fem_jul", "#labtrn_new_fem_jul"]
+  new_fem_aug:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_aug", "#pstrn_new_fem_aug", "#lltrn_new_fem_aug", "#sstrn_new_fem_aug", "#dmditrnsx_new_fem_aug", "#dmditrnpt_new_fem_aug", "#entotrn_new_fem_aug", "#labtrn_new_fem_aug"]
+  new_fem_sep:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_sep", "#pstrn_new_fem_sep", "#lltrn_new_fem_sep", "#sstrn_new_fem_sep", "#dmditrnsx_new_fem_sep", "#dmditrnpt_new_fem_sep", "#entotrn_new_fem_sep", "#labtrn_new_fem_sep"]
+  new_fem_oct:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_oct", "#pstrn_new_fem_oct", "#lltrn_new_fem_oct", "#sstrn_new_fem_oct", "#dmditrnsx_new_fem_oct", "#dmditrnpt_new_fem_oct", "#entotrn_new_fem_oct", "#labtrn_new_fem_oct"]
+  new_fem_nov:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_nov", "#pstrn_new_fem_nov", "#lltrn_new_fem_nov", "#sstrn_new_fem_nov", "#dmditrnsx_new_fem_nov", "#dmditrnpt_new_fem_nov", "#entotrn_new_fem_nov", "#labtrn_new_fem_nov"]
+  new_fem_dec:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_new_fem_dec", "#pstrn_new_fem_dec", "#lltrn_new_fem_dec", "#sstrn_new_fem_dec", "#dmditrnsx_new_fem_dec", "#dmditrnpt_new_fem_dec", "#entotrn_new_fem_dec", "#labtrn_new_fem_dec"]
+  refresh_male_jan:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_jan", "#pstrn_refresh_male_jan", "#lltrn_refresh_male_jan", "#sstrn_refresh_male_jan", "#dmditrnsx_refresh_male_jan", "#dmditrnpt_refresh_male_jan", "#entotrn_refresh_male_jan", "#labtrn_refresh_male_jan"]
+  refresh_male_feb:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_feb", "#pstrn_refresh_male_feb", "#lltrn_refresh_male_feb", "#sstrn_refresh_male_feb", "#dmditrnsx_refresh_male_feb", "#dmditrnpt_refresh_male_feb", "#entotrn_refresh_male_feb", "#labtrn_refresh_male_feb"]
+  refresh_male_mar:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_mar", "#pstrn_refresh_male_mar", "#lltrn_refresh_male_mar", "#sstrn_refresh_male_mar", "#dmditrnsx_refresh_male_mar", "#dmditrnpt_refresh_male_mar", "#entotrn_refresh_male_mar", "#labtrn_refresh_male_mar"]
+  refresh_male_apr:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_apr", "#pstrn_refresh_male_apr", "#lltrn_refresh_male_apr", "#sstrn_refresh_male_apr", "#dmditrnsx_refresh_male_apr", "#dmditrnpt_refresh_male_apr", "#entotrn_refresh_male_apr", "#labtrn_refresh_male_apr"]
+  refresh_male_may:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_may", "#pstrn_refresh_male_may", "#lltrn_refresh_male_may", "#sstrn_refresh_male_may", "#dmditrnsx_refresh_male_may", "#dmditrnpt_refresh_male_may", "#entotrn_refresh_male_may", "#labtrn_refresh_male_may"]
+  refresh_male_jun:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_jun", "#pstrn_refresh_male_jun", "#lltrn_refresh_male_jun", "#sstrn_refresh_male_jun", "#dmditrnsx_refresh_male_jun", "#dmditrnpt_refresh_male_jun", "#entotrn_refresh_male_jun", "#labtrn_refresh_male_jun"]
+  refresh_male_jul:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_jul", "#pstrn_refresh_male_jul", "#lltrn_refresh_male_jul", "#sstrn_refresh_male_jul", "#dmditrnsx_refresh_male_jul", "#dmditrnpt_refresh_male_jul", "#entotrn_refresh_male_jul", "#labtrn_refresh_male_jul"]
+  refresh_male_aug:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_aug", "#pstrn_refresh_male_aug", "#lltrn_refresh_male_aug", "#sstrn_refresh_male_aug", "#dmditrnsx_refresh_male_aug", "#dmditrnpt_refresh_male_aug", "#entotrn_refresh_male_aug", "#labtrn_refresh_male_aug"]
+  refresh_male_sep:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_sep", "#pstrn_refresh_male_sep", "#lltrn_refresh_male_sep", "#sstrn_refresh_male_sep", "#dmditrnsx_refresh_male_sep", "#dmditrnpt_refresh_male_sep", "#entotrn_refresh_male_sep", "#labtrn_refresh_male_sep"]
+  refresh_male_oct:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_oct", "#pstrn_refresh_male_oct", "#lltrn_refresh_male_oct", "#sstrn_refresh_male_oct", "#dmditrnsx_refresh_male_oct", "#dmditrnpt_refresh_male_oct", "#entotrn_refresh_male_oct", "#labtrn_refresh_male_oct"]
+  refresh_male_nov:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_nov", "#pstrn_refresh_male_nov", "#lltrn_refresh_male_nov", "#sstrn_refresh_male_nov", "#dmditrnsx_refresh_male_nov", "#dmditrnpt_refresh_male_nov", "#entotrn_refresh_male_nov", "#labtrn_refresh_male_nov"]
+  refresh_male_dec:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_male_dec", "#pstrn_refresh_male_dec", "#lltrn_refresh_male_dec", "#sstrn_refresh_male_dec", "#dmditrnsx_refresh_male_dec", "#dmditrnpt_refresh_male_dec", "#entotrn_refresh_male_dec", "#labtrn_refresh_male_dec"]
+  refresh_fem_jan:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_jan", "#pstrn_refresh_fem_jan", "#lltrn_refresh_fem_jan", "#sstrn_refresh_fem_jan", "#dmditrnsx_refresh_fem_jan", "#dmditrnpt_refresh_fem_jan", "#entotrn_refresh_fem_jan", "#labtrn_refresh_fem_jan"]
+  refresh_fem_feb:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_feb", "#pstrn_refresh_fem_feb", "#lltrn_refresh_fem_feb", "#sstrn_refresh_fem_feb", "#dmditrnsx_refresh_fem_feb", "#dmditrnpt_refresh_fem_feb", "#entotrn_refresh_fem_feb", "#labtrn_refresh_fem_feb"]
+  refresh_fem_mar:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_mar", "#pstrn_refresh_fem_mar", "#lltrn_refresh_fem_mar", "#sstrn_refresh_fem_mar", "#dmditrnsx_refresh_fem_mar", "#dmditrnpt_refresh_fem_mar", "#entotrn_refresh_fem_mar", "#labtrn_refresh_fem_mar"]
+  refresh_fem_apr:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_apr", "#pstrn_refresh_fem_apr", "#lltrn_refresh_fem_apr", "#sstrn_refresh_fem_apr", "#dmditrnsx_refresh_fem_apr", "#dmditrnpt_refresh_fem_apr", "#entotrn_refresh_fem_apr", "#labtrn_refresh_fem_apr"]
+  refresh_fem_may:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_may", "#pstrn_refresh_fem_may", "#lltrn_refresh_fem_may", "#sstrn_refresh_fem_may", "#dmditrnsx_refresh_fem_may", "#dmditrnpt_refresh_fem_may", "#entotrn_refresh_fem_may", "#labtrn_refresh_fem_may"]
+  refresh_fem_jun:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_jun", "#pstrn_refresh_fem_jun", "#lltrn_refresh_fem_jun", "#sstrn_refresh_fem_jun", "#dmditrnsx_refresh_fem_jun", "#dmditrnpt_refresh_fem_jun", "#entotrn_refresh_fem_jun", "#labtrn_refresh_fem_jun"]
+  refresh_fem_jul:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_jul", "#pstrn_refresh_fem_jul", "#lltrn_refresh_fem_jul", "#sstrn_refresh_fem_jul", "#dmditrnsx_refresh_fem_jul", "#dmditrnpt_refresh_fem_jul", "#entotrn_refresh_fem_jul", "#labtrn_refresh_fem_jul"]
+  refresh_fem_aug:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_aug", "#pstrn_refresh_fem_aug", "#lltrn_refresh_fem_aug", "#sstrn_refresh_fem_aug", "#dmditrnsx_refresh_fem_aug", "#dmditrnpt_refresh_fem_aug", "#entotrn_refresh_fem_aug", "#labtrn_refresh_fem_aug"]
+  refresh_fem_sep:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_sep", "#pstrn_refresh_fem_sep", "#lltrn_refresh_fem_sep", "#sstrn_refresh_fem_sep", "#dmditrnsx_refresh_fem_sep", "#dmditrnpt_refresh_fem_sep", "#entotrn_refresh_fem_sep", "#labtrn_refresh_fem_sep"]
+  refresh_fem_oct:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_oct", "#pstrn_refresh_fem_oct", "#lltrn_refresh_fem_oct", "#sstrn_refresh_fem_oct", "#dmditrnsx_refresh_fem_oct", "#dmditrnpt_refresh_fem_oct", "#entotrn_refresh_fem_oct", "#labtrn_refresh_fem_oct"]
+  refresh_fem_nov:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_nov", "#pstrn_refresh_fem_nov", "#lltrn_refresh_fem_nov", "#sstrn_refresh_fem_nov", "#dmditrnsx_refresh_fem_nov", "#dmditrnpt_refresh_fem_nov", "#entotrn_refresh_fem_nov", "#labtrn_refresh_fem_nov"]
+  refresh_fem_dec:
+    required: false
+    type: numeric
+    aliases: ["#vhttrn_refresh_fem_dec", "#pstrn_refresh_fem_dec", "#lltrn_refresh_fem_dec", "#sstrn_refresh_fem_dec", "#dmditrnsx_refresh_fem_dec", "#dmditrnpt_refresh_fem_dec", "#entotrn_refresh_fem_dec", "#labtrn_refresh_fem_dec"]
+
+# Cross-check (issue #374): male_trained + female_trained (the annual totals) should equal the
+# sum of every monthly new + refresher column above. Same rule Ethiopia's training schema carries
+# (R/dq.R's add_anomaly_consistency() lhs_sum/rhs_sum). If a sheet's columns don't match, the rule is
+# skipped and eri_cmr_dq_report() says so (it does NOT read as a pass).
+consistency:
+  gender_sum_matches_type_sum:
+    lhs_sum: [male_trained, female_trained]
+    op: "=="
+    rhs_sum:
+      - new_male_jan
+      - new_male_feb
+      - new_male_mar
+      - new_male_apr
+      - new_male_may
+      - new_male_jun
+      - new_male_jul
+      - new_male_aug
+      - new_male_sep
+      - new_male_oct
+      - new_male_nov
+      - new_male_dec
+      - new_fem_jan
+      - new_fem_feb
+      - new_fem_mar
+      - new_fem_apr
+      - new_fem_may
+      - new_fem_jun
+      - new_fem_jul
+      - new_fem_aug
+      - new_fem_sep
+      - new_fem_oct
+      - new_fem_nov
+      - new_fem_dec
+      - refresh_male_jan
+      - refresh_male_feb
+      - refresh_male_mar
+      - refresh_male_apr
+      - refresh_male_may
+      - refresh_male_jun
+      - refresh_male_jul
+      - refresh_male_aug
+      - refresh_male_sep
+      - refresh_male_oct
+      - refresh_male_nov
+      - refresh_male_dec
+      - refresh_fem_jan
+      - refresh_fem_feb
+      - refresh_fem_mar
+      - refresh_fem_apr
+      - refresh_fem_may
+      - refresh_fem_jun
+      - refresh_fem_jul
+      - refresh_fem_aug
+      - refresh_fem_sep
+      - refresh_fem_oct
+      - refresh_fem_nov
+      - refresh_fem_dec
+    message: "Sum of male+female trained does not equal sum of new+refresher trained (monthly)"

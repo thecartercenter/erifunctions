@@ -35,7 +35,12 @@ of interest. See examples.
 
 \item{obj}{\code{robj} Object to be saved, needed for \code{"write"}. Defaults to \code{NULL}.}
 
-\item{azcontainer}{Azure container object returned from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+\item{azcontainer}{Azure container object returned from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.
+If \code{NULL}, one is created ambiently from \code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}'s own default --
+which is \emph{not} necessarily the \code{data} container production data lives in (issue #331).
+Calling \code{azure_io()} directly, as opposed to through the verb-named wrappers
+(\code{\link[=eri_read]{eri_read()}} etc.), does \strong{not} get the container-mismatch warning those add; pass
+\code{azcontainer} explicitly here to target a specific container.}
 
 \item{force_delete}{\code{logical} Use delete io without confirmation prompt. Default \code{FALSE}.}
 

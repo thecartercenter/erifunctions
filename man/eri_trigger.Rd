@@ -30,20 +30,20 @@ eri_trigger(
 Invisibly, the URL to the workflow's runs page on GitHub.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
-Dispatches a \code{workflow_dispatch} event to a registered GitHub Actions
-pipeline from R.  Authenticates with a GitHub Personal Access Token stored
-in the \code{GITHUB_PAT} environment variable (needs \code{workflow} scope).
-\subsection{Registered pipelines}{\tabular{lll}{
-   Name \tab Repository \tab Workflow \cr
-   \code{hsp-mal} \tab thecartercenter/health-hsp-malaria \tab data_ingestion.yml \cr
-}
-
-}
+\strong{Deprecated, and every call fails.} The only registered pipeline dispatched a
+workflow (\code{data_ingestion.yml}) that does not exist in \code{health-hsp-malaria}; the
+real workflow there takes a different set of inputs and a different country
+vocabulary. Triggering the contractor's pipeline from R is a capability
+erifunctions is retiring, not repairing: erifunctions is taking over the Power BI
+output contract directly (see \href{https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md}{ADR-0027}),
+after which there is no pipeline left to trigger. Calling this function now warns
+and then fails the same way it always did once it reaches GitHub.
 }
 \examples{
 \dontrun{
+# deprecated -- this always errors, see @description
 eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
 }
 }

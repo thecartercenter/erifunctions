@@ -13,7 +13,14 @@ eri_dir_create(file_loc, azure = TRUE, azcontainer = NULL)
 Defaults to \code{TRUE}, otherwise, interacts with files locally.}
 
 \item{azcontainer}{\verb{Azure container} A container object returned by
-\code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}.}
+\code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}. If \code{NULL} (the default), one is created ambiently from
+\code{\link[=get_azure_storage_connection]{get_azure_storage_connection()}}'s own default -- which is \emph{not} necessarily the \code{data}
+container production data lives in (issue #331). The verb-named wrappers (\code{\link[=eri_read]{eri_read()}},
+\code{\link[=eri_write]{eri_write()}}, \code{\link[=eri_list]{eri_list()}}, \code{\link[=eri_file_exists]{eri_file_exists()}}, \code{\link[=eri_dir_exists]{eri_dir_exists()}}, \code{\link[=eri_dir_create]{eri_dir_create()}},
+\code{\link[=eri_delete]{eri_delete()}}, \code{\link[=eri_dir_delete]{eri_dir_delete()}}, \code{\link[=eri_upload]{eri_upload()}}) resolve this ambient connection through
+\code{.eri_dal_verb_connect()} and \code{cli_warn} when it lands somewhere other than \code{data}. Calling
+\code{erifunctions_io()} directly bypasses that warning; pass \code{azcontainer} explicitly to target a
+specific container, e.g. \code{get_azure_storage_connection(storage_name = "data")}.}
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}

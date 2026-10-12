@@ -69,8 +69,8 @@ the [eri_do() tour](da-do-guide.html) for what its menu looks like.
 - **Bring in CMR / surveillance / ODK data, or stand up a new space** → run
   [`eri_do()`](../reference/eri_do.html); the [CMR](da-cmr-guide.html), [ingest](da-ingest-guide.html),
   and [ODK](da-odk-guide.html) guides are for understanding what it does underneath, or scripting it
-  yourself.
-- **Process OEPA** → the general pipeline (oncho treatment + prevalence)
+  yourself. OEPA-program oncho countries (`bra`, `ven`, …) use this same path — there is no
+  separate OEPA pipeline; each country onboards its own CMR schema.
 - **QC + analytic products + country feedback** → `run_dq_checks` · `dq_report` · `eri_notify_dq`
 - **Figures / routine reports** → `eri_table` · `eri_map_*` · `eri_pptx_*` · `eri_report_*`
 - **ODK: monitor + pull + backfill** → [ODK guide](da-odk-guide.html) · `eri_survey_status` · `eri_odk_upload`
