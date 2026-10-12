@@ -1,4 +1,4 @@
-# erifunctions (development version)
+# erifunctions 0.9.51
 
 ## Training "male + female = new + refresher" is now checked for every country, and skipped DQ checks are reported (#374)
 
