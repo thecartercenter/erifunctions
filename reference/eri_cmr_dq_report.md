@@ -103,7 +103,22 @@ triaged via
 [`eri_dq_flag_resolve()`](https://thecartercenter.github.io/erifunctions/reference/eri_dq_flag_resolve.md)
 and this function is re-run), `cross` (`TRUE` for a cross-consistency
 flag, `FALSE` for an ordinary single-measure flag). Zero rows if every
-measure (and any cross-consistency rules) is clean.
+measure (and any cross-consistency rules) is clean. Any `consistency:`
+rule that could not be evaluated on a sheet (a column it needs wasn't
+found) is listed in the console after the flags and returned in
+`attr(<result>, "skipped_rules")` (columns `sheet`, `rule`, `reason`,
+`expected`) – a skipped rule produced no flags because it never ran, not
+because the data passed it. A rule whose schema entry says
+`skip_ok: true` (written for one sheet layout, so skipping on another is
+by design) is shown as a quiet note with `expected = TRUE`; any other
+skip is a warning, and means the schema's column aliases probably don't
+match the file. If *every* rule skipped on a sheet, that is always a
+warning (no consistency check ran on it at all), unless the schema lists
+the sheet under `consistency_not_applicable_sheets`. Sheets that
+couldn't be read, or have no schema, are warned about separately and are
+not in this list. The attribute is dropped by dplyr verbs such as
+[`filter()`](https://rdrr.io/r/stats/filter.html), so read it straight
+off the returned value.
 
 ## See also
 

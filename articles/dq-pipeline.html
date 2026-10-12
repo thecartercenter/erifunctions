@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Data Quality Pipeline</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.47/vignettes/dq-pipeline.Rmd" class="external-link"><code>vignettes/dq-pipeline.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/dq-pipeline.Rmd" class="external-link"><code>vignettes/dq-pipeline.Rmd</code></a></small>
       <div class="d-none name"><code>dq-pipeline.Rmd</code></div>
     </div>
 
@@ -209,6 +209,18 @@ missing ones as 0. A summed side where none of its columns exist in the
 data at all skips the whole rule (e.g. a schema shared across several
 sheet shapes, where only one prefix’s columns are ever populated on a
 given ingest).</p>
+<p>A skipped rule is <strong>recorded</strong>, not just printed:
+<code><a href="../reference/add_anomaly_consistency.html">add_anomaly_consistency()</a></code> returns it in
+<code>$skipped_rules</code> (or <code>attr(, "skipped_rules")</code> on
+a plain tibble), and <code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> lists it after the
+flags. A rule written for one sheet layout can set
+<code>skip_ok: true</code> to say skipping on another layout is by
+design – it is then shown as a quiet note instead of a warning. Use it
+sparingly: a <code>skip_ok</code> rule whose columns later stop matching
+is only a quiet note, and if <em>every</em> rule on a sheet skips,
+<code><a href="../reference/eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> warns anyway unless the sheet is listed
+under a top-level <code>consistency_not_applicable_sheets:</code> key in
+the schema.</p>
 </div>
 <div class="section level2">
 <h2 id="what-run_dq_checks-does">What <code>run_dq_checks()</code> does<a class="anchor" aria-label="anchor" href="#what-run_dq_checks-does"></a>

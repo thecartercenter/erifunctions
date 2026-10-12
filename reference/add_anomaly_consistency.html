@@ -39,7 +39,18 @@ lhs/rhs).
 Supported operators: &amp;lt;=, &amp;gt;=, ==, &amp;lt;, &amp;gt;, !=.
 Missing values (NA) in either operand skip the check for that row.
 Works on a plain tibble (returns a tibble of violations) or a dq_result
-(appends violations to $flags)."><meta property="og:description" content="
+(appends violations to $flags).
+A rule that cannot be evaluated at all (a column it needs is missing from
+the data) is skipped with a console message and recorded, so &quot;the rule
+did not run&quot; can be told apart from &quot;the rule ran and found nothing&quot;: on a
+dq_result the skips are appended to $skipped_rules (columns rule,
+reason, expected); on a plain tibble they are returned in
+attr(&amp;lt;result&amp;gt;, &quot;skipped_rules&quot;) (dplyr verbs such as filter() can drop
+that attribute – read it straight off the returned value). A rule written
+for one sheet layout can set skip_ok: true to say that skipping on another
+layout is by design; it is still recorded, with expected = TRUE, but
+eri_cmr_dq_report() reports it as a quiet note rather than a warning.
+eri_cmr_dq_report() lists the skips after the flags."><meta property="og:description" content="
 Evaluates named consistency rules from the schema's consistency block and
 flags rows where a rule is violated. Each rule specifies a lhs side, a
 comparison op, and a rhs side.
@@ -79,7 +90,18 @@ lhs/rhs).
 Supported operators: &amp;lt;=, &amp;gt;=, ==, &amp;lt;, &amp;gt;, !=.
 Missing values (NA) in either operand skip the check for that row.
 Works on a plain tibble (returns a tibble of violations) or a dq_result
-(appends violations to $flags)."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
+(appends violations to $flags).
+A rule that cannot be evaluated at all (a column it needs is missing from
+the data) is skipped with a console message and recorded, so &quot;the rule
+did not run&quot; can be told apart from &quot;the rule ran and found nothing&quot;: on a
+dq_result the skips are appended to $skipped_rules (columns rule,
+reason, expected); on a plain tibble they are returned in
+attr(&amp;lt;result&amp;gt;, &quot;skipped_rules&quot;) (dplyr verbs such as filter() can drop
+that attribute – read it straight off the returned value). A rule written
+for one sheet layout can set skip_ok: true to say that skipping on another
+layout is by design; it is still recorded, with expected = TRUE, but
+eri_cmr_dq_report() reports it as a quiet note rather than a warning.
+eri_cmr_dq_report() lists the skips after the flags."><meta property="og:image" content="https://thecartercenter.github.io/erifunctions/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -87,7 +109,7 @@ Works on a plain tibble (returns a tibble of violations) or a dq_result
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -151,7 +173,7 @@ Works on a plain tibble (returns a tibble of violations) or a dq_result
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Flag cross-field consistency violations defined in a schema</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.47/R/dq.R" class="external-link"><code>R/dq.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/dq.R" class="external-link"><code>R/dq.R</code></a></small>
       <div class="d-none name"><code>add_anomaly_consistency.Rd</code></div>
     </div>
 
@@ -196,6 +218,17 @@ are ever populated on a given ingest – same "not found" skip as a missing
 Missing values (<code>NA</code>) in either operand skip the check for that row.</p>
 <p>Works on a plain tibble (returns a tibble of violations) or a <code>dq_result</code>
 (appends violations to <code>$flags</code>).</p>
+<p>A rule that cannot be evaluated at all (a column it needs is missing from
+the data) is skipped with a console message <strong>and recorded</strong>, so "the rule
+did not run" can be told apart from "the rule ran and found nothing": on a
+<code>dq_result</code> the skips are appended to <code>$skipped_rules</code> (columns <code>rule</code>,
+<code>reason</code>, <code>expected</code>); on a plain tibble they are returned in
+<code>attr(&lt;result&gt;, "skipped_rules")</code> (dplyr verbs such as <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code> can drop
+that attribute – read it straight off the returned value). A rule written
+for one sheet layout can set <code>skip_ok: true</code> to say that skipping on another
+layout is by design; it is still recorded, with <code>expected = TRUE</code>, but
+<code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> reports it as a quiet note rather than a warning.
+<code><a href="eri_cmr_dq_report.html">eri_cmr_dq_report()</a></code> lists the skips after the flags.</p>
     </div>
 
     <div class="section level2">
@@ -220,7 +253,8 @@ Missing values (<code>NA</code>) in either operand skip the check for that row.<
     <p>A tibble of violations with columns <code>row</code>, <code>column</code>, <code>value</code>, and
 <code>issue</code> (includes the rule name and message). If the input is a <code>dq_result</code>,
 violations are appended to <code>$flags</code> and the updated <code>dq_result</code> is returned.
-Returns an empty tibble when all rules pass.</p>
+Returns an empty tibble when all rules pass. Skipped rules are reported as
+described above.</p>
     </div>
 
     <div class="section level2">

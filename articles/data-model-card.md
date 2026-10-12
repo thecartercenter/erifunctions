@@ -33,7 +33,7 @@ per country:
 ## Answer these four, in order
 
 1.  **country**: `dr`, `ht`, `eth`, `uga`, `nga`, `sdn`, `ssd`, `tcd`,
-    `mad`, `oepa`, …
+    `mad`, `bra`, `ven`, …
 2.  **disease**: `malaria`, `oncho`, `lf`, `sch`, `sth` (free text;
     lowercase).
 3.  **data_source (channel)**: pick one:

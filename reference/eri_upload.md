@@ -28,3 +28,7 @@ eri_upload(local_path, file_loc, azcontainer = NULL)
 
   Azure container object from
   [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).
+  If `NULL` (default), see
+  [`erifunctions_io()`](https://thecartercenter.github.io/erifunctions/reference/erifunctions_io.md)'s
+  `@param azcontainer` for the ambient-connect behaviour and its
+  container-mismatch warning (issue \#331).

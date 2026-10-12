@@ -47,6 +47,21 @@ Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`. Missing values
 Works on a plain tibble (returns a tibble of violations) or a
 `dq_result` (appends violations to `$flags`).
 
+A rule that cannot be evaluated at all (a column it needs is missing
+from the data) is skipped with a console message **and recorded**, so
+"the rule did not run" can be told apart from "the rule ran and found
+nothing": on a `dq_result` the skips are appended to `$skipped_rules`
+(columns `rule`, `reason`, `expected`); on a plain tibble they are
+returned in `attr(<result>, "skipped_rules")` (dplyr verbs such as
+[`filter()`](https://rdrr.io/r/stats/filter.html) can drop that
+attribute – read it straight off the returned value). A rule written for
+one sheet layout can set `skip_ok: true` to say that skipping on another
+layout is by design; it is still recorded, with `expected = TRUE`, but
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+reports it as a quiet note rather than a warning.
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+lists the skips after the flags.
+
 ## Usage
 
 ``` r
@@ -70,6 +85,7 @@ A tibble of violations with columns `row`, `column`, `value`, and
 `issue` (includes the rule name and message). If the input is a
 `dq_result`, violations are appended to `$flags` and the updated
 `dq_result` is returned. Returns an empty tibble when all rules pass.
+Skipped rules are reported as described above.
 
 ## Examples
 

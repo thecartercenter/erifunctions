@@ -61,6 +61,14 @@ azure_io(
 
   Azure container object returned from
   [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md).
+  If `NULL`, one is created ambiently from
+  [`get_azure_storage_connection()`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)'s
+  own default – which is *not* necessarily the `data` container
+  production data lives in (issue \#331). Calling `azure_io()` directly,
+  as opposed to through the verb-named wrappers
+  ([`eri_read()`](https://thecartercenter.github.io/erifunctions/reference/eri_read.md)
+  etc.), does **not** get the container-mismatch warning those add; pass
+  `azcontainer` explicitly here to target a specific container.
 
 - force_delete:
 

@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Triaging and handing back DQ flags, interactively (for data analysts)</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.47/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/da-dq-review-guide.Rmd" class="external-link"><code>vignettes/da-dq-review-guide.Rmd</code></a></small>
       <div class="d-none name"><code>da-dq-review-guide.Rmd</code></div>
     </div>
 
@@ -450,6 +450,34 @@ handback file, one approval – without calling
 <code><a href="../reference/eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code>, <code><a href="../reference/eri_logs_resolve.html">eri_logs_resolve()</a></code>, or
 <code><a href="../reference/eri_approve_cmr.html">eri_approve_cmr()</a></code> yourself even once.</p>
 </div>
+<div class="section level3">
+<h3 id="skipped-checks">If the report says a data check “could not be run”<a class="anchor" aria-label="anchor" href="#skipped-checks"></a>
+</h3>
+<p>Some checks compare columns against each other (for example “male +
+female trained must equal new + refresher trained”). If a sheet doesn’t
+have the columns a check needs, that check can’t run, and the report
+tells you instead of staying quiet. For example (the check and sheet
+names here are illustrative):</p>
+<pre><code>! 1 data check could not be run on some sheets (the columns it needs weren't found):
+  "positives_le_tested": "RB Treatment" and "LF Treatment"
+ℹ No flags from a check that couldn't run does not mean the data passed. If this is unexpected,
+  the schema's column names probably don't match the file -- tell the DQ schema maintainer.</code></pre>
+<p>A check that couldn’t run produced <strong>no flags because it never
+ran</strong>, not because your data was fine – so don’t read the absence
+of flags as an all-clear for that sheet. Two things you may also
+see:</p>
+<ul>
+<li>
+<code>ℹ Not applicable to some sheets (by design ...)</code> – a
+check written for a different sheet layout. Nothing to do.</li>
+<li>
+<code>... but N checks could not be run (above), so this is not a full all-clear</code>
+instead of <code>all clean</code> – at least one check that
+<em>should</em> have run didn’t.</li>
+</ul>
+<p>The same list is available to scripts as
+<code>attr(flags, "skipped_rules")</code>.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="cleanup">Cleaning up<a class="anchor" aria-label="anchor" href="#cleanup"></a>
@@ -463,7 +491,7 @@ staged/log/processed files, the local practice workbook
 (<code><a href="../reference/eri_dq_export.html">eri_dq_export()</a></code> writes to your working directory by
 default, not a temp folder – see the <a href="da-qc-feedback-guide.html#export">QC/feedback guide</a> – so it
 won’t clean itself up):</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html" class="external-link">Sys.getenv</a></span><span class="op">(</span><span class="st">"ERIFUNCTIONS_DATA_STORAGE_NAME"</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/eri_catalog_remove.html">eri_catalog_remove</a></span><span class="op">(</span></span>
 <span>  <span class="st">"atlantis/oncho/programmatic/treatment/processed/202608_atlantis_demo_fixed_rb_treatment.parquet"</span>,</span>

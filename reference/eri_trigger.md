@@ -1,18 +1,17 @@
 # Trigger a registered GitHub Actions pipeline
 
-**\[experimental\]**
+**\[deprecated\]**
 
-Dispatches a `workflow_dispatch` event to a registered GitHub Actions
-pipeline from R. Authenticates with a GitHub Personal Access Token
-stored in the `GITHUB_PAT` environment variable (needs `workflow`
-scope).
-
-### Registered pipelines
-
-|           |                                    |                    |
-|-----------|------------------------------------|--------------------|
-| Name      | Repository                         | Workflow           |
-| `hsp-mal` | thecartercenter/health-hsp-malaria | data_ingestion.yml |
+**Deprecated, and every call fails.** The only registered pipeline
+dispatched a workflow (`data_ingestion.yml`) that does not exist in
+`health-hsp-malaria`; the real workflow there takes a different set of
+inputs and a different country vocabulary. Triggering the contractor's
+pipeline from R is a capability erifunctions is retiring, not repairing:
+erifunctions is taking over the Power BI output contract directly (see
+[ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md)),
+after which there is no pipeline left to trigger. Calling this function
+now warns and then fails the same way it always did once it reaches
+GitHub.
 
 ## Usage
 
@@ -62,6 +61,7 @@ Invisibly, the URL to the workflow's runs page on GitHub.
 
 ``` r
 if (FALSE) { # \dontrun{
+# deprecated -- this always errors, see @description
 eri_trigger("hsp-mal", "dr", "malaria", phase = "testing")
 } # }
 ```

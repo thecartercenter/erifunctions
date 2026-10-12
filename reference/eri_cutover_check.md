@@ -1,12 +1,36 @@
 # Compare a stream's period and record it in the cutover ledger
 
+**The streak-based cutover gate this fed (ADR-0015) is superseded by
+[ADR-0027](https://github.com/thecartercenter/erifunctions/blob/main/docs/adr/0027-erifunctions-owns-bi-output-contract.md).**
+There is no ongoing parallel run generating per-period evidence to
+record, and nothing currently calls this function. It is kept, not
+removed, because
+[`eri_do()`](https://thecartercenter.github.io/erifunctions/reference/eri_do.md)
+derives whether it dual-writes to the legacy pipeline from
+[`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md)'s
+streak — see that function's `@description` for why a streak that never
+grows is the correct, fail-safe outcome right now. The comparison engine
+itself
+([`eri_compare()`](https://thecartercenter.github.io/erifunctions/reference/eri_compare.md))
+stays relevant for the one-time BI-output correctness check ADR-0027
+calls for before cutover; this function is how that comparison would be
+run and recorded when the time comes.
+
 Runs the **cutover-standard** comparison —
 `eri_compare(new, old, by, strict_schema = FALSE, tolerance, ignore)` —
 for one data stream's `period` and appends the outcome to
-`_cutover/cutover_log.yaml` in the `data/` blob. This is the per-period
-evidence the cutover gate is built on (ADR-0015): run it each period of
-the parallel run, then check the streak with
-[`eri_cutover_status()`](https://thecartercenter.github.io/erifunctions/reference/eri_cutover_status.md).
+`_cutover/cutover_log.yaml` in the `data/` blob.
+
+`strict_schema = FALSE` is fixed (not exposed): the cutover gate
+requires value/row parity but tolerates extra columns the new pipeline
+adds. The `by` keys and `tolerance` are recorded with the entry so the
+bar is auditable.
+
+To **accept** a legitimately-expected difference (ADR-0015), record the
+period with that difference excluded — pass the differing column to
+`ignore`, or widen `tolerance` — so the period reconciles under the
+relaxed standard, which is itself recorded in the ledger entry (visible
+and attributable, not hidden).
 
 ## Usage
 
@@ -82,19 +106,6 @@ eri_cutover_check(
 The
 [`eri_compare()`](https://thecartercenter.github.io/erifunctions/reference/eri_compare.md)
 result (an `eri_comparison`), invisibly.
-
-## Details
-
-`strict_schema = FALSE` is fixed (not exposed): the cutover gate
-requires value/row parity but tolerates extra columns the new pipeline
-adds. The `by` keys and `tolerance` are recorded with the entry so the
-bar is auditable.
-
-To **accept** a legitimately-expected difference (ADR-0015), record the
-period with that difference excluded — pass the differing column to
-`ignore`, or widen `tolerance` — so the period reconciles under the
-relaxed standard, which is itself recorded in the ledger entry (visible
-and attributable, not hidden).
 
 ## See also
 

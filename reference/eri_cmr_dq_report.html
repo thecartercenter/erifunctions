@@ -47,7 +47,7 @@ which case this step is a silent no-op."><meta property="og:image" content="http
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +111,7 @@ which case this step is a silent no-op."><meta property="og:image" content="http
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Run and log DQ checks for a whole CMR workbook, one combined report</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.47/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/cmr.R" class="external-link"><code>R/cmr.R</code></a></small>
       <div class="d-none name"><code>eri_cmr_dq_report.Rd</code></div>
     </div>
 
@@ -202,7 +202,20 @@ a fresh run – only set once a flag has been triaged via
 <code><a href="eri_dq_flag_resolve.html">eri_dq_flag_resolve()</a></code> and this function is re-run), <code>cross</code> (<code>TRUE</code>
 for a cross-consistency flag, <code>FALSE</code> for an ordinary single-measure
 flag). Zero rows if every measure (and any cross-consistency rules) is
-clean.</p>
+clean. Any <code>consistency:</code> rule that could not be evaluated on a sheet
+(a column it needs wasn't found) is listed in the console after the flags
+and returned in <code>attr(&lt;result&gt;, "skipped_rules")</code> (columns <code>sheet</code>,
+<code>rule</code>, <code>reason</code>, <code>expected</code>) – a skipped rule produced no flags because
+it never ran, not because the data passed it. A rule whose schema entry
+says <code>skip_ok: true</code> (written for one sheet layout, so skipping on another
+is by design) is shown as a quiet note with <code>expected = TRUE</code>; any other
+skip is a warning, and means the schema's column aliases probably don't
+match the file. If <em>every</em> rule skipped on a sheet, that is always a
+warning (no consistency check ran on it at all), unless the schema lists
+the sheet under <code>consistency_not_applicable_sheets</code>. Sheets that couldn't
+be read, or have no schema, are warned about separately and are not in
+this list. The attribute is dropped by dplyr verbs such as <code><a href="https://rdrr.io/r/stats/filter.html" class="external-link">filter()</a></code>, so
+read it straight off the returned value.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

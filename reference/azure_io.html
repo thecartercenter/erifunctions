@@ -11,7 +11,7 @@ all files in a folder."><meta property="og:image" content="https://thecartercent
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.47</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,7 +75,7 @@ all files in a folder."><meta property="og:image" content="https://thecartercent
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Helper function to read and write key data to the Azure environment</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.47/R/dal.R" class="external-link"><code>R/dal.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/dal.R" class="external-link"><code>R/dal.R</code></a></small>
       <div class="d-none name"><code>azure_io.Rd</code></div>
     </div>
 
@@ -127,7 +127,12 @@ of interest. See examples.</p></li>
 
 
 <dt id="arg-azcontainer">azcontainer<a class="anchor" aria-label="anchor" href="#arg-azcontainer"></a></dt>
-<dd><p>Azure container object returned from <code><a href="get_azure_storage_connection.html">get_azure_storage_connection()</a></code>.</p></dd>
+<dd><p>Azure container object returned from <code><a href="get_azure_storage_connection.html">get_azure_storage_connection()</a></code>.
+If <code>NULL</code>, one is created ambiently from <code><a href="get_azure_storage_connection.html">get_azure_storage_connection()</a></code>'s own default –
+which is <em>not</em> necessarily the <code>data</code> container production data lives in (issue #331).
+Calling <code>azure_io()</code> directly, as opposed to through the verb-named wrappers
+(<code><a href="eri_read.html">eri_read()</a></code> etc.), does <strong>not</strong> get the container-mismatch warning those add; pass
+<code>azcontainer</code> explicitly here to target a specific container.</p></dd>
 
 
 <dt id="arg-force-delete">force_delete<a class="anchor" aria-label="anchor" href="#arg-force-delete"></a></dt>

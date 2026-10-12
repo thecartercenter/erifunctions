@@ -101,6 +101,20 @@ A summed side where none of its columns exist in the data at all skips
 the whole rule (e.g. a schema shared across several sheet shapes, where
 only one prefix’s columns are ever populated on a given ingest).
 
+A skipped rule is **recorded**, not just printed:
+[`add_anomaly_consistency()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_consistency.md)
+returns it in `$skipped_rules` (or `attr(, "skipped_rules")` on a plain
+tibble), and
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+lists it after the flags. A rule written for one sheet layout can set
+`skip_ok: true` to say skipping on another layout is by design – it is
+then shown as a quiet note instead of a warning. Use it sparingly: a
+`skip_ok` rule whose columns later stop matching is only a quiet note,
+and if *every* rule on a sheet skips,
+[`eri_cmr_dq_report()`](https://thecartercenter.github.io/erifunctions/reference/eri_cmr_dq_report.md)
+warns anyway unless the sheet is listed under a top-level
+`consistency_not_applicable_sheets:` key in the schema.
+
 ## What `run_dq_checks()` does
 
 The pipeline runs these steps in order:

@@ -82,8 +82,9 @@ for what its menu looks like.
   and
   [ODK](https://thecartercenter.github.io/erifunctions/articles/da-odk-guide.md)
   guides are for understanding what it does underneath, or scripting it
-  yourself.
-- **Process OEPA** → the general pipeline (oncho treatment + prevalence)
+  yourself. OEPA-program oncho countries (`bra`, `ven`, …) use this same
+  path — there is no separate OEPA pipeline; each country onboards its
+  own CMR schema.
 - **QC + analytic products + country feedback** → `run_dq_checks` ·
   `dq_report` · `eri_notify_dq`
 - **Figures / routine reports** → `eri_table` · `eri_map_*` ·

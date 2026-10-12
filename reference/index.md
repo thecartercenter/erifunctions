@@ -118,7 +118,7 @@ generic ingest/approval, then CMR-specific routing.
   **\[experimental\]** : Approve staged data and promote it to processed
 
 - [`eri_trigger()`](https://thecartercenter.github.io/erifunctions/reference/eri_trigger.md)
-  **\[experimental\]** : Trigger a registered GitHub Actions pipeline
+  **\[deprecated\]** : Trigger a registered GitHub Actions pipeline
 
 - [`eri_ingest_cmr()`](https://thecartercenter.github.io/erifunctions/reference/eri_ingest_cmr.md)
   **\[experimental\]** : Read and parse a CMR monthly report Excel file
