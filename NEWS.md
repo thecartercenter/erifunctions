@@ -1,3 +1,29 @@
+# erifunctions 0.9.52
+
+## An expired Azure sign-in now opens the browser again instead of stopping (#379)
+
+Every 30 days the Carter Center tenant asks you to sign in again. Until now, the first erifunctions
+call after that stopped with `AADSTS70043: The refresh token has expired ...` and
+`Unable to refresh token`, and you had to clear the token cache by hand and run the call again.
+
+- **The call now signs you in again by itself.** It prints "Your Azure sign-in has expired; opening
+  the browser to sign in again" (with `auth = "device_code"`, you are shown a code instead), removes
+  the expired token, signs you in once, and carries on. The line shows even inside functions that
+  hide connection messages. If the second sign-in also fails, you get that error, and nothing
+  retries again.
+- **Unattended runs get a clear message.** Under `Rscript` or a scheduled job there is no automatic
+  sign-in (nobody would see the browser); an expired sign-in stops with a message saying to sign in
+  once in interactive R, or to use a service principal.
+- **A missing `httpuv` is offered for install.** Browser sign-in needs it, and AzureAuth only
+  suggests it, so a project with its own renv library could lack it. In interactive R you are now
+  asked whether to install it before the browser sign-in; elsewhere the error gives the install
+  command (`renv::install("httpuv")` inside a renv project).
+- `get_azure_storage_connection(...)` now passes extra arguments on to `AzureAuth::get_azure_token()`
+  for user sign-ins, as its documentation always said.
+- The connections guide no longer says the sign-in lasts only for the R session (it is kept on your
+  computer until the 30-day limit), and its troubleshooting table covers these three messages.
+- Service-principal (unattended) connections are unchanged.
+
 # erifunctions 0.9.51
 
 ## Training "male + female = new + refresher" is now checked for every country, and skipped DQ checks are reported (#374)

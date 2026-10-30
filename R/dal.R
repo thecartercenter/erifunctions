@@ -201,12 +201,7 @@ get_azure_storage_connection <- function(
        from {.path {creds_yaml_path}}."
     )
   } else {
-    mytoken <- AzureAuth::get_azure_token(
-      resource  = "https://storage.azure.com/",
-      tenant    = tenant_id,
-      app       = app_id,
-      auth_type = auth
-    )
+    mytoken <- .eri_user_token(tenant_id, app_id, auth, ...)
     # `resource_owner` and `on_behalf_of` carry a user identity but are not browser
     # sign-ins, so only the two interactive flows are described as such.
     who <- if (auth %in% c("authorization_code", "device_code")) {
@@ -230,6 +225,69 @@ get_azure_storage_connection <- function(
   azcontainer <- AzureStor::storage_container(endptoken, storage_name)
 
   return(azcontainer)
+}
+
+#' Get a user token, signing in again when the cached one has expired
+#'
+#' A cached user token stops refreshing once the tenant's conditional-access sign-in frequency
+#' (30 days) has passed: Azure refuses the refresh (AADSTS70043) and AzureAuth stops instead of
+#' signing in again. For the two interactive flows (`authorization_code`, `device_code`) this
+#' deletes the stale token and retries once, which opens the browser or shows a sign-in code
+#' (#379). Outside an interactive session it stops instead, so an unattended run fails fast rather
+#' than waiting for a sign-in nobody will do. A missing `httpuv`, which the browser flow needs, gets
+#' a message that says what to do. Any other error, and any error under another flow, passes
+#' through unchanged.
+#' @param ... Passed to [AzureAuth::get_azure_token()] (e.g. `username`, `password` for
+#'   `resource_owner`).
+#' @keywords internal
+.eri_user_token <- function(tenant_id, app_id, auth, ...) {
+  # AzureAuth's browser sign-in (our default flow, ADR-0008) needs httpuv, which AzureAuth only
+  # Suggests, so a project renv can lack it (#379). Offer to install it here rather than declaring
+  # it: with httpuv installed on the CI runners the test step hung (PR #380; follow-up issue), and
+  # CI installs Suggests too. Non-interactive sessions fall through to explain_httpuv() below.
+  if (identical(auth, "authorization_code") && rlang::is_interactive()) {
+    rlang::check_installed("httpuv", reason = "to sign in to Azure in the browser.")
+  }
+  args <- c(list(resource = "https://storage.azure.com/", tenant = tenant_id, app = app_id, auth_type = auth),
+            list(...))
+  get_token <- function() do.call(AzureAuth::get_azure_token, args)
+  explain_httpuv <- function(e) {
+    if (!grepl("httpuv", conditionMessage(e), fixed = TRUE)) stop(e)
+    cli::cli_abort(c(
+      "Signing in to Azure in the browser needs the {.pkg httpuv} package, which is not installed here.",
+      "i" = "Install it: {.code install.packages(\"httpuv\")}, or in an renv project {.code renv::install(\"httpuv\")}.",
+      "i" = "Or sign in with a code: {.code con <- get_azure_storage_connection(auth = \"device_code\")}, \\
+             then pass {.code con} to the function you called (its {.arg data_con} or {.arg azcontainer})."
+    ), call = NULL)
+  }
+  # refresh refused: sign-in frequency (70043), expired refresh token (700082), token revoked or
+  # expired by policy (50173). A bare invalid_grant is left alone: a wrong password gives it too.
+  # "Unable to refresh token" is deliberately broad: at worst one unneeded sign-in, interactive only.
+  expired <- "AADSTS70043|AADSTS700082|AADSTS50173|Unable to refresh token"
+  interactive_flow <- auth %in% c("authorization_code", "device_code")
+  tryCatch(
+    get_token(),
+    error = function(e) {
+      if (!interactive_flow || !grepl(expired, conditionMessage(e))) return(explain_httpuv(e))
+      if (!rlang::is_interactive()) {
+        cli::cli_abort(c(
+          "Your Azure sign-in has expired, and this R session cannot sign you in again (it is not interactive).",
+          "i" = "Run any erifunctions call once in an interactive R session to sign in,",
+          "i" = "or use a service principal for unattended runs ({.envvar ERIFUNCTIONS_SP_CLIENT_ID} and {.envvar ERIFUNCTIONS_SP_CLIENT_SECRET})."
+        ), parent = e, call = NULL)
+      }
+      .eri_say_now(if (auth == "device_code") {
+        "Your Azure sign-in has expired; you will be shown a code to sign in again."
+      } else {
+        "Your Azure sign-in has expired; opening the browser to sign in again."
+      })
+      # AzureAuth usually drops the stale token itself; make sure, so the retry cannot reuse it
+      # delete_azure_token() takes fewer arguments than get_azure_token(): pass only the ones it knows
+      del_args <- args[names(args) %in% names(formals(AzureAuth::delete_azure_token))]
+      try(suppressWarnings(do.call(AzureAuth::delete_azure_token, c(del_args, list(confirm = FALSE)))), silent = TRUE)
+      tryCatch(get_token(), error = explain_httpuv)
+    }
+  )
 }
 
 #### 2) I/O dispatcher ####

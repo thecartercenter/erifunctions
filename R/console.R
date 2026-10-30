@@ -8,6 +8,11 @@
 #
 # Resolution order: the `erifunctions.verbosity` option, then the `ERIFUNCTIONS_VERBOSITY`
 # environment variable (handy for CI / non-interactive runs), then the "full" default.
+#
+# One more channel, .eri_say_now(), writes straight to stderr. Use it only for a notice that must
+# reach the user *before* a side effect they will see (a browser window opening) on a path that may
+# be wrapped in suppressMessages() -- every internal auto-connect is (ADR-0028) -- where a cli
+# message would be swallowed and a warning would only print after the call returns (#379).
 
 .ERI_VERBOSITY_LEVELS <- c("full", "quiet")
 
@@ -21,6 +26,13 @@
   }
   lvl <- tolower(as.character(lvl)[[1L]])
   if (lvl %in% .ERI_VERBOSITY_LEVELS) lvl else "full"
+}
+
+#' Show a notice now, even inside suppressMessages() (see the channel note at the top of console.R)
+#' @keywords internal
+.eri_say_now <- function(text, .envir = parent.frame()) {
+  cat(cli::format_inline("{cli::symbol$info} ", text, .envir = .envir), "\n", file = stderr(), sep = "")
+  invisible(NULL)
 }
 
 #' Is console output chatty (i.e. not "quiet")?
