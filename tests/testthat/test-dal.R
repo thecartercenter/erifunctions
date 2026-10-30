@@ -736,6 +736,8 @@ local_token_script <- function(outcomes, interactive = TRUE, env = parent.frame(
   calls$get <- 0L
   calls$deleted <- 0L
   withr::local_options(rlang_interactive = interactive, .local_envir = env)
+  # CI has no httpuv: never prompt to install it from a test
+  testthat::local_mocked_bindings(check_installed = function(...) invisible(TRUE), .package = "rlang", .env = env)
   testthat::local_mocked_bindings(
     get_azure_token = function(resource, tenant, app, auth_type, ...) {
       calls$get <- calls$get + 1L

@@ -24,7 +24,6 @@ Imports:
     ggplot2,
     ggspatial,
     glue,
-    httpuv,
     httr,
     lubridate,
     officer,

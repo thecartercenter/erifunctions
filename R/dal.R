@@ -240,11 +240,14 @@ get_azure_storage_connection <- function(
 #' @param ... Passed to [AzureAuth::get_azure_token()] (e.g. `username`, `password` for
 #'   `resource_owner`).
 #' @keywords internal
-# httpuv is in Imports because AzureAuth's browser sign-in (our default flow, ADR-0008) needs it
-# and AzureAuth only Suggests it: a project renv would otherwise lack it (#379). It is deliberately
-# not imported into the namespace: erifunctions never calls it, and loading it with the package
-# made the CI test run hang (R CMD check notes the unused import instead).
 .eri_user_token <- function(tenant_id, app_id, auth, ...) {
+  # AzureAuth's browser sign-in (our default flow, ADR-0008) needs httpuv, which AzureAuth only
+  # Suggests, so a project renv can lack it (#379). Offer to install it here rather than declaring
+  # it: with httpuv installed on the CI runners the test step hung (PR #380; follow-up issue), and
+  # CI installs Suggests too. Non-interactive sessions fall through to explain_httpuv() below.
+  if (identical(auth, "authorization_code") && rlang::is_interactive()) {
+    rlang::check_installed("httpuv", reason = "to sign in to Azure in the browser.")
+  }
   args <- c(list(resource = "https://storage.azure.com/", tenant = tenant_id, app = app_id, auth_type = auth),
             list(...))
   get_token <- function() do.call(AzureAuth::get_azure_token, args)

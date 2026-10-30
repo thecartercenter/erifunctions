@@ -14,9 +14,10 @@ call after that stopped with `AADSTS70043: The refresh token has expired ...` an
 - **Unattended runs get a clear message.** Under `Rscript` or a scheduled job there is no automatic
   sign-in (nobody would see the browser); an expired sign-in stops with a message saying to sign in
   once in interactive R, or to use a service principal.
-- **`httpuv` is now installed with erifunctions.** Browser sign-in needs it, and AzureAuth only
-  suggests it, so a project with its own renv library could lack it. If it is still missing, the
-  error gives the install command (`renv::install("httpuv")` inside a renv project).
+- **A missing `httpuv` is offered for install.** Browser sign-in needs it, and AzureAuth only
+  suggests it, so a project with its own renv library could lack it. In interactive R you are now
+  asked whether to install it before the browser sign-in; elsewhere the error gives the install
+  command (`renv::install("httpuv")` inside a renv project).
 - `get_azure_storage_connection(...)` now passes extra arguments on to `AzureAuth::get_azure_token()`
   for user sign-ins, as its documentation always said.
 - The connections guide no longer says the sign-in lasts only for the R session (it is kept on your
