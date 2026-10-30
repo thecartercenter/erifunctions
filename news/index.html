@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.52</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,26 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.51/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.52" id="erifunctions-0952">erifunctions 0.9.52<a class="anchor" aria-label="anchor" href="#erifunctions-0952"></a></h2>
+<div class="section level3">
+<h3 id="an-expired-azure-sign-in-now-opens-the-browser-again-instead-of-stopping-0-9-52">An expired Azure sign-in now opens the browser again instead of stopping (<a href="https://github.com/thecartercenter/erifunctions/issues/379" class="external-link">#379</a>)<a class="anchor" aria-label="anchor" href="#an-expired-azure-sign-in-now-opens-the-browser-again-instead-of-stopping-0-9-52"></a></h3>
+<p>Every 30 days the Carter Center tenant asks you to sign in again. Until now, the first erifunctions call after that stopped with <code>AADSTS70043: The refresh token has expired ...</code> and <code>Unable to refresh token</code>, and you had to clear the token cache by hand and run the call again.</p>
+<ul><li>
+<strong>The call now signs you in again by itself.</strong> It prints “Your Azure sign-in has expired; opening the browser to sign in again” (with <code>auth = "device_code"</code>, you are shown a code instead), removes the expired token, signs you in once, and carries on. The line shows even inside functions that hide connection messages. If the second sign-in also fails, you get that error, and nothing retries again.</li>
+<li>
+<strong>Unattended runs get a clear message.</strong> Under <code>Rscript</code> or a scheduled job there is no automatic sign-in (nobody would see the browser); an expired sign-in stops with a message saying to sign in once in interactive R, or to use a service principal.</li>
+<li>
+<strong>A missing <code>httpuv</code> is offered for install.</strong> Browser sign-in needs it, and AzureAuth only suggests it, so a project with its own renv library could lack it. In interactive R you are now asked whether to install it before the browser sign-in; elsewhere the error gives the install command (<code>renv::install("httpuv")</code> inside a renv project).</li>
+<li>
+<code>get_azure_storage_connection(...)</code> now passes extra arguments on to <code><a href="https://rdrr.io/pkg/AzureAuth/man/get_azure_token.html" class="external-link">AzureAuth::get_azure_token()</a></code> for user sign-ins, as its documentation always said.</li>
+<li>The connections guide no longer says the sign-in lasts only for the R session (it is kept on your computer until the 30-day limit), and its troubleshooting table covers these three messages.</li>
+<li>Service-principal (unattended) connections are unchanged.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.51" id="erifunctions-0951">erifunctions 0.9.51<a class="anchor" aria-label="anchor" href="#erifunctions-0951"></a></h2>
 <div class="section level3">

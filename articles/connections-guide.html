@@ -29,7 +29,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.51</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.52</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,7 +106,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Connecting to Azure, ODK Central, SharePoint, and Teams</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.51/vignettes/connections-guide.Rmd" class="external-link"><code>vignettes/connections-guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/vignettes/connections-guide.Rmd" class="external-link"><code>vignettes/connections-guide.Rmd</code></a></small>
       <div class="d-none name"><code>connections-guide.Rmd</code></div>
     </div>
 
@@ -218,7 +218,8 @@ there is nothing to set up. Thanks to baked-in defaults (see
 <code><a href="../reference/get_azure_storage_connection.html">?get_azure_storage_connection</a></code> and ADR-0008), the
 <strong>first time</strong> a command needs Azure your browser opens,
 you sign in with your Carter Center account, and the sign-in is
-remembered for the rest of the session.</p>
+remembered on this computer, across R sessions, until the Carter
+Center’s 30-day sign-in limit asks you to sign in again.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The first call this session opens your browser to sign in.</span></span>
 <span><span class="va">data_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_azure_storage_connection.html">get_azure_storage_connection</a></span><span class="op">(</span>storage_name <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
@@ -454,9 +455,27 @@ to git.</p>
 <td>Add them to <code>.Renviron</code>; restart R</td>
 </tr>
 <tr class="odd">
-<td>A call re-opens the browser unexpectedly</td>
-<td>Your cached session expired</td>
-<td>Just sign in again, connections are session-scoped</td>
+<td><em>“Your Azure sign-in has expired; opening the browser to sign in
+again”</em></td>
+<td>The 30-day sign-in limit has passed</td>
+<td>Sign in in the browser; the call then carries on</td>
+</tr>
+<tr class="even">
+<td><em>“Signing in to Azure in the browser needs the httpuv
+package”</em></td>
+<td>
+<code>httpuv</code> is missing from this library (often a project’s
+own renv)</td>
+<td>
+<code>install.packages("httpuv")</code>, or
+<code>renv::install("httpuv")</code> in a renv project</td>
+</tr>
+<tr class="odd">
+<td><em>“this R session cannot sign you in again”</em></td>
+<td>The sign-in expired during an unattended (<code>Rscript</code>,
+scheduled) run</td>
+<td>Run any erifunctions call once in interactive R, or use a service
+principal</td>
 </tr>
 <tr class="even">
 <td>Teams device-code sign-in is blocked</td>

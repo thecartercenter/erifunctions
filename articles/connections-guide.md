@@ -57,7 +57,8 @@ set up. Thanks to baked-in defaults (see
 [`?get_azure_storage_connection`](https://thecartercenter.github.io/erifunctions/reference/get_azure_storage_connection.md)
 and ADR-0008), the **first time** a command needs Azure your browser
 opens, you sign in with your Carter Center account, and the sign-in is
-remembered for the rest of the session.
+remembered on this computer, across R sessions, until the Carter
+Center’s 30-day sign-in limit asks you to sign in again.
 
 ``` r
 
@@ -310,7 +311,9 @@ scripts or committed to git.
 |----|----|----|
 | Azure `403 Forbidden` | Your account lacks access to that storage (RBAC) | Ask an ERI admin to grant access, it is not a code problem |
 | ODK: *“ODK username is required”* | `ODK_USER` / `ODK_PASS` aren’t set | Add them to `.Renviron`; restart R |
-| A call re-opens the browser unexpectedly | Your cached session expired | Just sign in again, connections are session-scoped |
+| *“Your Azure sign-in has expired; opening the browser to sign in again”* | The 30-day sign-in limit has passed | Sign in in the browser; the call then carries on |
+| *“Signing in to Azure in the browser needs the httpuv package”* | `httpuv` is missing from this library (often a project’s own renv) | `install.packages("httpuv")`, or `renv::install("httpuv")` in a renv project |
+| *“this R session cannot sign you in again”* | The sign-in expired during an unattended (`Rscript`, scheduled) run | Run any erifunctions call once in interactive R, or use a service principal |
 | Teams device-code sign-in is blocked | Conditional-access policy | Use an incoming webhook (`ERIFUNCTIONS_TEAMS_WEBHOOK`) instead |
 | SharePoint “package Microsoft365R is required” | Optional dependency missing | `install.packages("Microsoft365R")` |
 
