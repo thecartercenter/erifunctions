@@ -731,13 +731,15 @@ test_that("eri_approve errors when no files match period", {
 #### Tests for .eri_user_token(): expired sign-in and missing httpuv (#379) ####
 
 # AzureAuth is mocked throughout, so nothing here can reach the live tenant.
-local_token_script <- function(outcomes, env = parent.frame()) {
+local_token_script <- function(outcomes, interactive = TRUE, env = parent.frame()) {
   calls <- new.env(parent = emptyenv())
   calls$get <- 0L
   calls$deleted <- 0L
+  withr::local_options(rlang_interactive = interactive, .local_envir = env)
   testthat::local_mocked_bindings(
     get_azure_token = function(resource, tenant, app, auth_type, ...) {
       calls$get <- calls$get + 1L
+      calls$dots <- list(...)
       out <- outcomes[[min(calls$get, length(outcomes))]]
       if (inherits(out, "error")) stop(out)
       out
@@ -768,7 +770,7 @@ test_that("an expired sign-in deletes the stale token and signs in again, once (
 
 test_that("the expiry notice is shown even under suppressMessages() (#379)", {
   local_token_script(list(expired_error, "fresh_token"))
-  out <- capture.output(suppressMessages(.eri_user_token("tenant", "app", "authorization_code")), type = "message")
+  out <- capture.output(tok <- suppressMessages(.eri_user_token("tenant", "app", "authorization_code")), type = "message")
   expect_match(paste(out, collapse = " "), "sign-in has expired")
 })
 
@@ -797,6 +799,33 @@ test_that("other token errors pass through unchanged and are not retried (#379)"
   expect_error(.eri_user_token("tenant", "app", "authorization_code"), "AADSTS90002")
   expect_equal(calls$get, 1L)
   expect_equal(calls$deleted, 0L)
+  # a bare invalid_grant (e.g. a wrong password) is not treated as an expired sign-in
+  calls <- local_token_script(list(simpleError("invalid_grant: AADSTS50126 invalid username or password")))
+  expect_error(.eri_user_token("tenant", "app", "authorization_code"), "AADSTS50126")
+  expect_equal(calls$get, 1L)
+})
+
+test_that("an unattended run with an expired sign-in stops fast instead of waiting for a browser (#379)", {
+  calls <- local_token_script(list(expired_error, "fresh_token"), interactive = FALSE)
+  expect_error(.eri_user_token("tenant", "app", "authorization_code"), "not interactive")
+  expect_equal(calls$get, 1L)
+  expect_equal(calls$deleted, 0L)
+})
+
+test_that("only the interactive flows are retried, with wording for each (#379)", {
+  calls <- local_token_script(list(expired_error, "fresh_token"))
+  out <- capture.output(tok <- .eri_user_token("tenant", "app", "device_code"), type = "message")
+  expect_match(paste(out, collapse = " "), "shown a code")
+  expect_equal(calls$get, 2L)
+  calls <- local_token_script(list(expired_error, "fresh_token"))
+  expect_error(.eri_user_token("tenant", "app", "resource_owner"), "AADSTS70043")
+  expect_equal(calls$get, 1L)
+})
+
+test_that("extra arguments reach AzureAuth (#379 review: `...` was documented but dropped)", {
+  calls <- local_token_script(list("tok"))
+  .eri_user_token("tenant", "app", "resource_owner", username = "u", password = "p")
+  expect_equal(calls$dots, list(username = "u", password = "p"))
 })
 
 #### Tests for get_azure_storage_connection() identity selection (#357) ####

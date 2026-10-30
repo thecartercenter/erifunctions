@@ -7,13 +7,20 @@ call after that stopped with `AADSTS70043: The refresh token has expired ...` an
 `Unable to refresh token`, and you had to clear the token cache by hand and run the call again.
 
 - **The call now signs you in again by itself.** It prints "Your Azure sign-in has expired; opening
-  the browser to sign in again", removes the expired token, opens the browser once, and carries on.
-  The line shows even inside functions that hide connection messages. If the second sign-in also
-  fails, you get that error, and nothing retries again.
-- **A missing `httpuv` now says what to do.** Browser sign-in needs the `httpuv` package. A project
-  with its own renv library may not have it, and AzureAuth's message did not say how to fix that. You
-  now get the install command (`renv::install("httpuv")` inside a renv project) or the alternative,
-  `get_azure_storage_connection(auth = "device_code")`.
+  the browser to sign in again" (with `auth = "device_code"`, you are shown a code instead), removes
+  the expired token, signs you in once, and carries on. The line shows even inside functions that
+  hide connection messages. If the second sign-in also fails, you get that error, and nothing
+  retries again.
+- **Unattended runs stop instead of waiting.** Under `Rscript` or a scheduled job, an expired user
+  sign-in now stops with a message saying to sign in once in interactive R, or to use a service
+  principal, instead of waiting for a browser nobody will see.
+- **`httpuv` is now installed with erifunctions.** Browser sign-in needs it, and AzureAuth only
+  suggests it, so a project with its own renv library could lack it. If it is still missing, the
+  error gives the install command (`renv::install("httpuv")` inside a renv project).
+- `get_azure_storage_connection(...)` now passes extra arguments on to `AzureAuth::get_azure_token()`
+  for user sign-ins, as its documentation always said.
+- The connections guide no longer says the sign-in lasts only for the R session (it is kept on your
+  computer until the 30-day limit), and its troubleshooting table covers these three messages.
 - Service-principal (unattended) connections are unchanged.
 
 # erifunctions 0.9.51
