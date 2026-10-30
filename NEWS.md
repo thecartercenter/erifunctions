@@ -11,9 +11,9 @@ call after that stopped with `AADSTS70043: The refresh token has expired ...` an
   the expired token, signs you in once, and carries on. The line shows even inside functions that
   hide connection messages. If the second sign-in also fails, you get that error, and nothing
   retries again.
-- **Unattended runs stop instead of waiting.** Under `Rscript` or a scheduled job, an expired user
-  sign-in now stops with a message saying to sign in once in interactive R, or to use a service
-  principal, instead of waiting for a browser nobody will see.
+- **Unattended runs get a clear message.** Under `Rscript` or a scheduled job there is no automatic
+  sign-in (nobody would see the browser); an expired sign-in stops with a message saying to sign in
+  once in interactive R, or to use a service principal.
 - **`httpuv` is now installed with erifunctions.** Browser sign-in needs it, and AzureAuth only
   suggests it, so a project with its own renv library could lack it. If it is still missing, the
   error gives the install command (`renv::install("httpuv")` inside a renv project).

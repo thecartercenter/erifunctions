@@ -259,6 +259,7 @@ get_azure_storage_connection <- function(
   }
   # refresh refused: sign-in frequency (70043), expired refresh token (700082), token revoked or
   # expired by policy (50173). A bare invalid_grant is left alone: a wrong password gives it too.
+  # "Unable to refresh token" is deliberately broad: at worst one unneeded sign-in, interactive only.
   expired <- "AADSTS70043|AADSTS700082|AADSTS50173|Unable to refresh token"
   interactive_flow <- auth %in% c("authorization_code", "device_code")
   tryCatch(
@@ -278,7 +279,9 @@ get_azure_storage_connection <- function(
         "Your Azure sign-in has expired; opening the browser to sign in again."
       })
       # AzureAuth usually drops the stale token itself; make sure, so the retry cannot reuse it
-      try(suppressWarnings(do.call(AzureAuth::delete_azure_token, c(args, list(confirm = FALSE)))), silent = TRUE)
+      # delete_azure_token() takes fewer arguments than get_azure_token(): pass only the ones it knows
+      del_args <- args[names(args) %in% names(formals(AzureAuth::delete_azure_token))]
+      try(suppressWarnings(do.call(AzureAuth::delete_azure_token, c(del_args, list(confirm = FALSE)))), silent = TRUE)
       tryCatch(get_token(), error = explain_httpuv)
     }
   )
