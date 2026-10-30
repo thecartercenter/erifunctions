@@ -728,6 +728,77 @@ test_that("eri_approve errors when no files match period", {
   )
 })
 
+#### Tests for .eri_user_token(): expired sign-in and missing httpuv (#379) ####
+
+# AzureAuth is mocked throughout, so nothing here can reach the live tenant.
+local_token_script <- function(outcomes, env = parent.frame()) {
+  calls <- new.env(parent = emptyenv())
+  calls$get <- 0L
+  calls$deleted <- 0L
+  testthat::local_mocked_bindings(
+    get_azure_token = function(resource, tenant, app, auth_type, ...) {
+      calls$get <- calls$get + 1L
+      out <- outcomes[[min(calls$get, length(outcomes))]]
+      if (inherits(out, "error")) stop(out)
+      out
+    },
+    delete_azure_token = function(...) {
+      calls$deleted <- calls$deleted + 1L
+      invisible(NULL)
+    },
+    .package = "AzureAuth",
+    .env = env
+  )
+  calls
+}
+
+expired_error <- simpleError(paste(
+  "Bad Request (HTTP 400). Failed to obtain Azure Active Directory token. Message:",
+  "AADSTS70043: The refresh token has expired or is invalid due to sign-in frequency checks by conditional access."
+))
+
+test_that("an expired sign-in deletes the stale token and signs in again, once (#379)", {
+  calls <- local_token_script(list(expired_error, "fresh_token"))
+  out <- capture.output(tok <- .eri_user_token("tenant", "app", "authorization_code"), type = "message")
+  expect_equal(tok, "fresh_token")
+  expect_equal(calls$get, 2L)
+  expect_equal(calls$deleted, 1L)
+  expect_match(paste(out, collapse = " "), "sign-in has expired")
+})
+
+test_that("the expiry notice is shown even under suppressMessages() (#379)", {
+  local_token_script(list(expired_error, "fresh_token"))
+  out <- capture.output(suppressMessages(.eri_user_token("tenant", "app", "authorization_code")), type = "message")
+  expect_match(paste(out, collapse = " "), "sign-in has expired")
+})
+
+test_that("a second failure after the retry is raised, not retried again (#379)", {
+  calls <- local_token_script(list(expired_error, simpleError("AADSTS50126: invalid username or password")))
+  expect_error(
+    suppressWarnings(capture.output(.eri_user_token("tenant", "app", "authorization_code"), type = "message")),
+    "AADSTS50126"
+  )
+  expect_equal(calls$get, 2L)
+})
+
+test_that("a missing httpuv gets a message that says what to do (#379)", {
+  local_token_script(list(simpleError("httpuv package must be installed to use authorization_code method")))
+  expect_error(.eri_user_token("tenant", "app", "authorization_code"), "device_code")
+  # also when the browser retry after an expired sign-in is what needs httpuv
+  local_token_script(list(expired_error, simpleError("httpuv package must be installed to use authorization_code method")))
+  expect_error(
+    capture.output(.eri_user_token("tenant", "app", "authorization_code"), type = "message"),
+    "renv::install"
+  )
+})
+
+test_that("other token errors pass through unchanged and are not retried (#379)", {
+  calls <- local_token_script(list(simpleError("AADSTS90002: Tenant not found")))
+  expect_error(.eri_user_token("tenant", "app", "authorization_code"), "AADSTS90002")
+  expect_equal(calls$get, 1L)
+  expect_equal(calls$deleted, 0L)
+})
+
 #### Tests for get_azure_storage_connection() identity selection (#357) ####
 
 # Every one of these mocks all three network entry points -- get_azure_token,

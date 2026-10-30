@@ -201,12 +201,7 @@ get_azure_storage_connection <- function(
        from {.path {creds_yaml_path}}."
     )
   } else {
-    mytoken <- AzureAuth::get_azure_token(
-      resource  = "https://storage.azure.com/",
-      tenant    = tenant_id,
-      app       = app_id,
-      auth_type = auth
-    )
+    mytoken <- .eri_user_token(tenant_id, app_id, auth)
     # `resource_owner` and `on_behalf_of` carry a user identity but are not browser
     # sign-ins, so only the two interactive flows are described as such.
     who <- if (auth %in% c("authorization_code", "device_code")) {
@@ -230,6 +225,54 @@ get_azure_storage_connection <- function(
   azcontainer <- AzureStor::storage_container(endptoken, storage_name)
 
   return(azcontainer)
+}
+
+#' Get a user token, signing in again when the cached one has expired
+#'
+#' A cached user token stops refreshing once the tenant's conditional-access sign-in frequency
+#' (30 days) has passed: Azure refuses the refresh (AADSTS70043) and AzureAuth stops instead of
+#' signing in again. This deletes the stale token and retries once, which opens the browser
+#' (#379). A missing `httpuv`, which the browser flow needs, gets a message that says what to do.
+#' Any other error passes through unchanged.
+#' @keywords internal
+.eri_user_token <- function(tenant_id, app_id, auth) {
+  get_token <- function() {
+    AzureAuth::get_azure_token(
+      resource  = "https://storage.azure.com/",
+      tenant    = tenant_id,
+      app       = app_id,
+      auth_type = auth
+    )
+  }
+  explain_httpuv <- function(e) {
+    if (!grepl("httpuv", conditionMessage(e), fixed = TRUE)) stop(e)
+    cli::cli_abort(c(
+      "Signing in to Azure in the browser needs the {.pkg httpuv} package, which is not installed here.",
+      "i" = "Install it with {.code install.packages(\"httpuv\")} (in an renv project: {.code renv::install(\"httpuv\")}),",
+      "i" = "or sign in with a code instead: {.code get_azure_storage_connection(auth = \"device_code\")}."
+    ), call = NULL)
+  }
+  expired <- "AADSTS70043|AADSTS700082|AADSTS50173|Unable to refresh token|invalid_grant"
+  tryCatch(
+    get_token(),
+    error = function(e) {
+      if (!grepl(expired, conditionMessage(e))) return(explain_httpuv(e))
+      # straight to stderr: the internal auto-connects wrap this in suppressMessages(), and a
+      # warning would only print after the call returns, but a browser window opening unannounced
+      # needs saying now
+      cat(cli::format_inline("{cli::symbol$info} Your Azure sign-in has expired; opening the browser to sign in again."),
+          "\n", file = stderr(), sep = "")
+      # AzureAuth usually drops the stale token itself; make sure, so the retry cannot reuse it
+      try(suppressWarnings(AzureAuth::delete_azure_token(
+        resource  = "https://storage.azure.com/",
+        tenant    = tenant_id,
+        app       = app_id,
+        auth_type = auth,
+        confirm   = FALSE
+      )), silent = TRUE)
+      tryCatch(get_token(), error = explain_httpuv)
+    }
+  )
 }
 
 #### 2) I/O dispatcher ####

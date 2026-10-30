@@ -1,3 +1,21 @@
+# erifunctions 0.9.52
+
+## An expired Azure sign-in now opens the browser again instead of stopping (#379)
+
+Every 30 days the Carter Center tenant asks you to sign in again. Until now, the first erifunctions
+call after that stopped with `AADSTS70043: The refresh token has expired ...` and
+`Unable to refresh token`, and you had to clear the token cache by hand and run the call again.
+
+- **The call now signs you in again by itself.** It prints "Your Azure sign-in has expired; opening
+  the browser to sign in again", removes the expired token, opens the browser once, and carries on.
+  The line shows even inside functions that hide connection messages. If the second sign-in also
+  fails, you get that error, and nothing retries again.
+- **A missing `httpuv` now says what to do.** Browser sign-in needs the `httpuv` package. A project
+  with its own renv library may not have it, and AzureAuth's message did not say how to fix that. You
+  now get the install command (`renv::install("httpuv")` inside a renv project) or the alternative,
+  `get_azure_storage_connection(auth = "device_code")`.
+- Service-principal (unattended) connections are unchanged.
+
 # erifunctions 0.9.51
 
 ## Training "male + female = new + refresher" is now checked for every country, and skipped DQ checks are reported (#374)
