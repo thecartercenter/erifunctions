@@ -2105,3 +2105,27 @@ test_that("every bundled treatment schema's implausible_overcoverage flags only 
   }
   expect_equal(n, 20L)   # the 20 schemas listed in #372
 })
+
+test_that("a percentage that would round onto the limit gets decimals; one summed column reads 'column' (#372)", {
+  scaled <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2)))
+  out <- suppressMessages(add_anomaly_consistency(
+    tibble::tibble(treated = c(400800, 400001, 500000), target_pop = 200000), scaled))
+  expect_equal(out$value, c("400,800 vs target_pop 200,000 (200.4%)",
+                            "400,001 vs target_pop 200,000 (200.0005%)",   # up to 4 decimals
+                            "500,000 vs target_pop 200,000 (250%)"))       # not near the limit: whole
+
+  plain <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop")))
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 100300, target_pop = 100000), plain))
+  expect_equal(out2$value, "100,300 vs target_pop 100,000 (100.3%)")
+
+  one <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs_sum = list("a"))))
+  out3 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, a = 1), one))
+  expect_equal(out3$value, "5 vs sum of 1 column 1 (500%)")
+})
+
+test_that("rhs_scale does not overflow a large integer rhs (#372)", {
+  schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2L)))
+  df  <- tibble::tibble(treated = 5e9, target_pop = 2000000000L)   # 2L * 2e9L would overflow to NA
+  out <- suppressWarnings(suppressMessages(add_anomaly_consistency(df, schema)))
+  expect_equal(out$row, 1L)
+})

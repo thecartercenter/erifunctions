@@ -827,6 +827,7 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 # rules that did not run at all must leave these rows out -- use this helper,
 # not a hand-written pattern.
 .dq_incomplete_marker <- "incomplete, ran without"
+.dq_is_incomplete <- function(reason) grepl(.dq_incomplete_marker, reason, fixed = TRUE)
 
 # Why a consistency rule's `rhs_scale` can't be used, or NULL if it can (or is
 # absent). It must be one positive number, and the rule's rhs must be a column
@@ -851,26 +852,41 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
     format(v, big.mark = ",", scientific = FALSE, trim = TRUE, digits = 15), character(1))
 }
 
+# A percentage for a flag value, as a whole number -- except where rounding
+# would land exactly on the rule's limit (`limit`, e.g. 200 for rhs_scale 2)
+# while the true value is not on it: a row at 200.4% must not read "(200%)"
+# next to a message saying "over 200%". Those get the fewest decimals (up to 4)
+# that tell them apart from the limit.
+.dq_pct_text <- function(p, limit) {
+  vapply(p, function(v) {
+    d <- 0L
+    while (d < 4L && round(v, d) == limit && v != limit) d <- d + 1L
+    .dq_fmt_num(round(v, d))
+  }, character(1))
+}
+
 # The `value` of a consistency flag (issue #372): the lhs value, plus -- when
 # the rhs is a column -- the rhs value it was compared with, and for an
 # ordering rule (<=, >=, <, >) the lhs as a percentage of the rhs, so a DA can
 # tell 101% from 600% without opening the workbook. `rhs` is the unscaled rhs
-# (the number in the file), so the percentage is the raw ratio. A summed rhs
-# is labelled by its column count, not by the full list (which can be 48
-# columns long). Rules against a constant (`rhs_value`) keep just the lhs value.
-.dq_consistency_value <- function(lhs_vals, rhs, rows, op, rhs_col, rhs_sum) {
+# (the number in the file), so the percentage is the raw ratio; `scale` is the
+# rule's rhs_scale (1 if none), used only to keep the percentage from rounding
+# onto the limit. A summed rhs is labelled by its column count, not by the full
+# list (which can be 48 columns long). Rules against a constant (`rhs_value`)
+# keep just the lhs value.
+.dq_consistency_value <- function(lhs_vals, rhs, rows, op, rhs_col, rhs_sum, scale = 1) {
   if (is.null(rhs_col) && is.null(rhs_sum)) return(as.character(lhs_vals))
   rhs_vals  <- rhs[rows]
-  rhs_label <- rhs_col %||% paste0("sum of ", length(unique(unlist(rhs_sum))), " columns")
+  n_sum     <- length(unique(unlist(rhs_sum)))
+  rhs_label <- rhs_col %||% paste0("sum of ", n_sum, if (n_sum == 1L) " column" else " columns")
   out <- paste0(.dq_fmt_num(lhs_vals), " vs ", rhs_label, " ", .dq_fmt_num(rhs_vals))
   if (op %in% c("<=", ">=", "<", ">") && is.numeric(lhs_vals) && is.numeric(rhs_vals)) {
     has_pct <- !is.na(rhs_vals) & rhs_vals != 0
     out[has_pct] <- paste0(out[has_pct], " (",
-                           .dq_fmt_num(round(100 * lhs_vals[has_pct] / rhs_vals[has_pct])), "%)")
+                           .dq_pct_text(100 * lhs_vals[has_pct] / rhs_vals[has_pct], 100 * scale), "%)")
   }
   out
 }
-.dq_is_incomplete <- function(reason) grepl(.dq_incomplete_marker, reason, fixed = TRUE)
 
 #' Flag cross-field consistency violations defined in a schema
 #'
@@ -1117,7 +1133,9 @@ add_anomaly_consistency <- function(data, schema) {
     }
 
     lhs_vals   <- lhs
-    rhs_vals   <- if (is.null(rule_scale)) rhs else rhs * rule_scale
+    # as.numeric(): YAML reads `rhs_scale: 2` as an integer, and integer x integer
+    # overflows to NA above ~2.1e9 (silently dropping that row).
+    rhs_vals   <- if (is.null(rule_scale)) rhs else as.numeric(rhs) * rule_scale
     applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
 
     ok <- switch(op,
@@ -1144,7 +1162,7 @@ add_anomaly_consistency <- function(data, schema) {
           row    = violated,
           column = lhs_desc,
           value  = .dq_consistency_value(lhs_vals[violated], rhs, violated, op,
-                                         rule_rhs, rule_rhs_sum),
+                                         rule_rhs, rule_rhs_sum, rule_scale %||% 1),
           issue  = paste0("consistency [", rule_name, "]: ", msg, flag_note)
         )
       )

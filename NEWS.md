@@ -13,9 +13,11 @@ the target population, so you couldn't tell 101% from 600% without opening the w
   August 2026 at 356%, and South Sudan oncho August 2026 at 216%. 150% would have flagged exactly the
   same rows. This is a **behaviour change: expect far fewer overcoverage flags.**
 - **Every consistency flag's value now shows the numbers compared.** For example
-  `180,617 vs target_pop 150,000 (120%)` instead of `180617`. The percentage appears for "at most" /
-  "at least" checks, and is the raw ratio from the file. The flag's issue text is unchanged, so flags
-  from one check still group together in summaries.
+  `180,617 vs target_pop 150,000 (120%)` instead of `180617`. The percentage is the raw ratio from the
+  file, shown for checks that compare sizes (at most, at least, less than, more than), except when the
+  target is 0: most remaining overcoverage flags have a target of 0, so they show no percentage. It is
+  rounded to a whole number unless that would make it look like it is exactly on the limit. The flag's
+  issue text is unchanged, so flags from one check still group together in summaries.
 - For schema maintainers: a `consistency:` rule can set `rhs_scale` (one positive number) to multiply
   its `rhs`/`rhs_sum` column before comparing. `eri_schema_validate()` checks it. New schemas made with
   the onboarding template start with `rhs_scale: 2`.

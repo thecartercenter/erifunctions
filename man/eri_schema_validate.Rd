@@ -15,8 +15,9 @@ A tibble with columns \code{issue_type}, \code{field}, \code{message}. An empty 
 }
 \description{
 Reads a surveillance schema YAML and checks it for structural problems:
-missing required sections, invalid column types, and temporal or consistency
-rules referencing unknown columns. Returns a tidy tibble of issues.
+missing required sections, invalid column types, temporal or consistency
+rules referencing unknown columns, and invalid consistency \code{rhs_scale}
+values. Returns a tidy tibble of issues.
 }
 \examples{
 \dontrun{

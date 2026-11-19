@@ -147,8 +147,8 @@ columns:
 # run_dq_checks(data, schema) |> add_anomaly_consistency(schema).
 # implausible_overcoverage flags only treated > 2x target_pop (rhs_scale, issue #372):
 # population estimates are often low, so raw coverage a little over 100% is common and
-# is not by itself an error. The range checks above (target_pop >= 1, treated >= 0,
-# coverage_pct in [0, 150]) still apply.
+# is not by itself an error. The column checks above (target_pop's round-based
+# overrides, coverage_pct in [0, 150]) still apply.
 consistency:
   implausible_overcoverage:
     lhs: treated
