@@ -2197,3 +2197,9 @@ test_that("a rule's message is read exactly, not by partial match (#372 review)"
   out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, p = 1), schema))
   expect_equal(out$issue, "consistency [r]: t <= p")
 })
+
+test_that("the percentage also shows for > rules (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "x", op = ">", rhs = "p")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(x = 50, p = 100), schema))
+  expect_equal(out$value, "50 vs p 100 (50%)")
+})
