@@ -132,7 +132,8 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
   cover.
 - `R/dq_cross.R` (the engine and its schema-format header comment), `R/cmr.R`'s
   `eri_cmr_dq_report()`/`eri_approve_cmr()`, `R/dq_review.R`'s cross-flag guards,
-  `inst/schemas/cmr/eth.yaml`'s `cross_consistency:` block, `tests/testthat/test-dq_cross.R`.
+  the `cross_consistency:` blocks in `inst/schemas/cmr/{eth,nga,sdn,ssd,ht,mad}.yaml`,
+  `tests/testthat/test-dq_cross.R`.
 
 ## Addendum (issue #373, 2026-11-19): the rules extended beyond Ethiopia
 
@@ -146,7 +147,7 @@ asked for.
   CDD/CS/health-worker training).
 - `treatment_implies_training` only, LF treated vs its CDD/CS/health-worker training: `ht` (CDD + CS; no
   health-worker tab) and `mad` (French-named tabs: Formation Distributeurs, Formation SC, Formation
-  Travailleurs de Sante). Both have LF Treatment only.
+  Travailleurs de Sante). Both have an LF treatment tab only (Madagascar's is "Traitement FL").
 - Not added: `uga`, `bra`, `ven` (no CDD/CS/health-worker training tabs), `tcd`, `dr` (no CMR data
   to verify against). They opt in when they have both.
 

@@ -56,8 +56,8 @@ scratch each time.
 
 Also blocks on an \strong{unresolved} cross-consistency finding (ADR-0024) if
 \code{\link[=eri_cmr_dq_report]{eri_cmr_dq_report()}} logged one for this period -- unlike the per-measure
-checks, this does NOT require a cross-check to have run at all, since most
-countries have no \verb{cross_consistency:} rules declared yet: a period with no
+checks, this does NOT require a cross-check to have run at all, since some
+countries have no \verb{cross_consistency:} rules declared: a period with no
 cross-check log entry is never treated as outstanding on that basis alone.
 
 \strong{A stale flag keeps blocking until it's explicitly resolved.} This checks

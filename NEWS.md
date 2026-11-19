@@ -15,8 +15,8 @@ run for every country where they apply:
 - **Expect new cross-sheet flags** on the next DQ report for these countries. On each country's
   latest CMR:
   - Nigeria (202609): 17 districts with CDD/CS/health-worker training but 0 treated.
-  - Sudan (202610): 1 district where RB and LF population differ (141,491 vs 84,506).
-  - South Sudan (202610): 1 population difference (249,959 vs 249,957), and 10 districts with
+  - Sudan (202610): 1 district where RB and LF population differ.
+  - South Sudan (202610): 1 district where RB and LF population differ (by 2), and 10 districts with
     treatment but no CDD/CS/health-worker training.
   - Haiti (202610) and Madagascar (202609): none.
 
@@ -31,7 +31,8 @@ run for every country where they apply:
 - **Not added:** Uganda, Brazil and Venezuela have no CDD, CS or health-worker training tabs
   (Uganda's are VHT, Parish Supervisors and similar). Chad and the Dominican Republic have no CMR
   data yet to check the rules against.
-- The "male + female trained = new + refresher" training check from the same request already runs
+- The "male + female trained = new + refresher" training check from the follow-up request (email of
+  2026-08-25) already runs
   for Haiti, Nigeria, Sudan, South Sudan and Uganda (#374). Chad and Madagascar are still left out;
   Madagascar now has a CMR (202609), so its training tabs could be checked for it next.
 
