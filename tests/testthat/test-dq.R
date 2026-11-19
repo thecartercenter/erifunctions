@@ -1974,3 +1974,34 @@ test_that("the report lists an incomplete rule in its own block, naming the miss
   expect_no_match(msgs, "could not be run", fixed = TRUE)            # it ran; not in the "could not run" block
   expect_match(msgs, "Not applicable to some sheets", fixed = TRUE)  # other tiers unaffected
 })
+
+test_that("an incomplete rule's note does not leak onto a later complete rule's flags (#376)", {
+  schema <- list(consistency = list(
+    r1 = list(lhs_sum = list("a", "c"), op = ">=", rhs_value = 0),   # incomplete, passes
+    r2 = list(lhs = "a", op = "==", rhs = "total"),                   # complete, flags
+    r3 = list(lhs_sum = list("a", "d"), op = "==", rhs = "total")     # incomplete, flags
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1, total = 2), schema))
+  expect_equal(out$issue[grepl("[r2]", out$issue, fixed = TRUE)], "consistency [r2]: a == total")
+  expect_equal(out$issue[grepl("[r3]", out$issue, fixed = TRUE)],
+               "consistency [r3]: sum(a + d) == total (checked without d: not found in the data)")
+})
+
+test_that("re-chaining add_anomaly_consistency does not duplicate an incomplete record (#376)", {
+  schema <- list(consistency = list(r = list(lhs_sum = list("a", "c"), op = ">=", rhs_value = 0)))
+  dq  <- structure(list(data = tibble::tibble(a = 1), flags = tibble::tibble()), class = "dq_result")
+  res <- suppressMessages(add_anomaly_consistency(suppressMessages(add_anomaly_consistency(dq, schema)), schema))
+  expect_equal(nrow(res$skipped_rules), 1L)
+})
+
+test_that("the report counts an incomplete rule once, however many sheets it is on (#376)", {
+  sk <- tibble::tibble(
+    sheet    = c("CDD Training", "CS Training"),
+    rule     = "monthly_gender_sum_matches_type_sum",
+    reason   = "lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov",
+    expected = FALSE)
+  withr::local_options(cli.width = 400)
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(.eri_cmr_report_skips(sk))), collapse = "\n")
+  expect_match(msgs, "1 data check ran without some of its columns", fixed = TRUE)
+  expect_match(msgs, "on \"CS Training\"", fixed = TRUE)
+})
