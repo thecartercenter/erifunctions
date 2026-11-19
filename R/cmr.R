@@ -1333,7 +1333,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
       cli::cli_bullets(c(" " = "{.val {part$rule[i]}} on {.val {part$sheet[i]}}: {part$reason[i]}"))
     }
     cli::cli_bullets(c(
-      "i" = "The file's field codes probably have a typo or a renamed column -- tell the DQ schema maintainer which sheet and column."
+      "i" = "The column names shown are the schema's names, not the file's field codes. The file probably has a typo or a renamed field code for that column -- tell the DQ schema maintainer which sheet and column."
     ))
   }
   if (nrow(bad) > 0L) {

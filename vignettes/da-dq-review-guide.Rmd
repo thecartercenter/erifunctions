@@ -359,8 +359,8 @@ those columns are in the file. The missing ones count as 0, and the report warns
   from the missing columns rather than the data:
   "monthly_gender_sum_matches_type_sum" on "CDD Training": lhs_sum incomplete, ran without 1 of 24
   column(s): trained_male_nov
-ℹ The file's field codes probably have a typo or a renamed column -- tell the DQ schema maintainer
-  which sheet and column.
+ℹ The column names shown are the schema's names, not the file's field codes. The file probably has a
+  typo or a renamed field code for that column -- tell the DQ schema maintainer which sheet and column.
 ```
 
 Each flag from that check ends with `(checked without trained_male_nov: not found in the data)`.

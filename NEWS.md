@@ -14,8 +14,10 @@ missing month rather than the data, and a pass had not checked that month.
   - each flag from that check ends `(checked without trained_male_nov: not found in the data)`, so
     when you review it you know it may come from the missing column.
   - the report no longer says "all clean" when such a check found nothing.
-- **What to do if you see it:** the file's field codes probably have a typo or a renamed column. Pass
-  the sheet, check and column names to the DQ schema maintainer.
+- **What to do if you see it:** the file's field codes probably have a typo or a renamed column. The
+  column name shown is the schema's name for it (e.g. `trained_male_nov`), not the field code in the
+  file (`#cddtrn_male_mov`), so you may not find it by searching the file. Pass the sheet, check and
+  column names to the DQ schema maintainer.
 - **Seen on real data.** Of 215 processed and staged training files checked, one has this: Ethiopia's
   June 2026 CDD Training sheet has the field code `#cddtrn_male_mov` where `#cddtrn_male_nov` belongs.
   November was empty in that file, so its 2 existing flags are real mismatches in other months; they

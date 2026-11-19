@@ -941,8 +941,9 @@ add_anomaly_consistency <- function(data, schema) {
   all_flags <- tibble::tibble(row    = integer(), column = character(),
                                value  = character(), issue  = character())
   # Rules that could not be evaluated at all (a column missing, an unsummable
-  # column). Recorded -- not just printed -- so a caller can tell "rule did
-  # not run" from "rule ran and passed" (issue #374).
+  # column), or that ran without some summed columns (issue #376). Recorded --
+  # not just printed -- so a caller can tell "rule did not run" from "rule ran
+  # and passed" (issue #374).
   skipped   <- tibble::tibble(rule = character(), reason = character(), expected = logical())
 
   for (rule_name in names(rules)) {
