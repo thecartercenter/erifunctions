@@ -59,7 +59,14 @@ reported legitimately contributes 0 to the sum, same reasoning as
 columns exist in the data at all skips the whole rule for that side (e.g. a
 schema shared across several sheet shapes, where only one prefix's columns
 are ever populated on a given ingest -- same "not found" skip as a missing
-\code{lhs}/\code{rhs}).
+\code{lhs}/\code{rhs}). A summed side where only \emph{some} of its columns exist (e.g. a
+template typo renamed one month's column) still runs, counting the missing
+columns as 0, so real mismatches are still flagged. Because a flag may then
+come from the missing column rather than the data (and a pass did not
+check it), the rule is also listed in the skipped rules with a \code{reason}
+that starts \code{"lhs_sum incomplete, ran without"} (or \code{rhs_sum}) and names the
+missing columns, always with \code{expected = FALSE} (even with \code{skip_ok}), and
+each of its flags ends \code{"(checked without <columns>: not found in the data)"}.
 
 Supported operators: \code{<=}, \code{>=}, \code{==}, \code{<}, \code{>}, \code{!=}.
 Missing values (\code{NA}) in either operand skip the check for that row.

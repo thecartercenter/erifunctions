@@ -87,7 +87,8 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
 - `add_anomaly_consistency()` no longer ends with "All consistency checks passed." when a rule was
   skipped: it says "not a full pass" (unexpected skips) or "N not applicable here, by design".
 - `cross_consistency:` skips (R/dq_cross.R), sheets that cannot be read or have no schema, and rules that
-  run on a *partial* column match (some summed columns present, others absent) are **not** covered yet.
+  run on a *partial* column match (some summed columns present, others absent) are **not** covered yet
+  (partial matches: now covered, see the #376 addendum below).
 
 **Consequences:** no change to which rows are flagged by existing rules. Newly checked Ethiopia
 CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of
@@ -99,3 +100,36 @@ a quiet note, not a warning, as long as another rule still ran on that sheet. Th
   already carried. Revisit a shared fragment if a seventh copy is needed. `mad` and `tcd` have training
   schemas but no processed training files to verify against yet, so they do not get the rule until real
   data exists (their sheets would otherwise be unverifiable guesses).
+
+## Addendum (issue #376): a summed side with only some of its columns present runs, and says so
+
+**Decision:** when an `lhs_sum`/`rhs_sum` side resolves some but not all of its columns,
+`add_anomaly_consistency()` still evaluates the rule on the columns present (missing ones count as 0), and:
+
+- records a row in the skipped-rules table with `expected = FALSE` and a `reason` such as
+  `"lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov"`. `skip_ok` does not apply: it
+  means "this rule is for another layout" (none of its columns present), whereas a partial match means
+  columns were lost from the layout the rule was written for;
+- appends `"(checked without <columns>: not found in the data)"` to each flag the rule raises;
+- does not end with "All consistency checks passed" when such a rule found nothing.
+
+`eri_cmr_dq_report()` prints these rows as their own warning block (naming the missing columns per sheet),
+does not count them towards "every rule skipped on this sheet" (the rule ran), and does not say "all
+clean" while one exists. Incomplete rows are told apart from true skips by the `reason` marker, through one
+helper (`.dq_is_incomplete()`), rather than by adding a column to the skipped-rules table.
+
+**Why run rather than skip:** checked against all 215 real staged and processed training files (eth, ht,
+nga, sdn, ssd, uga), exactly one summed side was partial: Ethiopia's June 2026 CDD Training sheet, whose
+`#cddtrn_male_mov` is a template typo for `#cddtrn_male_nov`. November was empty in that file, and the rule
+raised 2 flags that are real mismatches in other months; with the typo aliased it raises the same 2.
+Skipping the rule would have hidden them. Running it and labelling the result keeps real findings and tells
+the reviewer which flags might come from the missing column. Emalee chose this over skipping (2026-11-19).
+
+**Why no `allow_partial` opt-in:** the rule already runs; an opt-in would only silence the warning, and no
+schema has a legitimate partial layout. Add one if a real case appears.
+
+**Consequences:** no change for sides that resolve all or none of their columns; on the 215 real files,
+flag counts are identical before and after. A file with a renamed or dropped monthly field code now shows a
+warning naming the column, and that rule's flags carry the note. Flags are not matched across runs by their
+`issue` text (each `eri_cmr_dq_report()` run supersedes the previous run's log for the period), so the
+longer `issue` text does not affect review state.

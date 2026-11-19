@@ -2277,3 +2277,44 @@ test_that("eri_cmr_dq_report() ignores a schema that only has consistency_not_ap
   expect_no_match(msgs, "No consistency rules defined")
   expect_equal(nrow(attr(flags, "skipped_rules")), 0L)
 })
+
+test_that("eri_cmr_dq_report() counts a rule that ran without some columns as run, not skipped (#376)", {
+  tmp <- withr::local_tempfile(fileext = ".xlsx")
+  make_cmr_xlsx(tmp,
+    field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
+    data_rows = list(c("2024", "North", "50"))
+  )
+  staged <- eri_ingest_cmr(tmp, sheet = "RB Treatment")
+  plan <- tibble::tibble(
+    sheet = "RB Treatment", disease = "oncho",
+    data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
+  )
+  schema <- list(columns = list(
+    year    = list(required = TRUE, type = "numeric", aliases = "#rbtrt_year", range = c(1990, 2035)),
+    treated = list(required = TRUE, type = "numeric", aliases = "#rbtrt_treated")
+  ),
+  consistency = list(
+    other_layout = list(lhs = "treated", op = "<=", rhs = "nope", skip_ok = TRUE),
+    incomplete   = list(lhs_sum = list("treated", "not_in_file"), op = ">=", rhs_value = 0)
+  ))
+  local_mocked_bindings(
+    eri_read = function(...) staged,
+    load_dq_schema = function(...) schema,
+    .eri_write_log = function(...) "sdn/oncho/programmatic/treatment/logs/x.yaml",
+    .package = "erifunctions"
+  )
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(
+    flags <- eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock"))
+  )), collapse = "\n")
+  sk <- attr(flags, "skipped_rules")
+
+  expect_equal(nrow(sk), 2L)
+  # One rule ran (incompletely), so the sheet is not "no check ran" and the skip_ok skip stays expected.
+  expect_no_match(msgs, "No consistency check ran at all")
+  expect_false(any(grepl("no consistency rule ran on this sheet", sk$reason, fixed = TRUE)))
+  expect_true(sk$expected[sk$rule == "other_layout"])
+  expect_false(sk$expected[sk$rule == "incomplete"])
+  expect_match(msgs, "ran without some of its columns")
+  expect_no_match(msgs, "all clean")
+  expect_match(msgs, "could not be run or ran without some columns (above), so this is not a full all-clear", fixed = TRUE)
+})

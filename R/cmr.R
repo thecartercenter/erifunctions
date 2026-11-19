@@ -1118,7 +1118,11 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   skip is a warning, and means the schema's column aliases probably don't
 #'   match the file. If *every* rule skipped on a sheet, that is always a
 #'   warning (no consistency check ran on it at all), unless the schema lists
-#'   the sheet under `consistency_not_applicable_sheets`. Sheets that couldn't
+#'   the sheet under `consistency_not_applicable_sheets`. A rule that summed
+#'   only some of its columns (the rest were not in the file) did run, and is
+#'   listed too, as its own warning with `expected = FALSE` and a `reason`
+#'   naming the missing columns; its flags end "(checked without ...)" because
+#'   they may come from the missing columns. Sheets that couldn't
 #'   be read, or have no schema, are warned about separately and are not in
 #'   this list. The attribute is dropped by dplyr verbs such as `filter()`, so
 #'   read it straight off the returned value.
@@ -1178,7 +1182,9 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
         # Ethiopia's ToT sheets, which have no monthly columns). Otherwise two
         # layout-specific skip_ok rules could both lose their columns and the
         # report would still read as clean (issue #374).
-        if (nrow(sk) >= length(schema[["consistency", exact = TRUE]]) &&
+        # A rule that ran without some columns (issue #376) did run, so it does
+        # not count towards "every rule skipped".
+        if (sum(!.dq_is_incomplete(sk$reason)) >= length(schema[["consistency", exact = TRUE]]) &&
             !(p$sheet %in% unlist(schema[["consistency_not_applicable_sheets", exact = TRUE]]))) {
           sk$expected <- FALSE
           sk$reason   <- paste0(sk$reason, "; no consistency rule ran on this sheet")
@@ -1286,7 +1292,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
       cli::cli_alert_success("No DQ flags across {nrow(plan)} measure{?s} -- all clean.")
     } else {
       cli::cli_alert_warning(
-        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_bad_rules} data check{?s} could not be run (above), so this is not a full all-clear."
+        "No DQ flags across {nrow(plan)} measure{?s} -- but {n_bad_rules} data check{?s} could not be run or ran without some columns (above), so this is not a full all-clear."
       )
     }
     out <- tibble::tibble(
@@ -1310,10 +1316,26 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
 #   that check means it never ran, not that the data passed.
 # - expected (`skip_ok: true`, e.g. a rule written for the other sheet layout):
 #   a quiet info line, still listed per rule and sheet.
+# A rule that ran without some of its summed columns (issue #376) gets its own
+# warning block, naming the missing columns per sheet: it did run, but its
+# flags may come from the missing columns, and a pass did not check them.
 .eri_cmr_report_skips <- function(skipped) {
   if (nrow(skipped) == 0L) return(invisible(NULL))
-  bad <- skipped[!skipped$expected %in% TRUE, , drop = FALSE]
-  ok  <- skipped[skipped$expected %in% TRUE, , drop = FALSE]
+  incomplete <- .dq_is_incomplete(skipped$reason)
+  part <- skipped[incomplete, , drop = FALSE]
+  bad  <- skipped[!incomplete & !skipped$expected %in% TRUE, , drop = FALSE]
+  ok   <- skipped[!incomplete & skipped$expected %in% TRUE, , drop = FALSE]
+  if (nrow(part) > 0L) {
+    cli::cli_alert_warning(
+      "{length(unique(part$rule))} data check{?s} ran without some of {?its/their} columns (counted as 0), so {?its/their} flags on these sheets may come from the missing column rather than the data:"
+    )
+    for (i in seq_len(nrow(part))) {
+      cli::cli_bullets(c(" " = "{.val {part$rule[i]}} on {.val {part$sheet[i]}}: {part$reason[i]}"))
+    }
+    cli::cli_bullets(c(
+      "i" = "The file's field codes probably have a typo or a renamed column -- tell the DQ schema maintainer which sheet and column."
+    ))
+  }
   if (nrow(bad) > 0L) {
     cli::cli_alert_warning(
       "{length(unique(bad$rule))} data check{?s} could not be run on some sheets (the columns {?it needs/they need} weren't found):"
