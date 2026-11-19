@@ -920,13 +920,13 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 
   # Cross-consistency (ADR-0024) is a workbook-level check, not a measure --
   # it blocks on an OPEN finding only, unlike the per-measure loop above,
-  # which also blocks on "never DQ-checked at all". Most countries have no
-  # cross_consistency: rules yet, so no entry ever gets logged for them; that
+  # which also blocks on "never DQ-checked at all". Many countries have no
+  # cross_consistency: rules, so no entry ever gets logged for them; that
   # must never be treated as outstanding, or every period approved before
   # this feature shipped would retroactively become unapprovable. Skip the
   # query entirely when the country declares no rules at all -- not just an
   # optimization: it's what keeps this a true no-op for the countries that
-  # don't have any (as of #373, only eth, nga, sdn, ssd and ht do).
+  # don't have any (see which inst/schemas/cmr/*.yaml declare cross_consistency:).
   cmr_schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
   has_cross_rules <- !is.null(cmr_schema$cross_consistency) && length(cmr_schema$cross_consistency) > 0L
 

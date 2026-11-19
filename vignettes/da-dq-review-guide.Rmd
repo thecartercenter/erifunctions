@@ -123,8 +123,8 @@ flags[, c("excel_row", "column", "value", "issue", "status")]
 Two flags, one measure. Now forget that tibble exists -- from here on, one function.
 
 > **A note on cross-sheet flags.** For a country whose CMR routing schema declares
-> `cross_consistency:` rules (Ethiopia, Nigeria, Sudan, South Sudan and Haiti -- e.g.
-> "population must match between the RB and LF Treatment tabs for the same district"),
+> `cross_consistency:` rules (as of this writing Ethiopia, Nigeria, Sudan, South Sudan, Haiti and
+> Madagascar -- e.g. "population must match between the RB and LF Treatment tabs for the same district"),
 > `eri_cmr_dq_report()` also compares data
 > *across* sheets, not just within one. Those flags show `sheet = "(cross-sheet)"` and a blank
 > `excel_row` -- there's no single cell to point at, since the issue is a relationship between two

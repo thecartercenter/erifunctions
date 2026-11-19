@@ -118,7 +118,7 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
 - Rules for any country other than `eth` -- each country's real sheet names (tcd/mad's templates are
   in French) and district-roster overlaps between diseases are different enough that copying eth's
   rules elsewhere would be guesswork, not generalization. Other countries opt in when someone with
-  real knowledge of that country's template asks. *(Superseded for nga, sdn, ssd and ht by the #373
+  real knowledge of that country's template asks. *(Superseded for nga, sdn, ssd, ht and mad by the #373
   addendum below.)*
 
 ## References
@@ -144,8 +144,10 @@ asked for.
 
 - `rb_lf_pop_match` and `treatment_implies_training`: `nga`, `sdn`, `ssd` (both RB and LF Treatment, plus
   CDD/CS/health-worker training).
-- `treatment_implies_training` only, LF treated vs CDD + CS training: `ht` (LF only, no health-worker tab).
-- Not added: `uga`, `bra`, `ven`, `mad` (no CDD/CS/health-worker training tabs), `tcd`, `dr` (no CMR data
+- `treatment_implies_training` only, LF treated vs its CDD/CS/health-worker training: `ht` (CDD + CS; no
+  health-worker tab) and `mad` (French-named tabs: Formation Distributeurs, Formation SC, Formation
+  Travailleurs de Sante). Both have LF Treatment only.
+- Not added: `uga`, `bra`, `ven` (no CDD/CS/health-worker training tabs), `tcd`, `dr` (no CMR data
   to verify against). They opt in when they have both.
 
 **Per-country sheet names.** Each copy names its own training sheets: Ethiopia's health-worker tab is
@@ -165,7 +167,7 @@ so this removes rounding differences and nothing else (a real 1-person differenc
 change on Ethiopia's or the others' latest CMRs. Applied to Ethiopia too so the rule means the same
 everywhere.
 
-**Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these four countries' cross-sheet
+**Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these five countries' cross-sheet
 logs; it still blocks only on an open finding for the period, so periods approved before the rules existed
 are unaffected. Several `test-cmr.R` tests used `sdn` as a "no cross rules" country; they now drop its
 rules explicitly (`local_without_cross_rules()`).

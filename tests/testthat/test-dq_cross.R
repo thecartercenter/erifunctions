@@ -473,7 +473,7 @@ test_that("every cross_consistency source points at a measure the country routes
       }
     }
   }
-  expect_setequal(checked, c("eth", "nga", "sdn", "ssd", "ht"))
+  expect_setequal(checked, c("eth", "nga", "sdn", "ssd", "ht", "mad"))
 })
 
 test_that("the RB/LF population match tolerates a rounding difference but not a real one (#373)", {
@@ -508,15 +508,16 @@ test_that("each country carries exactly the expected cross rules, and they match
     nga = c("rb_lf_pop_match", "treatment_implies_training"),
     sdn = c("rb_lf_pop_match", "treatment_implies_training"),
     ssd = c("rb_lf_pop_match", "treatment_implies_training"),
-    ht  = "treatment_implies_training"
+    ht  = "treatment_implies_training",
+    mad = "treatment_implies_training"
   )
   for (country in names(expected)) {
     rules <- .cmr_yaml(country)$cross_consistency
     expect_setequal(names(rules), expected[[country]])
     for (rule_name in names(rules)) {
       want <- .cross_rule_core(eth[[rule_name]])
-      # Haiti has no RB tab: its treatment side is LF only.
-      if (country == "ht") {
+      # Haiti and Madagascar have no RB tab: their treatment side is LF only.
+      if (country %in% c("ht", "mad")) {
         want$lhs$sources <- Filter(function(s) s$disease != "oncho", want$lhs$sources)
       }
       expect_identical(.cross_rule_core(rules[[rule_name]]), want, label = paste0(country, "::", rule_name))
@@ -530,7 +531,8 @@ test_that("each country's training sheets are pinned and are routed to the sourc
     nga = c("CDD Training", "CS Training", "Health Workers Training"),
     sdn = c("CDD Training", "CS Training", "Health Workers Training"),
     ssd = c("CDD Training", "CS Training", "Health Workers Training"),
-    ht  = c("CDD Training", "CS Training")
+    ht  = c("CDD Training", "CS Training"),
+    mad = c("Formation Distributeurs", "Formation SC", "Formation Travailleurs de Sante")
   )
   for (country in names(expected_sheets)) {
     cmr <- .cmr_yaml(country)
