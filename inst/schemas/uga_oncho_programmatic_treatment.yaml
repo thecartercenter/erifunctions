@@ -142,16 +142,20 @@ columns:
     aliases: [CoveragePct, coverage, geographic_coverage, "#rbtrt_coverage"]
     range: [0, 150]
 
-# NOTE: consistency rules are NOT run automatically by run_dq_checks(). They must
-# be chained explicitly: run_dq_checks(data, schema) |> add_anomaly_consistency(schema).
-# The automatic range checks above (target_pop >= 1, treated >= 0, coverage_pct in
-# [0, 150]) already catch the cases that matter most for a first pass.
+# NOTE: eri_cmr_dq_report() runs these consistency rules on every CMR DQ review
+# (ADR-0026). run_dq_checks() on its own does not; if you call it directly, chain
+# run_dq_checks(data, schema) |> add_anomaly_consistency(schema).
+# implausible_overcoverage flags only treated > 2x target_pop (rhs_scale, issue #372):
+# population estimates are often low, so raw coverage a little over 100% is common and
+# is not by itself an error. The column checks above (target_pop's round-based
+# overrides, coverage_pct in [0, 150]) still apply.
 consistency:
   implausible_overcoverage:
     lhs: treated
     op: "<="
     rhs: target_pop
-    message: "treated exceeds target_pop (over 100% raw coverage)"
+    rhs_scale: 2
+    message: "treated is more than 2x target_pop (over 200% raw coverage)"
   treated_nonneg:
     lhs: treated
     op: ">="

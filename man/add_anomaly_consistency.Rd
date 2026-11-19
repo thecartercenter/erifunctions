@@ -38,6 +38,12 @@ Schema format (add a \verb{consistency:} block to any YAML schema):
     op: ">="
     rhs_value: 0
     message: "Age is negative"
+  implausible_overcoverage:
+    lhs: treated
+    op: "<="
+    rhs: target_pop
+    rhs_scale: 2
+    message: "treated is more than 2x target_pop (over 200\% raw coverage)"
   gender_sum_matches_type_sum:
     lhs_sum: [male_trained, female_trained]
     op: "=="
@@ -70,6 +76,22 @@ each of its flags ends \code{"(checked without <columns>: not found in the data)
 
 Supported operators: \code{<=}, \code{>=}, \code{==}, \code{<}, \code{>}, \code{!=}.
 Missing values (\code{NA}) in either operand skip the check for that row.
+
+\code{rhs_scale} (optional, one positive number) multiplies a column rhs
+(\code{rhs} or \code{rhs_sum}) before the comparison, e.g. \code{rhs_scale: 2} with
+\code{treated <= target_pop} flags only rows where \code{treated} is more than twice
+\code{target_pop}. It can't be combined with \code{rhs_value} (write the scaled
+constant instead). A rule with an invalid \code{rhs_scale}, or with a
+non-numeric rhs column to scale, is skipped and recorded like any other
+skip, with \code{expected = FALSE}.
+
+Each flag's \code{issue} is the same for every row of a rule (rule name and
+message). Its \code{value} holds that row's numbers: the lhs value and, when the
+rhs is a column, the rhs value from the data (before any \code{rhs_scale}), e.g.
+\code{"180,617 vs target_pop 150,000 (120\%)"}. The percentage (lhs as a share of
+rhs) is shown for \code{<=}, \code{>=}, \code{<} and \code{>} rules when the rhs is not 0. A
+summed rhs is named by its column count (\code{"vs sum of 48 columns ..."}). A
+rule against a constant (\code{rhs_value}) shows just the lhs value.
 
 Works on a plain tibble (returns a tibble of violations) or a \code{dq_result}
 (appends violations to \verb{$flags}).

@@ -1,5 +1,33 @@
 # erifunctions (development version)
 
+## Fewer overcoverage flags, and consistency flags now show the numbers (#372)
+
+Since 0.9.46 the treatment check `implausible_overcoverage` flagged every row where treated was more
+than target population, i.e. raw coverage over 100%. In South Sudan, Ethiopia and elsewhere the
+population estimates are often too low, so most of those flags were noise, and the flag didn't show
+the target population, so you couldn't tell 101% from 600% without opening the workbook.
+
+- **The check now flags only treated more than 2x target population (over 200%)**, in all 20 treatment
+  schemas that have it. On all 4,172 rows of current staged and processed treatment data this cuts the
+  flags from 578 to 30: 28 rows where target population is 0 but people were treated, Ethiopia LF
+  August 2026 at 356%, and South Sudan oncho August 2026 at 216%. 150% would have flagged exactly the
+  same rows. This is a **behaviour change: expect far fewer overcoverage flags.**
+- **A consistency flag that compares two columns now shows both numbers in its value** (checks
+  against a fixed number still show just the one value). For example
+  `350,000 vs target_pop 150,000 (233%)` instead of `350000`. The percentage is the raw ratio from the
+  file, shown for checks that compare sizes (at most, at least, less than, more than), except when the
+  target is 0: most remaining overcoverage flags have a target of 0, so they show no percentage. It is
+  rounded to a whole number unless that would make it look like it is exactly on the limit. The issue
+  text is still the same for every row of a check, so flags from one check still group together in
+  summaries.
+- For schema maintainers: a `consistency:` rule can set `rhs_scale` (one positive number) to multiply
+  its `rhs`/`rhs_sum` column before comparing. `eri_schema_validate()` checks it. New schemas made with
+  the onboarding template start with `rhs_scale: 2`.
+- The notes in the Uganda, Sudan and South Sudan treatment schemas that said consistency rules are
+  "NOT run automatically" were out of date since 0.9.46 and are corrected.
+- If you made a local schema override (ADR-0018) as a stopgap for this, it expires when this version's
+  schema arrives.
+
 ## A summed DQ check with some of its columns missing now says so (#376)
 
 Checks such as the training "male + female = new + refresher" rule add up many monthly columns. If

@@ -134,3 +134,31 @@ flag counts are identical before and after. A file with a renamed or dropped mon
 warning naming the column, and that rule's flags carry the note. Flags are not matched across runs by their
 `issue` text (each `eri_cmr_dq_report()` run supersedes the previous run's log for the period), so the
 longer `issue` text does not affect review state.
+
+## Addendum (issue #372): `rhs_scale`, a 2x overcoverage limit, and numbers in the flag value
+
+**Context:** once this ADR wired `consistency:` into `eri_cmr_dq_report()`, `implausible_overcoverage`
+(`treated <= target_pop`) fired on every row over 100% raw coverage. Population estimates are often low
+(reported for South Sudan and Ethiopia), so most flags were noise, and the flag's `value` held only the
+lhs, so a DA could not judge it without the workbook.
+
+**Decision:**
+- `consistency:` rules accept `rhs_scale`, one positive number that multiplies a column rhs (`rhs` /
+  `rhs_sum`) before the comparison. It is rejected with `rhs_value` (write the scaled constant). An
+  invalid value, or a non-numeric rhs column to scale, skips the rule and records it (`expected = FALSE`)
+  rather than checking something other than what the schema says. `eri_schema_validate()` uses the same
+  check (`.dq_rhs_scale_problem()`).
+- `implausible_overcoverage` uses `rhs_scale: 2` in all 20 treatment schemas that carry it, and in the
+  onboarding template. One global value, chosen by Emalee (2026-11-19): on all 4,172 current staged and
+  processed treatment rows, 1.5x and 2x flag exactly the same 30 rows (vs 578 at 1x), so the choice only
+  matters for future data; 2x matches the LF `coverage_pct` bound and still catches an extra-digit typo.
+  Per-country limits were not needed.
+- Every consistency flag's `value` carries the row's numbers: the lhs, the unscaled rhs from the data and,
+  for `<=`/`>=`/`<`/`>` rules with a non-zero rhs, the raw lhs/rhs percentage
+  (`"180,617 vs target_pop 150,000 (120%)"`). A summed rhs is named by its column count. Rules against a
+  constant keep just the lhs. The numbers go in `value`, not `issue`, because `issue` must stay the same
+  for every row of a rule: the DQ summary groups flags by it.
+
+**Consequences:** far fewer overcoverage flags (578 to 30 on current data). The remaining flags are rows
+with target population 0 and two real outliers. Any code reading a consistency flag's `value` as a bare
+number would now get text; nothing in the package does (it is only displayed and logged).

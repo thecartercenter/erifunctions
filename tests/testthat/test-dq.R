@@ -2005,3 +2005,201 @@ test_that("the report counts an incomplete rule once, however many sheets it is 
   expect_match(msgs, "1 data check ran without some of its columns", fixed = TRUE)
   expect_match(msgs, "on \"CS Training\"", fixed = TRUE)
 })
+
+#### rhs_scale and flag values (issue #372) ####
+
+test_that("rhs_scale multiplies a column rhs before comparing (#372)", {
+  schema <- list(consistency = list(
+    over = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2)
+  ))
+  df  <- tibble::tibble(treated = c(150, 200, 201, 360), target_pop = c(100, 100, 100, 100))
+  out <- suppressMessages(add_anomaly_consistency(df, schema))
+  expect_equal(out$row, c(3L, 4L))   # 150% and exactly 200% pass; 201% and 360% are flagged
+  expect_equal(out$issue, rep("consistency [over]: treated <= 2 x target_pop", 2))
+  expect_equal(nrow(attr(out, "skipped_rules")), 0L)
+})
+
+test_that("rhs_scale works with rhs_sum (#372)", {
+  schema <- list(consistency = list(
+    r = list(lhs = "total", op = "<=", rhs_sum = list("a", "b"), rhs_scale = 1.5)
+  ))
+  df  <- tibble::tibble(total = c(15, 16), a = c(4, 4), b = c(6, 6))   # rhs 10 -> limit 15
+  out <- suppressMessages(add_anomaly_consistency(df, schema))
+  expect_equal(out$row, 2L)
+  expect_equal(out$value, "16 vs sum of 2 columns 10 (160%)")
+})
+
+test_that("a consistency flag's value shows the row's rhs value and percentage; issue stays per-rule (#372)", {
+  schema <- list(consistency = list(
+    over = list(lhs = "treated", op = "<=", rhs = "target_pop", message = "too many treated")
+  ))
+  df  <- tibble::tibble(treated = c(180617, 1500000, 7), target_pop = c(150000, 250000, 0))
+  out <- suppressMessages(add_anomaly_consistency(df, schema))
+  expect_equal(out$value, c("180,617 vs target_pop 150,000 (120%)",
+                            "1,500,000 vs target_pop 250,000 (600%)",
+                            "7 vs target_pop 0"))                         # no percentage of 0
+  expect_equal(unique(out$issue), "consistency [over]: too many treated")   # groups as one issue
+})
+
+test_that("the percentage is the raw ratio, before rhs_scale (#372)", {
+  schema <- list(consistency = list(
+    over = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 356, target_pop = 100), schema))
+  expect_equal(out$value, "356 vs target_pop 100 (356%)")
+})
+
+test_that("flag values: no percentage for ==, summed rhs named by column count, rhs_value shows lhs only (#372)", {
+  eq  <- list(consistency = list(r = list(lhs_sum = list("m", "f"), op = "==",
+                                          rhs_sum = list("n1", "n2", "n3"))))
+  out <- suppressMessages(add_anomaly_consistency(
+    tibble::tibble(m = 1, f = 2, n1 = 1, n2 = 1, n3 = 2), eq))
+  expect_equal(out$value, "3 vs sum of 3 columns 4")
+
+  const <- list(consistency = list(r = list(lhs = "treated", op = ">=", rhs_value = 0)))
+  out2  <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = -5), const))
+  expect_equal(out2$value, "-5")
+})
+
+test_that("an invalid rhs_scale skips the rule and records why (#372)", {
+  df <- tibble::tibble(treated = 500, target_pop = 100)
+  bad <- list(
+    zero     = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 0),
+    negative = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = -2),
+    text     = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = "2"),
+    two_nums = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = c(1, 2)),
+    constant = list(lhs = "treated", op = "<=", rhs_value = 100, rhs_scale = 2)
+  )
+  out <- suppressMessages(add_anomaly_consistency(df, list(consistency = bad)))
+  expect_equal(nrow(out), 0L)
+  sk <- attr(out, "skipped_rules")
+  expect_equal(sk$rule, names(bad))
+  expect_false(any(sk$expected))
+  expect_equal(sk$reason, c(rep("rhs_scale must be one positive number", 4),
+                            "rhs_scale needs a column rhs (rhs or rhs_sum), not rhs_value"))
+})
+
+test_that("rhs_scale on a non-numeric rhs column skips the rule instead of erroring (#372)", {
+  schema <- list(consistency = list(
+    over = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 500, target_pop = "100"), schema))
+  expect_equal(nrow(out), 0L)
+  expect_equal(attr(out, "skipped_rules")$reason, "rhs_scale needs a numeric rhs column")
+})
+
+test_that("every bundled treatment schema's implausible_overcoverage flags only over 2x target_pop (#372)", {
+  files <- list.files(system.file("schemas", package = "erifunctions"),
+                      pattern = "_programmatic_treatment[.]yaml$", full.names = TRUE)
+  n <- 0L
+  for (f in files) {
+    schema <- yaml::read_yaml(f)
+    rule   <- schema$consistency[["implausible_overcoverage"]]
+    if (is.null(rule)) next
+    n <- n + 1L
+    expect_identical(rule[["rhs_scale", exact = TRUE]], 2L, info = basename(f))
+    expect_match(rule$message, "more than 2x target_pop", fixed = TRUE, info = basename(f))
+    df <- tibble::tibble(!!rule$lhs := c(150, 250), target_pop = c(100, 100))
+    out <- suppressMessages(add_anomaly_consistency(df, list(consistency = list(implausible_overcoverage = rule))))
+    expect_equal(out$row, 2L, info = basename(f))
+  }
+  expect_equal(n, 20L)   # the 20 schemas listed in #372
+})
+
+test_that("a percentage that would round onto the limit gets decimals; one summed column reads 'column' (#372)", {
+  scaled <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2)))
+  out <- suppressMessages(add_anomaly_consistency(
+    tibble::tibble(treated = c(400800, 400001, 500000), target_pop = 200000), scaled))
+  expect_equal(out$value, c("400,800 vs target_pop 200,000 (200.4%)",
+                            "400,001 vs target_pop 200,000 (200.0005%)",   # up to 4 decimals
+                            "500,000 vs target_pop 200,000 (250%)"))       # not near the limit: whole
+
+  plain <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop")))
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 100300, target_pop = 100000), plain))
+  expect_equal(out2$value, "100,300 vs target_pop 100,000 (100.3%)")
+
+  one <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs_sum = list("a"))))
+  out3 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, a = 1), one))
+  expect_equal(out3$value, "5 vs sum of 1 column 1 (500%)")
+})
+
+test_that("rhs_scale does not overflow a large integer rhs (#372)", {
+  schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2L)))
+  df  <- tibble::tibble(treated = 5e9, target_pop = 2000000000L)   # 2L * 2e9L would overflow to NA
+  out <- suppressWarnings(suppressMessages(add_anomaly_consistency(df, schema)))
+  expect_equal(out$row, 1L)
+})
+
+test_that("text lhs/rhs (not type-coerced) get no percentage and do not error (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = "500", target_pop = "100"), schema))
+  expect_equal(out$value, "500 vs target_pop 100")
+})
+
+test_that("the percentage also shows for < and > rules (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "x", op = "<", rhs = "target_pop")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(x = 1.5, target_pop = 1), schema))
+  expect_equal(out$value, "1.5 vs target_pop 1 (150%)")
+})
+
+test_that("more invalid rhs_scale values are rejected, and skip_ok does not make them expected (#372 review)", {
+  df  <- tibble::tibble(treated = 500, target_pop = 100)
+  bad <- list(
+    inf     = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = Inf),
+    missing = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = NA_real_),
+    logical = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = TRUE),
+    ok_flag = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 0, skip_ok = TRUE)
+  )
+  sk <- attr(suppressMessages(add_anomaly_consistency(df, list(consistency = bad))), "skipped_rules")
+  expect_equal(sk$rule, names(bad))
+  expect_true(all(sk$reason == "rhs_scale must be one positive number"))
+  expect_false(any(sk$expected))
+
+  nonnum <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop",
+                                             rhs_scale = 2, skip_ok = TRUE)))
+  sk2 <- attr(suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 5, target_pop = "1"), nonnum)),
+              "skipped_rules")
+  expect_false(sk2$expected)
+})
+
+test_that("a duplicated column in a summed rhs is labelled and summed once (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs_sum = list("a", "a"))))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, a = 2), schema))
+  expect_equal(out$value, "5 vs sum of 1 column 2 (250%)")
+})
+
+test_that("the near-limit percentage works for decimal scales that aren't exact in floating point (#372 review)", {
+  for (s in c(1.1, 1.15, 2.3)) {
+    schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = s)))
+    lim <- round(100 * s, 8)
+    out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = lim + 0.3, target_pop = 100), schema))
+    expect_equal(nrow(out), 1L, info = s)
+    expect_match(out$value, paste0("(", format(lim + 0.3), "%)"), fixed = TRUE, info = s)
+  }
+})
+
+test_that("a >= rule just below its limit shows the decimals, not the limit (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = ">=", rhs = "p", rhs_scale = 0.5)))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = c(49.6, 30), p = 100), schema))
+  expect_equal(out$value, c("49.6 vs p 100 (49.6%)", "30 vs p 100 (30%)"))
+})
+
+test_that("text on only one side gets no percentage and does not error (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs = "p")))
+  out1 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 500, p = "100"), schema))
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = "500", p = 100), schema))
+  expect_equal(out1$value, "500 vs p 100")
+  expect_equal(out2$value, "500 vs p 100")
+})
+
+test_that("a rule's message is read exactly, not by partial match (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs = "p", message_note = "not the message")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, p = 1), schema))
+  expect_equal(out$issue, "consistency [r]: t <= p")
+})
+
+test_that("the percentage also shows for > rules (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "x", op = ">", rhs = "p")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(x = 50, p = 100), schema))
+  expect_equal(out$value, "50 vs p 100 (50%)")
+})
