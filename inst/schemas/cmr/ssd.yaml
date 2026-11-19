@@ -212,8 +212,10 @@ cross_consistency:
     description: >
       If a district's RB+LF treated total is > 0, its CDD+CS+Health Workers
       training total must also be > 0 (and conversely, both must be 0
-      together). Only evaluated where at least one of those training sheets
-      has real data this period.
+      together).
+      Skipped only when none of those training sheets is in the
+      workbook this period; a sheet that is present but blank counts as
+      zero training, so the treated districts are flagged.
     join_key: district
     lhs:
       agg: sum
