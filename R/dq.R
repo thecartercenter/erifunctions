@@ -1013,7 +1013,7 @@ add_anomaly_consistency <- function(data, schema) {
         miss <- partial[[side]]
         n    <- length(unique(unlist(rule[[side, exact = TRUE]])))
         cli::cli_alert_warning(
-          "Consistency rule {.val {rule_name}}: {length(miss)} of {n} {.field {side}} column{?s} not found ({.val {miss}}); checked without {?it/them}, counting {?it/them} as 0."
+          "Consistency rule {.val {rule_name}}: {length(miss)} of {n} {.field {side}} {cli::qty(length(miss))}column{?s} not found ({.val {miss}}); checked without {?it/them}, counting {?it/them} as 0."
         )
         notes <- c(notes, paste0(side, " ", .dq_incomplete_marker, " ", length(miss), " of ", n,
                                  " column(s): ", paste(miss, collapse = ", ")))

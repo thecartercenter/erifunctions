@@ -51,8 +51,8 @@ flag). Zero rows if every measure (and any cross-consistency rules) is
 clean. Any \verb{consistency:} rule that could not be evaluated on a sheet
 (a column it needs wasn't found) is listed in the console after the flags
 and returned in \verb{attr(<result>, "skipped_rules")} (columns \code{sheet},
-\code{rule}, \code{reason}, \code{expected}) -- a skipped rule produced no flags because
-it never ran, not because the data passed it. A rule whose schema entry
+\code{rule}, \code{reason}, \code{expected}) -- a rule that could not run produced no
+flags because it never ran, not because the data passed it. A rule whose schema entry
 says \verb{skip_ok: true} (written for one sheet layout, so skipping on another
 is by design) is shown as a quiet note with \code{expected = TRUE}; any other
 skip is a warning, and means the schema's column aliases probably don't

@@ -86,9 +86,10 @@ console line. Wired-in-but-inert and ran-and-passed produced the same empty repo
   where two layout-specific `skip_ok` rules both lose their columns and the report reads clean.
 - `add_anomaly_consistency()` no longer ends with "All consistency checks passed." when a rule was
   skipped: it says "not a full pass" (unexpected skips) or "N not applicable here, by design".
-- `cross_consistency:` skips (R/dq_cross.R), sheets that cannot be read or have no schema, and rules that
-  run on a *partial* column match (some summed columns present, others absent) are **not** covered yet
-  (partial matches: now covered, see the #376 addendum below).
+- `cross_consistency:` skips (R/dq_cross.R) and sheets that cannot be read or have no schema are **not**
+  covered yet.
+- Rules that run on a *partial* column match (some summed columns present, others absent) were not covered
+  here either; they are now, see the #376 addendum below.
 
 **Consequences:** no change to which rows are flagged by existing rules. Newly checked Ethiopia
 CDD/CS/HW sheets (new `monthly_gender_sum_matches_type_sum` rule) may surface new flags -- same class of

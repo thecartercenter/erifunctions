@@ -1891,9 +1891,12 @@ test_that("both summed sides partly missing are named in one record and on the f
   schema <- list(consistency = list(
     r = list(lhs_sum = list("a", "b"), op = "==", rhs_sum = list("x", "y", "z"))
   ))
-  res <- suppressMessages(add_anomaly_consistency(
+  msgs <- cli::ansi_strip(testthat::capture_messages(res <- add_anomaly_consistency(
     structure(list(data = tibble::tibble(a = 1, x = 2), flags = tibble::tibble()), class = "dq_result"),
-    schema))
+    schema)))
+  # Plural follows the missing count, not the side name (review of #376).
+  expect_true(any(grepl("2 of 3 rhs_sum columns not found", msgs, fixed = TRUE)))
+  expect_true(any(grepl("1 of 2 lhs_sum column not found", msgs, fixed = TRUE)))
   expect_equal(nrow(res$skipped_rules), 1L)
   expect_equal(res$skipped_rules$reason,
                "lhs_sum incomplete, ran without 1 of 2 column(s): b; rhs_sum incomplete, ran without 2 of 3 column(s): y, z")

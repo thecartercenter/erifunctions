@@ -1111,8 +1111,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #'   clean. Any `consistency:` rule that could not be evaluated on a sheet
 #'   (a column it needs wasn't found) is listed in the console after the flags
 #'   and returned in `attr(<result>, "skipped_rules")` (columns `sheet`,
-#'   `rule`, `reason`, `expected`) -- a skipped rule produced no flags because
-#'   it never ran, not because the data passed it. A rule whose schema entry
+#'   `rule`, `reason`, `expected`) -- a rule that could not run produced no
+#'   flags because it never ran, not because the data passed it. A rule whose schema entry
 #'   says `skip_ok: true` (written for one sheet layout, so skipping on another
 #'   is by design) is shown as a quiet note with `expected = TRUE`; any other
 #'   skip is a warning, and means the schema's column aliases probably don't
@@ -1327,7 +1327,7 @@ eri_cmr_dq_report <- function(country, period, plan = NULL, supersede = TRUE, cr
   ok   <- skipped[!incomplete & skipped$expected %in% TRUE, , drop = FALSE]
   if (nrow(part) > 0L) {
     cli::cli_alert_warning(
-      "{length(unique(part$rule))} data check{?s} ran without some of {?its/their} columns (counted as 0), so {?its/their} flags on these sheets may come from the missing column rather than the data:"
+      "{length(unique(part$rule))} data check{?s} ran without some of {?its/their} columns (counted as 0), so {?its/their} flags on these sheets may come from the missing columns rather than the data:"
     )
     for (i in seq_len(nrow(part))) {
       cli::cli_bullets(c(" " = "{.val {part$rule[i]}} on {.val {part$sheet[i]}}: {part$reason[i]}"))
