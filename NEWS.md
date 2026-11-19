@@ -14,7 +14,7 @@ the target population, so you couldn't tell 101% from 600% without opening the w
   same rows. This is a **behaviour change: expect far fewer overcoverage flags.**
 - **A consistency flag that compares two columns now shows both numbers in its value** (checks
   against a fixed number still show just the one value). For example
-  `180,617 vs target_pop 150,000 (120%)` instead of `180617`. The percentage is the raw ratio from the
+  `350,000 vs target_pop 150,000 (233%)` instead of `350000`. The percentage is the raw ratio from the
   file, shown for checks that compare sizes (at most, at least, less than, more than), except when the
   target is 0: most remaining overcoverage flags have a target of 0, so they show no percentage. It is
   rounded to a whole number unless that would make it look like it is exactly on the limit. The issue
