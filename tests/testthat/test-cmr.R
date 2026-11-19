@@ -1651,6 +1651,7 @@ test_that("eri_cmr_dq_report surfaces a flag's note once it's been triaged and t
 })
 
 test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is clean", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
@@ -1709,6 +1710,7 @@ test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries 
 })
 
 test_that("eri_cmr_dq_report(supersede = FALSE) leaves prior entries alone", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
@@ -1740,6 +1742,7 @@ test_that("eri_cmr_dq_report(supersede = FALSE) leaves prior entries alone", {
 })
 
 test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropping (integration, not mocked)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -1773,6 +1776,7 @@ test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropp
 })
 
 test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block (ADR-0026)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   # Before ADR-0026, run_dq_checks() alone (what eri_cmr_dq_report() called) never
   # evaluates consistency: rules -- add_anomaly_consistency() has to be chained
   # separately, and nothing in the CMR pipeline ever did. Confirm the chain now
@@ -1812,6 +1816,7 @@ test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block 
 })
 
 test_that("eri_cmr_dq_report() skips add_anomaly_consistency() cleanly for a schema with no consistency: block", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   # Guards against the "No consistency rules defined in schema" notice printing
   # on every single DQ report run for the (common) schemas with no
   # consistency: block at all.
@@ -2108,6 +2113,7 @@ test_that("eri_cmr_dq_report tops up a scoped plan via eri_cmr_last_plan so a cr
 })
 
 test_that("eri_cmr_dq_report() surfaces consistency rules that did not run (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2143,6 +2149,7 @@ test_that("eri_cmr_dq_report() surfaces consistency rules that did not run (#374
 })
 
 test_that("eri_cmr_dq_report() consolidates skips across sheets and separates expected from unexpected (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2190,6 +2197,7 @@ test_that("eri_cmr_dq_report() consolidates skips across sheets and separates ex
 })
 
 test_that("eri_cmr_dq_report() says all clean when the only skips are expected (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2220,6 +2228,7 @@ test_that("eri_cmr_dq_report() says all clean when the only skips are expected (
 })
 
 test_that("eri_cmr_dq_report() warns when EVERY rule skipped on a sheet, even if each is skip_ok (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2270,6 +2279,7 @@ test_that("eri_cmr_dq_report() warns when EVERY rule skipped on a sheet, even if
 })
 
 test_that("eri_cmr_dq_report() ignores a schema that only has consistency_not_applicable_sheets (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2298,6 +2308,7 @@ test_that("eri_cmr_dq_report() ignores a schema that only has consistency_not_ap
 })
 
 test_that("eri_cmr_dq_report() counts a rule that ran without some columns as run, not skipped (#376)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),

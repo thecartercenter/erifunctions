@@ -158,9 +158,10 @@ rule's `sheets:` against the country's routed sheets; a new one checks every sou
 schemas have no include/inheritance mechanism. Revisit with a shared fragment if more countries need
 copies.
 
-**`tolerance: 1` on `rb_lf_pop_match`, all countries.** Nigeria's RB tab carries decimal projected
+**`tolerance: 0.5` on `rb_lf_pop_match`, all countries.** Nigeria's RB tab carries decimal projected
 populations and its LF tab the same figures rounded; with `tolerance: 0` all 103 Nigerian districts on
-both tabs were flagged (every difference < 0.5). One person of slack removes that and nothing else: no
+both tabs were flagged (every difference < 0.5). Half a person is the most rounding can move a figure,
+so this removes rounding differences and nothing else (a real 1-person difference still flags): no
 change on Ethiopia's or the others' latest CMRs. Applied to Ethiopia too so the rule means the same
 everywhere.
 

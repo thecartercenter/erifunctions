@@ -21,7 +21,8 @@ run for every country where they apply:
   These come from the data, not from mismatched district names: every flagged district is on both
   tabs being compared. As before, an unresolved cross-sheet flag blocks `eri_approve_cmr()` for that
   period until it is resolved or approval is forced.
-- **Population now counts as matching within 1 person**, for every country including Ethiopia.
+- **Population now counts as matching when it differs only by rounding** (by at most half a person),
+  for every country including Ethiopia.
   Nigeria's RB tab has decimal projected populations (e.g. 176,131.6) where LF has the same figure
   rounded (176,132); without this, all 103 Nigerian districts on both tabs were flagged. No change to
   Ethiopia's results.

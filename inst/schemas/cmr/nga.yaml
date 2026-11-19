@@ -263,7 +263,7 @@ cross_consistency:
       match population reported for that same district on the LF Treatment
       tab. LF only covers a subset of RB's endemic districts -- a district
       appearing on only one tab is a coverage difference, not a mismatch, and
-      is never flagged (no missing_as on either side). tolerance: 1 because
+      is never flagged (no missing_as on either side). tolerance: 0.5 because
       some tabs carry projected populations with decimals and others the
       same figure rounded (Nigeria 202609: every RB/LF difference under 0.5).
     join_key: district
@@ -276,7 +276,7 @@ cross_consistency:
       sources:
         - {disease: lf, data_type: treatment, column: population}
     op: "=="
-    tolerance: 1
+    tolerance: 0.5
     message: "RB and LF Treatment report different population for this district"
   treatment_implies_training:
     description: >

@@ -480,10 +480,10 @@ test_that("the RB/LF population match tolerates a rounding difference but not a 
   rule <- yaml::read_yaml(system.file("schemas", "cmr", "nga.yaml", package = "erifunctions"))$cross_consistency
   tables <- list(
     list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
-         data = tibble::tibble(district = c("A", "B"), population = c(176131.6, 1000), treated = c(1, 1))),
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(176131.6, 1000, 500), treated = 1)),
     list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
-         data = tibble::tibble(district = c("A", "B"), population = c(176132, 1003), treated = c(1, 1)))
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(176132, 1003, 501), treated = 1))
   )
   flags <- suppressMessages(.eri_cross_check_run(tables, rule["rb_lf_pop_match"]))
-  expect_equal(flags$value, "B")   # A differs by 0.4 (rounding); B by 3 (real)
+  expect_equal(flags$value, c("B", "C"))   # A differs by 0.4 (rounding); B by 3 and C by 1 (real)
 })
