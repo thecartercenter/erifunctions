@@ -487,3 +487,74 @@ test_that("the RB/LF population match tolerates a rounding difference but not a 
   flags <- suppressMessages(.eri_cross_check_run(tables, rule["rb_lf_pop_match"]))
   expect_equal(flags$value, c("B", "C"))   # A differs by 0.4 (rounding); B by 3 and C by 1 (real)
 })
+
+#### Per-country copies of Ethiopia's rules (#373 review): pin what each one says ####
+
+.cmr_yaml <- function(country) yaml::read_yaml(system.file("schemas", "cmr", paste0(country, ".yaml"), package = "erifunctions"))
+
+# A rule with the per-country parts removed: wording and training sheet names.
+.cross_rule_core <- function(rule) {
+  rule$description <- NULL
+  rule$message     <- NULL
+  for (side in c("lhs", "rhs")) {
+    rule[[side]]$sources <- lapply(rule[[side]]$sources, function(s) { s$sheets <- NULL; s })
+  }
+  rule
+}
+
+test_that("each country carries exactly the expected cross rules, and they match Ethiopia's (#373)", {
+  eth <- .cmr_yaml("eth")$cross_consistency
+  expected <- list(
+    nga = c("rb_lf_pop_match", "treatment_implies_training"),
+    sdn = c("rb_lf_pop_match", "treatment_implies_training"),
+    ssd = c("rb_lf_pop_match", "treatment_implies_training"),
+    ht  = "treatment_implies_training"
+  )
+  for (country in names(expected)) {
+    rules <- .cmr_yaml(country)$cross_consistency
+    expect_setequal(names(rules), expected[[country]])
+    for (rule_name in names(rules)) {
+      want <- .cross_rule_core(eth[[rule_name]])
+      # Haiti has no RB tab: its treatment side is LF only.
+      if (country == "ht") {
+        want$lhs$sources <- Filter(function(s) s$disease != "oncho", want$lhs$sources)
+      }
+      expect_identical(.cross_rule_core(rules[[rule_name]]), want, label = paste0(country, "::", rule_name))
+    }
+  }
+})
+
+test_that("each country's training sheets are pinned and are routed to the source's own measure (#373)", {
+  expected_sheets <- list(
+    eth = c("CDD Training", "CS Training", "HW Training"),
+    nga = c("CDD Training", "CS Training", "Health Workers Training"),
+    sdn = c("CDD Training", "CS Training", "Health Workers Training"),
+    ssd = c("CDD Training", "CS Training", "Health Workers Training"),
+    ht  = c("CDD Training", "CS Training")
+  )
+  for (country in names(expected_sheets)) {
+    cmr <- .cmr_yaml(country)
+    src <- cmr$cross_consistency$treatment_implies_training$rhs$sources[[1]]
+    expect_identical(unlist(src$sheets), expected_sheets[[country]], label = country)
+    for (sh in unlist(src$sheets)) {
+      # A real sheet routed to a different measure would be silently dropped at run time.
+      expect_identical(c(cmr$sheets[[sh]]$disease, cmr$sheets[[sh]]$data_type),
+                       c(src$disease, src$data_type), label = paste(country, sh))
+    }
+  }
+})
+
+test_that("every country's population match allows rounding (up to 0.5) and nothing more (#373)", {
+  for (country in c("eth", "nga", "sdn", "ssd")) {
+    rule <- .cmr_yaml(country)$cross_consistency["rb_lf_pop_match"]
+    tables <- list(
+      list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+           data = tibble::tibble(district = c("A", "B", "C"), population = c(176131.5, 1000, 500))),
+      list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+           data = tibble::tibble(district = c("A", "B", "C"), population = c(176132, 1000.6, 501)))
+    )
+    flags <- suppressMessages(.eri_cross_check_run(tables, rule))
+    # A differs by exactly 0.5 (rounding); B by 0.6 and C by 1 (real).
+    expect_equal(flags$value, c("B", "C"), label = country)
+  }
+})

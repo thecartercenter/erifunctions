@@ -2356,3 +2356,48 @@ test_that("eri_cmr_dq_report() counts a rule that ran without some columns as ru
   expect_equal(nrow(hit), 1L)
   expect_match(hit$issue, "(checked without not_in_file: not found in the data)", fixed = TRUE)
 })
+
+test_that("eri_cmr_dq_report() runs Nigeria's real cross rules end to end (#373)", {
+  # No load_cmr_schema mock: this uses the bundled nga.yaml rules and sheet names.
+  plan <- tibble::tibble(
+    sheet     = c("RB Treatment", "LF Treatment", "CDD Training", "Health Workers Training"),
+    disease   = c("oncho", "lf", "rblf", "rblf"),
+    data_type = c("treatment", "treatment", "training", "training"),
+    dest      = paste0("nga/", c("oncho", "lf", "rblf", "rblf"), "/programmatic/",
+                       c("treatment", "treatment", "training", "training"), "/staged/",
+                       c("rb", "lf", "cdd", "hw"), ".parquet"),
+    n_rows    = 2L
+  )
+  data_by_file <- list(
+    # D1: treated, no training anywhere -> flagged. D2: trained only via Health
+    # Workers Training -> not flagged (proves that sheet name is the one used).
+    # Populations differ only by rounding -> no rb_lf_pop_match flag.
+    rb  = tibble::tibble(district = c("D1", "D2"), population = c(1000.4, 2000), treated = c(10, 5)),
+    lf  = tibble::tibble(district = c("D1", "D2"), population = c(1000, 2000), treated = c(0, 0)),
+    cdd = tibble::tibble(district = c("D1", "D2"), tot = c(0, 0)),
+    hw  = tibble::tibble(district = c("D1", "D2"), tot = c(0, 3))
+  )
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  local_mocked_bindings(
+    eri_read = function(path, ...) data_by_file[[sub("[.]parquet$", "", basename(path))]],
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+           schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"),
+    eri_cmr_last_plan = function(...) plan,
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      list(n_flags = nrow(result$flags), status = if (nrow(result$flags) > 0L) "needs_review" else "clean",
+           log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
+           flags = lapply(seq_len(nrow(result$flags)), function(i) list(
+             index = i, row = result$flags$row[i], column = result$flags$column[i],
+             value = result$flags$value[i], issue = result$flags$issue[i], status = "open")))
+    },
+    .package = "erifunctions"
+  )
+  flags <- suppressMessages(eri_cmr_dq_report("nga", "202609", plan = plan, data_con = structure(list(), class = "mock")))
+  cross_rows <- flags[flags$cross, , drop = FALSE]
+  expect_equal(nrow(cross_rows), 1L)
+  expect_equal(cross_rows$value, "D1")
+  expect_match(cross_rows$issue, "[treatment_implies_training]", fixed = TRUE)
+})
