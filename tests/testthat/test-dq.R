@@ -2167,3 +2167,13 @@ test_that("a duplicated column in a summed rhs is labelled and summed once (#372
   out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, a = 2), schema))
   expect_equal(out$value, "5 vs sum of 1 column 2 (250%)")
 })
+
+test_that("the near-limit percentage works for decimal scales that aren't exact in floating point (#372 review)", {
+  for (s in c(1.1, 1.15, 2.3)) {
+    schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = s)))
+    lim <- round(100 * s, 8)
+    out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = lim + 0.3, target_pop = 100), schema))
+    expect_equal(nrow(out), 1L, info = s)
+    expect_match(out$value, paste0("(", format(lim + 0.3), "%)"), fixed = TRUE, info = s)
+  }
+})

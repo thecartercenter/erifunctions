@@ -858,9 +858,12 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 # next to a message saying "over 200%". Those get the fewest decimals (up to 4)
 # that tell them apart from the limit.
 .dq_pct_text <- function(p, limit) {
+  # 100 * scale is not exact for many decimal scales (100 * 1.1 is
+  # 110.00000000000001), so round the limit and compare with a tolerance.
+  limit <- round(limit, 8)
   vapply(p, function(v) {
     d <- 0L
-    while (d < 4L && round(v, d) == limit && v != limit) d <- d + 1L
+    while (d < 4L && abs(round(v, d) - limit) < 1e-9 && abs(v - limit) > 1e-9) d <- d + 1L
     .dq_fmt_num(round(v, d))
   }, character(1))
 }
