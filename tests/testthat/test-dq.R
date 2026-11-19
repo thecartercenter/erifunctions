@@ -2177,3 +2177,23 @@ test_that("the near-limit percentage works for decimal scales that aren't exact 
     expect_match(out$value, paste0("(", format(lim + 0.3), "%)"), fixed = TRUE, info = s)
   }
 })
+
+test_that("a >= rule just below its limit shows the decimals, not the limit (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = ">=", rhs = "p", rhs_scale = 0.5)))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = c(49.6, 30), p = 100), schema))
+  expect_equal(out$value, c("49.6 vs p 100 (49.6%)", "30 vs p 100 (30%)"))
+})
+
+test_that("text on only one side gets no percentage and does not error (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs = "p")))
+  out1 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 500, p = "100"), schema))
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = "500", p = 100), schema))
+  expect_equal(out1$value, "500 vs p 100")
+  expect_equal(out2$value, "500 vs p 100")
+})
+
+test_that("a rule's message is read exactly, not by partial match (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs = "p", message_note = "not the message")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, p = 1), schema))
+  expect_equal(out$issue, "consistency [r]: t <= p")
+})
