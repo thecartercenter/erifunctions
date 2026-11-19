@@ -71,7 +71,8 @@
     "    lhs: treated\n",
     "    op: \"<=\"\n",
     "    rhs: target_pop\n",
-    "    message: \"treated exceeds target_pop (>100% raw coverage)\"\n"
+    "    rhs_scale: 2\n",
+    "    message: \"treated is more than 2x target_pop (over 200% raw coverage)\"\n"
   )
 }
 
@@ -718,6 +719,16 @@ eri_schema_validate <- function(schema_path) {
                                 val, "'.")
           )))
         }
+      }
+      scale_problem <- .dq_rhs_scale_problem(rule[["rhs_scale", exact = TRUE]],
+                                             rule[["rhs", exact = TRUE]],
+                                             rule[["rhs_sum", exact = TRUE]])
+      if (!is.null(scale_problem)) {
+        issues <- c(issues, list(list(
+          issue_type = "invalid_value",
+          field      = paste0("consistency.", rule_name, ".rhs_scale"),
+          message    = paste0("Consistency rule '", rule_name, "': ", scale_problem, ".")
+        )))
       }
     }
   }

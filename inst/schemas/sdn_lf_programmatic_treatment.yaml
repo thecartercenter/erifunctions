@@ -140,13 +140,14 @@ columns:
     # Proportion scale (0-1-ish), not percentage -- see header note.
     range: [0, 2]
 
-# NOTE: consistency rules require explicit chaining, see uga_oncho's header note.
+# NOTE: eri_cmr_dq_report() runs these rules on every CMR DQ review; see uga_oncho's note.
 consistency:
   implausible_overcoverage:
     lhs: treated
     op: "<="
     rhs: target_pop
-    message: "treated exceeds target_pop (over 100% raw coverage)"
+    rhs_scale: 2
+    message: "treated is more than 2x target_pop (over 200% raw coverage)"
   treated_nonneg:
     lhs: treated
     op: ">="
