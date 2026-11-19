@@ -35,6 +35,19 @@ make_cmr_xlsx <- function(path,
 
 #### Tests for eri_ingest_cmr ####
 
+# Several tests below use "sdn" for its real sheet layout but are not about the
+# cross-sheet check (ADR-0024). Since #373 Sudan declares cross_consistency
+# rules, which would make eri_approve_cmr() query cross-sheet logs (and the
+# mocked eri_logs() answers every query) and eri_cmr_dq_report() evaluate them.
+# This keeps the real routing schema but drops its cross rules for one test.
+local_without_cross_rules <- function(env = parent.frame()) {
+  real <- load_cmr_schema
+  testthat::local_mocked_bindings(
+    load_cmr_schema = function(country) { s <- real(country); s$cross_consistency <- NULL; s },
+    .package = "erifunctions", .env = env
+  )
+}
+
 test_that("eri_ingest_cmr returns tibble with field code columns plus sheet/excel_row", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp)
@@ -1276,6 +1289,7 @@ test_that("eri_approve_cmr normalizes country casing before calling eri_cmr_last
 })
 
 test_that("eri_approve_cmr blocks on unresolved DQ flags and does not call eri_approve", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "a", n_rows = 1L
@@ -1435,6 +1449,7 @@ test_that("eri_approve_cmr errors when force = TRUE without a justification", {
 })
 
 test_that("eri_approve_cmr force = TRUE approves despite unresolved flags, annotates the bypassed entry, and records forced/justification/bypassed", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
                          data_type = "treatment", dest = "a", n_rows = 1L)
   approved   <- list()
@@ -1539,6 +1554,7 @@ test_that("eri_approve_cmr force = TRUE with nothing outstanding behaves like a 
 })
 
 test_that("eri_approve_cmr force = TRUE still annotates the bypass (without a back-reference) when its own trail log fails to write", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
                          data_type = "treatment", dest = "a", n_rows = 1L)
   resolved <- list()
@@ -1568,6 +1584,7 @@ test_that("eri_approve_cmr force = TRUE still annotates the bypass (without a ba
 })
 
 test_that("eri_cmr_dq_report combines every measure's flags into one tibble with usable flag_ids", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
     data_type = c("treatment", "treatment"),
@@ -1604,6 +1621,7 @@ test_that("eri_cmr_dq_report combines every measure's flags into one tibble with
 })
 
 test_that("eri_cmr_dq_report surfaces a flag's note once it's been triaged and the check re-run", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
     dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
@@ -1657,6 +1675,7 @@ test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is cle
 })
 
 test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries for the same measure/period", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",

@@ -132,3 +132,31 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
 - `R/dq_cross.R` (the engine and its schema-format header comment), `R/cmr.R`'s
   `eri_cmr_dq_report()`/`eri_approve_cmr()`, `R/dq_review.R`'s cross-flag guards,
   `inst/schemas/cmr/eth.yaml`'s `cross_consistency:` block, `tests/testthat/test-dq_cross.R`.
+
+## Addendum (issue #373): the rules extended beyond Ethiopia
+
+**Decision:** Ethiopia's two `cross_consistency:` rules are copied into each country's routing schema
+where they apply, checked against that country's latest real CMR (structure only):
+
+- `rb_lf_pop_match` and `treatment_implies_training`: `nga`, `sdn`, `ssd` (both RB and LF Treatment, plus
+  CDD/CS/health-worker training).
+- `treatment_implies_training` only, LF treated vs CDD + CS training: `ht` (LF only, no health-worker tab).
+- Not added: `uga`, `bra`, `ven`, `mad` (no CDD/CS/health-worker training tabs), `tcd`, `dr` (no CMR data
+  to verify against). They opt in when they have both.
+
+**Per-country sheet names.** Each copy names its own training sheets: Ethiopia's health-worker tab is
+"HW Training", Nigeria/Sudan/South Sudan's is "Health Workers Training". A wrong name only produces an
+info line ("no data for ...") and drops that sheet from the sum, so a test now checks every rule's
+`sheets:` against the country's routed sheets, and every source's `(disease, data_type)`, `join_key` and
+`column` against the country's routing and DQ schemas.
+
+**`tolerance: 1` on `rb_lf_pop_match`, all countries.** Nigeria's RB tab carries decimal projected
+populations and its LF tab the same figures rounded; with `tolerance: 0` all 103 Nigerian districts on
+both tabs were flagged (every difference < 0.5). One person of slack removes that and nothing else: no
+change on Ethiopia's or the others' latest CMRs. Applied to Ethiopia too so the rule means the same
+everywhere.
+
+**Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these four countries' cross-sheet
+logs; it still blocks only on an open finding for the period, so periods approved before the rules existed
+are unaffected. Several `test-cmr.R` tests used `sdn` as a "no cross rules" country; they now drop its
+rules explicitly (`local_without_cross_rules()`).

@@ -247,7 +247,10 @@ cross_consistency:
       match population reported for that same district on the LF Treatment
       tab. LF only covers a subset of RB's endemic districts -- a district
       appearing on only one tab is a coverage difference, not a mismatch, and
-      is never flagged (no missing_as on either side).
+      is never flagged (no missing_as on either side). tolerance: 1 so a
+      decimal projected population and the same figure rounded are not a
+      mismatch (seen in Nigeria; added here for consistency in issue #373 --
+      no change on Ethiopia's 202610 CMR).
     join_key: district
     lhs:
       agg: unique
@@ -258,6 +261,7 @@ cross_consistency:
       sources:
         - {disease: lf, data_type: treatment, column: population}
     op: "=="
+    tolerance: 1
     message: "RB and LF Treatment report different population for this district"
   treatment_implies_training:
     description: >

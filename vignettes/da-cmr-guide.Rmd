@@ -325,8 +325,8 @@ flags
 #> 1 RB Treatment oncho   treatment uga/oncho/... uga/oncho...     4         9 target 0     out of range  open   <NA>  FALSE
 ```
 
-If the country's CMR routing schema declares `cross_consistency:` rules (Ethiopia, as of this
-writing), a flag comparing data *across* sheets can also show up here, with `sheet =
+If the country's CMR routing schema declares `cross_consistency:` rules (Ethiopia, Nigeria, Sudan,
+South Sudan and Haiti), a flag comparing data *across* sheets can also show up here, with `sheet =
 "(cross-sheet)"`, a blank `excel_row`, and `cross = TRUE` -- see the
 [DQ review guide](da-dq-review-guide.html#split) for what that means and how to work through one.
 

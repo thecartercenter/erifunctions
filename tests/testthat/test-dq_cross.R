@@ -449,3 +449,41 @@ test_that("every bundled CMR routing schema's cross_consistency rules are well-f
   }
   expect_true(checked_any)  # this test is only meaningful if at least one schema exercises it (eth.yaml)
 })
+
+test_that("every cross_consistency source points at a measure the country routes, with real canonical columns (#373)", {
+  # Guards the per-country copies of the rules: a source whose (disease, data_type) the
+  # country doesn't route, or whose join_key/column its DQ schema doesn't define, would
+  # silently skip ("no data") instead of checking anything.
+  schema_dir <- system.file("schemas", "cmr", package = "erifunctions")
+  checked <- character(0)
+  for (f in list.files(schema_dir, pattern = "[.]yaml$", full.names = TRUE)) {
+    cmr   <- yaml::read_yaml(f)
+    rules <- cmr$cross_consistency
+    if (is.null(rules) || length(rules) == 0L) next
+    country <- sub("[.]yaml$", "", basename(f))
+    checked <- c(checked, country)
+    routed  <- unique(vapply(cmr$sheets, function(s) paste(s$disease, s$data_type), character(1)))
+    for (rule_name in names(rules)) {
+      rule <- rules[[rule_name]]
+      for (side in c("lhs", "rhs")) for (src in rule[[side]]$sources) {
+        lbl <- paste0(country, "::", rule_name, "::", side, "::", src$disease, "/", src$data_type)
+        expect_true(paste(src$disease, src$data_type) %in% routed, label = lbl)
+        dq <- suppressMessages(load_dq_schema(country, src$disease, "programmatic", src$data_type, azcontainer = NULL))
+        expect_true(all(c(rule$join_key, src$column) %in% names(dq$columns)), label = lbl)
+      }
+    }
+  }
+  expect_setequal(checked, c("eth", "nga", "sdn", "ssd", "ht"))
+})
+
+test_that("the RB/LF population match tolerates a rounding difference but not a real one (#373)", {
+  rule <- yaml::read_yaml(system.file("schemas", "cmr", "nga.yaml", package = "erifunctions"))$cross_consistency
+  tables <- list(
+    list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+         data = tibble::tibble(district = c("A", "B"), population = c(176131.6, 1000), treated = c(1, 1))),
+    list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+         data = tibble::tibble(district = c("A", "B"), population = c(176132, 1003), treated = c(1, 1)))
+  )
+  flags <- suppressMessages(.eri_cross_check_run(tables, rule["rb_lf_pop_match"]))
+  expect_equal(flags$value, "B")   # A differs by 0.4 (rounding); B by 3 (real)
+})

@@ -925,8 +925,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
   # must never be treated as outstanding, or every period approved before
   # this feature shipped would retroactively become unapprovable. Skip the
   # query entirely when the country declares no rules at all -- not just an
-  # optimization: it's what keeps this a true no-op for the 6 of 7 RBLF
-  # countries (and every non-CMR/non-oncho-LF country) that don't have any.
+  # optimization: it's what keeps this a true no-op for the countries that
+  # don't have any (as of #373, only eth, nga, sdn, ssd and ht do).
   cmr_schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
   has_cross_rules <- !is.null(cmr_schema$cross_consistency) && length(cmr_schema$cross_consistency) > 0L
 
