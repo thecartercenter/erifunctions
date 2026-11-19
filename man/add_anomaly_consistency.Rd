@@ -78,7 +78,7 @@ Supported operators: \code{<=}, \code{>=}, \code{==}, \code{<}, \code{>}, \code{
 Missing values (\code{NA}) in either operand skip the check for that row.
 
 \code{rhs_scale} (optional, one positive number) multiplies a column rhs
-(\code{rhs} or \code{rhs_sum}) before the comparison, e.g. \verb{rhs_scale: 2} with
+(\code{rhs} or \code{rhs_sum}) before the comparison, e.g. \code{rhs_scale: 2} with
 \code{treated <= target_pop} flags only rows where \code{treated} is more than twice
 \code{target_pop}. It can't be combined with \code{rhs_value} (write the scaled
 constant instead). A rule with an invalid \code{rhs_scale}, or with a
