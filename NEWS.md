@@ -1,3 +1,30 @@
+# erifunctions (development version)
+
+## A summed DQ check with some of its columns missing now says so (#376)
+
+Checks such as the training "male + female = new + refresher" rule add up many monthly columns. If
+only *some* of those columns were in the file (for example, a template typo renamed one month), the
+check ran and counted the missing months as 0 without telling you. A flag could then come from the
+missing month rather than the data, and a pass had not checked that month.
+
+- **The check still runs**, so real mismatches are still flagged, but now:
+  - `eri_cmr_dq_report()` shows a warning listing the check, sheet and missing columns, e.g.
+    `lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov`. This is a warning even for
+    a check marked `skip_ok: true`.
+  - each flag from that check ends `(checked without trained_male_nov: not found in the data)`, so
+    when you review it you know it may come from the missing column.
+  - the report no longer says "all clean" when such a check found nothing.
+- **What to do if you see it:** the file's field codes probably have a typo or a renamed column. The
+  column name shown is the schema's name for it (e.g. `trained_male_nov`), not the field code in the
+  file (`#cddtrn_male_mov`), so you may not find it by searching the file. Pass the sheet, check and
+  column names to the DQ schema maintainer.
+- **Seen on real data.** Of 215 processed and staged training files checked, one has this: Ethiopia's
+  June 2026 CDD Training sheet has the field code `#cddtrn_male_mov` where `#cddtrn_male_nov` belongs.
+  November was empty in that file, so its 2 existing flags are real mismatches in other months; they
+  now carry the note. Every other file has all of its columns, and its results are unchanged.
+- A check whose columns are **all** missing (written for a different sheet layout) is reported as
+  before.
+
 # erifunctions 0.9.52
 
 ## An expired Azure sign-in now opens the browser again instead of stopping (#379)

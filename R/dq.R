@@ -805,6 +805,30 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
   NULL
 }
 
+# The columns of a summed side (`lhs_sum`/`rhs_sum`) that are missing from
+# `df` when SOME of them are present -- a partial match (issue #376). Returns
+# character(0) when the side is not a summed side, or when all or none of its
+# columns are present (none present is the separate "not found" skip).
+# The rule still runs on the columns that are present, which treats the
+# missing ones as 0, so add_anomaly_consistency() records an "incomplete" note
+# and tags the rule's flags. Seen on real data: Ethiopia's June 2026 CDD
+# Training sheet has `#cddtrn_male_mov` for `#cddtrn_male_nov`.
+.dq_sum_partial_missing <- function(df, sum_cols) {
+  if (is.null(sum_cols)) return(character(0))
+  cols    <- unique(unlist(sum_cols))
+  missing <- setdiff(cols, names(df))
+  if (length(missing) == length(cols)) return(character(0))
+  missing
+}
+
+# `skipped_rules` also carries rules that RAN without some of their summed
+# columns (issue #376), so that one table lists every check whose result is
+# not a full check. Their `reason` contains this marker. Code that counts
+# rules that did not run at all must leave these rows out -- use this helper,
+# not a hand-written pattern.
+.dq_incomplete_marker <- "incomplete, ran without"
+.dq_is_incomplete <- function(reason) grepl(.dq_incomplete_marker, reason, fixed = TRUE)
+
 #' Flag cross-field consistency violations defined in a schema
 #'
 #' @description
@@ -847,7 +871,15 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #' columns exist in the data at all skips the whole rule for that side (e.g. a
 #' schema shared across several sheet shapes, where only one prefix's columns
 #' are ever populated on a given ingest -- same "not found" skip as a missing
-#' `lhs`/`rhs`).
+#' `lhs`/`rhs`). A summed side where only *some* of its columns exist (e.g. a
+#' template typo renamed one month's column) still runs, counting the missing
+#' columns as 0, so real mismatches are still flagged. Because a flag may then
+#' come from the missing column rather than the data (and a pass did not
+#' check it), the rule is also listed in the skipped rules with a `reason`
+#' that starts `"lhs_sum incomplete, ran without"` (or `rhs_sum`) and names the
+#' missing columns, always with `expected = FALSE` (even with `skip_ok`), and
+#' each of its flags ends `"(checked without <columns>: not found in the
+#' data)"`.
 #'
 #' Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`.
 #' Missing values (`NA`) in either operand skip the check for that row.
@@ -909,8 +941,9 @@ add_anomaly_consistency <- function(data, schema) {
   all_flags <- tibble::tibble(row    = integer(), column = character(),
                                value  = character(), issue  = character())
   # Rules that could not be evaluated at all (a column missing, an unsummable
-  # column). Recorded -- not just printed -- so a caller can tell "rule did
-  # not run" from "rule ran and passed" (issue #374).
+  # column), or that ran without some summed columns (issue #376). Recorded --
+  # not just printed -- so a caller can tell "rule did not run" from "rule ran
+  # and passed" (issue #374).
   skipped   <- tibble::tibble(rule = character(), reason = character(), expected = logical())
 
   for (rule_name in names(rules)) {
@@ -928,6 +961,16 @@ add_anomaly_consistency <- function(data, schema) {
     rule_rhs_sum <- rule[["rhs_sum", exact = TRUE]]
     rule_rhs_val <- rule[["rhs_value", exact = TRUE]]
     rule_skip_ok <- isTRUE(rule[["skip_ok", exact = TRUE]])
+
+    # Summed sides with only some of their columns present (issue #376). The
+    # rule still runs on the columns found -- dropping it would also hide real
+    # mismatches -- but the result is recorded as incomplete (below, once the
+    # rule is known to run).
+    partial <- c(
+      lhs_sum = list(.dq_sum_partial_missing(df, rule_lhs_sum)),
+      rhs_sum = list(.dq_sum_partial_missing(df, rule_rhs_sum))
+    )
+    partial <- partial[lengths(partial) > 0L]
 
     lhs      <- .dq_consistency_side(df, rule_lhs, rule_lhs_sum)
     lhs_desc <- rule_lhs %||% paste0("sum(", paste(unlist(rule_lhs_sum), collapse = " + "), ")")
@@ -958,6 +1001,30 @@ add_anomaly_consistency <- function(data, schema) {
       next
     }
 
+    # The rule runs, but without some of its columns: those count as 0, so a
+    # flag may come from a missing column rather than the data, and a pass
+    # did not check them. Recorded as unexpected even with `skip_ok` (that
+    # covers a rule written for another layout, where NONE of its columns are
+    # present, not columns lost from the layout it was written for), and each
+    # of this rule's flags says what it was checked without.
+    flag_note <- ""
+    if (length(partial) > 0L) {
+      notes <- character(0)
+      for (side in names(partial)) {
+        miss <- partial[[side]]
+        n    <- length(unique(unlist(rule[[side, exact = TRUE]])))
+        cli::cli_alert_warning(
+          "Consistency rule {.val {rule_name}}: {length(miss)} of {n} {.field {side}} {cli::qty(length(miss))}column{?s} not found ({.val {miss}}); checked without {?it/them}, counting {?it/them} as 0."
+        )
+        notes <- c(notes, paste0(side, " ", .dq_incomplete_marker, " ", length(miss), " of ", n,
+                                 " column(s): ", paste(miss, collapse = ", ")))
+      }
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = paste(notes, collapse = "; "), expected = FALSE))
+      flag_note <- paste0(" (checked without ", paste(unlist(partial), collapse = ", "),
+                          ": not found in the data)")
+    }
+
     lhs_vals   <- lhs
     rhs_vals   <- rhs
     applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
@@ -983,7 +1050,7 @@ add_anomaly_consistency <- function(data, schema) {
           row    = violated,
           column = lhs_desc,
           value  = as.character(lhs_vals[violated]),
-          issue  = paste0("consistency [", rule_name, "]: ", msg)
+          issue  = paste0("consistency [", rule_name, "]: ", msg, flag_note)
         )
       )
       cli::cli_alert_warning(
@@ -994,14 +1061,15 @@ add_anomaly_consistency <- function(data, schema) {
 
   n_flags <- nrow(all_flags)
   if (n_flags == 0) {
-    n_bad_skips <- sum(!skipped$expected %in% TRUE)
-    if (nrow(skipped) >= length(rules)) {
+    n_bad_skips   <- sum(!skipped$expected %in% TRUE)
+    n_not_run     <- sum(!.dq_is_incomplete(skipped$reason))
+    if (n_not_run >= length(rules)) {
       # Not a green tick: nothing was actually checked. How serious that is
       # (e.g. ToT sheets have no applicable rule by design) is eri_cmr_dq_report()'s call.
       cli::cli_alert_info("None of the {length(rules)} consistency rule{?s} could be run on this data (see above) -- nothing was checked.")
     } else if (n_bad_skips > 0L) {
       cli::cli_alert_warning(
-        "No violations found, but {n_bad_skips} rule{?s} could not be run (above) -- not a full pass."
+        "No violations found, but {n_bad_skips} rule{?s} could not be run or ran without some columns (above) -- not a full pass."
       )
     } else if (nrow(skipped) > 0L) {
       cli::cli_alert_success(

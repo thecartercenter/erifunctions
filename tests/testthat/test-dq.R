@@ -207,6 +207,18 @@ test_that("add_anomaly_consistency's rhs_sum works the same way as lhs_sum", {
   expect_equal(out$row, 2L)   # 4+5=9 != 10
 })
 
+# Real CMR training sheets carry all 12 months of each monthly column. A
+# fixture that only sets a few months gets the rest filled with zero here, so
+# the summed rules run on a complete side rather than being skipped as a
+# partial column match (issue #376).
+.fill_months <- function(df, prefix, stems, zero = 0) {
+  mons <- c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+  for (col in as.vector(outer(paste0(prefix, "_", stems), mons, paste, sep = "_"))) {
+    if (!col %in% names(df)) df[[col]] <- zero
+  }
+  df
+}
+
 test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule passes clean data (issue #334)", {
   schema <- load_dq_schema("eth", "rblf", "programmatic", "training", azcontainer = NULL)
   df <- tibble::tibble(
@@ -218,9 +230,11 @@ test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum r
     `#cddtrn_new_fem_jan`   = "5",
     sheet                   = "CDD Training"
   )
+  df <- .fill_months(df, "#cddtrn", c("new_male", "new_fem", "refresh_male", "refresh_fem"), zero = "0")
   res <- run_dq_checks(df, schema)
   res <- add_anomaly_consistency(res, schema)
   expect_equal(sum(grepl("gender_sum_matches_type_sum", res$flags$issue)), 0L)
+  expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)))   # fixture is complete (#376)
 })
 
 test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule catches a real mismatch (issue #334)", {
@@ -234,11 +248,13 @@ test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum r
     `#cddtrn_new_fem_jan`   = "5",
     sheet                   = "CDD Training"
   )
+  df <- .fill_months(df, "#cddtrn", c("new_male", "new_fem", "refresh_male", "refresh_fem"), zero = "0")
   res <- run_dq_checks(df, schema)
   res <- add_anomaly_consistency(res, schema)
   hit <- res$flags[grepl("gender_sum_matches_type_sum", res$flags$issue), ]
   expect_equal(nrow(hit), 1L)
   expect_equal(hit$column, "sum(male_trained + female_trained)")
+  expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)))   # fixture is complete (#376)
 })
 
 test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule skips a ToT sheet (no monthly breakdown at all)", {
@@ -1615,12 +1631,14 @@ test_that("Ethiopia training schema flags CDD/CS/HW monthly gender-vs-type misma
       !!paste0("#", pfx, "_new_jan")     := c(6, 6),
       !!paste0("#", pfx, "_refresh_jan") := c(4, 1)   # row 2: 10 by gender vs 7 by type
     )
+    df <- .fill_months(df, paste0("#", pfx), c("male", "fem", "new", "refresh"))
     res <- suppressMessages(run_dq_checks(df, schema))
     res <- suppressMessages(add_anomaly_consistency(res, schema))
     f <- res$flags[grepl("monthly_gender_sum_matches_type_sum", res$flags$issue), ]
     expect_equal(f$row, 2L, info = pfx)
     # The Lab-layout rule has no columns here and is recorded as skipped, not passed.
     expect_true("gender_sum_matches_type_sum" %in% res$skipped_rules$rule, info = pfx)
+    expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)), info = pfx)   # fixture is complete (#376)
   }
 })
 
@@ -1741,6 +1759,7 @@ test_that("every country training schema with the monthly sum rule is internally
       !!paste0(p, "_new_fem_jan")     := c(1, 1),
       !!paste0(p, "_refresh_fem_jan") := c(1, 0)    # row 2: 5 by gender vs 4 by type
     )
+    df <- .fill_months(df, p, c("new_male", "new_fem", "refresh_male", "refresh_fem"))
     res <- suppressMessages(add_anomaly_consistency(suppressMessages(run_dq_checks(df, schema)), schema))
     f <- res$flags[grepl("gender_sum_matches_type_sum", res$flags$issue), ]
     expect_equal(f$row, 2L, info = cc)
@@ -1828,4 +1847,161 @@ test_that("the 'not applicable' tier is an info line, not a warning (#374)", {
   msgs <- paste(cli::ansi_strip(testthat::capture_messages(.eri_cmr_report_skips(sk))), collapse = "\n")
   expect_match(msgs, paste0(cli::symbol$info, " Not applicable to some sheets"), fixed = TRUE)
   expect_no_match(msgs, "could not be run")
+})
+
+#### Partial column match on a summed side (issue #376) ####
+
+test_that("a summed side with only some columns present still runs, and is recorded as incomplete (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "b", "c"), op = "==", rhs = "total")
+  ))
+  # c is missing, so a + b is compared: row 1 3 vs 5 is flagged, row 2 4 vs 4 is not.
+  df <- tibble::tibble(a = c(1, 2), b = c(2, 2), total = c(5, 4))
+  msgs <- cli::ansi_strip(testthat::capture_messages(out <- add_anomaly_consistency(df, schema)))
+  expect_equal(out$row, 1L)
+  expect_equal(out$issue, "consistency [r]: sum(a + b + c) == total (checked without c: not found in the data)")
+  expect_true(any(grepl("1 of 3 lhs_sum column not found", msgs, fixed = TRUE)))
+  sk <- attr(out, "skipped_rules")
+  expect_equal(sk$rule, "r")
+  expect_false(sk$expected)
+  expect_equal(sk$reason, "lhs_sum incomplete, ran without 1 of 3 column(s): c")
+  expect_true(.dq_is_incomplete(sk$reason))
+})
+
+test_that("an incomplete rule with no violations is not reported as a full pass (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "b", "c"), op = "==", rhs = "total")
+  ))
+  msgs <- cli::ansi_strip(testthat::capture_messages(
+    out <- add_anomaly_consistency(tibble::tibble(a = 1, b = 2, total = 3), schema)))
+  expect_equal(nrow(out), 0L)
+  expect_true(any(grepl("ran without some columns (above) -- not a full pass", msgs, fixed = TRUE)))
+  expect_false(any(grepl("All consistency checks passed", msgs, fixed = TRUE)))
+  expect_false(any(grepl("nothing was checked", msgs, fixed = TRUE)))
+})
+
+test_that("an incomplete rule is unexpected even when the rule declares skip_ok (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs = "total", op = "==", rhs_sum = list("a", "b", "c"), skip_ok = TRUE)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(total = 3, a = 1, b = 2), schema))
+  sk <- attr(out, "skipped_rules")
+  expect_false(sk$expected)
+  expect_match(sk$reason, "^rhs_sum incomplete, ran without 1 of 3")
+})
+
+test_that("both summed sides partly missing are named in one record and on the flag (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "b"), op = "==", rhs_sum = list("x", "y", "z"))
+  ))
+  msgs <- cli::ansi_strip(testthat::capture_messages(res <- add_anomaly_consistency(
+    structure(list(data = tibble::tibble(a = 1, x = 2), flags = tibble::tibble()), class = "dq_result"),
+    schema)))
+  # Plural follows the missing count, not the side name (review of #376).
+  expect_true(any(grepl("2 of 3 rhs_sum columns not found", msgs, fixed = TRUE)))
+  expect_true(any(grepl("1 of 2 lhs_sum column not found", msgs, fixed = TRUE)))
+  expect_equal(nrow(res$skipped_rules), 1L)
+  expect_equal(res$skipped_rules$reason,
+               "lhs_sum incomplete, ran without 1 of 2 column(s): b; rhs_sum incomplete, ran without 2 of 3 column(s): y, z")
+  expect_match(res$flags$issue, "(checked without b, y, z: not found in the data)", fixed = TRUE)
+})
+
+test_that("a duplicated column in a sum list is counted once in the incomplete note (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "a", "c"), op = ">=", rhs_value = 0)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1), schema))
+  expect_equal(attr(out, "skipped_rules")$reason, "lhs_sum incomplete, ran without 1 of 2 column(s): c")
+})
+
+test_that("a partial side is not recorded as incomplete when the rule skips for another reason (#376)", {
+  # lhs partly present, rhs entirely absent (another layout's rule): the rule does
+  # not run, so it is one ordinary "not found" skip, not an incomplete run.
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "b"), op = "==", rhs_sum = list("x", "y"), skip_ok = TRUE)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1), schema))
+  sk  <- attr(out, "skipped_rules")
+  expect_equal(nrow(sk), 1L)
+  expect_false(.dq_is_incomplete(sk$reason))
+  expect_true(sk$expected)
+})
+
+test_that("a summed side with every column present is unchanged; none present is still 'not found' (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "b"), op = "==", rhs = "total")
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1, b = 1, total = 3), schema))
+  expect_equal(out$row, 1L)
+  expect_equal(out$issue, "consistency [r]: sum(a + b) == total")
+  expect_equal(nrow(attr(out, "skipped_rules")), 0L)
+
+  out2 <- suppressMessages(add_anomaly_consistency(tibble::tibble(total = 3), schema))
+  expect_match(attr(out2, "skipped_rules")$reason, "not found or not summable", fixed = TRUE)
+})
+
+test_that("Ethiopia CDD sheet with the June 2026 '#cddtrn_male_mov' typo still flags, naming trained_male_nov (#376)", {
+  schema <- yaml::read_yaml(system.file("schemas", "eth_rblf_programmatic_training.yaml", package = "erifunctions"))
+  mons <- c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+  cols <- paste0("#cddtrn_", c(paste0("male_", mons), paste0("fem_", mons),
+                               paste0("new_", mons), paste0("refresh_", mons)))
+  cols[cols == "#cddtrn_male_nov"] <- "#cddtrn_male_mov"   # as in the real June file
+  df  <- tibble::as_tibble(stats::setNames(as.list(rep(1, length(cols))), cols))[c(1, 1), ]
+  df[["#cddtrn_new_jan"]][2] <- 5                              # row 2: a real mismatch in January
+  res <- suppressMessages(add_anomaly_consistency(suppressMessages(run_dq_checks(df, schema)), schema))
+  sk  <- res$skipped_rules[res$skipped_rules$rule == "monthly_gender_sum_matches_type_sum", ]
+  expect_equal(nrow(sk), 1L)
+  expect_false(sk$expected)
+  expect_equal(sk$reason, "lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov")
+  f <- res$flags[grepl("[monthly_gender_sum_matches_type_sum]", res$flags$issue, fixed = TRUE), ]
+  # Row 1: Nov male (1, in the typo'd column) is lost, so 23 vs 24 -- flagged because of the
+  # missing column, which the tag makes visible. Row 2: the real January mismatch is still caught.
+  expect_equal(f$row, c(1L, 2L))
+  expect_true(all(grepl("(checked without trained_male_nov: not found in the data)", f$issue, fixed = TRUE)))
+})
+
+test_that("the report lists an incomplete rule in its own block, naming the missing columns (#376)", {
+  sk <- tibble::tibble(
+    sheet    = c("CDD Training", "ToT Zonal"),
+    rule     = c("monthly_gender_sum_matches_type_sum", "gender_sum_matches_type_sum"),
+    reason   = c("lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov",
+                 "lhs/lhs_sum column(s) not found or not summable"),
+    expected = c(FALSE, TRUE))
+  withr::local_options(cli.width = 400)   # keep each bullet on one line for matching
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(.eri_cmr_report_skips(sk))), collapse = "\n")
+  expect_match(msgs, "1 data check ran without some of its columns (counted as 0)", fixed = TRUE)
+  expect_match(msgs, "\"monthly_gender_sum_matches_type_sum\" on \"CDD Training\": lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov", fixed = TRUE)
+  expect_no_match(msgs, "could not be run", fixed = TRUE)            # it ran; not in the "could not run" block
+  expect_match(msgs, "Not applicable to some sheets", fixed = TRUE)  # other tiers unaffected
+})
+
+test_that("an incomplete rule's note does not leak onto a later complete rule's flags (#376)", {
+  schema <- list(consistency = list(
+    r1 = list(lhs_sum = list("a", "c"), op = ">=", rhs_value = 0),   # incomplete, passes
+    r2 = list(lhs = "a", op = "==", rhs = "total"),                   # complete, flags
+    r3 = list(lhs_sum = list("a", "d"), op = "==", rhs = "total")     # incomplete, flags
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1, total = 2), schema))
+  expect_equal(out$issue[grepl("[r2]", out$issue, fixed = TRUE)], "consistency [r2]: a == total")
+  expect_equal(out$issue[grepl("[r3]", out$issue, fixed = TRUE)],
+               "consistency [r3]: sum(a + d) == total (checked without d: not found in the data)")
+})
+
+test_that("re-chaining add_anomaly_consistency does not duplicate an incomplete record (#376)", {
+  schema <- list(consistency = list(r = list(lhs_sum = list("a", "c"), op = ">=", rhs_value = 0)))
+  dq  <- structure(list(data = tibble::tibble(a = 1), flags = tibble::tibble()), class = "dq_result")
+  res <- suppressMessages(add_anomaly_consistency(suppressMessages(add_anomaly_consistency(dq, schema)), schema))
+  expect_equal(nrow(res$skipped_rules), 1L)
+})
+
+test_that("the report counts an incomplete rule once, however many sheets it is on (#376)", {
+  sk <- tibble::tibble(
+    sheet    = c("CDD Training", "CS Training"),
+    rule     = "monthly_gender_sum_matches_type_sum",
+    reason   = "lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov",
+    expected = FALSE)
+  withr::local_options(cli.width = 400)
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(.eri_cmr_report_skips(sk))), collapse = "\n")
+  expect_match(msgs, "1 data check ran without some of its columns", fixed = TRUE)
+  expect_match(msgs, "on \"CS Training\"", fixed = TRUE)
 })

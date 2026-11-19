@@ -345,10 +345,32 @@ see:
 
 - `ℹ Not applicable to some sheets (by design ...)` -- a check written for a different sheet layout.
   Nothing to do.
-- `... but N checks could not be run (above), so this is not a full all-clear` instead of
-  `all clean` -- at least one check that *should* have run didn't.
+- `... but N checks could not be run or ran without some columns (above), so this is not a full
+  all-clear` instead of `all clean` -- at least one check that *should* have run didn't, or ran
+  without some of its columns (next section).
 
-The same list is available to scripts as `attr(flags, "skipped_rules")`.
+#### If a check "ran without some of its columns"
+
+A check that adds up many columns (such as each month's training by gender: 12 months for male and 12
+for female, 24 columns) still runs if only some of those columns are in the file. The missing ones count as 0, and the report warns you:
+
+```
+! 1 data check ran without some of its columns (counted as 0), so its flags on these sheets may come
+  from the missing columns rather than the data:
+  "monthly_gender_sum_matches_type_sum" on "CDD Training": lhs_sum incomplete, ran without 1 of 24
+  column(s): trained_male_nov
+ℹ The column names shown are the schema's names, not the file's field codes. The file probably has a
+  typo or a renamed field code for that column -- tell the DQ schema maintainer which sheet and column.
+```
+
+Each flag from that check ends with `(checked without trained_male_nov: not found in the data)`.
+When you review one, check whether the mismatch is explained by the missing month: if that month has
+a value in the file under a different field code, the flag may not be a real problem. Either way,
+tell the DQ schema maintainer which sheet and column, since it usually means a typo in the file's
+field codes (Ethiopia's June 2026 CDD Training sheet had `#cddtrn_male_mov` for `#cddtrn_male_nov`).
+
+The same list is available to scripts as `attr(flags, "skipped_rules")`. It includes these checks too,
+with `expected = FALSE` and "incomplete" in `reason`.
 
 ## Cleaning up {#cleanup}
 
