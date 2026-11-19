@@ -2129,3 +2129,41 @@ test_that("rhs_scale does not overflow a large integer rhs (#372)", {
   out <- suppressWarnings(suppressMessages(add_anomaly_consistency(df, schema)))
   expect_equal(out$row, 1L)
 })
+
+test_that("text lhs/rhs (not type-coerced) get no percentage and do not error (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(treated = "500", target_pop = "100"), schema))
+  expect_equal(out$value, "500 vs target_pop 100")
+})
+
+test_that("the percentage also shows for < and > rules (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "x", op = "<", rhs = "target_pop")))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(x = 1.5, target_pop = 1), schema))
+  expect_equal(out$value, "1.5 vs target_pop 1 (150%)")
+})
+
+test_that("more invalid rhs_scale values are rejected, and skip_ok does not make them expected (#372 review)", {
+  df  <- tibble::tibble(treated = 500, target_pop = 100)
+  bad <- list(
+    inf     = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = Inf),
+    missing = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = NA_real_),
+    logical = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = TRUE),
+    ok_flag = list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 0, skip_ok = TRUE)
+  )
+  sk <- attr(suppressMessages(add_anomaly_consistency(df, list(consistency = bad))), "skipped_rules")
+  expect_equal(sk$rule, names(bad))
+  expect_true(all(sk$reason == "rhs_scale must be one positive number"))
+  expect_false(any(sk$expected))
+
+  nonnum <- list(consistency = list(r = list(lhs = "treated", op = "<=", rhs = "target_pop",
+                                             rhs_scale = 2, skip_ok = TRUE)))
+  sk2 <- attr(suppressMessages(add_anomaly_consistency(tibble::tibble(treated = 5, target_pop = "1"), nonnum)),
+              "skipped_rules")
+  expect_false(sk2$expected)
+})
+
+test_that("a duplicated column in a summed rhs is labelled and summed once (#372 review)", {
+  schema <- list(consistency = list(r = list(lhs = "t", op = "<=", rhs_sum = list("a", "a"))))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(t = 5, a = 2), schema))
+  expect_equal(out$value, "5 vs sum of 1 column 2 (250%)")
+})

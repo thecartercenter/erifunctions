@@ -531,6 +531,10 @@ test_that("eri_schema_validate flags an invalid rhs_scale and accepts a valid on
 
   const <- check(list(lhs = "treated", op = "<=", rhs_value = 100, rhs_scale = 2))
   expect_match(const$message[const$field == "consistency.over.rhs_scale"], "not rhs_value", fixed = TRUE)
+
+  # A summed rhs counts as a column rhs, so it may be scaled.
+  summed <- check(list(lhs = "treated", op = "<=", rhs_sum = list("treated", "target_pop"), rhs_scale = 2))
+  expect_false(any(summed$field == "consistency.over.rhs_scale"))
 })
 
 test_that("no bundled schema has an invalid rhs_scale (#372)", {
