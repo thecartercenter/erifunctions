@@ -118,7 +118,8 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
 - Rules for any country other than `eth` -- each country's real sheet names (tcd/mad's templates are
   in French) and district-roster overlaps between diseases are different enough that copying eth's
   rules elsewhere would be guesswork, not generalization. Other countries opt in when someone with
-  real knowledge of that country's template asks.
+  real knowledge of that country's template asks. *(Superseded for nga, sdn, ssd and ht by the #373
+  addendum below.)*
 
 ## References
 
@@ -133,10 +134,13 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
   `eri_cmr_dq_report()`/`eri_approve_cmr()`, `R/dq_review.R`'s cross-flag guards,
   `inst/schemas/cmr/eth.yaml`'s `cross_consistency:` block, `tests/testthat/test-dq_cross.R`.
 
-## Addendum (issue #373): the rules extended beyond Ethiopia
+## Addendum (issue #373, 2026-11-19): the rules extended beyond Ethiopia
 
 **Decision:** Ethiopia's two `cross_consistency:` rules are copied into each country's routing schema
-where they apply, checked against that country's latest real CMR (structure only):
+where they apply, checked against that country's latest real CMR (structure only). This supersedes the
+"Rules for any country other than `eth`" bullet under *Not doing* above for these countries: each copy
+was checked against the country's real sheet names and district rosters, which is what that bullet
+asked for.
 
 - `rb_lf_pop_match` and `treatment_implies_training`: `nga`, `sdn`, `ssd` (both RB and LF Treatment, plus
   CDD/CS/health-worker training).
@@ -146,9 +150,13 @@ where they apply, checked against that country's latest real CMR (structure only
 
 **Per-country sheet names.** Each copy names its own training sheets: Ethiopia's health-worker tab is
 "HW Training", Nigeria/Sudan/South Sudan's is "Health Workers Training". A wrong name only produces an
-info line ("no data for ...") and drops that sheet from the sum, so a test now checks every rule's
-`sheets:` against the country's routed sheets, and every source's `(disease, data_type)`, `join_key` and
-`column` against the country's routing and DQ schemas.
+info line ("no data for ...") and drops that sheet from the sum. The existing schema test checks every
+rule's `sheets:` against the country's routed sheets; a new one checks every source's
+`(disease, data_type)`, `join_key` and `column` against the country's routing and DQ schemas.
+
+**Duplicated per country, on purpose (for now)**, for the same reason as ADR-0026's training rules:
+schemas have no include/inheritance mechanism. Revisit with a shared fragment if more countries need
+copies.
 
 **`tolerance: 1` on `rb_lf_pop_match`, all countries.** Nigeria's RB tab carries decimal projected
 populations and its LF tab the same figures rounded; with `tolerance: 0` all 103 Nigerian districts on
