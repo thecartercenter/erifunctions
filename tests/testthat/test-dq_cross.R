@@ -551,12 +551,29 @@ test_that("every country's population match allows rounding (up to 0.5) and noth
     rule <- .cmr_yaml(country)$cross_consistency["rb_lf_pop_match"]
     tables <- list(
       list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
-           data = tibble::tibble(district = c("A", "B", "C"), population = c(176131.5, 1000, 500))),
+           data = tibble::tibble(district = c("A", "B", "C", "D"), population = c(176131.5, 1000, 500, 800))),
       list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
            data = tibble::tibble(district = c("A", "B", "C"), population = c(176132, 1000.6, 501)))
     )
     flags <- suppressMessages(.eri_cross_check_run(tables, rule))
-    # A differs by exactly 0.5 (rounding); B by 0.6 and C by 1 (real).
+    # A differs by exactly 0.5 (rounding); B by 0.6 and C by 1 (real); D is on RB only (not flagged).
     expect_equal(flags$value, c("B", "C"), label = country)
   }
+})
+
+test_that("Ethiopia's rules, which every other country is compared to, are pinned (#373 review)", {
+  eth <- .cmr_yaml("eth")$cross_consistency
+  pop <- eth$rb_lf_pop_match
+  expect_identical(pop$join_key, "district")
+  expect_identical(pop$op, "==")
+  expect_identical(pop$tolerance, 0.5)
+  expect_identical(c(pop$lhs$agg, pop$rhs$agg), c("unique", "unique"))
+  expect_null(pop$lhs$missing_as)   # a district on only one tab is a coverage difference, never flagged
+  expect_null(pop$rhs$missing_as)
+
+  trn <- eth$treatment_implies_training
+  expect_identical(trn$join_key, "district")
+  expect_identical(trn$op, "same_sign")
+  expect_identical(c(trn$lhs$agg, trn$rhs$agg), c("sum", "sum"))
+  expect_identical(c(trn$lhs$missing_as, trn$rhs$missing_as), c(0L, 0L))   # no training row at all reads as 0
 })
