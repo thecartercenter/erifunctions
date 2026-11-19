@@ -351,8 +351,8 @@ see:
 
 #### If a check "ran without some of its columns"
 
-A check that adds up many columns (such as the twelve months of training) still runs if only some of
-those columns are in the file. The missing ones count as 0, and the report warns you:
+A check that adds up many columns (such as each month's training by gender: 12 months for male and 12
+for female, 24 columns) still runs if only some of those columns are in the file. The missing ones count as 0, and the report warns you:
 
 ```
 ! 1 data check ran without some of its columns (counted as 0), so its flags on these sheets may come
@@ -369,7 +369,8 @@ a value in the file under a different field code, the flag may not be a real pro
 tell the DQ schema maintainer which sheet and column, since it usually means a typo in the file's
 field codes (Ethiopia's June 2026 CDD Training sheet had `#cddtrn_male_mov` for `#cddtrn_male_nov`).
 
-The same list is available to scripts as `attr(flags, "skipped_rules")`.
+The same list is available to scripts as `attr(flags, "skipped_rules")`. It includes these checks too,
+with `expected = FALSE` and "incomplete" in `reason`.
 
 ## Cleaning up {#cleanup}
 
