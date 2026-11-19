@@ -234,6 +234,7 @@ test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum r
   res <- run_dq_checks(df, schema)
   res <- add_anomaly_consistency(res, schema)
   expect_equal(sum(grepl("gender_sum_matches_type_sum", res$flags$issue)), 0L)
+  expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)))   # fixture is complete (#376)
 })
 
 test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule catches a real mismatch (issue #334)", {
@@ -253,6 +254,7 @@ test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum r
   hit <- res$flags[grepl("gender_sum_matches_type_sum", res$flags$issue), ]
   expect_equal(nrow(hit), 1L)
   expect_equal(hit$column, "sum(male_trained + female_trained)")
+  expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)))   # fixture is complete (#376)
 })
 
 test_that("eth_rblf_programmatic_training schema's gender_sum_matches_type_sum rule skips a ToT sheet (no monthly breakdown at all)", {
@@ -1636,6 +1638,7 @@ test_that("Ethiopia training schema flags CDD/CS/HW monthly gender-vs-type misma
     expect_equal(f$row, 2L, info = pfx)
     # The Lab-layout rule has no columns here and is recorded as skipped, not passed.
     expect_true("gender_sum_matches_type_sum" %in% res$skipped_rules$rule, info = pfx)
+    expect_false(any(.dq_is_incomplete(res$skipped_rules$reason)), info = pfx)   # fixture is complete (#376)
   }
 })
 
@@ -1901,6 +1904,14 @@ test_that("both summed sides partly missing are named in one record and on the f
   expect_equal(res$skipped_rules$reason,
                "lhs_sum incomplete, ran without 1 of 2 column(s): b; rhs_sum incomplete, ran without 2 of 3 column(s): y, z")
   expect_match(res$flags$issue, "(checked without b, y, z: not found in the data)", fixed = TRUE)
+})
+
+test_that("a duplicated column in a sum list is counted once in the incomplete note (#376)", {
+  schema <- list(consistency = list(
+    r = list(lhs_sum = list("a", "a", "c"), op = ">=", rhs_value = 0)
+  ))
+  out <- suppressMessages(add_anomaly_consistency(tibble::tibble(a = 1), schema))
+  expect_equal(attr(out, "skipped_rules")$reason, "lhs_sum incomplete, ran without 1 of 2 column(s): c")
 })
 
 test_that("a partial side is not recorded as incomplete when the rule skips for another reason (#376)", {

@@ -2317,4 +2317,12 @@ test_that("eri_cmr_dq_report() counts a rule that ran without some columns as ru
   expect_match(msgs, "ran without some of its columns")
   expect_no_match(msgs, "all clean")
   expect_match(msgs, "could not be run or ran without some columns (above), so this is not a full all-clear", fixed = TRUE)
+
+  # When the incomplete rule does flag, the report's flags carry the note (the mock reads `schema` lazily).
+  schema$consistency$incomplete$op <- "<="   # treated (50) <= 0 fails
+  flags2 <- suppressMessages(
+    eri_cmr_dq_report("sdn", "202605", plan = plan, data_con = structure(list(), class = "mock")))
+  hit <- flags2[grepl("[incomplete]", flags2$issue, fixed = TRUE), ]
+  expect_equal(nrow(hit), 1L)
+  expect_match(hit$issue, "(checked without not_in_file: not found in the data)", fixed = TRUE)
 })
