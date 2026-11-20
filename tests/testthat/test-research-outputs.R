@@ -516,3 +516,10 @@ test_that("freezing keeps the latest duplicate, skips superseded entries whereve
   expect_length(nopath, 2L)
   expect_true(all(vapply(nopath, function(o) is.null(o$frozen_path), logical(1L))))
 })
+
+test_that("a figs folder named in another letter case (Figs/) is still dropped (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  res <- suppressMessages(eri_research_upload_figure(.fig(tmp, "Figs/x.png", "x"), path = tmp))
+  expect_equal(res, "research/test_proj/outputs/figs/x.png")
+})

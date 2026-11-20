@@ -533,7 +533,7 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
     ))
     return(basename(file))
   }
-  sub("^(outputs/)?figs/", "", substring(file, nchar(root) + 1L))
+  sub("^(outputs/)?figs/", "", substring(file, nchar(root) + 1L), ignore.case = TRUE)
 }
 
 # Uploads `src` to `azure_path` (under the project's outputs/) and records `entry` in
