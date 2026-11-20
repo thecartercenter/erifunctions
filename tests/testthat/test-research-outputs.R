@@ -458,6 +458,8 @@ test_that("eri_research_status counts each output once, not its archived version
 
 test_that("on Windows a project path in a different letter case still counts as inside the project (#377 review)", {
   skip_on_os(c("mac", "linux", "solaris"))
+  # normalizePath() usually restores the on-disk case on Windows, so this passes even without the
+  # tolower() match; it guards the outcome, and the tolower() covers paths it can't canonicalise.
   tmp <- withr::local_tempdir(); .write_manifest(tmp)
   store <- new.env(); .local_fake_blobs(store)
   f <- .fig(tmp, "figs/deck/x.png", "x")
@@ -522,4 +524,76 @@ test_that("a figs folder named in another letter case (Figs/) is still dropped (
   store <- new.env(); .local_fake_blobs(store)
   res <- suppressMessages(eri_research_upload_figure(.fig(tmp, "Figs/x.png", "x"), path = tmp))
   expect_equal(res, "research/test_proj/outputs/figs/x.png")
+})
+
+test_that("a fourth upload in the same second skips past an archive suffix already taken (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  local_mocked_bindings(Sys.time = function() as.POSIXct("2026-11-20 15:06:25", tz = "UTC"), .package = "base")
+  f <- .fig(tmp, "figs/a.png", "v1")
+  for (v in c("v1", "v2", "v3", "v4")) { writeLines(v, f); suppressMessages(eri_research_upload_figure(f, path = tmp)) }
+  base <- "research/test_proj/outputs/_archive/20261120T150625Z"
+  expect_equal(get(paste0(base, "/figs/a.png"),   envir = store), "v1")
+  expect_equal(get(paste0(base, "-2/figs/a.png"), envir = store), "v2")
+  expect_equal(get(paste0(base, "-3/figs/a.png"), envir = store), "v3")
+  outs <- yaml::read_yaml(file.path(tmp, "research.yaml"))$outputs
+  expect_equal(outs[[4L]]$archived_prev, paste0(base, "-3/figs/a.png"))
+  # superseded_at is the time of the upload that replaced the entry
+  expect_equal(outs[[1L]]$superseded_at, outs[[2L]]$uploaded_at)
+})
+
+test_that("the archive folder timestamp is UTC whatever the local time zone (#377 review)", {
+  withr::local_timezone("America/New_York")
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  local_mocked_bindings(Sys.time = function() as.POSIXct("2026-11-20 10:06:25", tz = "America/New_York"), .package = "base")
+  f <- .fig(tmp, "figs/a.png", "v1")
+  suppressMessages(eri_research_upload_figure(f, path = tmp))
+  writeLines("v2", f); suppressMessages(eri_research_upload_figure(f, path = tmp))
+  expect_true(exists("research/test_proj/outputs/_archive/20261120T150625Z/figs/a.png", envir = store, inherits = FALSE))
+})
+
+test_that("only a figs/ folder at the top of the project is dropped, in any letter case (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  up <- function(rel) suppressMessages(eri_research_upload_figure(.fig(tmp, rel, "x"), path = tmp))
+  expect_equal(up("analysis/figs/x.png"), "research/test_proj/outputs/figs/analysis/figs/x.png")
+  expect_equal(up("Figs/y.png"),          "research/test_proj/outputs/figs/y.png")
+  expect_equal(up("OUTPUTS/Figs/z.png"),  "research/test_proj/outputs/figs/z.png")
+})
+
+test_that("the flat-path note appears only for a current flat upload of the same name (#377 review)", {
+  note <- function(outputs, rel) {
+    tmp <- withr::local_tempdir()
+    m <- .base_manifest(); m$outputs <- outputs
+    yaml::write_yaml(m, file.path(tmp, "research.yaml"))
+    store <- new.env(); .local_fake_blobs(store)
+    msgs <- testthat::capture_messages(eri_research_upload_figure(.fig(tmp, rel, "x"), path = tmp))
+    any(grepl("earlier upload named", msgs, fixed = TRUE))
+  }
+  flat <- "research/test_proj/outputs/figs/forest.png"
+  # (a) re-uploading the flat figure itself: no note
+  expect_false(note(list(list(filename = "forest.png", azure_path = flat)), "figs/forest.png"))
+  # (b) the flat entry is already superseded: no note
+  expect_false(note(list(list(filename = "forest.png", azure_path = flat, superseded_at = "2026-01-01T00:00:00Z")),
+                    "figs/deck/es/forest.png"))
+  # (c) the same name exists only in another subfolder: no note
+  expect_false(note(list(list(filename = "forest.png", azure_path = "research/test_proj/outputs/figs/deck/forest.png")),
+                    "figs/deck/es/forest.png"))
+  # and the positive case
+  expect_true(note(list(list(filename = "forest.png", azure_path = flat)), "figs/deck/es/forest.png"))
+})
+
+test_that("eri_research_status counts duplicates from before #377, and shows nothing extra for one upload (#377 review)", {
+  status <- function(outputs) {
+    tmp <- withr::local_tempdir()
+    m <- .base_manifest(); m$outputs <- outputs
+    yaml::write_yaml(m, file.path(tmp, "research.yaml"))
+    paste(cli::ansi_strip(testthat::capture_messages(eri_research_status(path = tmp))), collapse = "\n")
+  }
+  p <- "research/test_proj/outputs/figs/a.png"
+  expect_match(status(list(list(azure_path = p), list(azure_path = p))), "1 output (+1 earlier upload)", fixed = TRUE)
+  one <- status(list(list(azure_path = p)))
+  expect_match(one, "1 output,", fixed = TRUE)
+  expect_no_match(one, "(+", fixed = TRUE)
 })

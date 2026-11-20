@@ -181,3 +181,29 @@ test_that(".eri_git_info reports a clean repo's HEAD", {
   expect_match(info$sha, "^[0-9a-f]{7,40}$")
   expect_false(info$dirty)
 })
+
+# --- #377: the tag summary's output count -------------------------------------
+
+test_that("the tag summary counts current outputs and says how many could not be copied (#377 review)", {
+  skip_if(!nzchar(Sys.which("git")), "git not available")
+  run <- function(outputs, download_fails = FALSE) {
+    tmp <- withr::local_tempdir(.local_envir = parent.frame())
+    .write_manifest(tmp, snapshots = list(list(label = "s", timestamp = "t", azure_path = "p/", file_count = 1L)),
+                    outputs = outputs)
+    .commit_all(tmp)
+    cap <- new.env()
+    .setup_tag_mocks(cap)
+    if (download_fails) {
+      local_mocked_bindings(storage_download = function(...) stop("blob not found"), .package = "AzureStor")
+    }
+    msgs <- suppressWarnings(testthat::capture_messages(eri_research_tag("t1", path = tmp)))
+    paste(cli::ansi_strip(msgs), collapse = "\n")
+  }
+  p <- "research/dr_irs_2024/outputs/figs/fig1.png"
+  # one current output and one superseded: counts 1
+  ok <- run(list(list(filename = "fig1.png", azure_path = p, superseded_at = "2026-01-01T00:00:00Z"),
+                 list(filename = "fig1.png", azure_path = p)))
+  expect_match(ok, "1 (copied into the tag)", fixed = TRUE)
+  bad <- run(list(list(filename = "fig1.png", azure_path = p)), download_fails = TRUE)
+  expect_match(bad, "1, of which 1 could not be copied", fixed = TRUE)
+})
