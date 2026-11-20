@@ -585,3 +585,20 @@ test_that("Ethiopia's rules, which every other country is compared to, are pinne
   expect_identical(src(pop$lhs), list(c(disease = "oncho", data_type = "treatment", column = "population")))
   expect_identical(src(pop$rhs), list(c(disease = "lf",    data_type = "treatment", column = "population")))
 })
+
+test_that("treatment_implies_training: a training tab with no rows counts as zero; an empty total is not checked (#373)", {
+  rule <- .cmr_yaml("ht")$cross_consistency["treatment_implies_training"]
+  lf <- list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+             data = tibble::tibble(district = c("D1", "D2"), treated = c(10, 5)))
+  training <- function(d) list(sheet = "CDD Training", disease = "rblf", data_type = "training", data = d)
+
+  # Tab present with no rows: treated districts read as zero training and are flagged.
+  no_rows <- suppressMessages(.eri_cross_check_run(
+    list(lf, training(tibble::tibble(district = character(), tot = numeric()))), rule))
+  expect_setequal(no_rows$value, c("D1", "D2"))
+
+  # Districts listed with an empty total: aggregates to NA, so not checked (decided 2026-11-20).
+  empty_tot <- suppressMessages(.eri_cross_check_run(
+    list(lf, training(tibble::tibble(district = c("D1", "D2"), tot = c(NA_real_, NA_real_)))), rule))
+  expect_equal(nrow(empty_tot), 0L)
+})

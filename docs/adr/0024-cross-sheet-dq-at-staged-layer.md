@@ -169,11 +169,14 @@ so this removes rounding differences and nothing else (a real 1-person differenc
 change on Ethiopia's, Sudan's or South Sudan's latest CMRs. Applied to Ethiopia too so the rule means the same
 everywhere.
 
-**`treatment_implies_training` stays two-way, and a blank training tab counts as zero** -- both chosen
+**`treatment_implies_training` stays two-way, and a training tab with no rows counts as zero** -- both chosen
 by Emalee (2026-11-20), same as Ethiopia. All 17 of Nigeria's 202609 flags are the reverse direction
 (training but 0 treated); they are reviewed and resolved like any other flag rather than dropped by a
-one-way rule. A training tab that is in the workbook but blank reads as zero training (the rule is skipped
-only when none of the named sheets is present), so treatment with no recorded training is flagged. The
+one-way rule. A training tab that is in the workbook with no rows reads as zero training (the rule is skipped
+only when none of the named sheets is present), so treatment with no recorded training is flagged. A
+district listed on a training tab with an empty total aggregates to NA and is not checked; Emalee kept
+that as is (2026-11-20) since real CMRs enter 0, and counting empty totals as zero would need an engine
+option. The
 Ethiopia's rule description said otherwise ("only evaluated where ... real data"); it is corrected, and the
 new copies use the corrected wording.
 
