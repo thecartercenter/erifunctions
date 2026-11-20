@@ -38,6 +38,8 @@
   local_mocked_bindings(
     storage_file_exists = function(...) file_exists,
     storage_dir_exists  = function(...) FALSE,
+    # Outputs are frozen by downloading then re-uploading (#377); the download writes a marker.
+    storage_download    = function(container, src, dest, ...) { writeLines(paste("blob:", src), dest); invisible(NULL) },
     create_storage_dir  = function(...) invisible(NULL),
     storage_upload      = function(container, src, dest, ...) {
       keep <- tempfile(fileext = ".cap")
@@ -84,7 +86,8 @@ test_that("eri_research_tag binds latest snapshot + git SHA and records the tag"
            azure_path = "research/dr_irs_2024/snapshots/new/", file_count = 3L)
     ),
     pulled  = list(list(source = "processed/dr/malaria", pulled_at = "2026-06-04T00:00:00Z")),
-    outputs = list(list(type = "figure", filename = "fig1.png"))
+    outputs = list(list(type = "figure", filename = "fig1.png",
+                        azure_path = "research/dr_irs_2024/outputs/figs/fig1.png"))
   )
   .commit_all(tmp)  # clean tree, manifest committed
 
@@ -104,6 +107,11 @@ test_that("eri_research_tag binds latest snapshot + git SHA and records the tag"
   expect_false(isTRUE(tag$code$dirty))
   expect_equal(length(tag$inputs), 1L)
   expect_equal(length(tag$outputs), 1L)
+  # The output is frozen into the tag (#377), not just referenced.
+  frozen <- "research/dr_irs_2024/tags/submission/outputs/figs/fig1.png"
+  expect_equal(tag$outputs[[1L]]$frozen_path, frozen)
+  expect_true(exists(frozen, envir = cap, inherits = FALSE))
+  expect_equal(readLines(cap[[frozen]]), "blob: research/dr_irs_2024/outputs/figs/fig1.png")
 
   manifest <- yaml::read_yaml(file.path(tmp, "research.yaml"))
   expect_equal(length(manifest$tags), 1L)

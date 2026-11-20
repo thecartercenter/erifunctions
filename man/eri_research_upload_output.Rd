@@ -23,6 +23,11 @@ Serializes an R object to a \code{.qs2} file and uploads it to
 \verb{research/\{project_name\}/outputs/} in the \verb{data/} Azure blob. Records the upload
 in \code{research.yaml}.
 }
+\details{
+As with \code{\link{eri_research_upload_figure}()}, an existing file at the same path is
+copied to \verb{outputs/_archive/<timestamp>/} before it is replaced, and the
+earlier \code{research.yaml} entry is marked \code{superseded_at} with \code{archived_to}.
+}
 \examples{
 \dontrun{
 eri_research_upload_output(model_fit, "its_model.qs2")

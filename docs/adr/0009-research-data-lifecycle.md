@@ -52,3 +52,35 @@ working copy** — the approval-gate philosophy applied to research inputs.
   with a snapshot exclude-list (`_archive/`, large caches) if size becomes a problem.
 - **Not doing:** a separate database or VCS for data (ADR-0002 keeps metadata in YAML); auto-promoting
   project data to canonical (promotion is always explicit).
+
+## Addendum (issue #377, 2026-11-20): outputs are archived on re-upload, and tags freeze them
+
+**Context.** The archive-before-overwrite rule above covered inputs (`eri_research_pull()`) and canonical
+spatial data, but not outputs. `eri_research_upload_figure()` wrote to `outputs/figs/<basename>` and both
+upload functions overwrote any existing blob, while `eri_research_tag()` recorded only the output paths.
+In `dr_irs_2026` that meant figures with the same name in different folders replaced each other, and
+uploading the v3 decks replaced the files the `dr-irs-its-v2` tag pointed at: the tag still reproduced the
+data and code, but its outputs were gone.
+
+**Decision.**
+- **Paths.** A figure's Azure path keeps its folder relative to the project root, minus a leading `figs/`
+  (`figs/deck/es/forest.png` -> `outputs/figs/deck/es/forest.png`; a flat `figs/x.png` is unchanged). A
+  file outside the project falls back to its name, with a warning.
+- **Archive on re-upload.** Both upload functions go through one helper that, if a blob already exists at
+  the destination, copies it to `outputs/_archive/<timestamp>/<same relative path>` before uploading. In
+  `research.yaml`, every earlier current entry for that path gets `superseded_at`; the most recent gets
+  `archived_to`; the new entry gets `archived_prev`. Entries overwritten before this change have no
+  archive and are marked superseded only.
+- **Tags freeze outputs.** `eri_research_tag()` copies each current output (the latest non-superseded
+  entry per path) to `tags/<label>/outputs/<path relative to outputs/>` before writing `_tag.yaml`, and
+  records `frozen_path` on each output in the tag. A copy that fails is recorded as `frozen_path: NA`
+  with a warning rather than blocking the tag. So a tag now freezes data (snapshot), code (SHA) **and**
+  outputs.
+
+Copies are download-then-upload through the existing blob helpers (`.eri_blob_read()` /
+`.eri_blob_write()`), not a server-side copy; research outputs are small figures, decks and model
+objects, so the extra transfer is minor.
+
+**Consequences.** Re-uploading an output is reversible, and a tag's outputs survive later uploads. Storage
+grows by one copy per re-upload and per tagged output. Nothing already lost can be recovered by this
+change.

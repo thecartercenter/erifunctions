@@ -510,12 +510,119 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   invisible(inputs)
 }
 
+#### Output upload helpers (issue #377) ####
+
+# Where a local figure goes under outputs/figs/: its path relative to the project root, with a
+# leading `figs/` dropped (so `figs/deck/es/forest.png` -> `deck/es/forest.png`, and a flat
+# `figs/its.png` keeps its old place, `its.png`). Using basename() alone made same-named figures
+# in different folders overwrite each other. A file outside the project falls back to its name,
+# with a warning.
+.eri_research_figure_relpath <- function(local_path, path) {
+  norm <- function(p) normalizePath(p, winslash = "/", mustWork = TRUE)
+  root <- paste0(sub("/+$", "", norm(path)), "/")
+  file <- norm(local_path)
+  inside <- if (.Platform$OS.type == "windows") startsWith(tolower(file), tolower(root)) else startsWith(file, root)
+  if (!inside) {
+    cli::cli_warn(c(
+      "{.path {local_path}} is outside the project folder, so it is uploaded by name only ({.file {basename(file)}}).",
+      "i" = "A figure with the same name from elsewhere would replace it. Keep figures inside the project, e.g. under {.path figs/}."
+    ))
+    return(basename(file))
+  }
+  sub("^figs/", "", substring(file, nchar(root) + 1L))
+}
+
+# Uploads `src` to `azure_path` (under the project's outputs/) and records `entry` in
+# research.yaml. If a blob is already at `azure_path`, it is first copied to
+# outputs/_archive/<timestamp>/<same relative path>, so a re-upload never destroys the version an
+# earlier entry (or a tag) refers to -- the ADR-0009 pull rule, applied to outputs. Earlier
+# entries for the same path are marked `superseded_at`; the most recent of them gets
+# `archived_to`, the copy of its blob. (Entries overwritten before #377 have no archive.)
+.eri_research_put_output <- function(con, manifest, src, azure_path, entry, path) {
+  outputs_root <- paste0(manifest$azure_path, "outputs/")
+  archived_to  <- NULL
+  if (AzureStor::storage_file_exists(con, azure_path)) {
+    ts          <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+    archived_to <- paste0(outputs_root, "_archive/", ts, "/", substring(azure_path, nchar(outputs_root) + 1L))
+    tmp <- tempfile()
+    withr::defer(unlink(tmp))
+    .eri_blob_read(con, azure_path, tmp)
+    .eri_create_azure_dir(con, dirname(archived_to))
+    .eri_blob_write(con, tmp, archived_to)
+    cli::cli_alert_info("Archived the previous version to {.path {archived_to}}.")
+  }
+
+  .eri_create_azure_dir(con, dirname(azure_path))
+  .eri_blob_write(con, src, azure_path)
+
+  if (!is.null(archived_to)) entry$archived_prev <- archived_to
+  outs    <- manifest$outputs %||% list()
+  current <- which(vapply(outs, function(o) identical(o$azure_path, azure_path) && is.null(o$superseded_at),
+                          logical(1L)))
+  for (i in current) outs[[i]]$superseded_at <- entry$uploaded_at
+  if (!is.null(archived_to) && length(current) > 0L) outs[[max(current)]]$archived_to <- archived_to
+  manifest$outputs <- c(outs, list(entry))
+  .eri_research_write_manifest(manifest, path)
+  invisible(archived_to)
+}
+
+# The outputs a tag freezes: each output path's latest entry that has not been superseded
+# (manifests written before #377 can list the same path several times), copied to
+# <tag_dir>/outputs/<path relative to outputs/>. Each returned entry gains `frozen_path`
+# (NA, with a warning, if the copy failed, e.g. the blob was deleted).
+.eri_research_freeze_outputs <- function(con, manifest, tag_dir) {
+  outputs_root <- paste0(manifest$azure_path, "outputs/")
+  outs <- Filter(function(o) is.null(o$superseded_at), manifest$outputs %||% list())
+  if (length(outs) == 0L) return(list())
+  paths <- vapply(outs, function(o) if (is.character(o$azure_path) && length(o$azure_path) == 1L) o$azure_path
+                                    else NA_character_, character(1L))
+  outs  <- outs[is.na(paths) | !duplicated(paths, fromLast = TRUE)]
+
+  lapply(outs, function(o) {
+    if (!is.character(o$azure_path) || length(o$azure_path) != 1L) {
+      cli::cli_warn("An output in {.file research.yaml} ({.val {o$filename %||% 'unnamed'}}) has no Azure path, so it can't be copied into the tag.")
+      o$frozen_path <- NA_character_
+      return(o)
+    }
+    rel  <- if (startsWith(o$azure_path, outputs_root)) substring(o$azure_path, nchar(outputs_root) + 1L)
+            else basename(o$azure_path)
+    dest <- paste0(tag_dir, "outputs/", rel)
+    tmp  <- tempfile()
+    on.exit(unlink(tmp), add = TRUE)
+    ok <- tryCatch({
+      .eri_blob_read(con, o$azure_path, tmp)
+      .eri_create_azure_dir(con, dirname(dest))
+      .eri_blob_write(con, tmp, dest)
+      TRUE
+    }, error = function(e) {
+      cli::cli_warn(c(
+        "Could not copy output {.path {o$azure_path}} into the tag: {conditionMessage(e)}",
+        "i" = "The tag records its path, but not a frozen copy."
+      ))
+      FALSE
+    })
+    o$frozen_path <- if (ok) dest else NA_character_
+    o
+  })
+}
+
 #### eri_research_upload_figure ####
 
 #' Upload a figure to the research project outputs in Azure
 #'
 #' Uploads a local figure file to `research/{project_name}/outputs/figs/` in the
 #' `data/` Azure blob and records the upload in `research.yaml`.
+#'
+#' The figure keeps its folder: its path relative to the project root, minus a
+#' leading `figs/`, so `figs/deck/es/forest.png` goes to
+#' `outputs/figs/deck/es/forest.png` and two figures with the same name in
+#' different folders don't replace each other. A figure outside the project is
+#' uploaded by name only, with a warning.
+#'
+#' Uploading to a path that already holds a file first copies the existing file
+#' to `outputs/_archive/<timestamp>/` (same relative path), so the earlier
+#' version is kept. Its `research.yaml` entry is marked `superseded_at` and
+#' gets `archived_to`; the new entry gets `archived_prev`.
 #'
 #' @param local_path `chr` Path to the local figure file (e.g. `"figs/its_model.png"`).
 #' @param caption `chr` or `NULL` Optional caption describing the figure.
@@ -541,11 +648,8 @@ eri_research_upload_figure <- function(
   analyst   <- .eri_analyst_id()
 
   filename   <- basename(local_path)
-  azure_path <- paste0(manifest$azure_path, "outputs/figs/", filename)
-
-  dir_path <- paste0(manifest$azure_path, "outputs/figs")
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, local_path, azure_path)
+  rel_path   <- .eri_research_figure_relpath(local_path, path)
+  azure_path <- paste0(manifest$azure_path, "outputs/figs/", rel_path)
 
   entry <- list(
     type        = "figure",
@@ -555,9 +659,7 @@ eri_research_upload_figure <- function(
     uploaded_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     uploaded_by = analyst
   )
-  if (is.null(manifest$outputs)) manifest$outputs <- list()
-  manifest$outputs <- c(manifest$outputs, list(entry))
-  .eri_research_write_manifest(manifest, path)
+  .eri_research_put_output(data_con, manifest, local_path, azure_path, entry, path)
 
   cli::cli_alert_success("Figure {.file {filename}} uploaded to {.path {azure_path}}.")
   invisible(azure_path)
@@ -570,6 +672,10 @@ eri_research_upload_figure <- function(
 #' Serializes an R object to a `.qs2` file and uploads it to
 #' `research/{project_name}/outputs/` in the `data/` Azure blob. Records the upload
 #' in `research.yaml`.
+#'
+#' As with [eri_research_upload_figure()], an existing file at the same path is
+#' copied to `outputs/_archive/<timestamp>/` before it is replaced, and the
+#' earlier `research.yaml` entry is marked `superseded_at` with `archived_to`.
 #'
 #' @param obj R object to serialize and upload.
 #' @param filename `chr` Name for the output file (include `.qs2` extension, e.g. `"its_model.qs2"`).
@@ -596,9 +702,6 @@ eri_research_upload_output <- function(
   qs2::qs_save(obj, tmp)
 
   azure_path <- paste0(manifest$azure_path, "outputs/", filename)
-  dir_path   <- paste0(manifest$azure_path, "outputs")
-  .eri_create_azure_dir(data_con, dir_path)
-  .eri_blob_write(data_con, tmp, azure_path)
 
   entry <- list(
     type        = "object",
@@ -607,9 +710,7 @@ eri_research_upload_output <- function(
     uploaded_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     uploaded_by = analyst
   )
-  if (is.null(manifest$outputs)) manifest$outputs <- list()
-  manifest$outputs <- c(manifest$outputs, list(entry))
-  .eri_research_write_manifest(manifest, path)
+  .eri_research_put_output(data_con, manifest, tmp, azure_path, entry, path)
 
   cli::cli_alert_success("Output {.file {filename}} uploaded to {.path {azure_path}}.")
   invisible(azure_path)
@@ -750,6 +851,12 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
 #' can be reproduced from a citation -- including across data updates, by tagging
 #' again after re-pulling refreshed data.
 #'
+#' Outputs are frozen too: each current output (the latest upload of each path)
+#' is copied to `tags/{label}/outputs/`, and the tag records its `frozen_path`,
+#' so a later upload of the same name can't change what the tag points at. An
+#' output that can't be copied (e.g. its file was deleted) is recorded with
+#' `frozen_path: NA` and a warning.
+#'
 #' If no snapshot exists yet, one is created automatically. Tags are immutable:
 #' tagging an already-used label is an error.
 #'
@@ -846,10 +953,16 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
     code         = list(sha = git$sha, branch = git$branch,
                         remote = git$remote, dirty = git$dirty),
     inputs       = in_prov,
-    outputs      = if (is.null(manifest$outputs)) list() else manifest$outputs
+    outputs      = NULL   # filled below, once the outputs are frozen
   )
 
   .eri_create_azure_dir(data_con, tag_dir)
+  # Freeze the current outputs into the tag (issue #377). A later upload of the same name
+  # replaces the live blob, so recording only its path left the tag pointing at whatever was
+  # uploaded last. Copied before _tag.yaml is written, so a tag file never names copies that
+  # don't exist.
+  frozen <- .eri_research_freeze_outputs(data_con, manifest, tag_dir)
+  tag_record$outputs <- frozen
   tmp <- tempfile(fileext = ".yaml")
   withr::defer(unlink(tmp))
   yaml::write_yaml(tag_record, tmp)
@@ -870,7 +983,8 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
 
   n_pull <- length(manifest$pulled_data %||% list())
   n_art  <- length(manifest$artifacts_used %||% list())
-  n_out  <- length(manifest$outputs %||% list())
+  n_out    <- length(frozen)
+  n_frozen <- sum(!vapply(frozen, function(o) is.na(o$frozen_path), logical(1L)))
   .eri_summary("Tagged {.val {label}}", c(
     Snapshot = sprintf("%s (%d file%s)", snap$timestamp, snap$file_count %||% 0L,
                        if (isTRUE(snap$file_count == 1L)) "" else "s"),
@@ -878,7 +992,8 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
                else paste0(substr(git$sha, 1L, 8L), if (isTRUE(git$dirty)) " (uncommitted changes)" else ""),
     Inputs   = sprintf("%d pull%s, %d artifact%s", n_pull, if (n_pull == 1L) "" else "s",
                        n_art, if (n_art == 1L) "" else "s"),
-    Outputs  = sprintf("%d", n_out),
+    Outputs  = if (n_frozen == n_out) sprintf("%d (copied into the tag)", n_out)
+               else sprintf("%d, of which %d could not be copied (see warnings)", n_out, n_out - n_frozen),
     Azure    = tag_dir
   ))
   invisible(tag_file)

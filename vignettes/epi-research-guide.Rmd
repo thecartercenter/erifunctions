@@ -301,6 +301,11 @@ eri_research_upload_figure(
 #> ✔ Figure "mpg_vs_weight.png" uploaded to research/mtcars_study/outputs/figs/mpg_vs_weight.png.
 ```
 
+A figure keeps its folder: `figs/deck/es/forest.png` is uploaded to `outputs/figs/deck/es/forest.png`,
+so two figures with the same name in different folders don't replace each other. Uploading the same
+figure or output again is safe: the previous version is moved to `outputs/_archive/<timestamp>/`
+first, and `research.yaml` records where it went.
+
 As you make decisions, jot them in the project's **logbook**. These notes are timestamped and
 stay with the project, they are how "why did we drop those rows?" gets answered a year later:
 
@@ -401,7 +406,9 @@ eri_research_tag(
 ```
 
 That tag now binds *this data + this code + these outputs* together forever. Anyone with the
-label can reconstruct exactly what you did.
+label can reconstruct exactly what you did. The tag keeps its own copy of each output, under
+`tags/mtcars-am0-v1/outputs/`, so uploading a newer figure with the same name later does not change
+what the tag points at.
 
 ## 11. New data arrives, update and re-run {#new-data}
 
