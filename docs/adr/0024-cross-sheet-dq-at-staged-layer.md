@@ -56,7 +56,8 @@ files.
    rule 2 has three source measures with no defensible "primary" to attribute it to.
 4. **`eri_approve_cmr()` gains a workbook-level gate on unresolved cross-consistency findings**, but
    deliberately does **not** require a cross-check to have run at all -- it blocks only on a
-   genuinely *open* finding. Most countries have no `cross_consistency:` rules declared yet, so no
+   genuinely *open* finding. Most countries have no `cross_consistency:` rules declared yet (fewer since
+   #373), so no
    entry is ever logged for them; treating that absence as "outstanding" would retroactively make
    every period approved before this feature shipped unapprovable.
 5. **Absence is always a silent no-op**, at every level: a country's routing schema with no
@@ -165,7 +166,7 @@ copies.
 populations and its LF tab the same figures rounded; with `tolerance: 0` all 103 Nigerian districts on
 both tabs were flagged (every difference < 0.5). Half a person is the most rounding can move a figure,
 so this removes rounding differences and nothing else (a real 1-person difference still flags): no
-change on Ethiopia's or the others' latest CMRs. Applied to Ethiopia too so the rule means the same
+change on Ethiopia's, Sudan's or South Sudan's latest CMRs. Applied to Ethiopia too so the rule means the same
 everywhere.
 
 **`treatment_implies_training` stays two-way, and a blank training tab counts as zero** -- both chosen
@@ -173,8 +174,8 @@ by Emalee (2026-11-20), same as Ethiopia. All 17 of Nigeria's 202609 flags are t
 (training but 0 treated); they are reviewed and resolved like any other flag rather than dropped by a
 one-way rule. A training tab that is in the workbook but blank reads as zero training (the rule is skipped
 only when none of the named sheets is present), so treatment with no recorded training is flagged. The
-rule descriptions in every country's schema said otherwise ("only evaluated where ... real data") and were
-corrected.
+Ethiopia's rule description said otherwise ("only evaluated where ... real data"); it is corrected, and the
+new copies use the corrected wording.
 
 **Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these five countries' cross-sheet
 logs; it still blocks only on an open finding for the period, so periods approved before the rules existed

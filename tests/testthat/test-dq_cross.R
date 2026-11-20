@@ -480,9 +480,9 @@ test_that("the RB/LF population match tolerates a rounding difference but not a 
   rule <- yaml::read_yaml(system.file("schemas", "cmr", "nga.yaml", package = "erifunctions"))$cross_consistency
   tables <- list(
     list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
-         data = tibble::tibble(district = c("A", "B", "C"), population = c(176131.6, 1000, 500), treated = 1)),
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(10000.4, 1000, 500), treated = 1)),
     list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
-         data = tibble::tibble(district = c("A", "B", "C"), population = c(176132, 1003, 501), treated = 1))
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(10000, 1003, 501), treated = 1))
   )
   flags <- suppressMessages(.eri_cross_check_run(tables, rule["rb_lf_pop_match"]))
   expect_equal(flags$value, c("B", "C"))   # A differs by 0.4 (rounding); B by 3 and C by 1 (real)
@@ -551,9 +551,9 @@ test_that("every country's population match allows rounding (up to 0.5) and noth
     rule <- .cmr_yaml(country)$cross_consistency["rb_lf_pop_match"]
     tables <- list(
       list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
-           data = tibble::tibble(district = c("A", "B", "C", "D"), population = c(176131.5, 1000, 500, 800))),
+           data = tibble::tibble(district = c("A", "B", "C", "D"), population = c(10000.5, 1000, 500, 800))),
       list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
-           data = tibble::tibble(district = c("A", "B", "C"), population = c(176132, 1000.6, 501)))
+           data = tibble::tibble(district = c("A", "B", "C"), population = c(10001, 1000.6, 501)))
     )
     flags <- suppressMessages(.eri_cross_check_run(tables, rule))
     # A differs by exactly 0.5 (rounding); B by 0.6 and C by 1 (real); D is on RB only (not flagged).

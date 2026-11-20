@@ -2,7 +2,7 @@
 
 ## Cross-sheet checks now run for Nigeria, Sudan, South Sudan, Haiti and Madagascar, not just Ethiopia (#373)
 
-The two cross-sheet checks Emalee asked for (emails of 2026-07-30), first added for Ethiopia, now
+The two cross-sheet checks Emalee asked for (email of 2026-07-30), first added for Ethiopia, now
 run for every country where they apply:
 
 - **"RB and LF Treatment report the same population for a district"**: Nigeria, Sudan and South
@@ -25,16 +25,16 @@ run for every country where they apply:
   period until it is resolved or approval is forced.
 - **Population now counts as matching when it differs only by rounding** (by at most half a person),
   for every country including Ethiopia.
-  Nigeria's RB tab has decimal projected populations (e.g. 176,131.6) where LF has the same figure
-  rounded (176,132); without this, all 103 Nigerian districts on both tabs were flagged. No change to
+  Nigeria's RB tab has decimal projected populations (e.g. 1,000.4) where LF has the same figure
+  rounded (1,000); without this, all 103 Nigerian districts on both tabs were flagged. No change to
   Ethiopia's results.
 - **Not added:** Uganda, Brazil and Venezuela have no CDD, CS or health-worker training tabs
   (Uganda's are VHT, Parish Supervisors and similar). Chad and the Dominican Republic have no CMR
   data yet to check the rules against.
 - The "male + female trained = new + refresher" training check from the follow-up request (email of
-  2026-08-25) already runs
-  for Haiti, Nigeria, Sudan, South Sudan and Uganda (#374). Chad and Madagascar are still left out;
-  Madagascar now has a CMR (202609), so its training tabs could be checked for it next.
+  2026-08-25) already runs for Haiti, Nigeria, Sudan, South Sudan and Uganda (#374). Chad and
+  Madagascar are still left out; Madagascar now has a CMR (202609), so its training tabs could be
+  checked for it next.
 
 ## Fewer overcoverage flags, and consistency flags now show the numbers (#372)
 
