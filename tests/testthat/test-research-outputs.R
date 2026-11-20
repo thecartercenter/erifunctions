@@ -453,7 +453,7 @@ test_that("eri_research_status counts each output once, not its archived version
   suppressMessages(eri_research_upload_figure(f, path = tmp))
   writeLines("v2", f); suppressMessages(eri_research_upload_figure(f, path = tmp))
   msgs <- paste(cli::ansi_strip(testthat::capture_messages(eri_research_status(path = tmp))), collapse = "\n")
-  expect_match(msgs, "1 output (+1 earlier version)", fixed = TRUE)
+  expect_match(msgs, "1 output (+1 earlier upload)", fixed = TRUE)
 })
 
 test_that("on Windows a project path in a different letter case still counts as inside the project (#377 review)", {

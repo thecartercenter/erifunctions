@@ -492,9 +492,10 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   }
 
   cli::cli_h1("Research project: {manifest$project_name} ({manifest$country}/{manifest$disease})")
-  # Outputs: the current version of each (re-uploads keep the earlier version, #377).
+  # Outputs: the current version of each, plus how many earlier uploads research.yaml lists
+  # (#377). Not "versions kept": duplicates from before #377 were overwritten, not archived.
   n_superseded    <- length(manifest$outputs %||% list()) - length(.eri_research_current_outputs(manifest))
-  n_archived_note <- if (n_superseded > 0L) paste0(" (+", n_superseded, " earlier version", if (n_superseded == 1L) "" else "s", ")") else ""
+  n_archived_note <- if (n_superseded > 0L) paste0(" (+", n_superseded, " earlier upload", if (n_superseded == 1L) "" else "s", ")") else ""
   cli::cli_inform(c(
     "*" = "{nrow(inputs)} tracked input{?s} ({sum(inputs$kind == 'pull')} pull{?s}, {sum(inputs$kind == 'artifact')} artifact{?s})",
     "*" = "{length(.eri_research_current_outputs(manifest))} output{?s}{n_archived_note}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}, {length(promos)} promotion{?s}"

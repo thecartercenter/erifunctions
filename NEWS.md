@@ -12,12 +12,13 @@ Two problems with research project outputs, both seen in `dr_irs_2026`, and a re
   warning.
 - **Uploading again destroyed the earlier version, including the one a tag pointed at.** Re-uploading
   a figure or output with `eri_research_upload_figure()` / `eri_research_upload_output()` now first
-  moves the existing file to `outputs/_archive/<timestamp>/`, the same way re-pulling data already
+  keeps a copy of the existing file in `outputs/_archive/<timestamp>/`, the same way re-pulling data already
   archives the old copy. In `research.yaml` the earlier entry is marked superseded and says where its
   file went.
 - **Tags now keep their own copy of the outputs.** `eri_research_tag()` copies each current output into
   `tags/<label>/outputs/` and records where, so a later upload can't change what a tag points at. A
   tag used to record only the output paths.
+- `eri_research_status()` counts each output once, plus how many earlier uploads are listed.
 - **Upgrading an existing project:** figures in subfolders now go to new paths, so an upload from before
   this change at `outputs/figs/<name>` stays listed in `research.yaml` (and is included in new tags). The
   upload prints a note when that happens. A tag's `outputs` list now has one entry per output (its

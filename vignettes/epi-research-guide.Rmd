@@ -303,7 +303,7 @@ eri_research_upload_figure(
 
 A figure keeps its folder: `figs/deck/es/forest.png` is uploaded to `outputs/figs/deck/es/forest.png`,
 so two figures with the same name in different folders don't replace each other. Uploading the same
-figure or output again is safe: the previous version is moved to `outputs/_archive/<timestamp>/`
+figure or output again is safe: a copy of the previous version is kept in `outputs/_archive/<timestamp>/`
 first, and `research.yaml` records where it went.
 
 As you make decisions, jot them in the project's **logbook**. These notes are timestamped and
@@ -474,6 +474,8 @@ ggsave("figs/mpg_vs_weight.png", p, width = 6, height = 4, dpi = 150)  # same na
 eri_research_upload_output(model, "mtcars_lm.qs2")
 eri_research_upload_figure("figs/mpg_vs_weight.png",
                            caption = "MPG vs. weight, all cars (expanded dataset).")
+#> ℹ Archived the previous version to research/mtcars_study/outputs/_archive/20260701T091500Z/figs/mpg_vs_weight.png.
+#> ✔ Figure "mpg_vs_weight.png" uploaded to research/mtcars_study/outputs/figs/mpg_vs_weight.png.
 eri_research_log("Expanded to the full dataset (32 cars). Re-fit and updated the figure.")
 
 # Snapshot the new data first, so the tag binds *this* (full) dataset rather than the

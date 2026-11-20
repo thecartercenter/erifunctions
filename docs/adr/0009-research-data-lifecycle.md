@@ -63,7 +63,7 @@ uploading the v3 decks replaced the files the `dr-irs-its-v2` tag pointed at: th
 data and code, but its outputs were gone.
 
 **Decision.**
-- **Paths.** A figure's Azure path keeps its folder relative to the project root, minus a leading `figs/`
+- **Paths.** A figure's Azure path keeps its folder relative to the project root, minus a leading `figs/` (or `outputs/figs/`)
   (`figs/deck/es/forest.png` -> `outputs/figs/deck/es/forest.png`; a flat `figs/x.png` is unchanged). A
   file outside the project falls back to its name, with a warning.
 - **Archive on re-upload.** Both upload functions go through one helper that, if a blob already exists at
