@@ -56,9 +56,8 @@ files.
    rule 2 has three source measures with no defensible "primary" to attribute it to.
 4. **`eri_approve_cmr()` gains a workbook-level gate on unresolved cross-consistency findings**, but
    deliberately does **not** require a cross-check to have run at all -- it blocks only on a
-   genuinely *open* finding. Most countries have no `cross_consistency:` rules declared yet (fewer since
-   #373), so no
-   entry is ever logged for them; treating that absence as "outstanding" would retroactively make
+   genuinely *open* finding. Several countries have no `cross_consistency:` rules declared (uga, bra,
+   ven, tcd since #373), so no entry is ever logged for them; treating that absence as "outstanding" would retroactively make
    every period approved before this feature shipped unapprovable.
 5. **Absence is always a silent no-op**, at every level: a country's routing schema with no
    `cross_consistency:` block, a rule whose sources match zero available sheets (e.g. a country
@@ -176,8 +175,7 @@ one-way rule. A training tab that is in the workbook with no rows reads as zero 
 only when none of the named sheets is present), so treatment with no recorded training is flagged. A
 district listed on a training tab with an empty total aggregates to NA and is not checked; Emalee kept
 that as is (2026-11-20) since real CMRs enter 0, and counting empty totals as zero would need an engine
-option. The
-Ethiopia's rule description said otherwise ("only evaluated where ... real data"); it is corrected, and the
+option. Ethiopia's rule description said otherwise ("only evaluated where ... real data"); it is corrected, and the
 new copies use the corrected wording.
 
 **Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these five countries' cross-sheet

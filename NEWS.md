@@ -12,8 +12,8 @@ run for every country where they apply:
   Haiti (LF treated against CDD and CS Training; Haiti has no RB or health-worker tab); and
   Madagascar (LF treated against its French-named CDD, CS and health-worker tabs: Formation
   Distributeurs, Formation SC and Formation Travailleurs de Sante; no RB tab).
-- **Expect new cross-sheet flags** on the next DQ report for these countries. On each country's
-  latest CMR:
+- **Expect new cross-sheet flags** on the next DQ report for Nigeria, Sudan and South Sudan. On
+  each country's latest CMR:
   - Nigeria (202609): 17 districts with CDD/CS/health-worker training but 0 treated.
   - Sudan (202610): 1 district where RB and LF population differ.
   - South Sudan (202610): 1 district where RB and LF population differ (by 2), and 10 districts with
