@@ -2373,11 +2373,12 @@ test_that("eri_cmr_dq_report() runs Nigeria's real cross rules end to end (#373)
     # Workers Training -> not flagged (proves that sheet name is the one used).
     # D3: treated, on no training sheet at all -> flagged (missing_as: 0).
     # D4: has a population but nobody treated and no training -> not flagged.
+    # D5: trained (Health Workers) but nobody treated -> flagged (the rule is two-way).
     # Populations differ only by rounding -> no rb_lf_pop_match flag.
-    rb  = tibble::tibble(district = c("D1", "D2", "D3", "D4"), population = c(1000.4, 2000, 300, 900), treated = c(10, 5, 7, 0)),
+    rb  = tibble::tibble(district = c("D1", "D2", "D3", "D4", "D5"), population = c(1000.4, 2000, 300, 900, 400), treated = c(10, 5, 7, 0, 0)),
     lf  = tibble::tibble(district = c("D1", "D2"), population = c(1000, 2000), treated = c(0, 0)),
     cdd = tibble::tibble(district = c("D1", "D2"), tot = c(0, 0)),
-    hw  = tibble::tibble(district = c("D1", "D2"), tot = c(0, 3))
+    hw  = tibble::tibble(district = c("D1", "D2", "D5"), tot = c(0, 3, 2))
   )
   clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
   local_mocked_bindings(
@@ -2399,7 +2400,7 @@ test_that("eri_cmr_dq_report() runs Nigeria's real cross rules end to end (#373)
   )
   flags <- suppressMessages(eri_cmr_dq_report("nga", "202609", plan = plan, data_con = structure(list(), class = "mock")))
   cross_rows <- flags[flags$cross, , drop = FALSE]
-  expect_equal(nrow(cross_rows), 2L)
-  expect_equal(cross_rows$value, c("D1", "D3"))
+  expect_equal(nrow(cross_rows), 3L)
+  expect_setequal(cross_rows$value, c("D1", "D3", "D5"))
   expect_true(all(grepl("[treatment_implies_training]", cross_rows$issue, fixed = TRUE)))
 })

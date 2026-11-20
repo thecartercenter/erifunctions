@@ -492,10 +492,9 @@ test_that("the RB/LF population match tolerates a rounding difference but not a 
 
 .cmr_yaml <- function(country) yaml::read_yaml(system.file("schemas", "cmr", paste0(country, ".yaml"), package = "erifunctions"))
 
-# A rule with the per-country parts removed: wording and training sheet names.
+# A rule with the per-country parts removed: description and training sheet names.
 .cross_rule_core <- function(rule) {
   rule$description <- NULL
-  rule$message     <- NULL
   for (side in c("lhs", "rhs")) {
     rule[[side]]$sources <- lapply(rule[[side]]$sources, function(s) { s$sheets <- NULL; s })
   }
