@@ -492,9 +492,12 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   }
 
   cli::cli_h1("Research project: {manifest$project_name} ({manifest$country}/{manifest$disease})")
+  # Outputs: the current version of each (re-uploads keep the earlier version, #377).
+  n_superseded    <- length(manifest$outputs %||% list()) - length(.eri_research_current_outputs(manifest))
+  n_archived_note <- if (n_superseded > 0L) paste0(" (+", n_superseded, " earlier version", if (n_superseded == 1L) "" else "s", ")") else ""
   cli::cli_inform(c(
     "*" = "{nrow(inputs)} tracked input{?s} ({sum(inputs$kind == 'pull')} pull{?s}, {sum(inputs$kind == 'artifact')} artifact{?s})",
-    "*" = "{length(manifest$outputs %||% list())} output{?s}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}, {length(promos)} promotion{?s}"
+    "*" = "{length(.eri_research_current_outputs(manifest))} output{?s}{n_archived_note}, {length(manifest$snapshots %||% list())} snapshot{?s}, {length(manifest$tags %||% list())} tag{?s}, {length(promos)} promotion{?s}"
   ))
   if (nrow(inputs) > 0L) print(inputs)
   # Promotions are outbound (project -> canonical /spatial), so they are summarised here rather
@@ -513,10 +516,10 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
 #### Output upload helpers (issue #377) ####
 
 # Where a local figure goes under outputs/figs/: its path relative to the project root, with a
-# leading `figs/` dropped (so `figs/deck/es/forest.png` -> `deck/es/forest.png`, and a flat
-# `figs/its.png` keeps its old place, `its.png`). Using basename() alone made same-named figures
-# in different folders overwrite each other. A file outside the project falls back to its name,
-# with a warning.
+# leading `figs/` (or `outputs/figs/`) dropped (so `figs/deck/es/forest.png` -> `deck/es/forest.png`,
+# and a flat `figs/its.png` keeps its old place, `its.png`). Using basename() alone made same-named
+# figures in different folders overwrite each other. A file outside the project falls back to its
+# name, with a warning.
 .eri_research_figure_relpath <- function(local_path, path) {
   norm <- function(p) normalizePath(p, winslash = "/", mustWork = TRUE)
   root <- paste0(sub("/+$", "", norm(path)), "/")
@@ -529,7 +532,7 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
     ))
     return(basename(file))
   }
-  sub("^figs/", "", substring(file, nchar(root) + 1L))
+  sub("^(outputs/)?figs/", "", substring(file, nchar(root) + 1L))
 }
 
 # Uploads `src` to `azure_path` (under the project's outputs/) and records `entry` in
@@ -542,8 +545,15 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   outputs_root <- paste0(manifest$azure_path, "outputs/")
   archived_to  <- NULL
   if (AzureStor::storage_file_exists(con, azure_path)) {
+    # Two re-uploads within the same second would share a timestamp; never overwrite an archive.
+    rel         <- substring(azure_path, nchar(outputs_root) + 1L)
     ts          <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
-    archived_to <- paste0(outputs_root, "_archive/", ts, "/", substring(azure_path, nchar(outputs_root) + 1L))
+    archived_to <- paste0(outputs_root, "_archive/", ts, "/", rel)
+    k <- 1L
+    while (AzureStor::storage_file_exists(con, archived_to)) {
+      k <- k + 1L
+      archived_to <- paste0(outputs_root, "_archive/", ts, "-", k, "/", rel)
+    }
     tmp <- tempfile()
     withr::defer(unlink(tmp))
     .eri_blob_read(con, azure_path, tmp)
@@ -566,22 +576,29 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
   invisible(archived_to)
 }
 
-# The outputs a tag freezes: each output path's latest entry that has not been superseded
-# (manifests written before #377 can list the same path several times), copied to
-# <tag_dir>/outputs/<path relative to outputs/>. Each returned entry gains `frozen_path`
-# (NA, with a warning, if the copy failed, e.g. the blob was deleted).
-.eri_research_freeze_outputs <- function(con, manifest, tag_dir) {
-  outputs_root <- paste0(manifest$azure_path, "outputs/")
+# The project's current outputs: each output path's latest entry that has not been superseded.
+# Manifests written before #377 can list the same path several times (the blob was silently
+# overwritten), so only the last of those counts. Entries with no Azure path are kept as they are.
+.eri_research_current_outputs <- function(manifest) {
   outs <- Filter(function(o) is.null(o$superseded_at), manifest$outputs %||% list())
   if (length(outs) == 0L) return(list())
   paths <- vapply(outs, function(o) if (is.character(o$azure_path) && length(o$azure_path) == 1L) o$azure_path
                                     else NA_character_, character(1L))
-  outs  <- outs[is.na(paths) | !duplicated(paths, fromLast = TRUE)]
+  outs[is.na(paths) | !duplicated(paths, fromLast = TRUE)]
+}
+
+# The outputs a tag freezes: the current outputs, copied to <tag_dir>/outputs/<path relative to
+# outputs/>. Each returned entry gains `frozen_path`; if the copy failed (e.g. the blob was
+# deleted) the entry is left without one, with a warning. (Not NA: yaml writes that as
+# ".na.character".)
+.eri_research_freeze_outputs <- function(con, manifest, tag_dir) {
+  outputs_root <- paste0(manifest$azure_path, "outputs/")
+  outs <- .eri_research_current_outputs(manifest)
+  if (length(outs) == 0L) return(list())
 
   lapply(outs, function(o) {
     if (!is.character(o$azure_path) || length(o$azure_path) != 1L) {
       cli::cli_warn("An output in {.file research.yaml} ({.val {o$filename %||% 'unnamed'}}) has no Azure path, so it can't be copied into the tag.")
-      o$frozen_path <- NA_character_
       return(o)
     }
     rel  <- if (startsWith(o$azure_path, outputs_root)) substring(o$azure_path, nchar(outputs_root) + 1L)
@@ -601,7 +618,7 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
       ))
       FALSE
     })
-    o$frozen_path <- if (ok) dest else NA_character_
+    if (ok) o$frozen_path <- dest
     o
   })
 }
@@ -614,15 +631,15 @@ eri_research_status <- function(path = getwd(), check_remote = FALSE, data_con =
 #' `data/` Azure blob and records the upload in `research.yaml`.
 #'
 #' The figure keeps its folder: its path relative to the project root, minus a
-#' leading `figs/`, so `figs/deck/es/forest.png` goes to
+#' leading `figs/` (or `outputs/figs/`), so `figs/deck/es/forest.png` goes to
 #' `outputs/figs/deck/es/forest.png` and two figures with the same name in
 #' different folders don't replace each other. A figure outside the project is
 #' uploaded by name only, with a warning.
 #'
 #' Uploading to a path that already holds a file first copies the existing file
 #' to `outputs/_archive/<timestamp>/` (same relative path), so the earlier
-#' version is kept. Its `research.yaml` entry is marked `superseded_at` and
-#' gets `archived_to`; the new entry gets `archived_prev`.
+#' version is kept. The earlier `research.yaml` entry for that path is marked
+#' `superseded_at` and gets `archived_to`; the new entry gets `archived_prev`.
 #'
 #' @param local_path `chr` Path to the local figure file (e.g. `"figs/its_model.png"`).
 #' @param caption `chr` or `NULL` Optional caption describing the figure.
@@ -662,6 +679,18 @@ eri_research_upload_figure <- function(
   .eri_research_put_output(data_con, manifest, local_path, azure_path, entry, path)
 
   cli::cli_alert_success("Figure {.file {filename}} uploaded to {.path {azure_path}}.")
+
+  # Before #377 every figure went to outputs/figs/<name>. A figure in a subfolder now goes
+  # elsewhere, so an earlier upload of it at the flat path is not replaced. It isn't marked
+  # superseded automatically: that flat entry may be a different figure with the same name.
+  flat <- paste0(manifest$azure_path, "outputs/figs/", filename)
+  if (!identical(flat, azure_path) &&
+      any(vapply(.eri_research_current_outputs(manifest), function(o) identical(o$azure_path, flat), logical(1L)))) {
+    cli::cli_alert_info(paste0(
+      "An earlier upload named {.file {filename}} is at {.path {flat}} (from before figures kept their folders). ",
+      "It is still listed in {.file research.yaml}; if it was this figure, it is now out of date."
+    ))
+  }
   invisible(azure_path)
 }
 
@@ -854,8 +883,8 @@ eri_research_snapshot <- function(label = NULL, path = getwd(), data_con = NULL)
 #' Outputs are frozen too: each current output (the latest upload of each path)
 #' is copied to `tags/{label}/outputs/`, and the tag records its `frozen_path`,
 #' so a later upload of the same name can't change what the tag points at. An
-#' output that can't be copied (e.g. its file was deleted) is recorded with
-#' `frozen_path: NA` and a warning.
+#' output that can't be copied (e.g. its file was deleted) is recorded without
+#' a `frozen_path`, with a warning.
 #'
 #' If no snapshot exists yet, one is created automatically. Tags are immutable:
 #' tagging an already-used label is an error.
@@ -984,7 +1013,7 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
   n_pull <- length(manifest$pulled_data %||% list())
   n_art  <- length(manifest$artifacts_used %||% list())
   n_out    <- length(frozen)
-  n_frozen <- sum(!vapply(frozen, function(o) is.na(o$frozen_path), logical(1L)))
+  n_frozen <- sum(!vapply(frozen, function(o) is.null(o$frozen_path), logical(1L)))
   .eri_summary("Tagged {.val {label}}", c(
     Snapshot = sprintf("%s (%d file%s)", snap$timestamp, snap$file_count %||% 0L,
                        if (isTRUE(snap$file_count == 1L)) "" else "s"),
@@ -992,7 +1021,8 @@ eri_research_tag <- function(label, description = NULL, snapshot = NULL,
                else paste0(substr(git$sha, 1L, 8L), if (isTRUE(git$dirty)) " (uncommitted changes)" else ""),
     Inputs   = sprintf("%d pull%s, %d artifact%s", n_pull, if (n_pull == 1L) "" else "s",
                        n_art, if (n_art == 1L) "" else "s"),
-    Outputs  = if (n_frozen == n_out) sprintf("%d (copied into the tag)", n_out)
+    Outputs  = if (n_out == 0L) "0"
+               else if (n_frozen == n_out) sprintf("%d (copied into the tag)", n_out)
                else sprintf("%d, of which %d could not be copied (see warnings)", n_out, n_out - n_frozen),
     Azure    = tag_dir
   ))

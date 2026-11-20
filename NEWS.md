@@ -2,7 +2,7 @@
 
 ## Research figures keep their folders, re-uploads keep the old version, and tags keep their outputs (#377)
 
-Two problems with research project outputs, both seen in `dr_irs_2026`:
+Two problems with research project outputs, both seen in `dr_irs_2026`, and a related change to tags:
 
 - **Figures with the same name overwrote each other.** `eri_research_upload_figure()` uploaded by file
   name only, so `figs/deck/forest.png` and `figs/deck/es/forest.png` both went to
@@ -18,6 +18,10 @@ Two problems with research project outputs, both seen in `dr_irs_2026`:
 - **Tags now keep their own copy of the outputs.** `eri_research_tag()` copies each current output into
   `tags/<label>/outputs/` and records where, so a later upload can't change what a tag points at. A
   tag used to record only the output paths.
+- **Upgrading an existing project:** figures in subfolders now go to new paths, so an upload from before
+  this change at `outputs/figs/<name>` stays listed in `research.yaml` (and is included in new tags). The
+  upload prints a note when that happens. A tag's `outputs` list now has one entry per output (its
+  latest version), with `frozen_path` saying where the tag's copy is.
 - **Not recoverable:** outputs overwritten before this change (for example the v2-era decks behind the
   `dr-irs-its-v2` tag) are gone unless the storage account keeps blob versions.
 - If you worked around the collisions by renaming files (e.g. an `es_` prefix), that still works; you

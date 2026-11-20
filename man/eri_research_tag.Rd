@@ -45,8 +45,8 @@ again after re-pulling refreshed data.
 Outputs are frozen too: each current output (the latest upload of each path)
 is copied to \verb{tags/\{label\}/outputs/}, and the tag records its \code{frozen_path},
 so a later upload of the same name can't change what the tag points at. An
-output that can't be copied (e.g. its file was deleted) is recorded with
-\code{frozen_path: NA} and a warning.
+output that can't be copied (e.g. its file was deleted) is recorded without
+a \code{frozen_path}, with a warning.
 
 If no snapshot exists yet, one is created automatically. Tags are immutable:
 tagging an already-used label is an error.

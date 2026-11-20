@@ -24,7 +24,7 @@ Serializes an R object to a \code{.qs2} file and uploads it to
 in \code{research.yaml}.
 }
 \details{
-As with \code{\link{eri_research_upload_figure}()}, an existing file at the same path is
+As with \code{\link[=eri_research_upload_figure]{eri_research_upload_figure()}}, an existing file at the same path is
 copied to \verb{outputs/_archive/<timestamp>/} before it is replaced, and the
 earlier \code{research.yaml} entry is marked \code{superseded_at} with \code{archived_to}.
 }

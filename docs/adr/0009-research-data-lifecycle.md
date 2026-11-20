@@ -73,13 +73,19 @@ data and code, but its outputs were gone.
   archive and are marked superseded only.
 - **Tags freeze outputs.** `eri_research_tag()` copies each current output (the latest non-superseded
   entry per path) to `tags/<label>/outputs/<path relative to outputs/>` before writing `_tag.yaml`, and
-  records `frozen_path` on each output in the tag. A copy that fails is recorded as `frozen_path: NA`
-  with a warning rather than blocking the tag. So a tag now freezes data (snapshot), code (SHA) **and**
+  records `frozen_path` on each output in the tag. An output that can't be copied is recorded without a
+  `frozen_path`, with a warning, rather than blocking the tag. So a tag now freezes data (snapshot), code (SHA) **and**
   outputs.
 
 Copies are download-then-upload through the existing blob helpers (`.eri_blob_read()` /
 `.eri_blob_write()`), not a server-side copy; research outputs are small figures, decks and model
 objects, so the extra transfer is minor.
+
+**Upgrading.** Before this change every figure went to `outputs/figs/<name>`. A figure in a subfolder now
+goes to a new path, so its old flat entry is not superseded by a re-upload; it isn't superseded
+automatically either, since that flat entry may be a different figure with the same name. The upload
+prints a note instead. Two re-uploads in the same second get separate archive folders
+(`<timestamp>`, `<timestamp>-2`, ...).
 
 **Consequences.** Re-uploading an output is reversible, and a tag's outputs survive later uploads. Storage
 grows by one copy per re-upload and per tagged output. Nothing already lost can be recovered by this

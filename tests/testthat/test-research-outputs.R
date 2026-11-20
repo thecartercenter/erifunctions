@@ -392,11 +392,66 @@ test_that("freezing outputs for a tag copies only the current version of each pa
   expect_equal(get(frozen[[1L]]$frozen_path, envir = store), "fig")
 })
 
-test_that("an output that cannot be copied is recorded with frozen_path NA and a warning (#377)", {
+test_that("an output that cannot be copied is recorded without a frozen_path, with a warning (#377)", {
   m <- .base_manifest()
   m$outputs <- list(list(filename = "gone.png", azure_path = "research/test_proj/outputs/figs/gone.png"))
   store <- new.env(); .local_fake_blobs(store)   # the blob does not exist: download errors
   expect_warning(frozen <- .eri_research_freeze_outputs("mock_con", m, "research/test_proj/tags/v1/"),
                  "Could not copy output")
-  expect_true(is.na(frozen[[1L]]$frozen_path))
+  expect_null(frozen[[1L]]$frozen_path)
+})
+
+test_that("re-uploads within the same second get separate archives, so no version is lost (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  local_mocked_bindings(Sys.time = function() as.POSIXct("2026-11-20 15:06:25", tz = "UTC"), .package = "base")
+  f <- .fig(tmp, "figs/deck/es/forest.png", "v1")
+  suppressMessages(eri_research_upload_figure(f, path = tmp))
+  writeLines("v2", f); suppressMessages(eri_research_upload_figure(f, path = tmp))
+  writeLines("v3", f); suppressMessages(eri_research_upload_figure(f, path = tmp))
+
+  a1 <- "research/test_proj/outputs/_archive/20261120T150625Z/figs/deck/es/forest.png"
+  a2 <- "research/test_proj/outputs/_archive/20261120T150625Z-2/figs/deck/es/forest.png"
+  expect_equal(get(a1, envir = store), "v1")
+  expect_equal(get(a2, envir = store), "v2")
+  outs <- yaml::read_yaml(file.path(tmp, "research.yaml"))$outputs
+  expect_equal(c(outs[[1L]]$archived_to, outs[[2L]]$archived_to), c(a1, a2))
+  expect_equal(outs[[3L]]$archived_prev, a2)
+})
+
+test_that("a figure kept under outputs/figs/ locally is not nested twice (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  res <- suppressMessages(eri_research_upload_figure(.fig(tmp, "outputs/figs/o.png", "x"), path = tmp))
+  expect_equal(res, "research/test_proj/outputs/figs/o.png")
+})
+
+test_that("uploading a subfolder figure notes an earlier flat upload with the same name (#377 review)", {
+  tmp <- withr::local_tempdir()
+  m <- .base_manifest()
+  m$outputs <- list(list(type = "figure", filename = "forest.png",
+                         azure_path = "research/test_proj/outputs/figs/forest.png"))
+  yaml::write_yaml(m, file.path(tmp, "research.yaml"))
+  store <- new.env(); .local_fake_blobs(store)
+  msgs <- testthat::capture_messages(
+    eri_research_upload_figure(.fig(tmp, "figs/deck/es/forest.png", "x"), path = tmp))
+  expect_true(any(grepl("earlier upload named", msgs, fixed = TRUE)))
+  outs <- yaml::read_yaml(file.path(tmp, "research.yaml"))$outputs
+  expect_null(outs[[1L]]$superseded_at)   # not superseded: it may be a different figure
+
+  # No note when there is no such flat entry.
+  tmp2 <- withr::local_tempdir(); .write_manifest(tmp2)
+  msgs2 <- testthat::capture_messages(
+    eri_research_upload_figure(.fig(tmp2, "figs/deck/es/forest.png", "x"), path = tmp2))
+  expect_false(any(grepl("earlier upload named", msgs2, fixed = TRUE)))
+})
+
+test_that("eri_research_status counts each output once, not its archived versions (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  f <- .fig(tmp, "figs/a.png", "v1")
+  suppressMessages(eri_research_upload_figure(f, path = tmp))
+  writeLines("v2", f); suppressMessages(eri_research_upload_figure(f, path = tmp))
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(eri_research_status(path = tmp))), collapse = "\n")
+  expect_match(msgs, "1 output (+1 earlier version)", fixed = TRUE)
 })
