@@ -455,3 +455,64 @@ test_that("eri_research_status counts each output once, not its archived version
   msgs <- paste(cli::ansi_strip(testthat::capture_messages(eri_research_status(path = tmp))), collapse = "\n")
   expect_match(msgs, "1 output (+1 earlier version)", fixed = TRUE)
 })
+
+test_that("on Windows a project path in a different letter case still counts as inside the project (#377 review)", {
+  skip_on_os(c("mac", "linux", "solaris"))
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  f <- .fig(tmp, "figs/deck/x.png", "x")
+  expect_no_warning(res <- suppressMessages(eri_research_upload_figure(f, path = toupper(tmp))))
+  expect_equal(res, "research/test_proj/outputs/figs/deck/x.png")
+})
+
+test_that("only a leading figs/ is dropped; an inner figs/ folder is kept (#377 review)", {
+  tmp <- withr::local_tempdir(); .write_manifest(tmp)
+  store <- new.env(); .local_fake_blobs(store)
+  res <- suppressMessages(eri_research_upload_figure(.fig(tmp, "figs/a/figs/b.png", "x"), path = tmp))
+  expect_equal(res, "research/test_proj/outputs/figs/a/figs/b.png")
+})
+
+test_that("an entry already superseded keeps its original superseded_at (#377 review)", {
+  tmp <- withr::local_tempdir()
+  m <- .base_manifest()
+  p <- "research/test_proj/outputs/figs/a.png"
+  m$outputs <- list(list(type = "figure", filename = "a.png", azure_path = p, superseded_at = "2026-01-01T00:00:00Z"),
+                    list(type = "figure", filename = "a.png", azure_path = p))
+  yaml::write_yaml(m, file.path(tmp, "research.yaml"))
+  store <- new.env(); .local_fake_blobs(store)
+  assign(p, "current", envir = store)
+  suppressMessages(eri_research_upload_figure(.fig(tmp, "figs/a.png", "new"), path = tmp))
+  outs <- yaml::read_yaml(file.path(tmp, "research.yaml"))$outputs
+  expect_equal(outs[[1L]]$superseded_at, "2026-01-01T00:00:00Z")
+  expect_null(outs[[1L]]$archived_to)
+  expect_false(is.null(outs[[2L]]$archived_to))
+})
+
+test_that("freezing keeps the latest duplicate, skips superseded entries wherever they sit, and keeps path-less entries (#377 review)", {
+  m <- .base_manifest()
+  p <- "research/test_proj/outputs/model.qs2"
+  q <- "research/test_proj/outputs/figs/q.png"
+  m$outputs <- list(
+    list(filename = "model.qs2", azure_path = p, uploaded_at = "2026-07-01T00:00:00Z"),
+    list(filename = "model.qs2", azure_path = p, uploaded_at = "2026-07-02T00:00:00Z"),   # latest wins
+    list(filename = "q.png", azure_path = q, uploaded_at = "2026-07-03T00:00:00Z"),
+    list(filename = "q.png", azure_path = q, uploaded_at = "2026-07-04T00:00:00Z",
+         superseded_at = "2026-07-05T00:00:00Z"),                                          # after the current one
+    list(filename = "nopath1.png"),
+    list(filename = "nopath2.png")
+  )
+  store <- new.env(); .local_fake_blobs(store)
+  assign(p, "obj", envir = store); assign(q, "fig", envir = store)
+  expect_warning(frozen <- .eri_research_freeze_outputs("mock_con", m, "research/test_proj/tags/v1/"),
+                 "no Azure path")
+  expect_length(frozen, 4L)
+  model <- Filter(function(o) identical(o$azure_path, p), frozen)
+  expect_length(model, 1L)
+  expect_equal(model[[1L]]$uploaded_at, "2026-07-02T00:00:00Z")
+  qs <- Filter(function(o) identical(o$azure_path, q), frozen)
+  expect_length(qs, 1L)
+  expect_equal(qs[[1L]]$uploaded_at, "2026-07-03T00:00:00Z")
+  nopath <- Filter(function(o) is.null(o$azure_path), frozen)
+  expect_length(nopath, 2L)
+  expect_true(all(vapply(nopath, function(o) is.null(o$frozen_path), logical(1L))))
+})
