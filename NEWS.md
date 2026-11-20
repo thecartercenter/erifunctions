@@ -1,5 +1,33 @@
 # erifunctions (development version)
 
+## Research figures keep their folders, re-uploads keep the old version, and tags keep their outputs (#377)
+
+Two problems with research project outputs, both seen in `dr_irs_2026`, and a related change to tags:
+
+- **Figures with the same name overwrote each other.** `eri_research_upload_figure()` uploaded by file
+  name only, so `figs/deck/forest.png` and `figs/deck/es/forest.png` both went to
+  `outputs/figs/forest.png` and the second replaced the first. Figures now keep their folder:
+  `figs/deck/es/forest.png` goes to `outputs/figs/deck/es/forest.png`. A figure directly in `figs/`
+  goes where it always did. A figure outside the project folder is still uploaded by name, with a
+  warning.
+- **Uploading again destroyed the earlier version, including the one a tag pointed at.** Re-uploading
+  a figure or output with `eri_research_upload_figure()` / `eri_research_upload_output()` now first
+  keeps a copy of the existing file in `outputs/_archive/<timestamp>/`, the same way re-pulling data already
+  archives the old copy. In `research.yaml` the earlier entry is marked superseded and says where its
+  file went.
+- **Tags now keep their own copy of the outputs.** `eri_research_tag()` copies each current output into
+  `tags/<label>/outputs/` and records where, so a later upload can't change what a tag points at. A
+  tag used to record only the output paths.
+- `eri_research_status()` counts each output once, plus how many earlier uploads are listed.
+- **Upgrading an existing project:** figures in subfolders now go to new paths, so an upload from before
+  this change at `outputs/figs/<name>` stays listed in `research.yaml` (and is included in new tags). The
+  upload prints a note when that happens. A tag's `outputs` list now has one entry per output (its
+  latest version), with `frozen_path` saying where the tag's copy is.
+- **Not recoverable:** outputs overwritten before this change (for example the v2-era decks behind the
+  `dr-irs-its-v2` tag) are gone unless the storage account keeps blob versions.
+- If you worked around the collisions by renaming files (e.g. an `es_` prefix), that still works; you
+  can now use folders instead.
+
 ## Cross-sheet checks now run for Nigeria, Sudan, South Sudan, Haiti and Madagascar, not just Ethiopia (#373)
 
 The two cross-sheet checks Emalee asked for (email of 2026-07-30), first added for Ethiopia, now

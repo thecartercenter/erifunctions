@@ -38,6 +38,8 @@
   local_mocked_bindings(
     storage_file_exists = function(...) file_exists,
     storage_dir_exists  = function(...) FALSE,
+    # Outputs are frozen by downloading then re-uploading (#377); the download writes a marker.
+    storage_download    = function(container, src, dest, ...) { writeLines(paste("blob:", src), dest); invisible(NULL) },
     create_storage_dir  = function(...) invisible(NULL),
     storage_upload      = function(container, src, dest, ...) {
       keep <- tempfile(fileext = ".cap")
@@ -84,7 +86,8 @@ test_that("eri_research_tag binds latest snapshot + git SHA and records the tag"
            azure_path = "research/dr_irs_2024/snapshots/new/", file_count = 3L)
     ),
     pulled  = list(list(source = "processed/dr/malaria", pulled_at = "2026-06-04T00:00:00Z")),
-    outputs = list(list(type = "figure", filename = "fig1.png"))
+    outputs = list(list(type = "figure", filename = "fig1.png",
+                        azure_path = "research/dr_irs_2024/outputs/figs/fig1.png"))
   )
   .commit_all(tmp)  # clean tree, manifest committed
 
@@ -104,6 +107,11 @@ test_that("eri_research_tag binds latest snapshot + git SHA and records the tag"
   expect_false(isTRUE(tag$code$dirty))
   expect_equal(length(tag$inputs), 1L)
   expect_equal(length(tag$outputs), 1L)
+  # The output is frozen into the tag (#377), not just referenced.
+  frozen <- "research/dr_irs_2024/tags/submission/outputs/figs/fig1.png"
+  expect_equal(tag$outputs[[1L]]$frozen_path, frozen)
+  expect_true(exists(frozen, envir = cap, inherits = FALSE))
+  expect_equal(readLines(cap[[frozen]]), "blob: research/dr_irs_2024/outputs/figs/fig1.png")
 
   manifest <- yaml::read_yaml(file.path(tmp, "research.yaml"))
   expect_equal(length(manifest$tags), 1L)
@@ -172,4 +180,45 @@ test_that(".eri_git_info reports a clean repo's HEAD", {
   info <- .eri_git_info(tmp)
   expect_match(info$sha, "^[0-9a-f]{7,40}$")
   expect_false(info$dirty)
+})
+
+# --- #377: the tag summary's output count -------------------------------------
+
+test_that("the tag summary counts current outputs and says how many could not be copied (#377 review)", {
+  skip_if(!nzchar(Sys.which("git")), "git not available")
+  run <- function(outputs, download_fails = FALSE, fail_on = NULL) {
+    tmp <- withr::local_tempdir(.local_envir = parent.frame())
+    .write_manifest(tmp, snapshots = list(list(label = "s", timestamp = "t", azure_path = "p/", file_count = 1L)),
+                    outputs = outputs)
+    .commit_all(tmp)
+    cap <- new.env()
+    .setup_tag_mocks(cap)
+    if (download_fails) {
+      local_mocked_bindings(storage_download = function(...) stop("blob not found"), .package = "AzureStor")
+    }
+    if (!is.null(fail_on)) {
+      local_mocked_bindings(storage_download = function(container, src, dest, ...) {
+        if (identical(src, fail_on)) stop("blob not found")
+        writeLines("x", dest); invisible(NULL)
+      }, .package = "AzureStor")
+    }
+    msgs <- suppressWarnings(testthat::capture_messages(eri_research_tag("t1", path = tmp)))
+    paste(cli::ansi_strip(msgs), collapse = "\n")
+  }
+  p <- "research/dr_irs_2024/outputs/figs/fig1.png"
+  # one current output and one superseded: counts 1
+  ok <- run(list(list(filename = "fig1.png", azure_path = p, superseded_at = "2026-01-01T00:00:00Z"),
+                 list(filename = "fig1.png", azure_path = p)))
+  expect_match(ok, "1 (copied into the tag)", fixed = TRUE)
+  bad <- run(list(list(filename = "fig1.png", azure_path = p)), download_fails = TRUE)
+  expect_match(bad, "1, of which 1 could not be copied", fixed = TRUE)
+  # two outputs, one copy fails
+  q <- "research/dr_irs_2024/outputs/figs/fig2.png"
+  partial <- run(list(list(filename = "fig1.png", azure_path = p), list(filename = "fig2.png", azure_path = q)), fail_on = q)
+  expect_match(partial, "2, of which 1 could not be copied", fixed = TRUE)
+  # no outputs at all
+  none <- run(list())
+  expect_match(none, "Outputs[^
+]*0", perl = TRUE)
+  expect_no_match(none, "copied", fixed = TRUE)
 })

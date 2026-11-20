@@ -27,6 +27,18 @@ Azure path the figure was uploaded to (invisibly).
 Uploads a local figure file to \verb{research/\{project_name\}/outputs/figs/} in the
 \verb{data/} Azure blob and records the upload in \code{research.yaml}.
 }
+\details{
+The figure keeps its folder: its path relative to the project root, minus a
+leading \verb{figs/} (or \verb{outputs/figs/}), so \code{figs/deck/es/forest.png} goes to
+\code{outputs/figs/deck/es/forest.png} and two figures with the same name in
+different folders don't replace each other. A figure outside the project is
+uploaded by name only, with a warning.
+
+Uploading to a path that already holds a file first copies the existing file
+to \verb{outputs/_archive/<timestamp>/} (same relative path), so the earlier
+version is kept. The earlier \code{research.yaml} entry for that path is marked
+\code{superseded_at} and gets \code{archived_to}; the new entry gets \code{archived_prev}.
+}
 \examples{
 \dontrun{
 eri_research_upload_figure("figs/its_model.png", caption = "ITS model -- DR malaria 2024")
