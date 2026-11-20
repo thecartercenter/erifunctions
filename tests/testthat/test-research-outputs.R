@@ -597,3 +597,24 @@ test_that("eri_research_status counts duplicates from before #377, and shows not
   expect_match(one, "1 output,", fixed = TRUE)
   expect_no_match(one, "(+", fixed = TRUE)
 })
+
+test_that("eri_research_status pluralises outputs and earlier uploads (#377 review)", {
+  tmp <- withr::local_tempdir()
+  m <- .base_manifest()
+  p <- "research/test_proj/outputs/figs/a.png"
+  m$outputs <- list(list(azure_path = p), list(azure_path = p), list(azure_path = p),
+                    list(azure_path = "research/test_proj/outputs/figs/b.png"))
+  yaml::write_yaml(m, file.path(tmp, "research.yaml"))
+  msgs <- paste(cli::ansi_strip(testthat::capture_messages(eri_research_status(path = tmp))), collapse = "\n")
+  expect_match(msgs, "2 outputs (+2 earlier uploads)", fixed = TRUE)
+})
+
+test_that("an output stored outside this project's outputs/ is frozen by its name (#377 review)", {
+  m <- .base_manifest()
+  other <- "research/other/outputs/x.png"
+  m$outputs <- list(list(filename = "x.png", azure_path = other))
+  store <- new.env(); .local_fake_blobs(store)
+  assign(other, "x", envir = store)
+  frozen <- .eri_research_freeze_outputs("mock_con", m, "research/test_proj/tags/v1/")
+  expect_equal(frozen[[1L]]$frozen_path, "research/test_proj/tags/v1/outputs/x.png")
+})
