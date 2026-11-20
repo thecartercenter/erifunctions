@@ -576,4 +576,12 @@ test_that("Ethiopia's rules, which every other country is compared to, are pinne
   expect_identical(trn$op, "same_sign")
   expect_identical(c(trn$lhs$agg, trn$rhs$agg), c("sum", "sum"))
   expect_identical(c(trn$lhs$missing_as, trn$rhs$missing_as), c(0L, 0L))   # no training row at all reads as 0
+
+  # What each side reads: treated (not population) against training tot; population on both tabs.
+  src <- function(side) lapply(side$sources, function(s) unlist(s[c("disease", "data_type", "column")]))
+  expect_identical(src(trn$lhs), list(c(disease = "oncho", data_type = "treatment", column = "treated"),
+                                      c(disease = "lf",    data_type = "treatment", column = "treated")))
+  expect_identical(src(trn$rhs), list(c(disease = "rblf", data_type = "training", column = "tot")))
+  expect_identical(src(pop$lhs), list(c(disease = "oncho", data_type = "treatment", column = "population")))
+  expect_identical(src(pop$rhs), list(c(disease = "lf",    data_type = "treatment", column = "population")))
 })

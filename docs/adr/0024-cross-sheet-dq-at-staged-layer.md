@@ -168,6 +168,14 @@ so this removes rounding differences and nothing else (a real 1-person differenc
 change on Ethiopia's or the others' latest CMRs. Applied to Ethiopia too so the rule means the same
 everywhere.
 
+**`treatment_implies_training` stays two-way, and a blank training tab counts as zero** -- both chosen
+by Emalee (2026-11-20), same as Ethiopia. All 17 of Nigeria's 202609 flags are the reverse direction
+(training but 0 treated); they are reviewed and resolved like any other flag rather than dropped by a
+one-way rule. A training tab that is in the workbook but blank reads as zero training (the rule is skipped
+only when none of the named sheets is present), so treatment with no recorded training is flagged. The
+rule descriptions in every country's schema said otherwise ("only evaluated where ... real data") and were
+corrected.
+
 **Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these five countries' cross-sheet
 logs; it still blocks only on an open finding for the period, so periods approved before the rules existed
 are unaffected. Several `test-cmr.R` tests used `sdn` as a "no cross rules" country; they now drop its
