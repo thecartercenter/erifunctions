@@ -492,12 +492,11 @@ test_that("the RB/LF population match tolerates a rounding difference but not a 
 
 .cmr_yaml <- function(country) yaml::read_yaml(system.file("schemas", "cmr", paste0(country, ".yaml"), package = "erifunctions"))
 
-# A rule with the per-country parts removed: description and training sheet names.
+# A rule with the per-country parts removed: description and the training sheet names
+# (rhs only -- no treatment source restricts its sheets, so lhs `sheets` must match too).
 .cross_rule_core <- function(rule) {
   rule$description <- NULL
-  for (side in c("lhs", "rhs")) {
-    rule[[side]]$sources <- lapply(rule[[side]]$sources, function(s) { s$sheets <- NULL; s })
-  }
+  rule$rhs$sources <- lapply(rule$rhs$sources, function(s) { s$sheets <- NULL; s })
   rule
 }
 
@@ -537,10 +536,16 @@ test_that("each country's training sheets are pinned and are routed to the sourc
     cmr <- .cmr_yaml(country)
     src <- cmr$cross_consistency$treatment_implies_training$rhs$sources[[1]]
     expect_identical(unlist(src$sheets), expected_sheets[[country]], label = country)
-    for (sh in unlist(src$sheets)) {
-      # A real sheet routed to a different measure would be silently dropped at run time.
-      expect_identical(c(cmr$sheets[[sh]]$disease, cmr$sheets[[sh]]$data_type),
-                       c(src$disease, src$data_type), label = paste(country, sh))
+    # Every sheet named on any source of any rule, either side, must be routed to that
+    # source's own measure: a real sheet of a different measure is silently dropped at run time.
+    for (rule_name in names(cmr$cross_consistency)) {
+      rule <- cmr$cross_consistency[[rule_name]]
+      for (side in c("lhs", "rhs")) for (s in rule[[side]]$sources) for (sh in unlist(s$sheets)) {
+        expect_identical(c(cmr$sheets[[sh]]$disease, cmr$sheets[[sh]]$data_type),
+                         c(s$disease, s$data_type), label = paste(country, rule_name, side, sh))
+      }
+      # Treatment sources never restrict sheets (that would drop RB- or LF-treated districts).
+      for (s in rule$lhs$sources) expect_null(s$sheets, label = paste(country, rule_name, "lhs sheets"))
     }
   }
 })
@@ -583,6 +588,11 @@ test_that("Ethiopia's rules, which every other country is compared to, are pinne
   expect_identical(src(trn$rhs), list(c(disease = "rblf", data_type = "training", column = "tot")))
   expect_identical(src(pop$lhs), list(c(disease = "oncho", data_type = "treatment", column = "population")))
   expect_identical(src(pop$rhs), list(c(disease = "lf",    data_type = "treatment", column = "population")))
+
+  # Exactly these two rules, with these messages (every other country copies them).
+  expect_setequal(names(eth), c("rb_lf_pop_match", "treatment_implies_training"))
+  expect_identical(pop$message, "RB and LF Treatment report different population for this district")
+  expect_identical(trn$message, "treatment and training activity disagree on whether this district had any activity this period")
 })
 
 test_that("treatment_implies_training: a training tab with no rows counts as zero; an empty total is not checked (#373)", {
