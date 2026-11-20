@@ -414,8 +414,9 @@ on the CMR routing schema (`inst/schemas/cmr/{country}.yaml`, the one artifact t
 workbook's sheet-to-measure map), evaluated by `eri_cmr_dq_report()` against each sheet's own
 already-canonical DQ output and surfaced as a workbook-level `dq_flags` entry (not attributable to
 one measure) through the same `eri_dq_review()`/`eri_dq_export()`/`eri_approve_cmr()` chain every
-other DQ flag already uses. Rules shipped for `eth` only; the engine (`R/dq_cross.R`) is general and
-every other RBLF country can opt in by editing its own routing schema's YAML.
+other DQ flag already uses. Rules shipped for `eth` first, then extended to `nga`, `sdn`, `ssd`, `ht` and `mad`
+in #373 (ADR-0024 addendum); the engine (`R/dq_cross.R`) is general and any other RBLF country can opt
+in by editing its own routing schema's YAML once it has the tabs and real data to check against.
 
 **Docs site & guidance system redesign (in progress):** the DQ workflow redesign's biggest lesson —
 collapsing "remember N functions in the right order" into "answer a guided menu" — prompted a second

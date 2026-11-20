@@ -819,8 +819,8 @@ eri_cmr_last_plan <- function(country, period, data_con = NULL) {
 #'
 #' Also blocks on an **unresolved** cross-consistency finding (ADR-0024) if
 #' [eri_cmr_dq_report()] logged one for this period -- unlike the per-measure
-#' checks, this does NOT require a cross-check to have run at all, since most
-#' countries have no `cross_consistency:` rules declared yet: a period with no
+#' checks, this does NOT require a cross-check to have run at all, since some
+#' countries have no `cross_consistency:` rules declared: a period with no
 #' cross-check log entry is never treated as outstanding on that basis alone.
 #'
 #' **A stale flag keeps blocking until it's explicitly resolved.** This checks
@@ -920,13 +920,13 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 
   # Cross-consistency (ADR-0024) is a workbook-level check, not a measure --
   # it blocks on an OPEN finding only, unlike the per-measure loop above,
-  # which also blocks on "never DQ-checked at all". Most countries have no
-  # cross_consistency: rules yet, so no entry ever gets logged for them; that
+  # which also blocks on "never DQ-checked at all". Many countries have no
+  # cross_consistency: rules, so no entry ever gets logged for them; that
   # must never be treated as outstanding, or every period approved before
   # this feature shipped would retroactively become unapprovable. Skip the
   # query entirely when the country declares no rules at all -- not just an
-  # optimization: it's what keeps this a true no-op for the 6 of 7 RBLF
-  # countries (and every non-CMR/non-oncho-LF country) that don't have any.
+  # optimization: it's what keeps this a true no-op for the countries that
+  # don't have any (see which inst/schemas/cmr/*.yaml declare cross_consistency:).
   cmr_schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
   has_cross_rules <- !is.null(cmr_schema$cross_consistency) && length(cmr_schema$cross_consistency) > 0L
 
@@ -1078,8 +1078,8 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
 #' ADR-0024). Findings are logged as one workbook-level `dq_flags` entry
 #' (`{country}/rblf/programmatic/consistency/logs/`, not attributable to any
 #' one measure) and returned as rows with `sheet = "(cross-sheet)"` and
-#' `cross = TRUE`. Most countries have no `cross_consistency:` block yet, in
-#' which case this step is a silent no-op.
+#' `cross = TRUE`. A country with no `cross_consistency:` block (e.g. Uganda,
+#' Brazil, Venezuela, Chad) skips this step silently.
 #'
 #' @param country `str` Country code (e.g. `"sdn"`).
 #' @param period `str` Reporting period (e.g. `"202605"`).

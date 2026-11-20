@@ -35,6 +35,19 @@ make_cmr_xlsx <- function(path,
 
 #### Tests for eri_ingest_cmr ####
 
+# Several tests below use "sdn" for its real sheet layout but are not about the
+# cross-sheet check (ADR-0024). Since #373 Sudan declares cross_consistency
+# rules, which would make eri_approve_cmr() query cross-sheet logs (and the
+# mocked eri_logs() answers every query) and eri_cmr_dq_report() evaluate them.
+# This keeps the real routing schema but drops its cross rules for one test.
+local_without_cross_rules <- function(env = parent.frame()) {
+  real <- load_cmr_schema
+  testthat::local_mocked_bindings(
+    load_cmr_schema = function(country) { s <- real(country); s$cross_consistency <- NULL; s },
+    .package = "erifunctions", .env = env
+  )
+}
+
 test_that("eri_ingest_cmr returns tibble with field code columns plus sheet/excel_row", {
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp)
@@ -1276,6 +1289,7 @@ test_that("eri_approve_cmr normalizes country casing before calling eri_cmr_last
 })
 
 test_that("eri_approve_cmr blocks on unresolved DQ flags and does not call eri_approve", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "a", n_rows = 1L
@@ -1435,6 +1449,7 @@ test_that("eri_approve_cmr errors when force = TRUE without a justification", {
 })
 
 test_that("eri_approve_cmr force = TRUE approves despite unresolved flags, annotates the bypassed entry, and records forced/justification/bypassed", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
                          data_type = "treatment", dest = "a", n_rows = 1L)
   approved   <- list()
@@ -1539,6 +1554,7 @@ test_that("eri_approve_cmr force = TRUE with nothing outstanding behaves like a 
 })
 
 test_that("eri_approve_cmr force = TRUE still annotates the bypass (without a back-reference) when its own trail log fails to write", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(sheet = "RB Treatment", disease = "oncho",
                          data_type = "treatment", dest = "a", n_rows = 1L)
   resolved <- list()
@@ -1568,6 +1584,7 @@ test_that("eri_approve_cmr force = TRUE still annotates the bypass (without a ba
 })
 
 test_that("eri_cmr_dq_report combines every measure's flags into one tibble with usable flag_ids", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = c("RB Treatment", "LF Treatment"), disease = c("oncho", "lf"),
     data_type = c("treatment", "treatment"),
@@ -1604,6 +1621,7 @@ test_that("eri_cmr_dq_report combines every measure's flags into one tibble with
 })
 
 test_that("eri_cmr_dq_report surfaces a flag's note once it's been triaged and the check re-run", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
     dest = "sdn/oncho/programmatic/treatment/staged/a.parquet", n_rows = 1L
@@ -1633,6 +1651,7 @@ test_that("eri_cmr_dq_report surfaces a flag's note once it's been triaged and t
 })
 
 test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is clean", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
@@ -1657,6 +1676,7 @@ test_that("eri_cmr_dq_report returns a zero-row tibble when every measure is cle
 })
 
 test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries for the same measure/period", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
@@ -1690,6 +1710,7 @@ test_that("eri_cmr_dq_report(supersede = TRUE) auto-resolves prior open entries 
 })
 
 test_that("eri_cmr_dq_report(supersede = FALSE) leaves prior entries alone", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   plan <- tibble::tibble(
     sheet = "RB Treatment", disease = "oncho",
     data_type = "treatment", dest = "sdn/oncho/programmatic/treatment/staged/a.parquet",
@@ -1721,6 +1742,7 @@ test_that("eri_cmr_dq_report(supersede = FALSE) leaves prior entries alone", {
 })
 
 test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropping (integration, not mocked)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -1754,6 +1776,7 @@ test_that("eri_cmr_dq_report's excel_row survives real run_dq_checks() row-dropp
 })
 
 test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block (ADR-0026)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   # Before ADR-0026, run_dq_checks() alone (what eri_cmr_dq_report() called) never
   # evaluates consistency: rules -- add_anomaly_consistency() has to be chained
   # separately, and nothing in the CMR pipeline ever did. Confirm the chain now
@@ -1793,6 +1816,7 @@ test_that("eri_cmr_dq_report() actually evaluates a schema's consistency: block 
 })
 
 test_that("eri_cmr_dq_report() skips add_anomaly_consistency() cleanly for a schema with no consistency: block", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   # Guards against the "No consistency rules defined in schema" notice printing
   # on every single DQ report run for the (common) schemas with no
   # consistency: block at all.
@@ -2089,6 +2113,7 @@ test_that("eri_cmr_dq_report tops up a scoped plan via eri_cmr_last_plan so a cr
 })
 
 test_that("eri_cmr_dq_report() surfaces consistency rules that did not run (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2124,6 +2149,7 @@ test_that("eri_cmr_dq_report() surfaces consistency rules that did not run (#374
 })
 
 test_that("eri_cmr_dq_report() consolidates skips across sheets and separates expected from unexpected (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2171,6 +2197,7 @@ test_that("eri_cmr_dq_report() consolidates skips across sheets and separates ex
 })
 
 test_that("eri_cmr_dq_report() says all clean when the only skips are expected (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2201,6 +2228,7 @@ test_that("eri_cmr_dq_report() says all clean when the only skips are expected (
 })
 
 test_that("eri_cmr_dq_report() warns when EVERY rule skipped on a sheet, even if each is skip_ok (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2251,6 +2279,7 @@ test_that("eri_cmr_dq_report() warns when EVERY rule skipped on a sheet, even if
 })
 
 test_that("eri_cmr_dq_report() ignores a schema that only has consistency_not_applicable_sheets (#374)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2279,6 +2308,7 @@ test_that("eri_cmr_dq_report() ignores a schema that only has consistency_not_ap
 })
 
 test_that("eri_cmr_dq_report() counts a rule that ran without some columns as run, not skipped (#376)", {
+  local_without_cross_rules()   # not a cross-sheet test; sdn has cross_consistency rules since #373
   tmp <- withr::local_tempfile(fileext = ".xlsx")
   make_cmr_xlsx(tmp,
     field_codes = c("#rbtrt_year", "#rbtrt_adm1", "#rbtrt_treated"),
@@ -2325,4 +2355,52 @@ test_that("eri_cmr_dq_report() counts a rule that ran without some columns as ru
   hit <- flags2[grepl("[incomplete]", flags2$issue, fixed = TRUE), ]
   expect_equal(nrow(hit), 1L)
   expect_match(hit$issue, "(checked without not_in_file: not found in the data)", fixed = TRUE)
+})
+
+test_that("eri_cmr_dq_report() runs Nigeria's real cross rules end to end (#373)", {
+  # No load_cmr_schema mock: this uses the bundled nga.yaml rules and sheet names.
+  plan <- tibble::tibble(
+    sheet     = c("RB Treatment", "LF Treatment", "CDD Training", "Health Workers Training"),
+    disease   = c("oncho", "lf", "rblf", "rblf"),
+    data_type = c("treatment", "treatment", "training", "training"),
+    dest      = paste0("nga/", c("oncho", "lf", "rblf", "rblf"), "/programmatic/",
+                       c("treatment", "treatment", "training", "training"), "/staged/",
+                       c("rb", "lf", "cdd", "hw"), ".parquet"),
+    n_rows    = 2L
+  )
+  data_by_file <- list(
+    # D1: treated, no training anywhere -> flagged. D2: trained only via Health
+    # Workers Training -> not flagged (proves that sheet name is the one used).
+    # D3: treated, on no training sheet at all -> flagged (missing_as: 0).
+    # D4: has a population but nobody treated and no training -> not flagged.
+    # D5: trained (Health Workers) but nobody treated -> flagged (the rule is two-way).
+    # Populations differ only by rounding -> no rb_lf_pop_match flag.
+    rb  = tibble::tibble(district = c("D1", "D2", "D3", "D4", "D5"), population = c(1000.4, 2000, 300, 900, 400), treated = c(10, 5, 7, 0, 0)),
+    lf  = tibble::tibble(district = c("D1", "D2"), population = c(1000, 2000), treated = c(0, 0)),
+    cdd = tibble::tibble(district = c("D1", "D2"), tot = c(0, 0)),
+    hw  = tibble::tibble(district = c("D1", "D2", "D5"), tot = c(0, 3, 2))
+  )
+  clean_flags <- tibble::tibble(row = integer(), column = character(), value = character(), issue = character())
+  local_mocked_bindings(
+    eri_read = function(path, ...) data_by_file[[sub("[.]parquet$", "", basename(path))]],
+    load_dq_schema = function(...) list(columns = list()),
+    run_dq_checks = function(data, schema, ...) structure(
+      list(data = data, log = tibble::tibble(row = integer()), flags = clean_flags,
+           schema_source = NA_character_, schema_hash = NA_character_),
+      class = "dq_result"),
+    eri_cmr_last_plan = function(...) plan,
+    .eri_dq_log_write = function(result, country, disease, data_source, data_type, ...) {
+      list(n_flags = nrow(result$flags), status = if (nrow(result$flags) > 0L) "needs_review" else "clean",
+           log_path = paste0(country, "/", disease, "/", data_source, "/", data_type, "/logs/x.yaml"),
+           flags = lapply(seq_len(nrow(result$flags)), function(i) list(
+             index = i, row = result$flags$row[i], column = result$flags$column[i],
+             value = result$flags$value[i], issue = result$flags$issue[i], status = "open")))
+    },
+    .package = "erifunctions"
+  )
+  flags <- suppressMessages(eri_cmr_dq_report("nga", "202609", plan = plan, data_con = structure(list(), class = "mock")))
+  cross_rows <- flags[flags$cross, , drop = FALSE]
+  expect_equal(nrow(cross_rows), 3L)
+  expect_setequal(cross_rows$value, c("D1", "D3", "D5"))
+  expect_true(all(grepl("[treatment_implies_training]", cross_rows$issue, fixed = TRUE)))
 })

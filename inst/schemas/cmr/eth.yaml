@@ -247,7 +247,10 @@ cross_consistency:
       match population reported for that same district on the LF Treatment
       tab. LF only covers a subset of RB's endemic districts -- a district
       appearing on only one tab is a coverage difference, not a mismatch, and
-      is never flagged (no missing_as on either side).
+      is never flagged (no missing_as on either side). tolerance: 0.5 so a
+      decimal projected population and the same figure rounded are not a
+      mismatch (seen in Nigeria; added here for consistency in issue #373 --
+      no change on Ethiopia's 202610 CMR).
     join_key: district
     lhs:
       agg: unique
@@ -258,14 +261,16 @@ cross_consistency:
       sources:
         - {disease: lf, data_type: treatment, column: population}
     op: "=="
+    tolerance: 0.5
     message: "RB and LF Treatment report different population for this district"
   treatment_implies_training:
     description: >
       If a district's RB+LF treated total is > 0, its CDD+CS+HW training
-      total must also be > 0 (and conversely, both must be 0 together). Only
-      evaluated where at least one of those training sheets has real data
-      this period -- a country/period with none of them present skips this
-      rule entirely, not a false flag.
+      total must also be > 0 (and conversely, both must be 0 together).
+      Skipped when none of those training sheets (or none of the
+      treatment tabs) is in the workbook this period. A sheet that is present with no rows counts as
+      zero training, so the treated districts are flagged; a district listed
+      with an empty training total is not checked.
     join_key: district
     lhs:
       agg: sum

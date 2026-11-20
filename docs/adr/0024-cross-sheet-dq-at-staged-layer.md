@@ -56,8 +56,8 @@ files.
    rule 2 has three source measures with no defensible "primary" to attribute it to.
 4. **`eri_approve_cmr()` gains a workbook-level gate on unresolved cross-consistency findings**, but
    deliberately does **not** require a cross-check to have run at all -- it blocks only on a
-   genuinely *open* finding. Most countries have no `cross_consistency:` rules declared yet, so no
-   entry is ever logged for them; treating that absence as "outstanding" would retroactively make
+   genuinely *open* finding. Several countries have no `cross_consistency:` rules declared (e.g. uga,
+   bra, ven, tcd after #373), so no entry is ever logged for them; treating that absence as "outstanding" would retroactively make
    every period approved before this feature shipped unapprovable.
 5. **Absence is always a silent no-op**, at every level: a country's routing schema with no
    `cross_consistency:` block, a rule whose sources match zero available sheets (e.g. a country
@@ -118,7 +118,8 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
 - Rules for any country other than `eth` -- each country's real sheet names (tcd/mad's templates are
   in French) and district-roster overlaps between diseases are different enough that copying eth's
   rules elsewhere would be guesswork, not generalization. Other countries opt in when someone with
-  real knowledge of that country's template asks.
+  real knowledge of that country's template asks. *(Superseded for nga, sdn, ssd, ht and mad by the #373
+  addendum below.)*
 
 ## References
 
@@ -131,4 +132,53 @@ Other RBLF countries opt in by editing their routing schema's YAML, not by writi
   cover.
 - `R/dq_cross.R` (the engine and its schema-format header comment), `R/cmr.R`'s
   `eri_cmr_dq_report()`/`eri_approve_cmr()`, `R/dq_review.R`'s cross-flag guards,
-  `inst/schemas/cmr/eth.yaml`'s `cross_consistency:` block, `tests/testthat/test-dq_cross.R`.
+  the `cross_consistency:` blocks in `inst/schemas/cmr/{eth,nga,sdn,ssd,ht,mad}.yaml`,
+  `tests/testthat/test-dq_cross.R`.
+
+## Addendum (issue #373, 2026-11-19): the rules extended beyond Ethiopia
+
+**Decision:** Ethiopia's two `cross_consistency:` rules are copied into each country's routing schema
+where they apply, checked against that country's latest real CMR (structure only). This supersedes the
+"Rules for any country other than `eth`" bullet under *Not doing* above for these countries: each copy
+was checked against the country's real sheet names and district rosters, which is what that bullet
+asked for.
+
+- `rb_lf_pop_match` and `treatment_implies_training`: `nga`, `sdn`, `ssd` (both RB and LF Treatment, plus
+  CDD/CS/health-worker training).
+- `treatment_implies_training` only, LF treated vs its CDD/CS/health-worker training: `ht` (CDD + CS; no
+  health-worker tab) and `mad` (French-named tabs: Formation Distributeurs, Formation SC, Formation
+  Travailleurs de Sante). Both have an LF treatment tab only (Madagascar's is "Traitement FL").
+- Not added: `uga`, `bra`, `ven` (no CDD/CS/health-worker training tabs), `tcd`, `dr` (no CMR data
+  to verify against). They opt in when they have both.
+
+**Per-country sheet names.** Each copy names its own training sheets: Ethiopia's health-worker tab is
+"HW Training", Nigeria/Sudan/South Sudan's is "Health Workers Training". A wrong name only produces an
+info line ("no data for ...") and drops that sheet from the sum. The existing schema test checks every
+rule's `sheets:` against the country's routed sheets; a new one checks every source's
+`(disease, data_type)`, `join_key` and `column` against the country's routing and DQ schemas.
+
+**Duplicated per country, on purpose (for now)**, for the same reason as ADR-0026's training rules:
+schemas have no include/inheritance mechanism. Revisit with a shared fragment if more countries need
+copies.
+
+**`tolerance: 0.5` on `rb_lf_pop_match`, all countries.** Nigeria's RB tab carries decimal projected
+populations and its LF tab the same figures rounded; with `tolerance: 0` all 103 Nigerian districts on
+both tabs were flagged (every difference < 0.5). Half a person is the most rounding can move a figure,
+so this removes rounding differences and nothing else (a real 1-person difference still flags): no
+change on Ethiopia's, Sudan's or South Sudan's latest CMRs. Applied to Ethiopia too so the rule means the same
+everywhere.
+
+**`treatment_implies_training` stays two-way, and a training tab with no rows counts as zero** -- both chosen
+by Emalee (2026-11-20), same as Ethiopia. All 17 of Nigeria's 202609 flags are the reverse direction
+(training but 0 treated); they are reviewed and resolved like any other flag rather than dropped by a
+one-way rule. A training tab that is in the workbook with no rows reads as zero training (the rule is skipped
+when none of the named training sheets, or none of the treatment tabs, is present), so treatment with no recorded training is flagged. A
+district listed on a training tab with an empty total aggregates to NA and is not checked; Emalee kept
+that as is (2026-11-20) since real CMRs enter 0, and counting empty totals as zero would need an engine
+option. Ethiopia's rule description said otherwise ("only evaluated where ... real data"); it is corrected, and the
+new copies use the corrected wording.
+
+**Consequences:** the approval gate (`eri_approve_cmr()`) now applies to these five countries' cross-sheet
+logs; it still blocks only on an open finding for the period, so periods approved before the rules existed
+are unaffected. Several `test-cmr.R` tests used `sdn` as a "no cross rules" country; they now drop its
+rules explicitly (`local_without_cross_rules()`).

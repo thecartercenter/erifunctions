@@ -175,3 +175,31 @@ sheets:
   # declared). "ALL Admin Levels" is the source of this schema's and the DQ schemas'
   # ADM1/ADM2 allowed_values (140 communes across 10 departments); "Dropdowns" is the
   # source of the LF Trt Program Status / LF Survey Type / LF Outcomes enumerations.
+
+# Cross-sheet DQ check (ADR-0024), Ethiopia's treatment_implies_training
+# (eth.yaml) extended to Haiti in issue #373. Haiti has LF Treatment only (no
+# RB tab, so no rb_lf_pop_match) and CDD and CS Training tabs (no health-worker
+# tab). Checked against Haiti's 202610 CMR (structure only).
+cross_consistency:
+  treatment_implies_training:
+    description: >
+      If a district's LF treated total is > 0, its CDD+CS training total must
+      also be > 0 (and conversely, both must be 0 together).
+      Skipped when none of those training sheets (or none of the
+      treatment tabs) is in the workbook this period. A sheet that is present with no rows counts as
+      zero training, so the treated districts are flagged; a district listed
+      with an empty training total is not checked.
+    join_key: district
+    lhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: lf, data_type: treatment, column: treated}
+    rhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: rblf, data_type: training, column: tot,
+          sheets: ["CDD Training", "CS Training"]}
+    op: same_sign
+    message: "treatment and training activity disagree on whether this district had any activity this period"

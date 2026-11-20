@@ -90,8 +90,8 @@ same district"), which no single-sheet DQ schema can express (see
 ADR-0024). Findings are logged as one workbook-level \code{dq_flags} entry
 (\verb{\{country\}/rblf/programmatic/consistency/logs/}, not attributable to any
 one measure) and returned as rows with \code{sheet = "(cross-sheet)"} and
-\code{cross = TRUE}. Most countries have no \verb{cross_consistency:} block yet, in
-which case this step is a silent no-op.
+\code{cross = TRUE}. A country with no \verb{cross_consistency:} block (e.g. Uganda,
+Brazil, Venezuela, Chad) skips this step silently.
 }
 \examples{
 \dontrun{

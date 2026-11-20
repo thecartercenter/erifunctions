@@ -100,7 +100,9 @@ a quiet note, not a warning, as long as another rule still ran on that sheet. Th
   schemas have no include/inheritance mechanism and this is how every other shared column set is
   already carried. Revisit a shared fragment if a seventh copy is needed. `mad` and `tcd` have training
   schemas but no processed training files to verify against yet, so they do not get the rule until real
-  data exists (their sheets would otherwise be unverifiable guesses).
+  data exists (their sheets would otherwise be unverifiable guesses). *(#373: Madagascar now has a
+  202609 CMR and its CDD/CS/health-worker tab names are checked for the cross-sheet rule; this
+  training-sum rule is still to do for it.)*
 
 ## Addendum (issue #376): a summed side with only some of its columns present runs, and says so
 

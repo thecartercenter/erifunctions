@@ -179,3 +179,56 @@ sheets:
       - "#rb_ento_surv_adm2_id"
       - "#rb_ento_surv_adm3"
       - "#rb_ento_surv_disease"
+
+# Cross-sheet DQ checks (ADR-0024), the same two rules as Ethiopia's (eth.yaml),
+# extended to this country in issue #373. Checked against Sudan's 202610 CMR
+# (structure only): RB and LF Treatment both carry district/population/treated,
+# and the CDD, CS and Health Workers Training tabs carry district/tot. This
+# country's health-worker tab is "Health Workers Training" (Ethiopia's is "HW
+# Training"), so the sheet names are this country's own.
+cross_consistency:
+  rb_lf_pop_match:
+    description: >
+      Population reported for a district (IU) on the RB Treatment tab must
+      match population reported for that same district on the LF Treatment
+      tab. LF only covers a subset of RB's endemic districts -- a district
+      appearing on only one tab is a coverage difference, not a mismatch, and
+      is never flagged (no missing_as on either side). tolerance: 0.5 because
+      some tabs carry projected populations with decimals and others the
+      same figure rounded (Nigeria 202609: every RB/LF difference under 0.5).
+    join_key: district
+    lhs:
+      agg: unique
+      sources:
+        - {disease: oncho, data_type: treatment, column: population}
+    rhs:
+      agg: unique
+      sources:
+        - {disease: lf, data_type: treatment, column: population}
+    op: "=="
+    tolerance: 0.5
+    message: "RB and LF Treatment report different population for this district"
+  treatment_implies_training:
+    description: >
+      If a district's RB+LF treated total is > 0, its CDD+CS+Health Workers
+      training total must also be > 0 (and conversely, both must be 0
+      together).
+      Skipped when none of those training sheets (or none of the
+      treatment tabs) is in the workbook this period. A sheet that is present with no rows counts as
+      zero training, so the treated districts are flagged; a district listed
+      with an empty training total is not checked.
+    join_key: district
+    lhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: oncho, data_type: treatment, column: treated}
+        - {disease: lf, data_type: treatment, column: treated}
+    rhs:
+      agg: sum
+      missing_as: 0
+      sources:
+        - {disease: rblf, data_type: training, column: tot,
+          sheets: ["CDD Training", "CS Training", "Health Workers Training"]}
+    op: same_sign
+    message: "treatment and training activity disagree on whether this district had any activity this period"
