@@ -9,7 +9,7 @@
 #' @return Parsed list of form metadata.
 #' @keywords internal
 .odk_form_meta <- function(creds, project_id, form_id) {
-  form_id_enc <- utils::URLencode(form_id, reserved = TRUE)
+  form_id_enc <- .odk_enc_form_id(form_id)
   # `X-Extended-Metadata: true` is required for ODK Central to include the
   # `submissions` count and `lastSubmission` timestamp on the form object;
   # without it those fields are absent and total_submissions is always 0.
@@ -30,7 +30,7 @@
 #' @return List of submission objects.
 #' @keywords internal
 .odk_form_submissions <- function(creds, project_id, form_id) {
-  form_id_enc <- utils::URLencode(form_id, reserved = TRUE)
+  form_id_enc <- .odk_enc_form_id(form_id)
   resp <- httr::GET(
     url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", form_id_enc, "/submissions"),
     config = httr::add_headers(Authorization = paste("Bearer", creds$auth))
