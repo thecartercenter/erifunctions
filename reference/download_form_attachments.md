@@ -13,7 +13,7 @@ download_form_attachments(
   form_id,
   folder_loc,
   image_label,
-  other_vars,
+  other_vars = character(),
   add_condition = FALSE,
   condition = NULL
 )
@@ -43,7 +43,8 @@ download_form_attachments(
 - form_id:
 
   `chr` Form ID from
-  [`list_odk_forms()`](https://thecartercenter.github.io/erifunctions/reference/list_odk_forms.md)
+  [`list_odk_forms()`](https://thecartercenter.github.io/erifunctions/reference/list_odk_forms.md),
+  as shown there (an ID containing `/` is encoded for you)
 
 - folder_loc:
 
@@ -55,7 +56,8 @@ download_form_attachments(
 
 - other_vars:
 
-  `chr` Additional columns to include in the returned tibble
+  `chr` Additional columns to include in the returned tibble (default:
+  none)
 
 - add_condition:
 

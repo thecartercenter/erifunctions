@@ -386,9 +386,10 @@ flags
 ```
 
 If the country’s CMR routing schema declares `cross_consistency:` rules
-(Ethiopia, as of this writing), a flag comparing data *across* sheets
-can also show up here, with `sheet = "(cross-sheet)"`, a blank
-`excel_row`, and `cross = TRUE` – see the [DQ review
+(as of this writing Ethiopia, Nigeria, Sudan, South Sudan, Haiti and
+Madagascar), a flag comparing data *across* sheets can also show up
+here, with `sheet = "(cross-sheet)"`, a blank `excel_row`, and
+`cross = TRUE` – see the [DQ review
 guide](https://thecartercenter.github.io/erifunctions/articles/da-dq-review-guide.html#split)
 for what that means and how to work through one.
 

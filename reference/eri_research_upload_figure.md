@@ -38,6 +38,21 @@ eri_research_upload_figure(
 
 Azure path the figure was uploaded to (invisibly).
 
+## Details
+
+The figure keeps its folder: its path relative to the project root,
+minus a leading `figs/` (or `outputs/figs/`), so
+`figs/deck/es/forest.png` goes to `outputs/figs/deck/es/forest.png` and
+two figures with the same name in different folders don't replace each
+other. A figure outside the project is uploaded by name only, with a
+warning.
+
+Uploading to a path that already holds a file first copies the existing
+file to `outputs/_archive/<timestamp>/` (same relative path), so the
+earlier version is kept. The earlier `research.yaml` entry for that path
+is marked `superseded_at` and gets `archived_to`; the new entry gets
+`archived_prev`.
+
 ## Examples
 
 ``` r

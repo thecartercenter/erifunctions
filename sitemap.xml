@@ -65,6 +65,9 @@
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-eri_write_log.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_check_response.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_creds.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_enc_form_id.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_export_name.html</loc></url>
+<url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_form_id_raw.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_form_meta.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_form_submissions.html</loc></url>
 <url><loc>https://thecartercenter.github.io/erifunctions/reference/dot-odk_survey_status_row.html</loc></url>

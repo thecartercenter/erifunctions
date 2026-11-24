@@ -19,6 +19,12 @@ Schema format (add a `consistency:` block to any YAML schema):
         op: ">="
         rhs_value: 0
         message: "Age is negative"
+      implausible_overcoverage:
+        lhs: treated
+        op: "<="
+        rhs: target_pop
+        rhs_scale: 2
+        message: "treated is more than 2x target_pop (over 200% raw coverage)"
       gender_sum_matches_type_sum:
         lhs_sum: [male_trained, female_trained]
         op: "=="
@@ -39,10 +45,36 @@ same reasoning as `.dq_na_fill()` for a single count column). A summed
 side where none of its columns exist in the data at all skips the whole
 rule for that side (e.g. a schema shared across several sheet shapes,
 where only one prefix's columns are ever populated on a given ingest –
-same "not found" skip as a missing `lhs`/`rhs`).
+same "not found" skip as a missing `lhs`/`rhs`). A summed side where
+only *some* of its columns exist (e.g. a template typo renamed one
+month's column) still runs, counting the missing columns as 0, so real
+mismatches are still flagged. Because a flag may then come from the
+missing column rather than the data (and a pass did not check it), the
+rule is also listed in the skipped rules with a `reason` that starts
+`"lhs_sum incomplete, ran without"` (or `rhs_sum`) and names the missing
+columns, always with `expected = FALSE` (even with `skip_ok`), and each
+of its flags ends
+`"(checked without <columns>: not found in the data)"`.
 
 Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`. Missing values
 (`NA`) in either operand skip the check for that row.
+
+`rhs_scale` (optional, one positive number) multiplies a column rhs
+(`rhs` or `rhs_sum`) before the comparison, e.g. `rhs_scale: 2` with
+`treated <= target_pop` flags only rows where `treated` is more than
+twice `target_pop`. It can't be combined with `rhs_value` (write the
+scaled constant instead). A rule with an invalid `rhs_scale`, or with a
+non-numeric rhs column to scale, is skipped and recorded like any other
+skip, with `expected = FALSE`.
+
+Each flag's `issue` is the same for every row of a rule (rule name and
+message). Its `value` holds that row's numbers: the lhs value and, when
+the rhs is a column, the rhs value from the data (before any
+`rhs_scale`), e.g. `"180,617 vs target_pop 150,000 (120%)"`. The
+percentage (lhs as a share of rhs) is shown for `<=`, `>=`, `<` and `>`
+rules when the rhs is not 0. A summed rhs is named by its column count
+(`"vs sum of 48 columns ..."`). A rule against a constant (`rhs_value`)
+shows just the lhs value.
 
 Works on a plain tibble (returns a tibble of violations) or a
 `dq_result` (appends violations to `$flags`).

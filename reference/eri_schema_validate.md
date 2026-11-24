@@ -1,9 +1,9 @@
 # Validate a local DQ schema YAML file
 
 Reads a surveillance schema YAML and checks it for structural problems:
-missing required sections, invalid column types, and temporal or
-consistency rules referencing unknown columns. Returns a tidy tibble of
-issues.
+missing required sections, invalid column types, temporal or consistency
+rules referencing unknown columns, and invalid consistency `rhs_scale`
+values. Returns a tidy tibble of issues.
 
 ## Usage
 

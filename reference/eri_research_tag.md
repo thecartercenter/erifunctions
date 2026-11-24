@@ -61,6 +61,12 @@ code by a commit SHA, a tagged analysis can be reproduced from a
 citation – including across data updates, by tagging again after
 re-pulling refreshed data.
 
+Outputs are frozen too: each current output (the latest upload of each
+path) is copied to `tags/{label}/outputs/`, and the tag records its
+`frozen_path`, so a later upload of the same name can't change what the
+tag points at. An output that can't be copied (e.g. its file was
+deleted) is recorded without a `frozen_path`, with a warning.
+
 If no snapshot exists yet, one is created automatically. Tags are
 immutable: tagging an already-used label is an error.
 

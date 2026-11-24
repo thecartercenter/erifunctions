@@ -187,7 +187,7 @@ result <- result |> add_anomaly_consistency(schema)
 
 Here the schema’s epiweek rules all hold, so it passes. The real power
 is **cross-field** rules, e.g. `positives <= tested`, or
-`treated <= target_population`, which catch the impossible combinations
+`treated <= 2 x target_pop`, which catch the implausible combinations
 that range checks can’t see. The [data-quality
 pipeline](https://thecartercenter.github.io/erifunctions/articles/dq-pipeline.md)
 vignette shows how to write them.

@@ -35,6 +35,14 @@ eri_research_upload_output(obj, filename, path = getwd(), data_con = NULL)
 
 Azure path the object was uploaded to (invisibly).
 
+## Details
+
+As with
+[`eri_research_upload_figure()`](https://thecartercenter.github.io/erifunctions/reference/eri_research_upload_figure.md),
+an existing file at the same path is copied to
+`outputs/_archive/<timestamp>/` before it is replaced, and the earlier
+`research.yaml` entry is marked `superseded_at` with `archived_to`.
+
 ## Examples
 
 ``` r

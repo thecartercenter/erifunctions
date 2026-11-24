@@ -101,6 +101,23 @@ A summed side where none of its columns exist in the data at all skips
 the whole rule (e.g. a schema shared across several sheet shapes, where
 only one prefix’s columns are ever populated on a given ingest).
 
+A rule can also set `rhs_scale`, one positive number that multiplies a
+column rhs (`rhs` or `rhs_sum`) before comparing. The treatment schemas
+use it for `implausible_overcoverage` (`treated <= target_pop` with
+`rhs_scale: 2`), so only treated more than twice the target population
+is flagged. It can’t be used with `rhs_value` (write the scaled constant
+instead), and a rule with an invalid `rhs_scale` is skipped and listed
+with the other checks that couldn’t run.
+[`eri_schema_validate()`](https://thecartercenter.github.io/erifunctions/reference/eri_schema_validate.md)
+checks it.
+
+Each flag from a consistency rule shows that row’s numbers in its
+`value`: the lhs and, when the rhs is a column, the rhs from the data
+with the lhs as a percentage of it, e.g.
+`180,617 vs target_pop 150,000 (120%)`. The percentage is left out for
+`==`/`!=` rules and when the rhs is 0. Rules against a constant
+(`rhs_value`) show just the lhs.
+
 A skipped rule is **recorded**, not just printed:
 [`add_anomaly_consistency()`](https://thecartercenter.github.io/erifunctions/reference/add_anomaly_consistency.md)
 returns it in `$skipped_rules` (or `attr(, "skipped_rules")` on a plain

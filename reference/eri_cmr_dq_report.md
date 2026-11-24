@@ -30,8 +30,8 @@ the same district"), which no single-sheet DQ schema can express (see
 ADR-0024). Findings are logged as one workbook-level `dq_flags` entry
 (`{country}/rblf/programmatic/consistency/logs/`, not attributable to
 any one measure) and returned as rows with `sheet = "(cross-sheet)"` and
-`cross = TRUE`. Most countries have no `cross_consistency:` block yet,
-in which case this step is a silent no-op.
+`cross = TRUE`. A country with no `cross_consistency:` block (e.g.
+Uganda, Brazil, Venezuela, Chad) skips this step silently.
 
 ## Usage
 
@@ -107,14 +107,18 @@ measure (and any cross-consistency rules) is clean. Any `consistency:`
 rule that could not be evaluated on a sheet (a column it needs wasn't
 found) is listed in the console after the flags and returned in
 `attr(<result>, "skipped_rules")` (columns `sheet`, `rule`, `reason`,
-`expected`) – a skipped rule produced no flags because it never ran, not
-because the data passed it. A rule whose schema entry says
-`skip_ok: true` (written for one sheet layout, so skipping on another is
-by design) is shown as a quiet note with `expected = TRUE`; any other
-skip is a warning, and means the schema's column aliases probably don't
-match the file. If *every* rule skipped on a sheet, that is always a
-warning (no consistency check ran on it at all), unless the schema lists
-the sheet under `consistency_not_applicable_sheets`. Sheets that
+`expected`) – a rule that could not run produced no flags because it
+never ran, not because the data passed it. A rule whose schema entry
+says `skip_ok: true` (written for one sheet layout, so skipping on
+another is by design) is shown as a quiet note with `expected = TRUE`;
+any other skip is a warning, and means the schema's column aliases
+probably don't match the file. If *every* rule skipped on a sheet, that
+is always a warning (no consistency check ran on it at all), unless the
+schema lists the sheet under `consistency_not_applicable_sheets`. A rule
+that summed only some of its columns (the rest were not in the file) did
+run, and is listed too, as its own warning with `expected = FALSE` and a
+`reason` naming the missing columns; its flags end "(checked without
+...)" because they may come from the missing columns. Sheets that
 couldn't be read, or have no schema, are warned about separately and are
 not in this list. The attribute is dropped by dplyr verbs such as
 [`filter()`](https://rdrr.io/r/stats/filter.html), so read it straight
