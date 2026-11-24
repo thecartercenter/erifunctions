@@ -928,7 +928,7 @@ eri_approve_cmr <- function(country, period, plan = NULL, data_con = NULL,
   # optimization: it's what keeps this a true no-op for the countries that
   # don't have any (see which inst/schemas/cmr/*.yaml declare cross_consistency:).
   cmr_schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
-  has_cross_rules <- !is.null(cmr_schema$cross_consistency) && length(cmr_schema$cross_consistency) > 0L
+  has_cross_rules <- length(cmr_schema[["cross_consistency", exact = TRUE]]) > 0L
 
   cross_logs <- if (has_cross_rules) {
     tryCatch(

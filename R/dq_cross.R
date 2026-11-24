@@ -355,7 +355,7 @@
 #' @keywords internal
 .eri_cmr_cross_flags <- function(country, period, tables, data_con = NULL) {
   schema <- tryCatch(load_cmr_schema(country), error = function(e) NULL)
-  rules  <- schema$cross_consistency %||% list()
+  rules  <- schema[["cross_consistency", exact = TRUE]] %||% list()
   if (length(rules) == 0L) return(NULL)
 
   tables <- .eri_cross_load_missing(country, period, tables, data_con)
