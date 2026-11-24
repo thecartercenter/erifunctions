@@ -1,3 +1,21 @@
+# erifunctions 0.9.55
+
+## Failed attachment downloads are no longer saved as images (#393)
+
+`download_form_attachments()` saved whatever the server sent back, so a photo the phone never
+uploaded, or a request that failed, ended up on disk as a `.jpg` that wouldn't open.
+
+- Attachments that are expected but were never uploaded are now skipped, and the run ends with
+  a message saying how many.
+- A failed download, from a server error or a dropped connection, is not saved and doesn't stop
+  the run. The run ends with an R warning saying how many failed, and re-running retries them.
+  HTTP 403 usually means your ODK account can't access the form.
+- The returned tibble has a new `status` column: `"downloaded"`, `"not uploaded"`,
+  `"failed (HTTP nnn)"` or `"failed (connection error)"`. Only `"downloaded"` rows have a file
+  on disk.
+- If no attachments are listed for the submissions, the function now returns an empty table
+  instead of an error.
+
 # erifunctions 0.9.54
 
 ## Downloaded ODK attachments keep their real extension and never overwrite each other (#391)

@@ -48,7 +48,11 @@ Use the returned \code{file_name} column to link files back to rows.}
 }
 \value{
 \code{tibble} of attachment metadata, with a \code{file_name} column giving
-the name each attachment was saved under in \code{folder_loc}
+the name each attachment was saved under in \code{folder_loc}, and a \code{status}
+column: \code{"downloaded"}, \code{"not uploaded"} (the submission expects the file
+but the phone never sent it), \code{"failed (HTTP nnn)"} or
+\code{"failed (connection error)"}. Only \code{"downloaded"} rows have a file on
+disk. Any failure also raises one R warning at the end of the run.
 }
 \description{
 Download all media attachments from an ODK form
