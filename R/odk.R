@@ -428,15 +428,22 @@ update_odk_app_user_role <- function(
   add   <- !missing_lab & (multi | key %in% key[duplicated(key)])
   stem[add] <- paste0(stem[add], "_", att_stem[add])
 
-  out  <- paste0(stem, ".", ext)
-  seen <- character()
+  # Final case-insensitive uniqueness pass. Hashed sets plus a per-name counter
+  # keep this linear even when many rows share both label and attachment name.
+  out    <- paste0(stem, ".", ext)
+  seen   <- new.env(hash = TRUE, parent = emptyenv())
+  next_n <- new.env(hash = TRUE, parent = emptyenv())
   for (i in seq_along(out)) {
-    n <- 0L
-    while (tolower(out[i]) %in% seen) {
-      n <- n + 1L
-      out[i] <- paste0(stem[i], "_", n, ".", ext[i])
+    base <- tolower(out[i])
+    cand <- out[i]
+    n    <- next_n[[base]] %||% 0L
+    while (!is.null(seen[[tolower(cand)]])) {
+      n    <- n + 1L
+      cand <- paste0(stem[i], "_", n, ".", ext[i])
     }
-    seen <- c(seen, tolower(out[i]))
+    next_n[[base]]        <- n
+    seen[[tolower(cand)]] <- TRUE
+    out[i] <- cand
   }
   out
 }
@@ -452,7 +459,8 @@ update_odk_app_user_role <- function(
 #' @keywords internal
 .odk_safe_file_stem <- function(x) {
   x <- sub("[. ]+$", "", gsub(.odk_unsafe_chars, "_", x))
-  reserved <- grepl("^(con|prn|aux|nul|com[0-9]|lpt[0-9])$", x, ignore.case = TRUE)
+  # Windows reserves device names even with an extension (NUL.txt, con.5.jpg)
+  reserved <- grepl("^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\\..*)?$", x, ignore.case = TRUE)
   x[reserved] <- paste0("_", x[reserved])
   x
 }

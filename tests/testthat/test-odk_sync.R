@@ -419,6 +419,16 @@ test_that(".odk_attachment_file_names falls back to the attachment name and clea
                c("5.jpg", "6.jpg"))
   expect_equal(.odk_attachment_file_names("Edo/Ebonyi:1", "7.jpg"), "Edo_Ebonyi_1.jpg")
   expect_equal(.odk_attachment_file_names("CON", "7.jpg"), "_CON.jpg")
+  expect_equal(.odk_attachment_file_names("con.5", "7.jpg"), "_con.5.jpg")
+})
+
+test_that(".odk_attachment_file_names stays fast when label and attachment both repeat", {
+  n <- 3000L
+  elapsed <- system.time(
+    out <- .odk_attachment_file_names(rep("x", n), rep("1.jpg", n))
+  )[["elapsed"]]
+  expect_equal(anyDuplicated(tolower(out)), 0L)
+  expect_lt(elapsed, 10)
 })
 
 test_that(".odk_attachment_file_names treats names differing only in case as the same", {
