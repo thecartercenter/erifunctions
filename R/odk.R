@@ -53,7 +53,7 @@
 #' that so the main CSV is found for form IDs containing those characters.
 #' @keywords internal
 .odk_export_name <- function(form_id) {
-  x <- gsub('[/?<>\\\\:*|"[:cntrl:]]', "", .odk_form_id_raw(form_id))
+  x <- gsub(.odk_unsafe_chars, "", .odk_form_id_raw(form_id))
   sub("[. ]+$", "", x)
 }
 
@@ -402,6 +402,69 @@ update_odk_app_user_role <- function(
   }
 }
 
+#' Local file names for downloaded ODK attachments
+#'
+#' Stem from the label value (a trailing media extension such as `.jpg`
+#' dropped; other dots, e.g. `3.5`, kept), extension from the attachment itself
+#' (`jpeg` if it has none). The attachment's own stem is appended when its
+#' submission has more than one attachment, or when the name would otherwise
+#' repeat (compared case-insensitively, as Windows/macOS file systems do). Any
+#' name still repeated gets a numeric suffix.
+#' @param label `chr` the `image_label` value per attachment row
+#' @param att_name `chr` the attachment's ODK file name
+#' @param instance_id `chr` the submission each attachment belongs to, or `NULL`
+#' @keywords internal
+.odk_attachment_file_names <- function(label, att_name, instance_id = NULL) {
+  att_stem <- .odk_safe_file_stem(tools::file_path_sans_ext(att_name))
+  ext      <- tools::file_ext(att_name)
+  ext[!nzchar(ext)] <- "jpeg"
+  stem <- .odk_safe_file_stem(sub(.odk_media_ext, "", label, ignore.case = TRUE))
+  missing_lab <- is.na(label) | !nzchar(trimws(stem))
+  stem[missing_lab] <- att_stem[missing_lab]
+
+  key   <- tolower(paste0(stem, ".", ext))
+  multi <- if (is.null(instance_id)) FALSE
+           else instance_id %in% instance_id[duplicated(instance_id)]
+  add   <- !missing_lab & (multi | key %in% key[duplicated(key)])
+  stem[add] <- paste0(stem[add], "_", att_stem[add])
+
+  # Final case-insensitive uniqueness pass. Hashed sets plus a per-name counter
+  # keep this linear even when many rows share both label and attachment name.
+  out    <- paste0(stem, ".", ext)
+  seen   <- new.env(hash = TRUE, parent = emptyenv())
+  next_n <- new.env(hash = TRUE, parent = emptyenv())
+  for (i in seq_along(out)) {
+    base <- tolower(out[i])
+    cand <- out[i]
+    n    <- next_n[[base]] %||% 0L
+    while (!is.null(seen[[tolower(cand)]])) {
+      n    <- n + 1L
+      cand <- paste0(stem[i], "_", n, ".", ext[i])
+    }
+    next_n[[base]]        <- n
+    seen[[tolower(cand)]] <- TRUE
+    out[i] <- cand
+  }
+  out
+}
+
+# Characters Windows rejects in file names (also what Central's
+# sanitize-filename strips from export names).
+.odk_unsafe_chars <- '[/?<>\\\\:*|"[:cntrl:]]'
+
+# Trailing extensions treated as "already a file name" in an image_label value.
+.odk_media_ext <- "\\.(jpe?g|png|gif|heic|webp|bmp|tiff?|mp4|3gp|mov|m4a|amr|mp3|wav|ogg|pdf)$"
+
+#' Make a string safe as a file name stem on Windows
+#' @keywords internal
+.odk_safe_file_stem <- function(x) {
+  x <- sub("[. ]+$", "", gsub(.odk_unsafe_chars, "_", x))
+  # Windows reserves device names even with an extension (NUL.txt, con.5.jpg)
+  reserved <- grepl("^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\\..*)?$", x, ignore.case = TRUE)
+  x[reserved] <- paste0("_", x[reserved])
+  x
+}
+
 #' Download all media attachments from an ODK form
 #'
 #' @param con An `odk_connection` from [init_odk_connection()], or `NULL` to use env vars
@@ -411,12 +474,19 @@ update_odk_app_user_role <- function(
 #' @param form_id `chr` Form ID from [list_odk_forms()], as shown there (an ID
 #'   containing `/` is encoded for you)
 #' @param folder_loc `chr` Local directory to write downloaded attachments
-#' @param image_label `chr` Column name used as the output file stem
+#' @param image_label `chr` Column whose value names each saved file. A media
+#'   extension in the value (`.jpg`, `.png`, ...) is dropped and the
+#'   attachment's own extension is used (`1234.jpg` is saved as `1234.jpg`).
+#'   When one submission has several attachments, or two rows share a value
+#'   (ignoring case), the attachment's ODK file name is appended so no file
+#'   overwrites another. Rows with no value use the attachment's ODK file name.
+#'   Use the returned `file_name` column to link files back to rows.
 #' @param other_vars `chr` Additional columns to include in the returned tibble
 #'   (default: none)
 #' @param add_condition `lgl` Apply a row filter before downloading
 #' @param condition Unquoted `dplyr::filter()` expression; used when `add_condition = TRUE`
-#' @returns `tibble` of attachment metadata
+#' @returns `tibble` of attachment metadata, with a `file_name` column giving
+#'   the name each attachment was saved under in `folder_loc`
 #' @importFrom rlang .data
 #' @importFrom utils URLencode URLdecode
 #' @family ODK Central functions
@@ -480,6 +550,12 @@ download_form_attachments <- function(
     attachments, form_data, by = c("instance_id" = "meta-instanceID")
   )
   cli::cli_alert_info("Identified {nrow(download_dataset)} attachment{?s} to download.")
+  download_dataset$file_name <- if (nrow(download_dataset) > 0L) {
+    .odk_attachment_file_names(
+      as.character(download_dataset[[image_label]]), download_dataset$name,
+      download_dataset$instance_id
+    )
+  } else character()
 
   lapply(
     cli::cli_progress_along(seq_len(nrow(download_dataset)), "Downloading attachments"),
@@ -489,10 +565,11 @@ download_form_attachments <- function(
       filename    <- dplyr::pull(row, "name")
       resp <- httr::GET(
         url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
-                        "/submissions/", instance_id, "/attachments/", filename),
+                        "/submissions/", instance_id, "/attachments/",
+                        utils::URLencode(filename, reserved = TRUE)),
         config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
       )
-      out_name <- file.path(folder_loc, paste0(dplyr::pull(row, !!image_label), ".jpeg"))
+      out_name <- file.path(folder_loc, dplyr::pull(row, "file_name"))
       fid <- file(out_name, "wb")
       writeBin(resp$content, fid)
       close(fid)
