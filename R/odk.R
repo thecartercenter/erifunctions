@@ -486,7 +486,10 @@ update_odk_app_user_role <- function(
 #' @param add_condition `lgl` Apply a row filter before downloading
 #' @param condition Unquoted `dplyr::filter()` expression; used when `add_condition = TRUE`
 #' @returns `tibble` of attachment metadata, with a `file_name` column giving
-#'   the name each attachment was saved under in `folder_loc`
+#'   the name each attachment was saved under in `folder_loc`, and a `status`
+#'   column: `"downloaded"`, `"not uploaded"` (the submission expects the file
+#'   but the phone never sent it), or `"failed (HTTP nnn)"`. Only
+#'   `"downloaded"` rows have a file on disk.
 #' @importFrom rlang .data
 #' @importFrom utils URLencode URLdecode
 #' @family ODK Central functions
@@ -546,36 +549,63 @@ download_form_attachments <- function(
   ) |> dplyr::bind_rows()
   cli::cli_process_done()
 
+  if (nrow(attachments) == 0L) {
+    cli::cli_alert_warning("No attachments listed on the server for these submissions; nothing downloaded.")
+    return(tibble::tibble(instance_id = character(), name = character(),
+                          file_name = character(), status = character()))
+  }
+
   download_dataset <- dplyr::left_join(
     attachments, form_data, by = c("instance_id" = "meta-instanceID")
   )
   cli::cli_alert_info("Identified {nrow(download_dataset)} attachment{?s} to download.")
-  download_dataset$file_name <- if (nrow(download_dataset) > 0L) {
-    .odk_attachment_file_names(
-      as.character(download_dataset[[image_label]]), download_dataset$name,
-      download_dataset$instance_id
-    )
-  } else character()
+  download_dataset$file_name <- .odk_attachment_file_names(
+    as.character(download_dataset[[image_label]]), download_dataset$name,
+    download_dataset$instance_id
+  )
 
-  lapply(
+  # Central lists expected-but-never-uploaded files with exists = false;
+  # requesting them returns a 404 body, which must not be saved as an image.
+  on_server <- if ("exists" %in% names(download_dataset))
+    toupper(as.character(download_dataset$exists)) != "FALSE" else
+    rep(TRUE, nrow(download_dataset))
+
+  status <- vapply(
     cli::cli_progress_along(seq_len(nrow(download_dataset)), "Downloading attachments"),
     function(i) {
-      row         <- dplyr::slice(download_dataset, i)
-      instance_id <- dplyr::pull(row, "instance_id")
-      filename    <- dplyr::pull(row, "name")
+      if (!on_server[i]) return("not uploaded")
+      instance_id <- download_dataset$instance_id[i]
+      filename    <- download_dataset$name[i]
       resp <- httr::GET(
         url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id,
                         "/submissions/", instance_id, "/attachments/",
                         utils::URLencode(filename, reserved = TRUE)),
         config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
       )
-      out_name <- file.path(folder_loc, dplyr::pull(row, "file_name"))
+      if (httr::http_error(resp))
+        return(paste0("failed (HTTP ", httr::status_code(resp), ")"))
+      out_name <- file.path(folder_loc, download_dataset$file_name[i])
       fid <- file(out_name, "wb")
       writeBin(resp$content, fid)
       close(fid)
-    }
+      "downloaded"
+    },
+    character(1L)
   )
+  download_dataset$status <- status
 
-  cli::cli_alert_success("Attachments downloaded to {.path {folder_loc}}.")
+  n_ok      <- sum(status == "downloaded")
+  n_missing <- sum(status == "not uploaded")
+  n_failed  <- sum(startsWith(status, "failed"))
+  cli::cli_alert_success("{n_ok} attachment{?s} downloaded to {.path {folder_loc}}.")
+  if (n_missing > 0L)
+    cli::cli_alert_warning(
+      "{n_missing} attachment{?s} {?was/were} never uploaded to the server (the phone has not sent {?it/them}); skipped."
+    )
+  if (n_failed > 0L)
+    cli::cli_bullets(c(
+      "!" = "{n_failed} attachment{?s} failed to download and {?was/were} not saved.",
+      "i" = "See the {.field status} column of the result; re-running retries them."
+    ))
   download_dataset
 }

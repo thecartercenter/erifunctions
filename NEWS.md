@@ -1,3 +1,15 @@
+# erifunctions 0.9.55
+
+## Failed attachment downloads are no longer saved as images (#393)
+
+`download_form_attachments()` saved whatever the server sent back, so a photo the phone never
+uploaded, or a request that failed, ended up on disk as a `.jpg` that wouldn't open.
+
+- Attachments that are expected but were never uploaded are now skipped and counted in a warning.
+- A failed download is not saved. It is counted in a warning, and re-running retries it.
+- The returned tibble has a new `status` column: `"downloaded"`, `"not uploaded"` or
+  `"failed (HTTP nnn)"`. Only `"downloaded"` rows have a file on disk.
+
 # erifunctions 0.9.54
 
 ## Downloaded ODK attachments keep their real extension and never overwrite each other (#391)
