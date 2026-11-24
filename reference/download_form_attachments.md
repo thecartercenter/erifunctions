@@ -78,7 +78,11 @@ download_form_attachments(
 ## Value
 
 `tibble` of attachment metadata, with a `file_name` column giving the
-name each attachment was saved under in `folder_loc`
+name each attachment was saved under in `folder_loc`, and a `status`
+column: `"downloaded"`, `"not uploaded"` (the submission expects the
+file but the phone never sent it), `"failed (HTTP nnn)"` or
+`"failed (connection error)"`. Only `"downloaded"` rows have a file on
+disk. Any failure also raises one R warning at the end of the run.
 
 ## See also
 

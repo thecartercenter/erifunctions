@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.54</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.55</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,20 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.54/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.55" id="erifunctions-0955">erifunctions 0.9.55<a class="anchor" aria-label="anchor" href="#erifunctions-0955"></a></h2>
+<div class="section level3">
+<h3 id="failed-attachment-downloads-are-no-longer-saved-as-images-0-9-55">Failed attachment downloads are no longer saved as images (<a href="https://github.com/thecartercenter/erifunctions/issues/393" class="external-link">#393</a>)<a class="anchor" aria-label="anchor" href="#failed-attachment-downloads-are-no-longer-saved-as-images-0-9-55"></a></h3>
+<p><code><a href="../reference/download_form_attachments.html">download_form_attachments()</a></code> saved whatever the server sent back, so a photo the phone never uploaded, or a request that failed, ended up on disk as a <code>.jpg</code> that wouldn’t open.</p>
+<ul><li>Attachments that are expected but were never uploaded are now skipped, and the run ends with a message saying how many.</li>
+<li>A failed download, from a server error or a dropped connection, is not saved and doesn’t stop the run. The run ends with an R warning saying how many failed, and re-running retries them. HTTP 403 usually means your ODK account can’t access the form.</li>
+<li>The returned tibble has a new <code>status</code> column: <code>"downloaded"</code>, <code>"not uploaded"</code>, <code>"failed (HTTP nnn)"</code> or <code>"failed (connection error)"</code>. Only <code>"downloaded"</code> rows have a file on disk.</li>
+<li>If no attachments are listed for the submissions, the function now returns an empty table instead of an error.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.54" id="erifunctions-0954">erifunctions 0.9.54<a class="anchor" aria-label="anchor" href="#erifunctions-0954"></a></h2>
 <div class="section level3">
