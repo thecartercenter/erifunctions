@@ -403,8 +403,12 @@ test_that(".odk_attachment_file_names keeps the real extension, no double extens
 
 test_that(".odk_attachment_file_names never gives two attachments the same name", {
   # one submission, two attachments, same label value
-  out <- .odk_attachment_file_names(c("site_A", "site_A"), c("11.jpg", "22.png"))
+  out <- .odk_attachment_file_names(c("site_A", "site_A"), c("11.jpg", "22.png"),
+                                    instance_id = c("u1", "u1"))
   expect_equal(out, c("site_A_11.jpg", "site_A_22.png"))
+  # different extensions alone don't collide, so no suffix is needed
+  expect_equal(.odk_attachment_file_names(c("a", "a"), c("1.jpg", "2.png")),
+               c("a.jpg", "a.png"))
   # same label and same attachment name across submissions
   out2 <- .odk_attachment_file_names(c("x", "x"), c("1.jpg", "1.jpg"))
   expect_equal(anyDuplicated(out2), 0L)
@@ -414,4 +418,27 @@ test_that(".odk_attachment_file_names falls back to the attachment name and clea
   expect_equal(.odk_attachment_file_names(c(NA, ""), c("5.jpg", "6.jpg")),
                c("5.jpg", "6.jpg"))
   expect_equal(.odk_attachment_file_names("Edo/Ebonyi:1", "7.jpg"), "Edo_Ebonyi_1.jpg")
+  expect_equal(.odk_attachment_file_names("CON", "7.jpg"), "_CON.jpg")
+})
+
+test_that(".odk_attachment_file_names treats names differing only in case as the same", {
+  out <- .odk_attachment_file_names(c("Site_A", "site_A"), c("1.jpg", "2.jpg"))
+  expect_equal(anyDuplicated(tolower(out)), 0L)
+  out2 <- .odk_attachment_file_names(c("x", "X"), c("1.jpg", "1.JPG"))
+  expect_equal(anyDuplicated(tolower(out2)), 0L)
+})
+
+test_that(".odk_attachment_file_names keeps dots that are not media extensions", {
+  expect_equal(.odk_attachment_file_names(c("3.5", "3.6"), c("1.jpg", "2.jpg")),
+               c("3.5.jpg", "3.6.jpg"))
+})
+
+test_that(".odk_attachment_file_names names per submission, not per run", {
+  # a submission with two attachments always gets the attachment stem appended,
+  # whether or not other submissions are in the run
+  both <- .odk_attachment_file_names(c("s1", "s1", "s2"), c("a.jpg", "b.jpg", "c.jpg"),
+                                     instance_id = c("u1", "u1", "u2"))
+  expect_equal(both, c("s1_a.jpg", "s1_b.jpg", "s2.jpg"))
+  alone <- .odk_attachment_file_names("s2", "c.jpg", instance_id = "u2")
+  expect_equal(alone, "s2.jpg")
 })

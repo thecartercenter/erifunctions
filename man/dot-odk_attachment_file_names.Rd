@@ -4,17 +4,21 @@
 \alias{.odk_attachment_file_names}
 \title{Local file names for downloaded ODK attachments}
 \usage{
-.odk_attachment_file_names(label, att_name)
+.odk_attachment_file_names(label, att_name, instance_id = NULL)
 }
 \arguments{
 \item{label}{\code{chr} the \code{image_label} value per attachment row}
 
 \item{att_name}{\code{chr} the attachment's ODK file name}
+
+\item{instance_id}{\code{chr} the submission each attachment belongs to, or \code{NULL}}
 }
 \description{
-Stem from the label value (extension dropped, characters Windows rejects
-replaced with \verb{_}), extension from the attachment itself (\code{jpeg} if it has
-none). A stem used more than once gets the attachment's own stem appended,
-and any remaining repeat gets a numeric suffix, so names are unique.
+Stem from the label value (a trailing media extension such as \code{.jpg}
+dropped; other dots, e.g. \code{3.5}, kept), extension from the attachment itself
+(\code{jpeg} if it has none). The attachment's own stem is appended when its
+submission has more than one attachment, or when the name would otherwise
+repeat (compared case-insensitively, as Windows/macOS file systems do). Any
+name still repeated gets a numeric suffix.
 }
 \keyword{internal}
