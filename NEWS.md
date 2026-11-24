@@ -1,3 +1,12 @@
+# erifunctions (development version)
+
+## Cross-sheet DQ rules are read by their exact name (#397)
+
+The CMR approval gate and the cross-sheet check read a country's `cross_consistency:` block
+with R's `$`. `$` also accepts a longer name that starts with `cross_consistency`, so a block
+renamed to switch it off (say `cross_consistency_off:`) would still have run and still have
+blocked approval. Both now look for the exact name.
+
 # erifunctions 0.9.55
 
 ## Failed attachment downloads are no longer saved as images (#393)
