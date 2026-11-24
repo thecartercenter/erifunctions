@@ -615,6 +615,7 @@ test_that("treatment_implies_training: a training tab with no rows counts as zer
 test_that(".eri_cmr_cross_flags ignores a block whose name only starts with cross_consistency (#397)", {
   testthat::local_mocked_bindings(
     load_cmr_schema = function(country) list(cross_consistency_off = list(rule1 = list())),
+    .eri_cross_load_missing = function(...) stop("should not be reached"),
     .package = "erifunctions"
   )
   expect_null(.eri_cmr_cross_flags("xx", "202601", list()))
