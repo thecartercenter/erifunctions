@@ -1,4 +1,4 @@
-# erifunctions (development version)
+# erifunctions 0.9.53
 
 ## ODK form IDs containing `/` now work (#388)
 

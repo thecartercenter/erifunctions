@@ -9,6 +9,8 @@
 \description{
 Accepts the raw ID (\code{"Edo/Ebonyi"}) or one the caller already encoded
 (\code{"Edo\%2FEbonyi"}): it decodes first, then encodes reserved characters, so
-\code{/} becomes \verb{\%2F} either way and is never double-encoded.
+\code{/} becomes \verb{\%2F} either way and is never double-encoded. The ID is only
+decoded when it already contains a \verb{\%xx} escape, so a bare \verb{\%} is kept. An ID
+that genuinely contains a literal \verb{\%2F} cannot be addressed.
 }
 \keyword{internal}

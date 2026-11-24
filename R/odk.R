@@ -32,10 +32,18 @@
 #'
 #' Accepts the raw ID (`"Edo/Ebonyi"`) or one the caller already encoded
 #' (`"Edo%2FEbonyi"`): it decodes first, then encodes reserved characters, so
-#' `/` becomes `%2F` either way and is never double-encoded.
+#' `/` becomes `%2F` either way and is never double-encoded. The ID is only
+#' decoded when it already contains a `%xx` escape, so a bare `%` is kept. An ID
+#' that genuinely contains a literal `%2F` cannot be addressed.
 #' @keywords internal
 .odk_enc_form_id <- function(form_id) {
-  utils::URLencode(utils::URLdecode(form_id), reserved = TRUE)
+  utils::URLencode(.odk_form_id_raw(form_id), reserved = TRUE)
+}
+
+#' Undo caller-side percent-encoding of an ODK form ID (only if it has `%xx`)
+#' @keywords internal
+.odk_form_id_raw <- function(form_id) {
+  if (grepl("%[[:xdigit:]]{2}", form_id)) utils::URLdecode(form_id) else form_id
 }
 
 #' Name ODK Central gives a form's CSV inside a submissions export zip
@@ -45,7 +53,7 @@
 #' that so the main CSV is found for form IDs containing those characters.
 #' @keywords internal
 .odk_export_name <- function(form_id) {
-  x <- gsub('[/?<>\\\\:*|"[:cntrl:]]', "", utils::URLdecode(form_id))
+  x <- gsub('[/?<>\\\\:*|"[:cntrl:]]', "", .odk_form_id_raw(form_id))
   sub("[. ]+$", "", x)
 }
 
@@ -208,6 +216,13 @@ download_odk_form <- function(
   unzip(tmp_zip, exdir = tmp_dir)
   form_name <- URLdecode(enc_form_id)
   main_csv  <- file.path(tmp_dir, paste0(.odk_export_name(form_id), ".csv"))
+  if (!file.exists(main_csv)) {
+    found <- basename(list.files(tmp_dir, pattern = "\\.csv$"))
+    cli::cli_abort(c(
+      "Could not find the main table {.file {basename(main_csv)}} in the ODK export for {.val {form_name}}.",
+      "i" = "Files in the export: {.file {found}}."
+    ))
+  }
 
   if (isTRUE(tables)) {
     csvs    <- list.files(tmp_dir, pattern = "\\.csv$", full.names = TRUE)

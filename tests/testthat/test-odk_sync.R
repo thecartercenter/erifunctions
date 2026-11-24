@@ -308,6 +308,8 @@ test_that(".odk_enc_form_id encodes '/' once, raw or pre-encoded", {
   expect_equal(.odk_enc_form_id("Edo/EbonyiStopMDA"), "Edo%2FEbonyiStopMDA")
   expect_equal(.odk_enc_form_id("Edo%2FEbonyiStopMDA"), "Edo%2FEbonyiStopMDA")
   expect_equal(.odk_enc_form_id("plain_form-1"), "plain_form-1")
+  expect_equal(.odk_enc_form_id("100%"), "100%25")   # bare % is kept, not decoded
+  expect_equal(.odk_export_name("100%"), "100%")
 })
 
 test_that(".odk_export_name mirrors Central's sanitize-filename", {
@@ -342,6 +344,25 @@ test_that("download_odk_form handles a form ID containing '/'", {
     expect_equal(nrow(out), 2L)
     expect_match(seen_url, "/forms/Edo%2FEbonyiForm/submissions.csv.zip", fixed = TRUE)
   }
+})
+
+test_that("download_odk_form names the export's files when the main CSV is missing", {
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) structure(list(status_code = 200L), class = "response"),
+    .package = "httr"
+  )
+  testthat::local_mocked_bindings(
+    .odk_check_response = function(...) invisible(NULL),
+    unzip = function(zipfile, exdir, ...) {
+      readr::write_csv(tibble::tibble(KEY = "a"), file.path(exdir, "other.csv"))
+      invisible(character(0))
+    },
+    .package = "erifunctions"
+  )
+  expect_error(
+    download_odk_form(url = "https://x/", auth = "tok", project_id = 1L, form_id = "myform"),
+    "other.csv"
+  )
 })
 
 test_that("download_form_attachments works without other_vars and with a '/' form ID", {
