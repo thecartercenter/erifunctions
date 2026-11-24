@@ -94,19 +94,20 @@ test_that("ht_lf_mda schema loads from package", {
   expect_equal(schema$country, "ht")
 })
 
-test_that("dr_lf_mda consistency flags doses exceeding target_pop", {
+test_that("dr_lf_mda consistency flags doses over 2x target_pop, not just over target_pop (#372)", {
   schema <- load_dq_schema("dr", "lf_mda", azcontainer = NULL)
   df <- tibble::tibble(
     eu                = c("EU1", "EU2", "EU3"),
     year              = c(2022L, 2022L, 2022L),
     round             = c(1L, 1L, 1L),
     target_pop        = c(10000L, 5000L, 8000L),
-    doses_distributed = c(9500L, 5500L, 7000L),  # row 2 violates
-    coverage_pct      = c(95, 110, 87.5)
+    doses_distributed = c(9500L, 11000L, 8800L),  # row 2 is 220% (flagged); row 3 is 110% (allowed)
+    coverage_pct      = c(95, 220, 110)
   )
   out <- add_anomaly_consistency(df, schema)
   expect_equal(nrow(out), 1L)
   expect_equal(out$row, 2L)
+  expect_equal(out$value, "11,000 vs target_pop 5,000 (220%)")
 })
 
 test_that("dr_lf_mda consistency passes when doses within target", {

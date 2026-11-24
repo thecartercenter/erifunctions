@@ -52,7 +52,7 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0006](0006-research-projects-as-repos.md) | Research projects as separate template-generated repos | Accepted |
 | [0007](0007-research-aware-spatial-sourcing.md) | Research-aware spatial sourcing via a `cache` flag | Accepted |
 | [0008](0008-baked-azure-auth-defaults.md) | Baked-in Azure auth defaults; interactive AAD as the zero-config default | Accepted |
-| [0009](0009-research-data-lifecycle.md) | Research-data lifecycle: Azure is the source, the project is the versioned working copy | Accepted |
+| [0009](0009-research-data-lifecycle.md) | Research-data lifecycle: Azure is the source, the project is the versioned working copy; addendum: outputs archived on re-upload, tags freeze outputs (#377) | Accepted |
 | [0010](0010-odk-repeat-group-tables.md) | ODK repeat groups land as a relational set of tables, approved together | Accepted — point 4 amended by ADR-0019 |
 | [0011](0011-unified-schema-naming.md) | One vocabulary for addressing data and schemas (unified schema naming) | Superseded by ADR-0012 |
 | [0012](0012-source-measure-data-model.md) | Data is addressed by source *and* measure (the 5-axis path model) | Accepted — point 5 amended by ADR-0020 |
@@ -67,7 +67,7 @@ What becomes easier, what becomes harder, and what we are explicitly *not* doing
 | [0021](0021-mirror-filename-period-leading.md) | Legacy mirror filename leads with period, not country | Superseded by ADR-0025 |
 | [0022](0022-cmr-duplicate-field-code-blocks-workbook.md) | A duplicate CMR field code blocks the whole workbook, not just its sheet | Accepted — reverses v0.9.8 |
 | [0023](0023-cmr-ingest-stamps-sheet-name.md) | `eri_ingest_cmr()` stamps the real sheet name onto every row | Accepted |
-| [0024](0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks: declared in the CMR routing schema, evaluated at staged-layer DQ time | Accepted |
+| [0024](0024-cross-sheet-dq-at-staged-layer.md) | Cross-sheet DQ checks: declared in the CMR routing schema, evaluated at staged-layer DQ time; addendum: rules extended to nga/sdn/ssd/ht/mad (#373) | Accepted |
 | [0025](0025-mirror-filename-upload-date-3letter-code.md) | Legacy mirror filename: `{period}_{upload_date}_{3-letter country code}` | Accepted — supersedes ADR-0021 |
 | [0026](0026-wire-consistency-block-into-cmr-dq-report.md) | `eri_cmr_dq_report()` actually evaluates a schema's `consistency:` block (was silently never called); addendum: skipped rules are recorded and reported (#374) | Accepted |
 | [0027](0027-erifunctions-owns-bi-output-contract.md) | erifunctions owns the Power BI output contract; consolidate the contractor pipeline in stages | Accepted — supersedes ADR-0015 |

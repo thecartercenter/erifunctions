@@ -71,7 +71,8 @@
     "    lhs: treated\n",
     "    op: \"<=\"\n",
     "    rhs: target_pop\n",
-    "    message: \"treated exceeds target_pop (>100% raw coverage)\"\n"
+    "    rhs_scale: 2\n",
+    "    message: \"treated is more than 2x target_pop (over 200% raw coverage)\"\n"
   )
 }
 
@@ -570,8 +571,9 @@ eri_onboard_cmr <- function(
 #' Validate a local DQ schema YAML file
 #'
 #' Reads a surveillance schema YAML and checks it for structural problems:
-#' missing required sections, invalid column types, and temporal or consistency
-#' rules referencing unknown columns. Returns a tidy tibble of issues.
+#' missing required sections, invalid column types, temporal or consistency
+#' rules referencing unknown columns, and invalid consistency `rhs_scale`
+#' values. Returns a tidy tibble of issues.
 #'
 #' @param schema_path `chr` Path to a local YAML schema file.
 #' @returns A tibble with columns `issue_type`, `field`, `message`. An empty tibble
@@ -718,6 +720,16 @@ eri_schema_validate <- function(schema_path) {
                                 val, "'.")
           )))
         }
+      }
+      scale_problem <- .dq_rhs_scale_problem(rule[["rhs_scale", exact = TRUE]],
+                                             rule[["rhs", exact = TRUE]],
+                                             rule[["rhs_sum", exact = TRUE]])
+      if (!is.null(scale_problem)) {
+        issues <- c(issues, list(list(
+          issue_type = "invalid_value",
+          field      = paste0("consistency.", rule_name, ".rhs_scale"),
+          message    = paste0("Consistency rule '", rule_name, "': ", scale_problem, ".")
+        )))
       }
     }
   }

@@ -449,3 +449,165 @@ test_that("every bundled CMR routing schema's cross_consistency rules are well-f
   }
   expect_true(checked_any)  # this test is only meaningful if at least one schema exercises it (eth.yaml)
 })
+
+test_that("every cross_consistency source points at a measure the country routes, with real canonical columns (#373)", {
+  # Guards the per-country copies of the rules: a source whose (disease, data_type) the
+  # country doesn't route, or whose join_key/column its DQ schema doesn't define, would
+  # silently skip ("no data") instead of checking anything.
+  schema_dir <- system.file("schemas", "cmr", package = "erifunctions")
+  checked <- character(0)
+  for (f in list.files(schema_dir, pattern = "[.]yaml$", full.names = TRUE)) {
+    cmr   <- yaml::read_yaml(f)
+    rules <- cmr$cross_consistency
+    if (is.null(rules) || length(rules) == 0L) next
+    country <- sub("[.]yaml$", "", basename(f))
+    checked <- c(checked, country)
+    routed  <- unique(vapply(cmr$sheets, function(s) paste(s$disease, s$data_type), character(1)))
+    for (rule_name in names(rules)) {
+      rule <- rules[[rule_name]]
+      for (side in c("lhs", "rhs")) for (src in rule[[side]]$sources) {
+        lbl <- paste0(country, "::", rule_name, "::", side, "::", src$disease, "/", src$data_type)
+        expect_true(paste(src$disease, src$data_type) %in% routed, label = lbl)
+        dq <- suppressMessages(load_dq_schema(country, src$disease, "programmatic", src$data_type, azcontainer = NULL))
+        expect_true(all(c(rule$join_key, src$column) %in% names(dq$columns)), label = lbl)
+      }
+    }
+  }
+  expect_setequal(checked, c("eth", "nga", "sdn", "ssd", "ht", "mad"))
+})
+
+test_that("the RB/LF population match tolerates a rounding difference but not a real one (#373)", {
+  rule <- yaml::read_yaml(system.file("schemas", "cmr", "nga.yaml", package = "erifunctions"))$cross_consistency
+  tables <- list(
+    list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(10000.4, 1000, 500), treated = 1)),
+    list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+         data = tibble::tibble(district = c("A", "B", "C"), population = c(10000, 1003, 501), treated = 1))
+  )
+  flags <- suppressMessages(.eri_cross_check_run(tables, rule["rb_lf_pop_match"]))
+  expect_equal(flags$value, c("B", "C"))   # A differs by 0.4 (rounding); B by 3 and C by 1 (real)
+})
+
+#### Per-country copies of Ethiopia's rules (#373 review): pin what each one says ####
+
+.cmr_yaml <- function(country) yaml::read_yaml(system.file("schemas", "cmr", paste0(country, ".yaml"), package = "erifunctions"))
+
+# A rule with the per-country parts removed: description and the training sheet names
+# (rhs only -- no treatment source restricts its sheets, so lhs `sheets` must match too).
+.cross_rule_core <- function(rule) {
+  rule$description <- NULL
+  rule$rhs$sources <- lapply(rule$rhs$sources, function(s) { s$sheets <- NULL; s })
+  rule
+}
+
+test_that("each country carries exactly the expected cross rules, and they match Ethiopia's (#373)", {
+  eth <- .cmr_yaml("eth")$cross_consistency
+  expected <- list(
+    nga = c("rb_lf_pop_match", "treatment_implies_training"),
+    sdn = c("rb_lf_pop_match", "treatment_implies_training"),
+    ssd = c("rb_lf_pop_match", "treatment_implies_training"),
+    ht  = "treatment_implies_training",
+    mad = "treatment_implies_training"
+  )
+  for (country in names(expected)) {
+    rules <- .cmr_yaml(country)$cross_consistency
+    expect_setequal(names(rules), expected[[country]])
+    for (rule_name in names(rules)) {
+      want <- .cross_rule_core(eth[[rule_name]])
+      # Haiti and Madagascar have no RB tab: their treatment side is LF only.
+      if (country %in% c("ht", "mad")) {
+        want$lhs$sources <- Filter(function(s) s$disease != "oncho", want$lhs$sources)
+      }
+      expect_identical(.cross_rule_core(rules[[rule_name]]), want, label = paste0(country, "::", rule_name))
+    }
+  }
+})
+
+test_that("each country's training sheets are pinned and are routed to the source's own measure (#373)", {
+  expected_sheets <- list(
+    eth = c("CDD Training", "CS Training", "HW Training"),
+    nga = c("CDD Training", "CS Training", "Health Workers Training"),
+    sdn = c("CDD Training", "CS Training", "Health Workers Training"),
+    ssd = c("CDD Training", "CS Training", "Health Workers Training"),
+    ht  = c("CDD Training", "CS Training"),
+    mad = c("Formation Distributeurs", "Formation SC", "Formation Travailleurs de Sante")
+  )
+  for (country in names(expected_sheets)) {
+    cmr <- .cmr_yaml(country)
+    src <- cmr$cross_consistency$treatment_implies_training$rhs$sources[[1]]
+    expect_identical(unlist(src$sheets), expected_sheets[[country]], label = country)
+    # Every sheet named on any source of any rule, either side, must be routed to that
+    # source's own measure: a real sheet of a different measure is silently dropped at run time.
+    for (rule_name in names(cmr$cross_consistency)) {
+      rule <- cmr$cross_consistency[[rule_name]]
+      for (side in c("lhs", "rhs")) for (s in rule[[side]]$sources) for (sh in unlist(s$sheets)) {
+        expect_identical(c(cmr$sheets[[sh]]$disease, cmr$sheets[[sh]]$data_type),
+                         c(s$disease, s$data_type), label = paste(country, rule_name, side, sh))
+      }
+      # Treatment sources never restrict sheets (that would drop RB- or LF-treated districts).
+      for (s in rule$lhs$sources) expect_null(s$sheets, label = paste(country, rule_name, "lhs sheets"))
+    }
+  }
+})
+
+test_that("every country's population match allows rounding (up to 0.5) and nothing more (#373)", {
+  for (country in c("eth", "nga", "sdn", "ssd")) {
+    rule <- .cmr_yaml(country)$cross_consistency["rb_lf_pop_match"]
+    tables <- list(
+      list(sheet = "RB Treatment", disease = "oncho", data_type = "treatment",
+           data = tibble::tibble(district = c("A", "B", "C", "D"), population = c(10000.5, 1000, 500, 800))),
+      list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+           data = tibble::tibble(district = c("A", "B", "C"), population = c(10001, 1000.6, 501)))
+    )
+    flags <- suppressMessages(.eri_cross_check_run(tables, rule))
+    # A differs by exactly 0.5 (rounding); B by 0.6 and C by 1 (real); D is on RB only (not flagged).
+    expect_equal(flags$value, c("B", "C"), label = country)
+  }
+})
+
+test_that("Ethiopia's rules, which every other country is compared to, are pinned (#373 review)", {
+  eth <- .cmr_yaml("eth")$cross_consistency
+  pop <- eth$rb_lf_pop_match
+  expect_identical(pop$join_key, "district")
+  expect_identical(pop$op, "==")
+  expect_identical(pop$tolerance, 0.5)
+  expect_identical(c(pop$lhs$agg, pop$rhs$agg), c("unique", "unique"))
+  expect_null(pop$lhs$missing_as)   # a district on only one tab is a coverage difference, never flagged
+  expect_null(pop$rhs$missing_as)
+
+  trn <- eth$treatment_implies_training
+  expect_identical(trn$join_key, "district")
+  expect_identical(trn$op, "same_sign")
+  expect_identical(c(trn$lhs$agg, trn$rhs$agg), c("sum", "sum"))
+  expect_identical(c(trn$lhs$missing_as, trn$rhs$missing_as), c(0L, 0L))   # no training row at all reads as 0
+
+  # What each side reads: treated (not population) against training tot; population on both tabs.
+  src <- function(side) lapply(side$sources, function(s) unlist(s[c("disease", "data_type", "column")]))
+  expect_identical(src(trn$lhs), list(c(disease = "oncho", data_type = "treatment", column = "treated"),
+                                      c(disease = "lf",    data_type = "treatment", column = "treated")))
+  expect_identical(src(trn$rhs), list(c(disease = "rblf", data_type = "training", column = "tot")))
+  expect_identical(src(pop$lhs), list(c(disease = "oncho", data_type = "treatment", column = "population")))
+  expect_identical(src(pop$rhs), list(c(disease = "lf",    data_type = "treatment", column = "population")))
+
+  # Exactly these two rules, with these messages (every other country copies them).
+  expect_setequal(names(eth), c("rb_lf_pop_match", "treatment_implies_training"))
+  expect_identical(pop$message, "RB and LF Treatment report different population for this district")
+  expect_identical(trn$message, "treatment and training activity disagree on whether this district had any activity this period")
+})
+
+test_that("treatment_implies_training: a training tab with no rows counts as zero; an empty total is not checked (#373)", {
+  rule <- .cmr_yaml("ht")$cross_consistency["treatment_implies_training"]
+  lf <- list(sheet = "LF Treatment", disease = "lf", data_type = "treatment",
+             data = tibble::tibble(district = c("D1", "D2"), treated = c(10, 5)))
+  training <- function(d) list(sheet = "CDD Training", disease = "rblf", data_type = "training", data = d)
+
+  # Tab present with no rows: treated districts read as zero training and are flagged.
+  no_rows <- suppressMessages(.eri_cross_check_run(
+    list(lf, training(tibble::tibble(district = character(), tot = numeric()))), rule))
+  expect_setequal(no_rows$value, c("D1", "D2"))
+
+  # Districts listed with an empty total: aggregates to NA, so not checked (decided 2026-11-20).
+  empty_tot <- suppressMessages(.eri_cross_check_run(
+    list(lf, training(tibble::tibble(district = c("D1", "D2"), tot = c(NA_real_, NA_real_)))), rule))
+  expect_equal(nrow(empty_tot), 0L)
+})

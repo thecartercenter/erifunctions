@@ -505,3 +505,49 @@ for (s in new_schemas) {
     })
   })
 }
+
+test_that("eri_schema_validate flags an invalid rhs_scale and accepts a valid one (#372)", {
+  base <- list(
+    country  = "Uganda", disease = "oncho",
+    temporal = list(year_col = "Year", period_col = "EpiWeek"),
+    columns  = list(
+      Year       = list(required = TRUE, type = "numeric"),
+      EpiWeek    = list(required = TRUE, type = "numeric"),
+      treated    = list(required = FALSE, type = "numeric"),
+      target_pop = list(required = FALSE, type = "numeric")
+    )
+  )
+  check <- function(rule) {
+    s <- base; s$consistency <- list(over = rule)
+    tmp <- withr::local_tempfile(fileext = ".yaml")
+    yaml::write_yaml(s, tmp)
+    suppressMessages(suppressWarnings(eri_schema_validate(tmp)))
+  }
+  ok <- check(list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 2))
+  expect_false(any(ok$field == "consistency.over.rhs_scale"))
+
+  bad <- check(list(lhs = "treated", op = "<=", rhs = "target_pop", rhs_scale = 0))
+  expect_true(any(bad$field == "consistency.over.rhs_scale" & bad$issue_type == "invalid_value"))
+
+  const <- check(list(lhs = "treated", op = "<=", rhs_value = 100, rhs_scale = 2))
+  expect_match(const$message[const$field == "consistency.over.rhs_scale"], "not rhs_value", fixed = TRUE)
+
+  # A summed rhs counts as a column rhs, so it may be scaled.
+  summed <- check(list(lhs = "treated", op = "<=", rhs_sum = list("treated", "target_pop"), rhs_scale = 2))
+  expect_false(any(summed$field == "consistency.over.rhs_scale"))
+})
+
+test_that("no bundled schema has an invalid rhs_scale (#372)", {
+  files <- list.files(system.file("schemas", package = "erifunctions"), pattern = "[.]yaml$", full.names = TRUE)
+  for (f in files) {
+    res <- suppressMessages(suppressWarnings(eri_schema_validate(f)))
+    expect_false(any(grepl("rhs_scale", res$field, fixed = TRUE)), info = basename(f))
+  }
+})
+
+test_that("the MDA schema template starts new countries on the 2x overcoverage rule (#372)", {
+  s <- yaml::read_yaml(text = .mda_schema_template("zzz", "oncho"))
+  rule <- s$consistency$implausible_overcoverage
+  expect_identical(rule$rhs_scale, 2L)
+  expect_match(rule$message, "more than 2x target_pop", fixed = TRUE)
+})

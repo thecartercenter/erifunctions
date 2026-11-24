@@ -105,8 +105,9 @@ eri_odk_sync <- function(
   deleted_paths <- character(0)
   if (nrow(main) == 0L) {
     existing <- eri_list(raw_dir, azure = TRUE, azcontainer = data_con)
+    stem <- .odk_export_name(form_id)   # blobs are named after Central's export files
     own_table <- function(nm) {
-      identical(nm, paste0(form_id, ".parquet")) || startsWith(nm, paste0(form_id, "-"))
+      identical(nm, paste0(stem, ".parquet")) || startsWith(nm, paste0(stem, "-"))
     }
     existing_own    <- existing$name[vapply(basename(existing$name), own_table, logical(1L))]
     orphaned_own    <- setdiff(existing_own, blob_paths)

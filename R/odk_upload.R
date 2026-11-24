@@ -36,7 +36,7 @@
 # GET .../forms/{id}/fields -> tibble(name, path, type). The column->element map.
 #' @keywords internal
 .odk_form_fields <- function(creds, project_id, form_id) {
-  enc <- utils::URLencode(form_id)
+  enc <- .odk_enc_form_id(form_id)
   resp <- httr::GET(
     url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc, "/fields"),
     config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
@@ -55,7 +55,7 @@
 # version) and a best-effort path -> allowed-values map for inline select choices.
 #' @keywords internal
 .odk_form_template <- function(creds, project_id, form_id) {
-  enc <- utils::URLencode(form_id)
+  enc <- .odk_enc_form_id(form_id)
   resp <- httr::GET(
     url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc, ".xml"),
     config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
@@ -339,7 +339,7 @@
 # Returns list(status, http). Never aborts: 409 (already present) -> "skipped".
 #' @keywords internal
 .odk_post_submission <- function(creds, project_id, form_id, xml) {
-  enc  <- utils::URLencode(form_id)
+  enc <- .odk_enc_form_id(form_id)
   resp <- httr::POST(
     url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc, "/submissions"),
     config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth)),

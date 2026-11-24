@@ -53,4 +53,5 @@ consistency:
     lhs: doses_distributed
     op: "<="
     rhs: target_pop
-    message: "doses_distributed exceeds target_pop (>100% raw coverage; verify migrant population data)"
+    rhs_scale: 2
+    message: "doses_distributed is more than 2x target_pop (over 200% raw coverage; verify migrant population data)"

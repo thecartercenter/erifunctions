@@ -209,7 +209,8 @@ consistency:
     lhs: treated
     op: <=
     rhs: target_pop
-    message: treated exceeds target_pop (over 100% raw coverage)
+    rhs_scale: 2
+    message: "treated is more than 2x target_pop (over 200% raw coverage)"
   treated_nonneg:
     lhs: treated
     op: '>='

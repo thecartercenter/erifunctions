@@ -1,3 +1,136 @@
+# erifunctions 0.9.53
+
+## ODK form IDs containing `/` now work (#388)
+
+`download_odk_form()` and `download_form_attachments()` failed for forms whose ID contains a `/`
+(e.g. `Edo/Ebonyi...`). Pass the ID exactly as `list_odk_forms()` shows it. Encoding it yourself
+as `%2F` also works.
+
+- Every ODK call now encodes the form ID the same way, so `/` becomes `%2F` and is never
+  encoded twice.
+- `download_odk_form()` now finds the main CSV in the export. ODK Central drops `/` and other
+  characters that can't appear in file names from that CSV's name, and the function was looking
+  for the unmodified ID.
+- `download_form_attachments()` no longer errors when `other_vars` is left out. It now defaults
+  to no extra columns.
+
+## Research figures keep their folders, re-uploads keep the old version, and tags keep their outputs (#377)
+
+Two problems with research project outputs, both seen in `dr_irs_2026`, and a related change to tags:
+
+- **Figures with the same name overwrote each other.** `eri_research_upload_figure()` uploaded by file
+  name only, so `figs/deck/forest.png` and `figs/deck/es/forest.png` both went to
+  `outputs/figs/forest.png` and the second replaced the first. Figures now keep their folder:
+  `figs/deck/es/forest.png` goes to `outputs/figs/deck/es/forest.png`. A figure directly in `figs/`
+  goes where it always did. A figure outside the project folder is still uploaded by name, with a
+  warning.
+- **Uploading again destroyed the earlier version, including the one a tag pointed at.** Re-uploading
+  a figure or output with `eri_research_upload_figure()` / `eri_research_upload_output()` now first
+  keeps a copy of the existing file in `outputs/_archive/<timestamp>/`, the same way re-pulling data already
+  archives the old copy. In `research.yaml` the earlier entry is marked superseded and says where its
+  file went.
+- **Tags now keep their own copy of the outputs.** `eri_research_tag()` copies each current output into
+  `tags/<label>/outputs/` and records where, so a later upload can't change what a tag points at. A
+  tag used to record only the output paths.
+- `eri_research_status()` counts each output once, plus how many earlier uploads are listed.
+- **Upgrading an existing project:** figures in subfolders now go to new paths, so an upload from before
+  this change at `outputs/figs/<name>` stays listed in `research.yaml` (and is included in new tags). The
+  upload prints a note when that happens. A tag's `outputs` list now has one entry per output (its
+  latest version), with `frozen_path` saying where the tag's copy is.
+- **Not recoverable:** outputs overwritten before this change (for example the v2-era decks behind the
+  `dr-irs-its-v2` tag) are gone unless the storage account keeps blob versions.
+- If you worked around the collisions by renaming files (e.g. an `es_` prefix), that still works; you
+  can now use folders instead.
+
+## Cross-sheet checks now run for Nigeria, Sudan, South Sudan, Haiti and Madagascar, not just Ethiopia (#373)
+
+The two cross-sheet checks Emalee asked for (email of 2026-07-30), first added for Ethiopia, now
+run for every country where they apply:
+
+- **"RB and LF Treatment report the same population for a district"**: Nigeria, Sudan and South
+  Sudan (the countries with both an RB and an LF Treatment tab).
+- **"A district with treatment also has CDD/CS/health-worker training, and the other way round"**:
+  Nigeria, Sudan and South Sudan (RB + LF treated against CDD, CS and Health Workers Training);
+  Haiti (LF treated against CDD and CS Training; Haiti has no RB or health-worker tab); and
+  Madagascar (LF treated against its French-named CDD, CS and health-worker tabs: Formation
+  Distributeurs, Formation SC and Formation Travailleurs de Sante; no RB tab).
+- **Expect new cross-sheet flags** on the next DQ report for Nigeria, Sudan and South Sudan. On
+  each country's latest CMR:
+  - Nigeria (202609): 17 districts with CDD/CS/health-worker training but 0 treated.
+  - Sudan (202610): 1 district where RB and LF population differ.
+  - South Sudan (202610): 1 district where RB and LF population differ (by 2), and 10 districts with
+    treatment but no CDD/CS/health-worker training.
+  - Haiti (202610) and Madagascar (202609): none.
+
+  These come from the data, not from mismatched district names: every flagged district is on both
+  tabs being compared. As before, an unresolved cross-sheet flag blocks `eri_approve_cmr()` for that
+  period until it is resolved or approval is forced.
+- **Population now counts as matching when it differs only by rounding** (by at most half a person),
+  for every country including Ethiopia.
+  Nigeria's RB tab has decimal projected populations (e.g. 1,000.4) where LF has the same figure
+  rounded (1,000); without this, all 103 Nigerian districts on both tabs were flagged. No change to
+  Ethiopia's results.
+- **Not added:** Uganda, Brazil and Venezuela have no CDD, CS or health-worker training tabs
+  (Uganda's are VHT, Parish Supervisors and similar). Chad and the Dominican Republic have no CMR
+  data yet to check the rules against.
+- The "male + female trained = new + refresher" training check from the follow-up request (email of
+  2026-08-25) already runs for Haiti, Nigeria, Sudan, South Sudan and Uganda (#374). Chad and
+  Madagascar are still left out; Madagascar now has a CMR (202609), so its training tabs could be
+  checked for it next.
+
+## Fewer overcoverage flags, and consistency flags now show the numbers (#372)
+
+Since 0.9.46 the treatment check `implausible_overcoverage` flagged every row where treated was more
+than target population, i.e. raw coverage over 100%. In South Sudan, Ethiopia and elsewhere the
+population estimates are often too low, so most of those flags were noise, and the flag didn't show
+the target population, so you couldn't tell 101% from 600% without opening the workbook.
+
+- **The check now flags only treated more than 2x target population (over 200%)**, in all 20 treatment
+  schemas that have it. On all 4,172 rows of current staged and processed treatment data this cuts the
+  flags from 578 to 30: 28 rows where target population is 0 but people were treated, Ethiopia LF
+  August 2026 at 356%, and South Sudan oncho August 2026 at 216%. 150% would have flagged exactly the
+  same rows. This is a **behaviour change: expect far fewer overcoverage flags.**
+- **A consistency flag that compares two columns now shows both numbers in its value** (checks
+  against a fixed number still show just the one value). For example
+  `350,000 vs target_pop 150,000 (233%)` instead of `350000`. The percentage is the raw ratio from the
+  file, shown for checks that compare sizes (at most, at least, less than, more than), except when the
+  target is 0: most remaining overcoverage flags have a target of 0, so they show no percentage. It is
+  rounded to a whole number unless that would make it look like it is exactly on the limit. The issue
+  text is still the same for every row of a check, so flags from one check still group together in
+  summaries.
+- For schema maintainers: a `consistency:` rule can set `rhs_scale` (one positive number) to multiply
+  its `rhs`/`rhs_sum` column before comparing. `eri_schema_validate()` checks it. New schemas made with
+  the onboarding template start with `rhs_scale: 2`.
+- The notes in the Uganda, Sudan and South Sudan treatment schemas that said consistency rules are
+  "NOT run automatically" were out of date since 0.9.46 and are corrected.
+- If you made a local schema override (ADR-0018) as a stopgap for this, it expires when this version's
+  schema arrives.
+
+## A summed DQ check with some of its columns missing now says so (#376)
+
+Checks such as the training "male + female = new + refresher" rule add up many monthly columns. If
+only *some* of those columns were in the file (for example, a template typo renamed one month), the
+check ran and counted the missing months as 0 without telling you. A flag could then come from the
+missing month rather than the data, and a pass had not checked that month.
+
+- **The check still runs**, so real mismatches are still flagged, but now:
+  - `eri_cmr_dq_report()` shows a warning listing the check, sheet and missing columns, e.g.
+    `lhs_sum incomplete, ran without 1 of 24 column(s): trained_male_nov`. This is a warning even for
+    a check marked `skip_ok: true`.
+  - each flag from that check ends `(checked without trained_male_nov: not found in the data)`, so
+    when you review it you know it may come from the missing column.
+  - the report no longer says "all clean" when such a check found nothing.
+- **What to do if you see it:** the file's field codes probably have a typo or a renamed column. The
+  column name shown is the schema's name for it (e.g. `trained_male_nov`), not the field code in the
+  file (`#cddtrn_male_mov`), so you may not find it by searching the file. Pass the sheet, check and
+  column names to the DQ schema maintainer.
+- **Seen on real data.** Of 215 processed and staged training files checked, one has this: Ethiopia's
+  June 2026 CDD Training sheet has the field code `#cddtrn_male_mov` where `#cddtrn_male_nov` belongs.
+  November was empty in that file, so its 2 existing flags are real mismatches in other months; they
+  now carry the note. Every other file has all of its columns, and its results are unchanged.
+- A check whose columns are **all** missing (written for a different sheet layout) is reported as
+  before.
+
 # erifunctions 0.9.52
 
 ## An expired Azure sign-in now opens the browser again instead of stopping (#379)

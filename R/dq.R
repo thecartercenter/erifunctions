@@ -805,6 +805,92 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
   NULL
 }
 
+# The columns of a summed side (`lhs_sum`/`rhs_sum`) that are missing from
+# `df` when SOME of them are present -- a partial match (issue #376). Returns
+# character(0) when the side is not a summed side, or when all or none of its
+# columns are present (none present is the separate "not found" skip).
+# The rule still runs on the columns that are present, which treats the
+# missing ones as 0, so add_anomaly_consistency() records an "incomplete" note
+# and tags the rule's flags. Seen on real data: Ethiopia's June 2026 CDD
+# Training sheet has `#cddtrn_male_mov` for `#cddtrn_male_nov`.
+.dq_sum_partial_missing <- function(df, sum_cols) {
+  if (is.null(sum_cols)) return(character(0))
+  cols    <- unique(unlist(sum_cols))
+  missing <- setdiff(cols, names(df))
+  if (length(missing) == length(cols)) return(character(0))
+  missing
+}
+
+# `skipped_rules` also carries rules that RAN without some of their summed
+# columns (issue #376), so that one table lists every check whose result is
+# not a full check. Their `reason` contains this marker. Code that counts
+# rules that did not run at all must leave these rows out -- use this helper,
+# not a hand-written pattern.
+.dq_incomplete_marker <- "incomplete, ran without"
+.dq_is_incomplete <- function(reason) grepl(.dq_incomplete_marker, reason, fixed = TRUE)
+
+# Why a consistency rule's `rhs_scale` can't be used, or NULL if it can (or is
+# absent). It must be one positive number, and the rule's rhs must be a column
+# (`rhs`/`rhs_sum`): scaling a constant `rhs_value` is just a different
+# constant, so write that instead. Shared with eri_schema_validate().
+.dq_rhs_scale_problem <- function(scale, rhs, rhs_sum) {
+  if (is.null(scale)) return(NULL)
+  if (!is.numeric(scale) || length(scale) != 1L || is.na(scale) || !is.finite(scale) || scale <= 0) {
+    return("rhs_scale must be one positive number")
+  }
+  if (is.null(rhs) && is.null(rhs_sum)) {
+    return("rhs_scale needs a column rhs (rhs or rhs_sum), not rhs_value")
+  }
+  NULL
+}
+
+# Number formatting for flag values: thousands separators, no scientific
+# notation, each value formatted on its own (format() on a vector would pad
+# them to a common width and number of decimals).
+.dq_fmt_num <- function(x) {
+  vapply(x, function(v) if (is.na(v)) "NA" else
+    format(v, big.mark = ",", scientific = FALSE, trim = TRUE, digits = 15), character(1))
+}
+
+# A percentage for a flag value, as a whole number -- except where rounding
+# would land exactly on the rule's limit (`limit`, e.g. 200 for rhs_scale 2)
+# while the true value is not on it: a row at 200.4% must not read "(200%)"
+# next to a message saying "over 200%". Those get the fewest decimals (up to 4)
+# that tell them apart from the limit.
+.dq_pct_text <- function(p, limit) {
+  # 100 * scale is not exact for many decimal scales (100 * 1.1 is
+  # 110.00000000000001), so round the limit and compare with a tolerance.
+  limit <- round(limit, 8)
+  vapply(p, function(v) {
+    d <- 0L
+    while (d < 4L && abs(round(v, d) - limit) < 1e-9 && abs(v - limit) > 1e-9) d <- d + 1L
+    .dq_fmt_num(round(v, d))
+  }, character(1))
+}
+
+# The `value` of a consistency flag (issue #372): the lhs value, plus -- when
+# the rhs is a column -- the rhs value it was compared with, and for an
+# ordering rule (<=, >=, <, >) the lhs as a percentage of the rhs, so a DA can
+# tell 101% from 600% without opening the workbook. `rhs` is the unscaled rhs
+# (the number in the file), so the percentage is the raw ratio; `scale` is the
+# rule's rhs_scale (1 if none), used only to keep the percentage from rounding
+# onto the limit. A summed rhs is labelled by its column count, not by the full
+# list (which can be 48 columns long). Rules against a constant (`rhs_value`)
+# keep just the lhs value.
+.dq_consistency_value <- function(lhs_vals, rhs, rows, op, rhs_col, rhs_sum, scale = 1) {
+  if (is.null(rhs_col) && is.null(rhs_sum)) return(as.character(lhs_vals))
+  rhs_vals  <- rhs[rows]
+  n_sum     <- length(unique(unlist(rhs_sum)))
+  rhs_label <- rhs_col %||% paste0("sum of ", n_sum, if (n_sum == 1L) " column" else " columns")
+  out <- paste0(.dq_fmt_num(lhs_vals), " vs ", rhs_label, " ", .dq_fmt_num(rhs_vals))
+  if (op %in% c("<=", ">=", "<", ">") && is.numeric(lhs_vals) && is.numeric(rhs_vals)) {
+    has_pct <- !is.na(rhs_vals) & rhs_vals != 0
+    out[has_pct] <- paste0(out[has_pct], " (",
+                           .dq_pct_text(100 * lhs_vals[has_pct] / rhs_vals[has_pct], 100 * scale), "%)")
+  }
+  out
+}
+
 #' Flag cross-field consistency violations defined in a schema
 #'
 #' @description
@@ -827,6 +913,12 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #'     op: ">="
 #'     rhs_value: 0
 #'     message: "Age is negative"
+#'   implausible_overcoverage:
+#'     lhs: treated
+#'     op: "<="
+#'     rhs: target_pop
+#'     rhs_scale: 2
+#'     message: "treated is more than 2x target_pop (over 200% raw coverage)"
 #'   gender_sum_matches_type_sum:
 #'     lhs_sum: [male_trained, female_trained]
 #'     op: "=="
@@ -847,10 +939,34 @@ add_anomaly_gaps <- function(data, period_col, period_type = c("week", "month"),
 #' columns exist in the data at all skips the whole rule for that side (e.g. a
 #' schema shared across several sheet shapes, where only one prefix's columns
 #' are ever populated on a given ingest -- same "not found" skip as a missing
-#' `lhs`/`rhs`).
+#' `lhs`/`rhs`). A summed side where only *some* of its columns exist (e.g. a
+#' template typo renamed one month's column) still runs, counting the missing
+#' columns as 0, so real mismatches are still flagged. Because a flag may then
+#' come from the missing column rather than the data (and a pass did not
+#' check it), the rule is also listed in the skipped rules with a `reason`
+#' that starts `"lhs_sum incomplete, ran without"` (or `rhs_sum`) and names the
+#' missing columns, always with `expected = FALSE` (even with `skip_ok`), and
+#' each of its flags ends `"(checked without <columns>: not found in the
+#' data)"`.
 #'
 #' Supported operators: `<=`, `>=`, `==`, `<`, `>`, `!=`.
 #' Missing values (`NA`) in either operand skip the check for that row.
+#'
+#' `rhs_scale` (optional, one positive number) multiplies a column rhs
+#' (`rhs` or `rhs_sum`) before the comparison, e.g. `rhs_scale: 2` with
+#' `treated <= target_pop` flags only rows where `treated` is more than twice
+#' `target_pop`. It can't be combined with `rhs_value` (write the scaled
+#' constant instead). A rule with an invalid `rhs_scale`, or with a
+#' non-numeric rhs column to scale, is skipped and recorded like any other
+#' skip, with `expected = FALSE`.
+#'
+#' Each flag's `issue` is the same for every row of a rule (rule name and
+#' message). Its `value` holds that row's numbers: the lhs value and, when the
+#' rhs is a column, the rhs value from the data (before any `rhs_scale`), e.g.
+#' `"180,617 vs target_pop 150,000 (120%)"`. The percentage (lhs as a share of
+#' rhs) is shown for `<=`, `>=`, `<` and `>` rules when the rhs is not 0. A
+#' summed rhs is named by its column count (`"vs sum of 48 columns ..."`). A
+#' rule against a constant (`rhs_value`) shows just the lhs value.
 #'
 #' Works on a plain tibble (returns a tibble of violations) or a `dq_result`
 #' (appends violations to `$flags`).
@@ -909,8 +1025,9 @@ add_anomaly_consistency <- function(data, schema) {
   all_flags <- tibble::tibble(row    = integer(), column = character(),
                                value  = character(), issue  = character())
   # Rules that could not be evaluated at all (a column missing, an unsummable
-  # column). Recorded -- not just printed -- so a caller can tell "rule did
-  # not run" from "rule ran and passed" (issue #374).
+  # column), or that ran without some summed columns (issue #376). Recorded --
+  # not just printed -- so a caller can tell "rule did not run" from "rule ran
+  # and passed" (issue #374).
   skipped   <- tibble::tibble(rule = character(), reason = character(), expected = logical())
 
   for (rule_name in names(rules)) {
@@ -927,7 +1044,31 @@ add_anomaly_consistency <- function(data, schema) {
     rule_rhs     <- rule[["rhs", exact = TRUE]]
     rule_rhs_sum <- rule[["rhs_sum", exact = TRUE]]
     rule_rhs_val <- rule[["rhs_value", exact = TRUE]]
+    rule_scale   <- rule[["rhs_scale", exact = TRUE]]
     rule_skip_ok <- isTRUE(rule[["skip_ok", exact = TRUE]])
+
+    # `rhs_scale` multiplies a column rhs (`rhs`/`rhs_sum`) before comparing,
+    # e.g. `treated <= 2 x target_pop` (issue #372). A bad value would silently
+    # change what the rule checks, so the rule is skipped and recorded instead.
+    scale_problem <- .dq_rhs_scale_problem(rule_scale, rule_rhs, rule_rhs_sum)
+    if (!is.null(scale_problem)) {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: {scale_problem}, skipping."
+      )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = scale_problem, expected = FALSE))
+      next
+    }
+
+    # Summed sides with only some of their columns present (issue #376). The
+    # rule still runs on the columns found -- dropping it would also hide real
+    # mismatches -- but the result is recorded as incomplete (below, once the
+    # rule is known to run).
+    partial <- c(
+      lhs_sum = list(.dq_sum_partial_missing(df, rule_lhs_sum)),
+      rhs_sum = list(.dq_sum_partial_missing(df, rule_rhs_sum))
+    )
+    partial <- partial[lengths(partial) > 0L]
 
     lhs      <- .dq_consistency_side(df, rule_lhs, rule_lhs_sum)
     lhs_desc <- rule_lhs %||% paste0("sum(", paste(unlist(rule_lhs_sum), collapse = " + "), ")")
@@ -958,8 +1099,46 @@ add_anomaly_consistency <- function(data, schema) {
       next
     }
 
+    # add_anomaly_consistency() can be called directly on data run_dq_checks()
+    # hasn't type-coerced; a text column can't be multiplied. Checked before the
+    # incomplete note below, so a skipped rule never also gets an incomplete row.
+    if (!is.null(rule_scale) && !is.numeric(rhs)) {
+      cli::cli_alert_warning(
+        "Consistency rule {.val {rule_name}}: {.field rhs} is not numeric, so {.field rhs_scale} can't be applied, skipping."
+      )
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = "rhs_scale needs a numeric rhs column", expected = FALSE))
+      next
+    }
+
+    # The rule runs, but without some of its columns: those count as 0, so a
+    # flag may come from a missing column rather than the data, and a pass
+    # did not check them. Recorded as unexpected even with `skip_ok` (that
+    # covers a rule written for another layout, where NONE of its columns are
+    # present, not columns lost from the layout it was written for), and each
+    # of this rule's flags says what it was checked without.
+    flag_note <- ""
+    if (length(partial) > 0L) {
+      notes <- character(0)
+      for (side in names(partial)) {
+        miss <- partial[[side]]
+        n    <- length(unique(unlist(rule[[side, exact = TRUE]])))
+        cli::cli_alert_warning(
+          "Consistency rule {.val {rule_name}}: {length(miss)} of {n} {.field {side}} {cli::qty(length(miss))}column{?s} not found ({.val {miss}}); checked without {?it/them}, counting {?it/them} as 0."
+        )
+        notes <- c(notes, paste0(side, " ", .dq_incomplete_marker, " ", length(miss), " of ", n,
+                                 " column(s): ", paste(miss, collapse = ", ")))
+      }
+      skipped <- dplyr::bind_rows(skipped, tibble::tibble(
+        rule = rule_name, reason = paste(notes, collapse = "; "), expected = FALSE))
+      flag_note <- paste0(" (checked without ", paste(unlist(partial), collapse = ", "),
+                          ": not found in the data)")
+    }
+
     lhs_vals   <- lhs
-    rhs_vals   <- rhs
+    # as.numeric(): YAML reads `rhs_scale: 2` as an integer, and integer x integer
+    # overflows to NA above ~2.1e9 (silently dropping that row).
+    rhs_vals   <- if (is.null(rule_scale)) rhs else as.numeric(rhs) * rule_scale
     applicable <- !is.na(lhs_vals) & !is.na(rhs_vals)
 
     ok <- switch(op,
@@ -976,14 +1155,18 @@ add_anomaly_consistency <- function(data, schema) {
     if (length(violated) > 0) {
       rhs_desc <- rule_rhs %||% rule_rhs_val %||%
         paste0("sum(", paste(unlist(rule_rhs_sum), collapse = " + "), ")")
-      msg      <- rule$message %||% paste0(lhs_desc, " ", op, " ", rhs_desc)
+      if (!is.null(rule_scale)) rhs_desc <- paste0(rule_scale, " x ", rhs_desc)
+      msg      <- rule[["message", exact = TRUE]] %||% paste0(lhs_desc, " ", op, " ", rhs_desc)
+      # `issue` stays the same for every row of a rule (summaries group flags by
+      # it); the row's own numbers go in `value` (issue #372).
       all_flags <- dplyr::bind_rows(
         all_flags,
         tibble::tibble(
           row    = violated,
           column = lhs_desc,
-          value  = as.character(lhs_vals[violated]),
-          issue  = paste0("consistency [", rule_name, "]: ", msg)
+          value  = .dq_consistency_value(lhs_vals[violated], rhs, violated, op,
+                                         rule_rhs, rule_rhs_sum, rule_scale %||% 1),
+          issue  = paste0("consistency [", rule_name, "]: ", msg, flag_note)
         )
       )
       cli::cli_alert_warning(
@@ -994,14 +1177,15 @@ add_anomaly_consistency <- function(data, schema) {
 
   n_flags <- nrow(all_flags)
   if (n_flags == 0) {
-    n_bad_skips <- sum(!skipped$expected %in% TRUE)
-    if (nrow(skipped) >= length(rules)) {
+    n_bad_skips   <- sum(!skipped$expected %in% TRUE)
+    n_not_run     <- sum(!.dq_is_incomplete(skipped$reason))
+    if (n_not_run >= length(rules)) {
       # Not a green tick: nothing was actually checked. How serious that is
       # (e.g. ToT sheets have no applicable rule by design) is eri_cmr_dq_report()'s call.
       cli::cli_alert_info("None of the {length(rules)} consistency rule{?s} could be run on this data (see above) -- nothing was checked.")
     } else if (n_bad_skips > 0L) {
       cli::cli_alert_warning(
-        "No violations found, but {n_bad_skips} rule{?s} could not be run (above) -- not a full pass."
+        "No violations found, but {n_bad_skips} rule{?s} could not be run or ran without some columns (above) -- not a full pass."
       )
     } else if (nrow(skipped) > 0L) {
       cli::cli_alert_success(

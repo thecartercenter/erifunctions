@@ -28,6 +28,35 @@
   httr::content(resp)
 }
 
+#' Percent-encode an ODK form ID for use as one URL path segment
+#'
+#' Accepts the raw ID (`"Edo/Ebonyi"`) or one the caller already encoded
+#' (`"Edo%2FEbonyi"`): it decodes first, then encodes reserved characters, so
+#' `/` becomes `%2F` either way and is never double-encoded. The ID is only
+#' decoded when it already contains a `%xx` escape, so a bare `%` is kept. An ID
+#' that genuinely contains a literal `%2F` cannot be addressed.
+#' @keywords internal
+.odk_enc_form_id <- function(form_id) {
+  utils::URLencode(.odk_form_id_raw(form_id), reserved = TRUE)
+}
+
+#' Undo caller-side percent-encoding of an ODK form ID (only if it has `%xx`)
+#' @keywords internal
+.odk_form_id_raw <- function(form_id) {
+  if (grepl("%[[:xdigit:]]{2}", form_id)) utils::URLdecode(form_id) else form_id
+}
+
+#' Name ODK Central gives a form's CSV inside a submissions export zip
+#'
+#' Central names export files with `sanitize-filename(xmlFormId)`, which drops
+#' `/ ? < > \ : * | "` and control characters, and trailing dots/spaces. Mirror
+#' that so the main CSV is found for form IDs containing those characters.
+#' @keywords internal
+.odk_export_name <- function(form_id) {
+  x <- gsub('[/?<>\\\\:*|"[:cntrl:]]', "", .odk_form_id_raw(form_id))
+  sub("[. ]+$", "", x)
+}
+
 # --- Connection -------------------------------------------------------------
 
 #' Initialize an ODK Central connection
@@ -163,7 +192,7 @@ download_odk_form <- function(
     data_con    = NULL
 ) {
   creds       <- .odk_creds(con, url, auth)
-  enc_form_id <- URLencode(form_id)
+  enc_form_id <- .odk_enc_form_id(form_id)
 
   send_url <- if (attachments) {
     paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id, "/submissions.csv.zip")
@@ -186,7 +215,14 @@ download_odk_form <- function(
 
   unzip(tmp_zip, exdir = tmp_dir)
   form_name <- URLdecode(enc_form_id)
-  main_csv  <- file.path(tmp_dir, paste0(form_name, ".csv"))
+  main_csv  <- file.path(tmp_dir, paste0(.odk_export_name(form_id), ".csv"))
+  if (!file.exists(main_csv)) {
+    found <- basename(list.files(tmp_dir, pattern = "\\.csv$"))
+    cli::cli_abort(c(
+      "Could not find the main table {.file {basename(main_csv)}} in the ODK export for {.val {form_name}}.",
+      "i" = "Files in the export: {.file {found}}."
+    ))
+  }
 
   if (isTRUE(tables)) {
     csvs    <- list.files(tmp_dir, pattern = "\\.csv$", full.names = TRUE)
@@ -274,7 +310,7 @@ list_odk_form_users <- function(
     form_id
 ) {
   creds       <- .odk_creds(con, url, auth)
-  enc_form_id <- URLencode(form_id)
+  enc_form_id <- .odk_enc_form_id(form_id)
   resp <- httr::GET(
     url    = paste0(creds$url, "v1/projects/", project_id, "/forms/", enc_form_id, "/assignments"),
     config = httr::add_headers(Authorization = paste0("Bearer ", creds$auth))
@@ -345,7 +381,7 @@ update_odk_app_user_role <- function(
     return(isTRUE(x$success))
   }
 
-  enc_form_id <- URLencode(form_id)
+  enc_form_id <- .odk_enc_form_id(form_id)
 
   if (action == "assign") {
     x <- httr::POST(
@@ -372,10 +408,12 @@ update_odk_app_user_role <- function(
 #' @param url `chr` Server URL (used when `con = NULL`)
 #' @param auth `chr` Bearer token (used when `con = NULL`)
 #' @param project_id `int` Project ID from [list_odk_projects()]
-#' @param form_id `chr` Form ID from [list_odk_forms()]
+#' @param form_id `chr` Form ID from [list_odk_forms()], as shown there (an ID
+#'   containing `/` is encoded for you)
 #' @param folder_loc `chr` Local directory to write downloaded attachments
 #' @param image_label `chr` Column name used as the output file stem
 #' @param other_vars `chr` Additional columns to include in the returned tibble
+#'   (default: none)
 #' @param add_condition `lgl` Apply a row filter before downloading
 #' @param condition Unquoted `dplyr::filter()` expression; used when `add_condition = TRUE`
 #' @returns `tibble` of attachment metadata
@@ -391,12 +429,12 @@ download_form_attachments <- function(
     form_id,
     folder_loc,
     image_label,
-    other_vars,
+    other_vars    = character(),
     add_condition = FALSE,
     condition     = NULL
 ) {
   creds       <- .odk_creds(con, url, auth)
-  enc_form_id <- URLencode(form_id)
+  enc_form_id <- .odk_enc_form_id(form_id)
 
   if (!dir.exists(folder_loc)) {
     cli::cli_process_start("Folder not found, creating {.path {folder_loc}}.")
