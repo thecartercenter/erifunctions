@@ -394,8 +394,11 @@ test_that("download_form_attachments works without other_vars and with a '/' for
 })
 
 test_that("download_form_attachments skips never-uploaded files and never saves error bodies (#393)", {
+  requested <- character()
   testthat::local_mocked_bindings(
     GET = function(url, ...) {
+      requested <<- c(requested, url)
+      if (grepl("/attachments/drop.jpg$", url)) stop("connection reset")
       code <- if (grepl("/attachments/bad.jpg$", url)) 404L else 200L
       structure(list(status_code = code, content = as.raw(1:3),
                      headers = list(), url = url), class = "response")
@@ -404,23 +407,29 @@ test_that("download_form_attachments skips never-uploaded files and never saves 
   )
   testthat::local_mocked_bindings(
     download_odk_form = function(...) tibble::tibble(
-      pic = c("p1", "p2", "p3"), `meta-instanceID` = c("u1", "u2", "u3"),
-      AttachmentsExpected = 1, AttachmentsPresent = c(1, 1, 0)
+      pic = c("p1", "p2", "p3", "p4"), `meta-instanceID` = c("u1", "u2", "u3", "u4"),
+      AttachmentsExpected = 1, AttachmentsPresent = c(1, 1, 0, 1)
     ),
     .odk_check_response = function(resp, ...) {
       id <- sub(".*/submissions/([^/]+)/attachments$", "\\1", resp$url)
       switch(id,
         u1 = list(list(name = "ok.jpg",      exists = TRUE)),
         u2 = list(list(name = "bad.jpg",     exists = TRUE)),
-        u3 = list(list(name = "missing.jpg", exists = FALSE)))
+        u3 = list(list(name = "missing.jpg", exists = FALSE)),
+        u4 = list(list(name = "drop.jpg",    exists = TRUE)))
     },
     .package = "erifunctions"
   )
   dir <- withr::local_tempdir()
-  out <- download_form_attachments(url = "https://x/", auth = "tok", project_id = 2L,
-                                   form_id = "f", folder_loc = dir, image_label = "pic")
-  expect_equal(out$status, c("downloaded", "failed (HTTP 404)", "not uploaded"))
+  expect_warning(
+    out <- download_form_attachments(url = "https://x/", auth = "tok", project_id = 2L,
+                                     form_id = "f", folder_loc = dir, image_label = "pic"),
+    "2 attachments failed"
+  )
+  expect_equal(out$status, c("downloaded", "failed (HTTP 404)", "not uploaded",
+                             "failed (connection error)"))
   expect_equal(sort(list.files(dir)), "p1.jpg")   # only the good one is on disk
+  expect_false(any(grepl("/attachments/missing.jpg$", requested)))  # never requested
 })
 
 test_that("download_form_attachments returns an empty result when nothing is listed", {
@@ -439,7 +448,7 @@ test_that("download_form_attachments returns an empty result when nothing is lis
                                    form_id = "f", folder_loc = withr::local_tempdir(),
                                    image_label = "pic")
   expect_equal(nrow(out), 0L)
-  expect_true(all(c("file_name", "status") %in% names(out)))
+  expect_true(all(c("pic", "instance_id", "name", "file_name", "status") %in% names(out)))
 })
 
 # --- attachment file names (issue #391) ---------------------------------------
