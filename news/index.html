@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.53</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.54</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,9 +71,21 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.53/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.9.54" id="erifunctions-0954">erifunctions 0.9.54<a class="anchor" aria-label="anchor" href="#erifunctions-0954"></a></h2>
+<div class="section level3">
+<h3 id="downloaded-odk-attachments-keep-their-real-extension-and-never-overwrite-each-other-0-9-54">Downloaded ODK attachments keep their real extension and never overwrite each other (<a href="https://github.com/thecartercenter/erifunctions/issues/391" class="external-link">#391</a>)<a class="anchor" aria-label="anchor" href="#downloaded-odk-attachments-keep-their-real-extension-and-never-overwrite-each-other-0-9-54"></a></h3>
+<p><code><a href="../reference/download_form_attachments.html">download_form_attachments()</a></code> used to save every file as <code>&lt;image_label value&gt;.jpeg</code>:</p>
+<ul><li>A label that was already a file name (<code>1234.jpg</code>) came out as <code>1234.jpg.jpeg</code>, and PNGs or signatures were labelled <code>.jpeg</code> too. Files now keep the attachment’s own extension.</li>
+<li>All the attachments in one submission got the same name, so each one silently overwrote the last. When a submission has more than one attachment, or two labels match (ignoring case, as Windows does), the attachment’s ODK file name is now added (<code>site_A_1712345.jpg</code>).</li>
+<li>Rows with an empty label use the attachment’s ODK file name, and characters Windows doesn’t allow in file names are replaced with <code>_</code>.</li>
+<li>The returned tibble has a new <code>file_name</code> column giving each saved file’s name.</li>
+</ul><p><strong>If a script of yours looks for <code>&lt;label&gt;.jpeg</code>, switch it to the <code>file_name</code> column.</strong> Files saved by earlier versions are not renamed, so re-running into an old folder leaves the old <code>.jpeg</code> copies next to the new files.</p>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.9.53" id="erifunctions-0953">erifunctions 0.9.53<a class="anchor" aria-label="anchor" href="#erifunctions-0953"></a></h2>
 <div class="section level3">

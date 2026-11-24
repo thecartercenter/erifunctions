@@ -52,7 +52,13 @@ download_form_attachments(
 
 - image_label:
 
-  `chr` Column name used as the output file stem
+  `chr` Column whose value names each saved file. A media extension in
+  the value (`.jpg`, `.png`, ...) is dropped and the attachment's own
+  extension is used (`1234.jpg` is saved as `1234.jpg`). When one
+  submission has several attachments, or two rows share a value
+  (ignoring case), the attachment's ODK file name is appended so no file
+  overwrites another. Rows with no value use the attachment's ODK file
+  name. Use the returned `file_name` column to link files back to rows.
 
 - other_vars:
 
@@ -71,7 +77,8 @@ download_form_attachments(
 
 ## Value
 
-`tibble` of attachment metadata
+`tibble` of attachment metadata, with a `file_name` column giving the
+name each attachment was saved under in `folder_loc`
 
 ## See also
 

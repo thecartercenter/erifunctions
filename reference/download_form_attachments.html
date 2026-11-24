@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">erifunctions</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.53</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.9.54</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Download all media attachments from an ODK form</h1>
-      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/v0.9.53/R/odk.R" class="external-link"><code>R/odk.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/thecartercenter/erifunctions/blob/main/R/odk.R" class="external-link"><code>R/odk.R</code></a></small>
       <div class="d-none name"><code>download_form_attachments.Rd</code></div>
     </div>
 
@@ -125,7 +125,13 @@ containing <code>/</code> is encoded for you)</p></dd>
 
 
 <dt id="arg-image-label">image_label<a class="anchor" aria-label="anchor" href="#arg-image-label"></a></dt>
-<dd><p><code>chr</code> Column name used as the output file stem</p></dd>
+<dd><p><code>chr</code> Column whose value names each saved file. A media
+extension in the value (<code>.jpg</code>, <code>.png</code>, ...) is dropped and the
+attachment's own extension is used (<code>1234.jpg</code> is saved as <code>1234.jpg</code>).
+When one submission has several attachments, or two rows share a value
+(ignoring case), the attachment's ODK file name is appended so no file
+overwrites another. Rows with no value use the attachment's ODK file name.
+Use the returned <code>file_name</code> column to link files back to rows.</p></dd>
 
 
 <dt id="arg-other-vars">other_vars<a class="anchor" aria-label="anchor" href="#arg-other-vars"></a></dt>
@@ -143,7 +149,8 @@ containing <code>/</code> is encoded for you)</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p><code>tibble</code> of attachment metadata</p>
+    <p><code>tibble</code> of attachment metadata, with a <code>file_name</code> column giving
+the name each attachment was saved under in <code>folder_loc</code></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
