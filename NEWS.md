@@ -1,3 +1,22 @@
+# erifunctions 0.9.54
+
+## Downloaded ODK attachments keep their real extension and never overwrite each other (#391)
+
+`download_form_attachments()` used to save every file as `<image_label value>.jpeg`:
+
+- A label that was already a file name (`1234.jpg`) came out as `1234.jpg.jpeg`, and PNGs or
+  signatures were labelled `.jpeg` too. Files now keep the attachment's own extension.
+- All the attachments in one submission got the same name, so each one silently overwrote the
+  last. When a submission has more than one attachment, or two labels match (ignoring case,
+  as Windows does), the attachment's ODK file name is now added (`site_A_1712345.jpg`).
+- Rows with an empty label use the attachment's ODK file name, and characters Windows doesn't
+  allow in file names are replaced with `_`.
+- The returned tibble has a new `file_name` column giving each saved file's name.
+
+**If a script of yours looks for `<label>.jpeg`, switch it to the `file_name` column.** Files
+saved by earlier versions are not renamed, so re-running into an old folder leaves the old
+`.jpeg` copies next to the new files.
+
 # erifunctions 0.9.53
 
 ## ODK form IDs containing `/` now work (#388)
