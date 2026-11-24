@@ -389,5 +389,29 @@ test_that("download_form_attachments works without other_vars and with a '/' for
   )
   expect_equal(nrow(out), 1L)
   expect_true(all(grepl("/forms/Edo%2FEbonyiForm/submissions/", seen_urls, fixed = TRUE)))
-  expect_true(file.exists(file.path(dir, "img1.jpg.jpeg")))
+  expect_true(file.exists(file.path(dir, "img1.jpg")))   # no .jpg.jpeg (#391)
+  expect_equal(out$file_name, "img1.jpg")
+})
+
+# --- attachment file names (issue #391) ---------------------------------------
+
+test_that(".odk_attachment_file_names keeps the real extension, no double extension", {
+  expect_equal(.odk_attachment_file_names("1234.jpg", "1234.jpg"), "1234.jpg")
+  expect_equal(.odk_attachment_file_names("site_A", "99.png"), "site_A.png")
+  expect_equal(.odk_attachment_file_names("site_A", "99"), "site_A.jpeg")
+})
+
+test_that(".odk_attachment_file_names never gives two attachments the same name", {
+  # one submission, two attachments, same label value
+  out <- .odk_attachment_file_names(c("site_A", "site_A"), c("11.jpg", "22.png"))
+  expect_equal(out, c("site_A_11.jpg", "site_A_22.png"))
+  # same label and same attachment name across submissions
+  out2 <- .odk_attachment_file_names(c("x", "x"), c("1.jpg", "1.jpg"))
+  expect_equal(anyDuplicated(out2), 0L)
+})
+
+test_that(".odk_attachment_file_names falls back to the attachment name and cleans labels", {
+  expect_equal(.odk_attachment_file_names(c(NA, ""), c("5.jpg", "6.jpg")),
+               c("5.jpg", "6.jpg"))
+  expect_equal(.odk_attachment_file_names("Edo/Ebonyi:1", "7.jpg"), "Edo_Ebonyi_1.jpg")
 })

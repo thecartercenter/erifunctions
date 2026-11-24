@@ -31,7 +31,12 @@ containing \code{/} is encoded for you)}
 
 \item{folder_loc}{\code{chr} Local directory to write downloaded attachments}
 
-\item{image_label}{\code{chr} Column name used as the output file stem}
+\item{image_label}{\code{chr} Column whose value names each saved file. Any
+extension in the value is dropped and the attachment's own extension is
+used (\verb{1234.jpg} is saved as \verb{1234.jpg}). When one submission has several
+attachments, or two rows share a value, the attachment's ODK file name is
+appended so no file overwrites another. Rows with no value use the
+attachment's ODK file name.}
 
 \item{other_vars}{\code{chr} Additional columns to include in the returned tibble
 (default: none)}
@@ -41,7 +46,8 @@ containing \code{/} is encoded for you)}
 \item{condition}{Unquoted \code{dplyr::filter()} expression; used when \code{add_condition = TRUE}}
 }
 \value{
-\code{tibble} of attachment metadata
+\code{tibble} of attachment metadata, with a \code{file_name} column giving
+the name each attachment was saved under in \code{folder_loc}
 }
 \description{
 Download all media attachments from an ODK form
