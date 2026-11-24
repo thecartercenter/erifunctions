@@ -1,4 +1,18 @@
-# erifunctions (development version)
+# erifunctions 0.9.53
+
+## ODK form IDs containing `/` now work (#388)
+
+`download_odk_form()` and `download_form_attachments()` failed for forms whose ID contains a `/`
+(e.g. `Edo/Ebonyi...`). Pass the ID exactly as `list_odk_forms()` shows it. Encoding it yourself
+as `%2F` also works.
+
+- Every ODK call now encodes the form ID the same way, so `/` becomes `%2F` and is never
+  encoded twice.
+- `download_odk_form()` now finds the main CSV in the export. ODK Central drops `/` and other
+  characters that can't appear in file names from that CSV's name, and the function was looking
+  for the unmodified ID.
+- `download_form_attachments()` no longer errors when `other_vars` is left out. It now defaults
+  to no extra columns.
 
 ## Research figures keep their folders, re-uploads keep the old version, and tags keep their outputs (#377)
 

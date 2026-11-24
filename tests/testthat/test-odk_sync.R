@@ -301,3 +301,93 @@ test_that("download_odk_form(tables = FALSE) returns only the main table tibble"
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 2L)   # the repeat table is not returned
 })
+
+# --- form IDs containing "/" (issue #388) --------------------------------------
+
+test_that(".odk_enc_form_id encodes '/' once, raw or pre-encoded", {
+  expect_equal(.odk_enc_form_id("Edo/EbonyiStopMDA"), "Edo%2FEbonyiStopMDA")
+  expect_equal(.odk_enc_form_id("Edo%2FEbonyiStopMDA"), "Edo%2FEbonyiStopMDA")
+  expect_equal(.odk_enc_form_id("plain_form-1"), "plain_form-1")
+  expect_equal(.odk_enc_form_id("100%"), "100%25")   # bare % is kept, not decoded
+  expect_equal(.odk_export_name("100%"), "100%")
+})
+
+test_that(".odk_export_name mirrors Central's sanitize-filename", {
+  expect_equal(.odk_export_name("Edo/EbonyiStopMDA"), "EdoEbonyiStopMDA")
+  expect_equal(.odk_export_name("Edo%2FEbonyiStopMDA"), "EdoEbonyiStopMDA")
+  expect_equal(.odk_export_name('a:b*c?d"e<f>g|h\\i.'), "abcdefghi")
+  expect_equal(.odk_export_name("myform"), "myform")
+})
+
+test_that("download_odk_form handles a form ID containing '/'", {
+  seen_url <- NULL
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) {
+      seen_url <<- url
+      structure(list(status_code = 200L), class = "response")
+    },
+    .package = "httr"
+  )
+  testthat::local_mocked_bindings(
+    .odk_check_response = function(...) invisible(NULL),
+    unzip = function(zipfile, exdir, ...) {
+      # Central strips "/" from the export file name
+      readr::write_csv(tibble::tibble(KEY = c("a", "b")),
+                       file.path(exdir, "EdoEbonyiForm.csv"))
+      invisible(character(0))
+    },
+    .package = "erifunctions"
+  )
+  for (id in c("Edo/EbonyiForm", "Edo%2FEbonyiForm")) {
+    out <- download_odk_form(url = "https://x/", auth = "tok",
+                             project_id = 2L, form_id = id)
+    expect_equal(nrow(out), 2L)
+    expect_match(seen_url, "/forms/Edo%2FEbonyiForm/submissions.csv.zip", fixed = TRUE)
+  }
+})
+
+test_that("download_odk_form names the export's files when the main CSV is missing", {
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) structure(list(status_code = 200L), class = "response"),
+    .package = "httr"
+  )
+  testthat::local_mocked_bindings(
+    .odk_check_response = function(...) invisible(NULL),
+    unzip = function(zipfile, exdir, ...) {
+      readr::write_csv(tibble::tibble(KEY = "a"), file.path(exdir, "other.csv"))
+      invisible(character(0))
+    },
+    .package = "erifunctions"
+  )
+  expect_error(
+    download_odk_form(url = "https://x/", auth = "tok", project_id = 1L, form_id = "myform"),
+    "other.csv"
+  )
+})
+
+test_that("download_form_attachments works without other_vars and with a '/' form ID", {
+  seen_urls <- character()
+  testthat::local_mocked_bindings(
+    GET = function(url, ...) {
+      seen_urls <<- c(seen_urls, url)
+      structure(list(status_code = 200L, content = as.raw(1:3)), class = "response")
+    },
+    .package = "httr"
+  )
+  testthat::local_mocked_bindings(
+    download_odk_form = function(...) tibble::tibble(
+      pic = "img1.jpg", `meta-instanceID` = "uuid:1",
+      AttachmentsExpected = 1, AttachmentsPresent = 1
+    ),
+    .odk_check_response = function(...) list(list(name = "img1.jpg", exists = TRUE)),
+    .package = "erifunctions"
+  )
+  dir <- withr::local_tempdir()
+  out <- download_form_attachments(
+    url = "https://x/", auth = "tok", project_id = 2L,
+    form_id = "Edo/EbonyiForm", folder_loc = dir, image_label = "pic"
+  )
+  expect_equal(nrow(out), 1L)
+  expect_true(all(grepl("/forms/Edo%2FEbonyiForm/submissions/", seen_urls, fixed = TRUE)))
+  expect_true(file.exists(file.path(dir, "img1.jpg.jpeg")))
+})

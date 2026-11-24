@@ -12,7 +12,7 @@ download_form_attachments(
   form_id,
   folder_loc,
   image_label,
-  other_vars,
+  other_vars = character(),
   add_condition = FALSE,
   condition = NULL
 )
@@ -26,13 +26,15 @@ download_form_attachments(
 
 \item{project_id}{\code{int} Project ID from \code{\link[=list_odk_projects]{list_odk_projects()}}}
 
-\item{form_id}{\code{chr} Form ID from \code{\link[=list_odk_forms]{list_odk_forms()}}}
+\item{form_id}{\code{chr} Form ID from \code{\link[=list_odk_forms]{list_odk_forms()}}, as shown there (an ID
+containing \code{/} is encoded for you)}
 
 \item{folder_loc}{\code{chr} Local directory to write downloaded attachments}
 
 \item{image_label}{\code{chr} Column name used as the output file stem}
 
-\item{other_vars}{\code{chr} Additional columns to include in the returned tibble}
+\item{other_vars}{\code{chr} Additional columns to include in the returned tibble
+(default: none)}
 
 \item{add_condition}{\code{lgl} Apply a row filter before downloading}
 
